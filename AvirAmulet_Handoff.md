@@ -79,3 +79,9 @@
 - Все числа предварительные, в игре механики не проверены.
 - Telekinetic I–IV ещё в Named amulets (рецепты можно скрыть, ассеты сохранены).
 - Push в GitHub недоступен (403) — актуальное состояние в архиве `AvirApexPredator.zip`.
+
+## Concept (not coded): artifact buildings, Oct 4 2026
+- One host building class with 1-3 artifact-module sockets, inlaid AFTER construction (pawn job), with a small parchment inlay menu (stones as in the telekinesis circle). No module development yet. Buildings drain charge much slower.
+- Apogee (Avir): Subspace Controller (pulls items in radius to storage; radius grows with stones); Subspace Storage (1 cell, 250 kg -> 1000 kg with 3 stones, no rot, not counted in raid wealth); Observers (statues, 2 eyes: fewer social fights, slave suppression; both eyes reveal invisible pawns, e.g. sightstealers); Essentium projector (3 gold-rim or 3 silver-rim stones, essentium hearts, Excellent+; gold = day charging, golden burning beam; silver = moonflame, third stone special; rotates, 2 operators, arcs like a mortar); Temperature attuner (aura with any chosen temperature, works outdoors/fields; stones 2-3 widen radius; 3rd adds auto sunlight aura).
+- Basic artifactorics (everyone): one-stone totems such as an explosive totem and an animal-scare totem.
+- Charge upkeep: "Attuner" work driven by psychic sensitivity; later a whole Ritualistics system.
