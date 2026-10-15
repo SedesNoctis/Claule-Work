@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- The heavy door: the only way in from outside. Slow, very hard to break, fireproof. Players may build
+       it too. -->
+  <ThingDef ParentName="DoorBase">
+    <defName>LC_HeavyDoor</defName>
+    <label>heavy door</label>
+    <description>A thick, reinforced door made for outer walls. It opens slowly and takes a long siege to break.</description>
+    <statBases>
+      <WorkToBuild>4000</WorkToBuild>
+      <MaxHitPoints>900</MaxHitPoints>
+      <DoorOpenSpeed>0.35</DoorOpenSpeed>
+      <Flammability>0</Flammability>
+    </statBases>
+    <graphicData>
+      <texPath>Things/Building/Door/DoorSimple_Mover</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <color>(0.55,0.55,0.6)</color>
+      <damageData>
+        <enabled>false</enabled>
+      </damageData>
+    </graphicData>
+    <costStuffCount>90</costStuffCount>
+    <stuffCategories Inherit="False">
+      <li>Metallic</li>
+      <li>Stony</li>
+    </stuffCategories>
+    <constructionSkillPrerequisite>6</constructionSkillPrerequisite>
+  </ThingDef>
+
+</Defs>

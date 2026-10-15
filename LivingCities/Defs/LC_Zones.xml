@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- THE ROOMS. Each zone says where it may lie (places: Hub = gallery, Band = ring of rooms, Nest = an
+       octagonal nest, Center = the central halls, Yard = the yards between nests), how big it may be,
+       what stands in it and who lives in it (roles - each city maps them to its own pawn kinds).
+       Things are named by defName and skipped silently when absent; orElse lists fallbacks (DLC, mods). -->
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Gallery</defName>
+    <label>gallery</label>
+    <places><li>Hub</li></places>
+    <minArea>1</minArea>
+  </LivingCities.ZoneDef>
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Family</defName>
+    <label>family nest</label>
+    <places><li>Band</li><li>Yard</li><li>Nest</li></places>
+    <minArea>16</minArea>
+    <maxArea>200</maxArea>
+    <fineFloor>true</fineFloor>
+    <things>
+      <li><thing>DoubleBed</thing><orElse><li>Bed</li></orElse><count>1~2</count><nearWall>true</nearWall></li>
+      <li><thing>Bed</thing><count>0~1</count><nearWall>true</nearWall></li>
+      <li><thing>EndTable</thing><count>1</count><nearWall>true</nearWall></li>
+      <li><thing>Dresser</thing><count>1</count><nearWall>true</nearWall></li>
+      <li><thing>Table1x2c</thing><count>1</count></li>
+      <li><thing>DiningChair</thing><count>2</count></li>
+      <li><thing>PlantPot</thing><count>0~1</count><nearWall>true</nearWall></li>
+    </things>
+    <residents>
+      <li><role>family</role><count>1~3</count></li>
+      <li><role>child</role><count>0~1</count></li>
+    </residents>
+  </LivingCities.ZoneDef>
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Nursery</defName>
+    <label>nursery</label>
+    <places><li>Nest</li><li>Band</li></places>
+    <minArea>16</minArea>
+    <fineFloor>true</fineFloor>
+    <things>
+      <li><thing>Crib</thing><orElse><li>Bed</li></orElse><count>2~3</count><nearWall>true</nearWall></li>
+      <li><thing>Bed</thing><count>1</count><nearWall>true</nearWall></li>
+      <li><thing>ToyBox</thing><orElse><li>PlantPot</li></orElse><count>1</count><nearWall>true</nearWall></li>
+      <li><thing>Blackboard</thing><count>0~1</count><nearWall>true</nearWall></li>
+    </things>
+    <residents>
+      <li><role>child</role><count>2~4</count></li>
+      <li><role>family</role><count>1</count></li>
+    </residents>
+  </LivingCities.ZoneDef>
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Barracks</defName>
+    <label>barracks</label>
+    <places><li>Band</li><li>Yard</li></places>
+    <minArea>20</minArea>
+    <things>
+      <li><thing>Bed</thing><count>2~3</count><perArea>0.05</perArea><nearWall>true</nearWall></li>
+      <li><thing>Shelf</thing><count>1</count><nearWall>true</nearWall></li>
+    </things>
+    <residents>
+      <li><role>guard</role><count>2~3</count></li>
+    </residents>
+  </LivingCities.ZoneDef>
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Storage</defName>
+    <label>storehouse</label>
+    <places><li>Band</li><li>Yard</li><li>Nest</li></places>
+    <minArea>12</minArea>
+    <noWell>true</noWell>
+    <things>
+      <li><thing>Shelf</thing><count>2~3</count><perArea>0.04</perArea><nearWall>true</nearWall></li>
+    </things>
+    <lootBase>300</lootBase>
+    <lootPerCell>12</lootPerCell>
+  </LivingCities.ZoneDef>
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Cells</defName>
+    <label>cells</label>
+    <places><li>Band</li><li>Yard</li></places>
+    <minArea>9</minArea>
+    <maxArea>80</maxArea>
+    <noWell>true</noWell>
+    <things>
+      <li><thing>Bed</thing><count>1~3</count><nearWall>true</nearWall><forPrisoners>true</forPrisoners></li>
+    </things>
+  </LivingCities.ZoneDef>
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Kitchen</defName>
+    <label>kitchen</label>
+    <places><li>Band</li><li>Yard</li></places>
+    <minArea>16</minArea>
+    <maxArea>160</maxArea>
+    <things>
+      <li><thing>FueledStove</thing><count>1</count><nearWall>true</nearWall></li>
+      <li><thing>TableButcher</thing><count>1</count><nearWall>true</nearWall></li>
+      <li><thing>Table2x2c</thing><orElse><li>Table1x2c</li></orElse><count>1</count></li>
+      <li><thing>DiningChair</thing><count>2</count></li>
+      <li><thing>Shelf</thing><count>1</count><nearWall>true</nearWall></li>
+    </things>
+    <residents>
+      <li><role>family</role><count>1</count></li>
+    </residents>
+    <lootBase>120</lootBase>
+    <lootPerCell>3</lootPerCell>
+  </LivingCities.ZoneDef>
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Workshop</defName>
+    <label>workshop</label>
+    <places><li>Band</li><li>Yard</li><li>Nest</li></places>
+    <minArea>20</minArea>
+    <things>
+      <li><thing>FueledSmithy</thing><count>1</count><nearWall>true</nearWall></li>
+      <li><thing>HandTailoringBench</thing><count>1</count><nearWall>true</nearWall></li>
+      <li><thing>TableSculpting</thing><count>0~1</count><nearWall>true</nearWall></li>
+      <li><thing>Shelf</thing><count>1</count><nearWall>true</nearWall></li>
+    </things>
+    <residents>
+      <li><role>artisan</role><count>1~2</count></li>
+    </residents>
+  </LivingCities.ZoneDef>
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_ArchitectHall</defName>
+    <label>architects' hall</label>
+    <places><li>Center</li><li>Nest</li></places>
+    <minArea>16</minArea>
+    <fineFloor>true</fineFloor>
+    <things>
+      <li><thing>SimpleResearchBench</thing><count>1~2</count><nearWall>true</nearWall></li>
+      <li><thing>Table1x2c</thing><count>1</count></li>
+      <li><thing>Armchair</thing><orElse><li>DiningChair</li></orElse><count>1</count></li>
+      <li><thing>PlantPot</thing><count>1~2</count><nearWall>true</nearWall></li>
+    </things>
+    <residents>
+      <li><role>architect</role><count>1~2</count></li>
+    </residents>
+  </LivingCities.ZoneDef>
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Sanctuary</defName>
+    <label>sanctuary</label>
+    <places><li>Center</li></places>
+    <minArea>20</minArea>
+    <fineFloor>true</fineFloor>
+    <things>
+      <li><thing>SculptureSmall</thing><count>1~2</count></li>
+      <li><thing>Armchair</thing><orElse><li>DiningChair</li></orElse><count>2</count><nearWall>true</nearWall></li>
+      <li><thing>PlantPot</thing><count>2~4</count><nearWall>true</nearWall></li>
+    </things>
+    <residents>
+      <li><role>elder</role><count>1~2</count></li>
+    </residents>
+  </LivingCities.ZoneDef>
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Market</defName>
+    <label>market</label>
+    <places><li>Yard</li><li>Band</li><li>Center</li></places>
+    <minArea>30</minArea>
+    <things>
+      <li><thing>Table2x2c</thing><orElse><li>Table1x2c</li></orElse><count>1~2</count></li>
+      <li><thing>Stool</thing><orElse><li>DiningChair</li></orElse><count>2</count></li>
+      <li><thing>Shelf</thing><count>2</count><nearWall>true</nearWall></li>
+    </things>
+    <residents>
+      <li><role>merchant</role><count>1~2</count></li>
+    </residents>
+    <lootBase>400</lootBase>
+    <lootPerCell>4</lootPerCell>
+  </LivingCities.ZoneDef>
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Guest</defName>
+    <label>guest rooms</label>
+    <places><li>Band</li><li>Nest</li><li>Yard</li></places>
+    <minArea>12</minArea>
+    <maxArea>120</maxArea>
+    <fineFloor>true</fineFloor>
+    <things>
+      <li><thing>Bed</thing><count>1~3</count><nearWall>true</nearWall></li>
+      <li><thing>EndTable</thing><count>1</count><nearWall>true</nearWall></li>
+      <li><thing>Dresser</thing><count>1</count><nearWall>true</nearWall></li>
+    </things>
+  </LivingCities.ZoneDef>
+
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_CommonHall</defName>
+    <label>common hall</label>
+    <places><li>Center</li><li>Yard</li></places>
+    <minArea>40</minArea>
+    <things>
+      <li><thing>Table2x2c</thing><orElse><li>Table1x2c</li></orElse><count>1~2</count></li>
+      <li><thing>DiningChair</thing><count>4</count></li>
+      <li><thing>HorseshoesPin</thing><count>0~1</count></li>
+      <li><thing>ChessTable</thing><count>0~1</count></li>
+      <li><thing>PlantPot</thing><count>2</count><nearWall>true</nearWall></li>
+    </things>
+    <residents>
+      <li><role>family</role><count>1~2</count></li>
+    </residents>
+  </LivingCities.ZoneDef>
+
+</Defs>
