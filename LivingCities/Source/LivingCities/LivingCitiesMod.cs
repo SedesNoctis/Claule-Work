@@ -4,13 +4,14 @@ using System.Linq;
 using HarmonyLib;
 using LudeonTK;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace LivingCities
 {
     public class LivingCitiesMod : Mod
     {
-        public const string Stamp = "LC-2026-10-15-B";
+        public const string Stamp = "LC-2026-10-15-C";
 
         public LivingCitiesMod(ModContentPack content) : base(content)
         {
@@ -46,6 +47,91 @@ namespace LivingCities
 
     public static class LivingCitiesDebug
     {
+        // ------------------------------------------------------------------ layouts: export and place
+
+        private static IntVec3 firstCorner = IntVec3.Invalid;
+
+        private static void Exported(string file)
+        {
+            Messages.Message("Living Cities: layout saved to " + file, MessageTypeDefOf.PositiveEvent, false);
+            Log.Message("[Living Cities] layout saved: " + file);
+            try { Application.OpenURL("file:///" + System.IO.Path.GetDirectoryName(file).Replace('\\', '/')); } catch { }
+        }
+
+        private static string Name(Map map) => map.Parent?.Label ?? "Base";
+
+        [DebugAction("Living Cities", "Export layout: whole map", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void ExportMap()
+        {
+            Map map = Find.CurrentMap;
+            Exported(LayoutExport.Export(map, new CellRect(0, 0, map.Size.x, map.Size.z), Name(map)));
+        }
+
+        [DebugAction("Living Cities", "Export layout: home area", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void ExportHome()
+        {
+            Map map = Find.CurrentMap;
+            var cells = map.areaManager.Home.ActiveCells.ToList();
+            if (cells.Count == 0) { Messages.Message("No home area.", MessageTypeDefOf.RejectInput, false); return; }
+            var rect = CellRect.FromLimits(cells.Min(c => c.x), cells.Min(c => c.z), cells.Max(c => c.x), cells.Max(c => c.z)).ExpandedBy(3);
+            Exported(LayoutExport.Export(map, rect, Name(map)));
+        }
+
+        [DebugAction("Living Cities", "Export layout: rectangle (click 2 corners)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void ExportRect()
+        {
+            IntVec3 c = UI.MouseCell();
+            Map map = Find.CurrentMap;
+            if (!firstCorner.IsValid) { firstCorner = c; Messages.Message("First corner set - click the opposite one.", MessageTypeDefOf.NeutralEvent, false); return; }
+            var rect = CellRect.FromLimits(firstCorner, c);
+            firstCorner = IntVec3.Invalid;
+            Exported(LayoutExport.Export(map, rect, Name(map)));
+        }
+
+        [DebugAction("Living Cities", "Place layout...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void PlaceLayout()
+        {
+            var opts = new List<DebugMenuOption>();
+            foreach (LayoutDef d in DefDatabase<LayoutDef>.AllDefsListForReading)
+            {
+                LayoutDef def = d;
+                opts.Add(new DebugMenuOption("[def] " + def.defName, DebugMenuOptionMode.Action, () => PickMode(() => def)));
+            }
+            if (System.IO.Directory.Exists(LayoutExport.Folder))
+                foreach (string f in System.IO.Directory.GetFiles(LayoutExport.Folder, "*.xml").OrderByDescending(System.IO.File.GetLastWriteTime))
+                {
+                    string file = f;
+                    opts.Add(new DebugMenuOption("[file] " + System.IO.Path.GetFileNameWithoutExtension(file), DebugMenuOptionMode.Action, () => PickMode(() => LayoutPlace.Load(file))));
+                }
+            if (opts.Count == 0) { Messages.Message("No layouts yet: export one first.", MessageTypeDefOf.RejectInput, false); return; }
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(opts));
+        }
+
+        private static void PickMode(Func<LayoutDef> get)
+        {
+            LayoutDef def;
+            try { def = get(); }
+            catch (Exception e) { Messages.Message("Could not read the layout: " + e.Message, MessageTypeDefOf.RejectInput, false); return; }
+            var opts = new List<DebugMenuOption>
+            {
+                new DebugMenuOption("as mine (with zones and bills)", DebugMenuOptionMode.Tool, () => Place(def, Faction.OfPlayer, true)),
+                new DebugMenuOption("unowned (no zones)", DebugMenuOptionMode.Tool, () => Place(def, null, false)),
+            };
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(opts));
+        }
+
+        private static void Place(LayoutDef def, Faction f, bool extras)
+        {
+            Map map = Find.CurrentMap;
+            IntVec3 c = UI.MouseCell();
+            var origin = new IntVec3(c.x - def.size.x / 2, 0, c.z - def.size.z / 2);
+            var rep = LayoutPlace.Place(map, def, origin, f, extras);
+            Messages.Message("Living Cities: placed " + def.label + " - " + rep, MessageTypeDefOf.NeutralEvent, false);
+            if (rep.missing.Count > 0) Log.Warning("[Living Cities] layout " + def.defName + " - missing defs: " + string.Join(", ", rep.missing));
+        }
+
+        // ------------------------------------------------------------------ generated cities
+
         [DebugAction("Living Cities", "Build city here...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void BuildHere()
         {
