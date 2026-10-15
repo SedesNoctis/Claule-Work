@@ -26,6 +26,7 @@
       <li>Metallic</li>
       <li>Stony</li>
     </stuffCategories>
+    <designationCategory>Structure</designationCategory>
     <constructionSkillPrerequisite>6</constructionSkillPrerequisite>
   </ThingDef>
 

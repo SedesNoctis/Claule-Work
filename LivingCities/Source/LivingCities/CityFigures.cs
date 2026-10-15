@@ -21,9 +21,9 @@ namespace LivingCities
         public const int Gallery = 4;     // outer wall to gallery wall
         public const int Gap = 5;         // between the outer walls of two figures
 
-        private struct Fig { public FigureKind kind; public float R; public Vector2 c; }
+        private struct Fig { public FigureKind kind; public float R; public float E; public Vector2 c; public float Reach => R + E; }
 
-        public static CityPlan Compose(CitySize size, List<FigureKind> allowed, int maxExtent)
+        public static CityPlan Compose(CitySize size, List<FigureKind> allowed, int maxExtent, float enclosureChance = 0f, float gateChance = 0f)
         {
             var bigKinds = allowed.Where(k => k != FigureKind.SmallRing).ToList();
             if (bigKinds.Count == 0) bigKinds.Add(FigureKind.RingInRing);
@@ -42,19 +42,27 @@ namespace LivingCities
                     break;
             }
 
+            // a lone complex may stand inside an open ring: a wall without a roof round its fields
+            if (figs.Count == 1 && Rand.Chance(enclosureChance))
+            {
+                var f = figs[0];
+                f.E = size == CitySize.Outpost ? Rand.Range(8, 12) : Rand.Range(10, 17);
+                figs[0] = f;
+            }
+
             // shrink until it fits the map
             for (int tries = 0; tries < 12; tries++)
             {
                 Place(figs);
-                float minX = figs.Min(f => f.c.x - f.R), maxX = figs.Max(f => f.c.x + f.R);
-                float minZ = figs.Min(f => f.c.y - f.R), maxZ = figs.Max(f => f.c.y + f.R);
+                float minX = figs.Min(f => f.c.x - f.Reach), maxX = figs.Max(f => f.c.x + f.Reach);
+                float minZ = figs.Min(f => f.c.y - f.Reach), maxZ = figs.Max(f => f.c.y + f.Reach);
                 float extent = Mathf.Max(maxX - minX, maxZ - minZ) * 1.03f + 2 * (Margin + 2);
                 if (extent <= maxExtent) break;
-                for (int i = 0; i < figs.Count; i++) { var f = figs[i]; f.R = Mathf.Max(11f, f.R * 0.9f); figs[i] = f; }
+                for (int i = 0; i < figs.Count; i++) { var f = figs[i]; f.R = Mathf.Max(11f, f.R * 0.9f); f.E = Mathf.Max(0f, Mathf.Floor(f.E * 0.85f)); figs[i] = f; }
             }
             {
-                float minX = figs.Min(f => f.c.x - f.R * 1.03f), maxX = figs.Max(f => f.c.x + f.R * 1.03f);
-                float minZ = figs.Min(f => f.c.y - f.R * 1.03f), maxZ = figs.Max(f => f.c.y + f.R * 1.03f);
+                float minX = figs.Min(f => f.c.x - f.Reach * 1.03f), maxX = figs.Max(f => f.c.x + f.Reach * 1.03f);
+                float minZ = figs.Min(f => f.c.y - f.Reach * 1.03f), maxZ = figs.Max(f => f.c.y + f.Reach * 1.03f);
                 int pad = Margin + 3;
                 int planSize = Mathf.CeilToInt(Mathf.Max(maxX - minX, maxZ - minZ)) + 2 * pad;
                 Vector2 shift = new Vector2(pad - minX + (planSize - 2 * pad - (maxX - minX)) / 2f,
@@ -62,8 +70,32 @@ namespace LivingCities
                 var plan = new CityPlan(planSize);
                 for (int i = 0; i < figs.Count; i++) { var f = figs[i]; f.c += shift; f.R = Mathf.Round(f.R); figs[i] = f; }
 
-                foreach (Fig f in figs) plan.Disk(V(f.c), f.R, 16, Margin);
+                foreach (Fig f in figs) plan.Disk(V(f.c), f.Reach, 16, Margin);
                 foreach (Fig f in figs) Draw(plan, f);
+                foreach (Fig f in figs.Where(f => f.E > 0))
+                {
+                    plan.Rim(V(f.c), f.Reach, 16);
+                    float mid = f.R + f.E / 2f;
+                    for (int i = 0; i < 4; i++)
+                    {
+                        float a = (45f + 90f * i) * Mathf.Deg2Rad;
+                        plan.Seed(new IntVec2(Mathf.RoundToInt(f.c.x + Mathf.Cos(a) * mid), Mathf.RoundToInt(f.c.y + Mathf.Sin(a) * mid)), RoomPlace.Field);
+                    }
+                }
+                // the official entrance: a gatehouse astride the outermost wall, the only way in from outside
+                if (Rand.Chance(gateChance))
+                {
+                    Fig f = figs.RandomElement();
+                    float a = 90f * Rand.Range(0, 4) * Mathf.Deg2Rad;
+                    float gr = f.Reach + 2f;   // mostly outside: its inner end opens into the gallery or the fields
+                    var gc = new IntVec2(Mathf.RoundToInt(f.c.x + Mathf.Cos(a) * gr), Mathf.RoundToInt(f.c.y + Mathf.Sin(a) * gr));
+                    // not into another figure, and not where a passage runs
+                    if (figs.All(o => o.c == f.c || CityPlan.PolyR(gc.x - o.c.x, gc.z - o.c.y, 16) > o.Reach + 6))
+                    {
+                        plan.Stamp(gc, size == CitySize.Outpost ? 3f : 4f, 8);
+                        plan.Seed(gc, RoomPlace.Gate);
+                    }
+                }
                 for (int i = 1; i < figs.Count; i++)
                 {
                     // each figure joins the one before it (and the third the first as well)
@@ -101,7 +133,7 @@ namespace LivingCities
             {
                 float hall = Mathf.Round(R * 0.45f);
                 p.Rim(c, hall, 8);
-                float off = Rand.Bool ? 45f : 0f;
+                float off = 45f;   // spokes on the diagonals: a gatehouse (always on a cardinal) opens into a room, not onto a spoke
                 for (int i = 0; i < 4; i++) p.Spoke(c, (off + 90f * i) * Mathf.Deg2Rad, hall + 1, R);
                 p.Seed(c, RoomPlace.Center);
                 return;

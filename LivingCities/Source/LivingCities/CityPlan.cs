@@ -93,6 +93,16 @@ namespace LivingCities
                 }
         }
 
+        /// <summary>A polygon laid over whatever is there (walls included) and walled round: the gatehouse.</summary>
+        public void Stamp(IntVec2 c, float a, int n)
+        {
+            int r = Mathf.CeilToInt(a / Mathf.Cos(Mathf.PI / n)) + 1;
+            for (int x = c.x - r; x <= c.x + r; x++)
+                for (int z = c.z - r; z <= c.z + r; z++)
+                    if (In(x, z) && InPoly(x, z, c, a, n)) Set(x, z, PlanCell.Floor);
+            Rim(c, a, n);
+        }
+
         /// <summary>A wall on the rim of the polygon: every inside cell with a 4-neighbour outside it.</summary>
         public void Rim(IntVec2 c, float a, int n)
         {
@@ -179,8 +189,9 @@ namespace LivingCities
                 if (!In(s.Key.x, s.Key.z)) continue;
                 int id = room[Idx(s.Key.x, s.Key.z)];
                 if (id < 0) continue;
-                // a hub seed wins over everything; otherwise the first seed names the room
-                if (s.Value == RoomPlace.Hub || rooms[id].place == RoomPlace.Band) rooms[id].place = s.Value;
+                // hub, gate and field seeds win over everything; otherwise the first seed names the room
+                if (s.Value == RoomPlace.Hub || s.Value == RoomPlace.Gate || s.Value == RoomPlace.Field || rooms[id].place == RoomPlace.Band)
+                    rooms[id].place = s.Value;
             }
         }
 
@@ -208,16 +219,42 @@ namespace LivingCities
                 }
         }
 
+        /// <summary>Where two walls stand back to back (a gatehouse against a gallery wall): a double door
+        /// through both.</summary>
+        private IEnumerable<(IntVec2 c1, IntVec2 c2, int a, int b)> ThickSpots()
+        {
+            for (int z = 2; z < size - 2; z++)
+                for (int x = 2; x < size - 2; x++)
+                {
+                    if (At(x, z) != PlanCell.Wall) continue;
+                    for (int axis = 0; axis < 2; axis++)
+                    {
+                        int ax = axis == 0 ? 1 : 0, az = 1 - ax;
+                        if (At(x + ax, z + az) != PlanCell.Wall) continue;
+                        PlanCell s1 = At(x + 2 * ax, z + 2 * az), s2 = At(x - ax, z - az);
+                        if (!Open(s1) || !Open(s2)) continue;
+                        if (At(x + az, z + ax) != PlanCell.Wall || At(x - az, z - ax) != PlanCell.Wall) continue;
+                        if (At(x + ax + az, z + az + ax) != PlanCell.Wall || At(x + ax - az, z + az - ax) != PlanCell.Wall) continue;
+                        int a = RoomAt(x + 2 * ax, z + 2 * az), b = RoomAt(x - ax, z - az);
+                        if (a == b) continue;
+                        yield return (new IntVec2(x, z), new IntVec2(x + ax, z + az), a, b);
+                    }
+                }
+        }
+
         public void CutDoors(int heavyDoors)
         {
             var spots = DoorSpots().ToList();
             IntVec2 mid = new IntVec2(size / 2, size / 2);
 
-            // heavy doors: from the outside into the galleries (or, with none, into any room on the rim),
-            // spread round the compass
-            bool hasHub = rooms.Any(r => r.place == RoomPlace.Hub);
+            // heavy doors: from the outside into the gatehouse if there is one, else into the fields' ring,
+            // else into the galleries, else into any room on the rim - spread round the compass
+            RoomPlace? entry = null;
+            foreach (RoomPlace pl in new[] { RoomPlace.Gate, RoomPlace.Field, RoomPlace.Hub })
+                if (rooms.Any(r => r.place == pl)) { entry = pl; break; }
+            if (entry == RoomPlace.Gate) heavyDoors = 1;
             var outer = spots.Where(s => (s.a == -2 || s.b == -2) && (s.a >= 0 || s.b >= 0))
-                             .Where(s => !hasHub || rooms[Math.Max(s.a, s.b)].place == RoomPlace.Hub).ToList();
+                             .Where(s => entry == null || rooms[Math.Max(s.a, s.b)].place == entry).ToList();
             var placedHeavy = new List<IntVec2>();
             for (int i = 0; i < heavyDoors && outer.Count > 0; i++)
             {
@@ -242,7 +279,19 @@ namespace LivingCities
             {
                 grew = false;
                 var options = inner.Where(s => rooms[s.a].connected != rooms[s.b].connected).ToList();
-                if (options.Count == 0) break;
+                if (options.Count == 0)
+                {
+                    var thick = ThickSpots().Where(s => rooms[s.a].connected != rooms[s.b].connected
+                                                        && !Adjacent(s.c1, PlanCell.Door) && !Adjacent(s.c2, PlanCell.Door)).ToList();
+                    if (thick.Count == 0) break;
+                    var t = thick.OrderByDescending(o => rooms[o.a].place == RoomPlace.Gate || rooms[o.b].place == RoomPlace.Gate).First();
+                    Set(t.c1.x, t.c1.z, PlanCell.Door);
+                    Set(t.c2.x, t.c2.z, PlanCell.Door);
+                    rooms[t.a].connected = rooms[t.b].connected = true;
+                    rooms[t.a].doors++; rooms[t.b].doors++;
+                    grew = true;
+                    continue;
+                }
                 // per unreached room, prefer the door nearest the middle of the shared stretch: approximated
                 // by taking the spot of each pair at random but favouring hub-side doors
                 var byRoom = options.GroupBy(s => rooms[s.a].connected ? s.b : s.a);
@@ -312,6 +361,7 @@ namespace LivingCities
         {
             foreach (PlanRoom r in rooms)
             {
+                if (r.place == RoomPlace.Field || r.place == RoomPlace.Gate) continue;   // open sky / a small hall
                 if (r.place == RoomPlace.Hub)
                 {
                     var placed = new List<IntVec2>();

@@ -28,7 +28,7 @@ namespace LivingCities
         {
             int maxExtent = Mathf.Min(map.Size.x, map.Size.z) - 20;
             var figures = only.HasValue ? new List<FigureKind> { only.Value } : def.figures;
-            CityPlan plan = CityFigures.Compose(size, figures, maxExtent);
+            CityPlan plan = CityFigures.Compose(size, figures, maxExtent, def.enclosureChance, def.gateChance);
             plan.FindRooms();
             AssignZones(plan, def);
             plan.CutDoors(size == CitySize.Outpost ? 2 : size == CitySize.Nest ? 3 : 4);
@@ -46,6 +46,7 @@ namespace LivingCities
             ctx.Columns();
             foreach (PlanRoom r in plan.rooms) ctx.Furnish(r);
             ctx.Lights();
+            foreach (PlanRoom r in plan.rooms.Where(r => r.place == RoomPlace.Field)) ctx.Sow(r);
             foreach (PlanRoom r in plan.rooms) ctx.Stock(r);
             if (pawns && faction != null) res.pawns = ctx.Settle(def, size);
             map.regionAndRoomUpdater.RebuildAllRegionsAndRooms();
@@ -57,7 +58,11 @@ namespace LivingCities
         private static void AssignZones(CityPlan plan, CityDef def)
         {
             var free = plan.rooms.Where(r => r.place != RoomPlace.Hub).OrderByDescending(r => r.Area).ToList();
-            foreach (PlanRoom hub in plan.rooms.Where(r => r.place == RoomPlace.Hub)) hub.zone = def.hubZone;
+            foreach (PlanRoom r in plan.rooms)
+                if (r.place == RoomPlace.Hub) r.zone = def.hubZone;
+                else if (r.place == RoomPlace.Field) r.zone = def.fieldZone;
+                else if (r.place == RoomPlace.Gate) r.zone = def.gateZone;
+            free.RemoveAll(r => r.place == RoomPlace.Field || r.place == RoomPlace.Gate);
             var counts = new Dictionary<ZoneDef, int>();
             int Count(ZoneDef z) => counts.TryGetValue(z, out int n) ? n : 0;
 
@@ -95,6 +100,7 @@ namespace LivingCities
             public readonly IntVec3 origin;
             public readonly CityStyleDef style;
             public readonly Faction faction;
+            public readonly ThingDef outerStuff;
             public readonly ThingDef wallDef, wallStuff, heavyDef, heavyStuff, doorDef, doorStuff, furnStuff;
             public readonly TerrainDef floor, fine, ground;
             private readonly HashSet<IntVec3> taken = new HashSet<IntVec3>();
@@ -104,6 +110,7 @@ namespace LivingCities
                 this.map = map; this.plan = plan; this.origin = origin; this.style = style; this.faction = faction;
                 wallDef = Named.Thing(style.wall) ?? ThingDefOf.Wall;
                 wallStuff = style.Stuff(style.wallStuff) ?? ThingDefOf.BlocksGranite;
+                outerStuff = style.Stuff(style.outerWallStuff) ?? wallStuff;
                 heavyDef = Named.Thing(style.heavyDoor) ?? ThingDefOf.Door;
                 heavyStuff = style.Stuff(style.heavyDoorStuff) ?? ThingDefOf.Steel;
                 doorDef = Named.Thing(style.innerDoor) ?? ThingDefOf.Door;
@@ -115,6 +122,36 @@ namespace LivingCities
             }
 
             public IntVec3 Cell(int x, int z) => new IntVec3(origin.x + x, 0, origin.z + z);
+
+            private bool InField(int x, int z) { int r = plan.RoomAt(x, z); return r >= 0 && plan.rooms[r].place == RoomPlace.Field; }
+
+            /// <summary>Open sky over this cell: a field, or a wall that touches nothing roofed.</summary>
+            private bool Unroofed(int x, int z)
+            {
+                if (plan.well[plan.Idx(x, z)] || InField(x, z)) return true;
+                PlanCell k = plan.At(x, z);
+                if (k != PlanCell.Wall && k != PlanCell.Door && k != PlanCell.HeavyDoor) return false;
+                for (int dx = -1; dx <= 1; dx++)
+                    for (int dz = -1; dz <= 1; dz++)
+                    {
+                        if (dx == 0 && dz == 0) continue;
+                        int r = plan.RoomAt(x + dx, z + dz);
+                        if (r >= 0 && plan.rooms[r].place != RoomPlace.Field) return false;
+                    }
+                return true;
+            }
+
+            /// <summary>An outer wall: it faces the outside or the fields.</summary>
+            private bool OuterWall(int x, int z)
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    IntVec3 d = GenAdj.CardinalDirections[i];
+                    PlanCell k = plan.At(x + d.x, z + d.z);
+                    if (CityPlan.Outside(k) || (k == PlanCell.Floor && InField(x + d.x, z + d.z))) return true;
+                }
+                return false;
+            }
             public IntVec3 Cell(IntVec2 c) => Cell(c.x, c.z);
 
             public void Clear()
@@ -134,6 +171,11 @@ namespace LivingCities
                         {
                             if (bad) map.terrainGrid.SetTerrain(c, ground);
                         }
+                        else if (InField(x, z))
+                        {
+                            // fields keep their soil, or get some
+                            if (bad || cur.fertility < 0.7f) map.terrainGrid.SetTerrain(c, TerrainDefOf.Soil);
+                        }
                         else map.terrainGrid.SetTerrain(c, ground);   // under the floor we lay next
                     }
             }
@@ -149,15 +191,20 @@ namespace LivingCities
                         if (!c.InBounds(map)) continue;
                         int rid = plan.RoomAt(x, z);
                         ZoneDef zone = rid >= 0 ? plan.rooms[rid].zone : null;
-                        TerrainDef t = zone == null ? floor : zone.fineFloor ? fine : (Named.FirstTerrain(zone.floor) ?? floor);
-                        map.terrainGrid.SetTerrain(c, t);
+                        bool field = rid >= 0 && plan.rooms[rid].place == RoomPlace.Field;
+                        if (!field)
+                        {
+                            TerrainDef t = zone == null ? floor : zone.fineFloor ? fine : (Named.FirstTerrain(zone.floor) ?? floor);
+                            map.terrainGrid.SetTerrain(c, t);
+                        }
+                        else if (NearWall(c) || Path(x, z)) map.terrainGrid.SetTerrain(c, ground);   // the walks
                         switch (k)
                         {
-                            case PlanCell.Wall: Spawn(wallDef, wallStuff, c, Rot4.North); break;
+                            case PlanCell.Wall: Spawn(wallDef, OuterWall(x, z) ? outerStuff : wallStuff, c, Rot4.North); break;
                             case PlanCell.HeavyDoor: Spawn(heavyDef, heavyStuff, c, Rot4.North); break;
                             case PlanCell.Door: Spawn(doorDef, doorStuff, c, Rot4.North); break;
                         }
-                        if (!plan.well[plan.Idx(x, z)]) map.roofGrid.SetRoof(c, RoofDefOf.RoofConstructed);
+                        if (!Unroofed(x, z)) map.roofGrid.SetRoof(c, RoofDefOf.RoofConstructed);
                     }
             }
 
@@ -183,6 +230,7 @@ namespace LivingCities
                 // rooms from the middle out, so columns line up round the heart of each hall
                 foreach (PlanRoom r in plan.rooms)
                 {
+                    if (r.place == RoomPlace.Field) continue;   // open sky
                     IntVec2 mid = r.Centroid();
                     foreach (IntVec2 v in r.cells.OrderBy(c => CityPlan.Dist2(c, mid)))
                     {
@@ -197,6 +245,53 @@ namespace LivingCities
                         }
                         else if (c.InBounds(map)) map.roofGrid.SetRoof(c, null);   // no room for one: open sky there
                     }
+                }
+            }
+
+            /// <summary>The paths through the fields: from every door straight across the ring.</summary>
+            private HashSet<IntVec2> paths;
+            private bool Path(int x, int z)
+            {
+                if (paths == null)
+                {
+                    paths = new HashSet<IntVec2>();
+                    for (int px = 0; px < plan.size; px++)
+                        for (int pz = 0; pz < plan.size; pz++)
+                        {
+                            PlanCell k = plan.At(px, pz);
+                            if (k != PlanCell.Door && k != PlanCell.HeavyDoor) continue;
+                            // walk into the field from the door in each open direction until the far wall
+                            foreach (IntVec3 d in GenAdj.CardinalDirections)
+                            {
+                                int cx = px + d.x, cz = pz + d.z;
+                                if (!InField(cx, cz)) continue;
+                                while (plan.At(cx, cz) == PlanCell.Floor) { paths.Add(new IntVec2(cx, cz)); cx += d.x; cz += d.z; }
+                            }
+                        }
+                }
+                return paths.Contains(new IntVec2(x, z));
+            }
+
+            /// <summary>Sows the ring: plots of one crop each, growing at all stages, the paths left bare.</summary>
+            public void Sow(PlanRoom room)
+            {
+                var crops = room.zone?.crops?.Select(Named.Thing).Where(d => d != null && d.plant != null).ToList();
+                if (crops == null || crops.Count == 0) return;
+                IntVec2 mid = new IntVec2(plan.size / 2, plan.size / 2);
+                foreach (IntVec2 v in room.cells)
+                {
+                    IntVec3 c = Cell(v);
+                    if (!c.InBounds(map) || NearWall(c) || Path(v.x, v.z) || c.GetEdifice(map) != null) continue;
+                    // a plot is a slice of the ring: twelve of them round the compass
+                    float ang = Mathf.Atan2(v.z - mid.z, v.x - mid.x) + Mathf.PI;
+                    int plot = Mathf.Clamp((int)(ang / (Mathf.PI * 2f) * 12f), 0, 11);
+                    if (plot % 4 == 3) continue;   // a fallow plot here and there
+                    ThingDef crop = crops[plot % crops.Count];
+                    if (c.GetPlant(map) != null) c.GetPlant(map).Destroy();
+                    var p = (Plant)ThingMaker.MakeThing(crop);
+                    p.Growth = Rand.Range(0.1f, 0.95f);
+                    p.Age = (int)(p.Growth * crop.plant.LifespanTicks * 0.3f);
+                    GenSpawn.Spawn(p, c, map);
                 }
             }
 
@@ -290,6 +385,7 @@ namespace LivingCities
                 if (light == null) return;
                 foreach (PlanRoom r in plan.rooms)
                 {
+                    if (r.place == RoomPlace.Field) continue;
                     int n = Mathf.Max(r.place == RoomPlace.Hub ? 0 : 1, r.Area / Mathf.Max(10, style.lightSpacing));
                     for (int i = 0; i < n; i++) if (Place(light, r, true) == null) break;
                 }

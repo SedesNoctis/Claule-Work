@@ -13,6 +13,33 @@
     <minArea>1</minArea>
   </LivingCities.ZoneDef>
 
+  <!-- The open ring inside a roofless wall: plots of crops, walks along the walls and from every door. -->
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Fields</defName>
+    <label>fields</label>
+    <places><li>Field</li></places>
+    <minArea>1</minArea>
+    <crops>
+      <li>Plant_Rice</li>
+      <li>Plant_Potato</li>
+      <li>Plant_Corn</li>
+      <li>Plant_Healroot</li>
+      <li>Plant_Cotton</li>
+      <li>Plant_Strawberry</li>
+    </crops>
+  </LivingCities.ZoneDef>
+
+  <!-- The gatehouse: the official way in, a heavy door to the outside and guards inside. -->
+  <LivingCities.ZoneDef>
+    <defName>LC_Zone_Gatehouse</defName>
+    <label>gatehouse</label>
+    <places><li>Gate</li></places>
+    <minArea>1</minArea>
+    <residents>
+      <li><role>guard</role><count>1~2</count></li>
+    </residents>
+  </LivingCities.ZoneDef>
+
   <LivingCities.ZoneDef>
     <defName>LC_Zone_Family</defName>
     <label>family nest</label>

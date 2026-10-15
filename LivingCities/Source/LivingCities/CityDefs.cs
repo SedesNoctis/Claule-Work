@@ -30,11 +30,13 @@ namespace LivingCities
     public enum FigureKind { SmallRing, RingInRing, NestChain, Spire }
 
     /// <summary>Where a room lies in its figure, so the zones can ask for the right kind of place.</summary>
-    public enum RoomPlace { Hub, Band, Nest, Center, Yard }
+    public enum RoomPlace { Hub, Band, Nest, Center, Yard, Field, Gate }
 
     public class CityStyleDef : Def
     {
         public List<string> wallStuff = new List<string>();
+        /// <summary>The outermost walls (to the outside and round the fields); empty = wallStuff.</summary>
+        public List<string> outerWallStuff = new List<string>();
         public string wall = "Wall";
         public string heavyDoor = "LC_HeavyDoor";
         public List<string> heavyDoorStuff = new List<string>();
@@ -96,6 +98,8 @@ namespace LivingCities
         public float lootPerCell;
         /// <summary>No sky well even in a large room (cells, storage).</summary>
         public bool noWell;
+        /// <summary>Fields: crops sown in the open ring (plant defNames, one per plot, absent ones skipped).</summary>
+        public List<string> crops = new List<string>();
 
         public bool Fits(RoomPlace place, int area) => places.Contains(place) && area >= minArea && area <= maxArea;
     }
@@ -127,6 +131,13 @@ namespace LivingCities
         public List<CityZoneEntry> zones = new List<CityZoneEntry>();
         /// <summary>The gallery between the outer wall and the rooms.</summary>
         public ZoneDef hubZone;
+        /// <summary>The open ring of fields inside a wall without a roof.</summary>
+        public ZoneDef fieldZone;
+        /// <summary>The gatehouse: the official way in.</summary>
+        public ZoneDef gateZone;
+        /// <summary>How often a lone complex stands within a field ring, and how often a city has a gatehouse.</summary>
+        public float enclosureChance = 0.4f;
+        public float gateChance = 0.5f;
         public List<CityRole> roles = new List<CityRole>();
         /// <summary>The garrison on top of the room residents (the faction's settlement group), by size.</summary>
         public FloatRange garrisonOutpost = new FloatRange(150, 250), garrisonNest = new FloatRange(300, 500), garrisonCity = new FloatRange(500, 900);
