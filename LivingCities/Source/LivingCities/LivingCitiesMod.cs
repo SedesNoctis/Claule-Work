@@ -11,7 +11,7 @@ namespace LivingCities
 {
     public class LivingCitiesMod : Mod
     {
-        public const string Stamp = "LC-2026-10-15-C";
+        public const string Stamp = "LC-2026-10-16-D";
 
         public LivingCitiesMod(ModContentPack content) : base(content)
         {

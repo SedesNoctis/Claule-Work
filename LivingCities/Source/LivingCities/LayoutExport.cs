@@ -83,7 +83,7 @@ namespace LivingCities
             foreach (IntVec3 c in rect)
                 foreach (Thing t in c.GetThingList(map))
                 {
-                    if (!seen.Add(t) || t.Position != c) continue;   // multi-cell things once, at their own position
+                    if (t.Position != c || !seen.Add(t)) continue;   // multi-cell things once, at their own position (checked first: a bench met first on a side cell must still be taken at its centre)
                     if (t is Pawn || t is Blueprint || t is Frame || t is Mote || t is Filth || t.def.category == ThingCategory.Ethereal) continue;
                     int x = t.Position.x - rect.minX, z = t.Position.z - rect.minZ;
                     t.TryGetQuality(out QualityCategory q);
