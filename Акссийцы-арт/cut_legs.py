@@ -1,54 +1,48 @@
 import sys, math
-from PIL import Image, ImageFilter, ImageChops, ImageDraw
+from PIL import Image, ImageFilter
 import numpy as np
 src, out = sys.argv[1], sys.argv[2]
 im0 = Image.open(src).convert('RGBA'); W, H = im0.size
-im = im0.convert('RGB')
-a = np.asarray(im).astype(int)
-src_alpha = np.asarray(im0)[:, :, 3]
-# background: near-white connected to the border
-white = (a.min(axis=2) > 238)
-from collections import deque
-bg = np.zeros((H, W), bool); q = deque()
-for x in range(W):
-    for y in (0, H-1):
-        if white[y, x] and not bg[y, x]: bg[y, x] = True; q.append((y, x))
-for y in range(H):
-    for x in (0, W-1):
-        if white[y, x] and not bg[y, x]: bg[y, x] = True; q.append((y, x))
-while q:
-    y, x = q.popleft()
-    for dy, dx in ((1,0),(-1,0),(0,1),(0,-1)):
-        ny, nx = y+dy, x+dx
-        if 0 <= ny < H and 0 <= nx < W and white[ny, nx] and not bg[ny, nx]:
-            bg[ny, nx] = True; q.append((ny, nx))
-alpha = np.where(bg, 0, src_alpha).astype(np.uint8)
-cut = np.zeros((H, W), bool)
+a = np.asarray(im0).astype(float)
+alpha0 = a[:, :, 3] / 255.0
+rng = np.random.default_rng(7)
+# irregular feather tips like the drawn ones: uneven width and length, sharp points leaning back
+_tip = np.zeros(4096)
+x = 0
+while x < 4096:
+    w = int(rng.integers(9, 22)); d = float(rng.uniform(6, 17)); lean = float(rng.uniform(0.55, 0.8))
+    for i in range(w):
+        if x + i >= 4096: break
+        u = i / w
+        s = u / lean if u < lean else (1 - u) / (1 - lean)
+        _tip[x + i] = d * s ** 0.7
+    x += w
+def tips(x):
+    return _tip[x]
+keep = np.ones((H, W))
 X = np.arange(W)
-def ragged(x, base, amp=5, period=26):
-    return base + amp * np.abs(np.sin(x * math.pi / period))
-# far leg: everything below the belly line between x 1140 and 1450
-x0, x1 = 1140, 1450
-for x in range(x0, x1):
-    t = (x - x0) / (x1 - x0)
-    yb = 572 + (548 - 572) * t - 10 * math.sin(t * math.pi) + ragged(x, 0)
-    cut[int(yb):, x] = True
-# near leg: keep the feathered thigh, round its lower edge
-cx, rx, top, depth = 1020, 120, 555, 62
-for x in range(cx - rx, cx + rx):
-    t = (x - cx) / rx
-    yb = top + depth * math.sqrt(max(0, 1 - t * t)) + ragged(x, 0, 4, 22)
-    cut[int(yb):, x] = True
-cut[640:, 860:1470] = True
-alpha[cut] = 0
-A = Image.fromarray(alpha)
-# dark outline where the cut made a new edge
-cutimg = Image.fromarray((cut * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(7))
-edge = np.asarray(ImageChops.multiply(cutimg, A)) > 0
-rgb = a.copy()
-ol = np.array([62, 58, 60])
-rgb[edge] = (rgb[edge] * 0.25 + ol * 0.75).astype(int)
-res = Image.fromarray(np.dstack([rgb.astype(np.uint8), alpha]), 'RGBA')
-res = res.crop(res.getbbox())
-res.save(out)
-print(res.size)
+def cut_below(xs, base_of):
+    for x in xs:
+        yb = base_of(x) + tips(x)
+        y0 = int(yb)
+        if y0 < H: keep[max(0, y0):, x] = 0
+# near leg: rounded thigh
+cx, rx, top, depth = 1020, 122, 548, 58
+cut_below(range(cx - rx, cx + rx), lambda x: top + depth * math.sqrt(max(0.0, 1 - ((x - cx) / rx) ** 2)))
+# far leg: belly line from thigh to chest
+x0, x1 = 1140, 1452
+cut_below(range(x0, x1), lambda x: 560 + (552 - 560) * (x - x0) / (x1 - x0) - 8 * math.sin((x - x0) / (x1 - x0) * math.pi))
+keep[640:, 860:1470] = 0
+# soft, anti-aliased edge
+m = Image.fromarray((keep * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.7))
+k = np.asarray(m) / 255.0
+alpha = alpha0 * k
+# thin soft outline along the new edge only (where the cut, not the drawing, made the border)
+edge = np.clip((1 - np.asarray(Image.fromarray((keep * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.8))) / 255.0) * 2.2, 0, 1)
+edge *= (k > 0.05) * (alpha0 > 0.5)
+rgb = a[:, :, :3]
+ink = np.array([70, 66, 68.0])
+w = (edge * 0.45)[:, :, None]
+rgb = rgb * (1 - w) + ink * w
+res = Image.fromarray(np.dstack([rgb, alpha * 255]).astype(np.uint8), 'RGBA')
+res = res.crop(res.getbbox()); res.save(out); print(res.size)
