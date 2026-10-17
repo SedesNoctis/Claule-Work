@@ -26,13 +26,17 @@ def cut_below(xs, base_of):
         yb = base_of(x) + tips(x)
         y0 = int(yb)
         if y0 < H: keep[max(0, y0):, x] = 0
-# near leg: rounded thigh
-cx, rx, top, depth = 1020, 122, 548, 58
-cut_below(range(cx - rx, cx + rx), lambda x: top + depth * math.sqrt(max(0.0, 1 - ((x - cx) / rx) ** 2)))
-# far leg: belly line from thigh to chest
-x0, x1 = 1140, 1452
-cut_below(range(x0, x1), lambda x: 560 + (552 - 560) * (x - x0) / (x1 - x0) - 8 * math.sin((x - x0) / (x1 - x0) * math.pi))
-keep[640:, 860:1470] = 0
+# no legs at all: one smooth lower contour from the tail root over a rounded haunch, a tucked waist, to the chest
+pts=[(950,505),(1000,545),(1060,570),(1120,568),(1170,550),(1225,518),(1295,502),(1365,506),(1420,524),(1480,560),(1535,586)]
+def curve(x):
+    for (xa,ya),(xb,yb) in zip(pts,pts[1:]):
+        if xa<=x<=xb:
+            u=(x-xa)/(xb-xa); u=u*u*(3-2*u)
+            return ya+(yb-ya)*u
+    return None
+cut_below(range(pts[0][0], pts[-1][0]), curve)
+keep[600:, 860:1540] = 0
+keep[548:, 860:955] = 0
 # soft, anti-aliased edge
 m = Image.fromarray((keep * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.7))
 k = np.asarray(m) / 255.0
