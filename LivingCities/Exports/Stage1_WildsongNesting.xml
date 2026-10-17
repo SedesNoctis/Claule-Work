@@ -2,9 +2,9 @@
 <Defs>
   <!-- Exported by Living Cities. Drop this file into a mod's Defs to make it a layout. -->
   <LivingCities.LayoutDef>
-    <defName>LC_Layout_WildsongNesting_20261016_2208</defName>
+    <defName>LC_Layout_WildsongNesting_20261017_0623</defName>
     <label>Wildsong Nesting</label>
-    <exported>2026-10-16 22:08</exported>
+    <exported>2026-10-17 06:23</exported>
     <gameVersion>1.6.4871 rev591</gameVersion>
     <colony>Wildsong Nesting</colony>
     <biome>Avir_TwilightForest</biome>
@@ -107,7 +107,7 @@
       <li><packageId>neachi.RimTalkDialoguePatch</packageId><name>RimTalk Dialogue Patch</name><used>false</used></li>
       <li><packageId>Maiya.RimTalkDynamicColors</packageId><name>RimTalk DynamicColors 边缘世谭-言出多彩</name><used>false</used></li>
       <li><packageId>mobius.royaltytweaks</packageId><name>Royalty Tweaks</name><used>false</used></li>
-      <li><packageId>EEG.MOxASF</packageId><name>Medieval Overhaul: Adaptive Storage</name><used>false</used></li>
+      <li><packageId>EEG.MOxASF</packageId><name>Medieval Overhaul: Adaptive Storage</name><used>true</used></li>
       <li><packageId>VanillaExpanded.BaseGeneration</packageId><name>Vanilla Base Generation Expanded</name><used>false</used></li>
       <li><packageId>Gerrymon.StylizedSlaveCollar</packageId><name>Stylized Slave Collars and Headgears</name><used>false</used></li>
       <li><packageId>Gerrymon.KinkyBodyStraps</packageId><name>Kinky Bodystraps</name><used>false</used></li>
@@ -37182,7 +37182,7 @@
       <li>Slate||172|110|0|||||</li>
       <li>Slate||173|110|0|||||</li>
       <li>Slate||174|110|0|||||</li>
-      <li>DankPyon_AncientFootman||184|110|2|||||</li>
+      <li>DankPyon_AncientFootman||184|110|3|||||</li>
       <li>Slate||190|110|0|||||</li>
       <li>Slate||191|110|0|||||</li>
       <li>Slate||192|110|0|||||</li>
@@ -40853,7 +40853,7 @@
       <li>Slate||192|122|0|||||</li>
       <li>Slate||193|122|0|||||</li>
       <li>DankPyon_AncientRuinedCrate||194|122|0|||||</li>
-      <li>DankPyon_AncientFootman||196|122|0|||||</li>
+      <li>DankPyon_AncientFootman||196|122|2|||||</li>
       <li>Slate||199|122|0|||||</li>
       <li>Slate||200|122|0|||||</li>
       <li>Slate||201|122|0|||||</li>
@@ -41153,7 +41153,7 @@
       <li>Slate||192|123|0|||||</li>
       <li>Slate||193|123|0|||||</li>
       <li>Slate||194|123|0|||||</li>
-      <li>DankPyon_AncientFootman||198|123|1|||||</li>
+      <li>DankPyon_AncientFootman||198|123|2|||||</li>
       <li>Slate||199|123|0|||||</li>
       <li>Slate||200|123|0|||||</li>
       <li>Slate||201|123|0|||||</li>
@@ -42303,6 +42303,7 @@
       <li>Slate||143|127|0|||||</li>
       <li>LTS_CobblestoneWall|BlocksSlate|144|127|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|149|127|0|||||player</li>
+      <li>DankPyon_RusticThickRoomDivider_Closed1x2c|WoodLog|155|127|1|Good||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|158|127|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|159|127|0|||||player</li>
       <li>Slate||160|127|0|||||</li>
@@ -42601,6 +42602,7 @@
       <li>Slate||131|128|0|||||</li>
       <li>Slate||132|128|0|||||</li>
       <li>LTS_CobblestoneWall|BlocksSlate|145|128|0|||||player</li>
+      <li>Bedroll|Leather_AvirFeatheredFur|147|128|2|Normal||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|149|128|0|||||player</li>
       <li>DankPyon_RusticThickRoomDivider_Open1x2c|WoodLog|152|128|0|Good||||player</li>
       <li>DankPyon_RusticThickRoomDivider_Open1x2c|WoodLog|154|128|0|Excellent||||player</li>
@@ -42910,6 +42912,7 @@
       <li>LTS_ArchStone|BlocksSlate|148|129|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|149|129|0|||||player</li>
       <li>DarktorchWall|WoodLog|153|129|0||Darktorch_WallTotemic|||player</li>
+      <li>Avir_EggShelf|WoodLog|158|129|1|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|159|129|0|||||player</li>
       <li>Slate||160|129|0|||||</li>
       <li>Slate||161|129|0|||||</li>
@@ -43527,6 +43530,7 @@
       <li>LTS_ArchStone|BlocksSlate|151|131|2|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|152|131|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|153|131|0|||||player</li>
+      <li>Avir_EggShelf|WoodLog|155|131|2|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|156|131|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|157|131|0|||||player</li>
       <li>RoyalCrib|WoodLog|158|131|0|Excellent||||player</li>
@@ -44146,6 +44150,7 @@
       <li>Slate||146|133|0|||||</li>
       <li>LTS_CobblestoneWall|BlocksSlate|152|133|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|153|133|0|||||player</li>
+      <li>DankPyon_RusticThickRoomDivider_Open1x2c|BlocksSlate|158|133|2|Good||||player</li>
       <li>TorchWallLamp|WoodLog|160|133|1||DV_Dwarven_WallTorch|||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|161|133|0|||||player</li>
       <li>Slate||162|133|0|||||</li>
@@ -44440,6 +44445,7 @@
       <li>LTS_CobblestoneWall|BlocksSlate|131|134|0|||||player</li>
       <li>Stool|WoodLog|133|134|1|Good|DV_Dwarven_Stool|||player</li>
       <li>Stool|WoodLog|137|134|1|Normal|DV_Dwarven_Stool|||player</li>
+      <li>Tav_1x2Table|WoodLog|138|134|2|Normal||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|139|134|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|140|134|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|141|134|0|||||player</li>
@@ -44451,6 +44457,7 @@
       <li>LTS_CobblestoneWall|BlocksSlate|147|134|0|||||player</li>
       <li>Wall|WoodLog|148|134|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|153|134|0|||||player</li>
+      <li>BedrollDouble|Leather_AvirFeatheredFur|155|134|2|Good||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|157|134|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|161|134|0|||||player</li>
       <li>Slate||162|134|0|||||</li>
@@ -44743,11 +44750,14 @@
       <li>LTS_CobblestoneWall|BlocksSlate|129|135|0|||||player</li>
       <li>Tav_1x2Table|WoodLog|130|135|1|Excellent||||player</li>
       <li>LTS_GrowingpitRound|BlocksSlate|132|135|0|Normal||||player</li>
+      <li>Tav_1x2Table|WoodLog|134|135|3|Normal||||player</li>
       <li>Tav_1x2Table|WoodLog|136|135|1|Normal||||player</li>
       <li>LTS_GrowingpitRound|BlocksSlate|138|135|0|Normal||||player</li>
       <li>Tav_1x2Table|WoodLog|139|135|1|Good||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|141|135|0|||||player</li>
+      <li>Avir_ArtificerSpot|WoodLog|143|135|2|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|145|135|0|||||player</li>
+      <li>TableSculpting|WoodLog|147|135|2|||||player</li>
       <li>Wall|WoodLog|149|135|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|153|135|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|154|135|0|||||player</li>
@@ -45354,8 +45364,10 @@
       <li>Slate||127|137|0|||||</li>
       <li>LTS_CobblestoneWall|BlocksSlate|128|137|0|||||player</li>
       <li>Stool|WoodLog|131|137|1|Good|DV_Dwarven_Stool|||player</li>
+      <li>Tav_1x2Table|WoodLog|132|137|2|Excellent||||player</li>
       <li>Stool|WoodLog|133|137|1|Excellent|DV_Dwarven_Stool|||player</li>
       <li>Stool|WoodLog|137|137|1|Good|DV_Dwarven_Stool|||player</li>
+      <li>Tav_1x2Table|WoodLog|138|137|2|Good||||player</li>
       <li>Stool|WoodLog|139|137|1|Masterwork|DV_Dwarven_Stool|||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|142|137|0|||||player</li>
       <li>DarktorchWall|WoodLog|143|137|3||Darktorch_WallTotemic|||player</li>
@@ -45365,8 +45377,11 @@
       <li>LTS_CobblestoneWall|BlocksSlate|155|137|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|156|137|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|157|137|0|||||player</li>
+      <li>TableStonecutter|WoodLog|159|137|2|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|161|137|0|||||player</li>
+      <li>TableStonecutter|WoodLog|163|137|2|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|165|137|0|||||player</li>
+      <li>DankPyon_Trestle|DankPyon_RawWood|167|137|2|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|169|137|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|170|137|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|171|137|0|||||player</li>
@@ -45648,12 +45663,14 @@
       <li>Slate||127|138|0|||||</li>
       <li>LTS_CobblestoneWall|BlocksSlate|128|138|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|142|138|0|||||player</li>
+      <li>Shelf|BlocksSlate|147|138|1|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|149|138|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|154|138|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|157|138|0|||||player</li>
       <li>ASF_CellarWood|WoodLog|158|138|2|||||player</li>
       <li>ASF_CellarWood|WoodLog|161|138|2|||||player</li>
       <li>ASF_CellarWood|WoodLog|168|138|2|||||player</li>
+      <li>DankPyon_Log2x2Empty|DankPyon_RawWood|170|138|3|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|171|138|0|||||player</li>
       <li>Slate||172|138|0|||||</li>
       <li>Slate||173|138|0|||||</li>
@@ -45938,6 +45955,7 @@
       <li>LTS_FancyDoorOne|WoodLog|149|139|1|||||player</li>
       <li>LTS_ArchStone|BlocksSlate|149|139|1|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|154|139|0|||||player</li>
+      <li>DankPyon_Furnace|BlocksSlate|156|139|3|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|171|139|0|||||player</li>
       <li>Slate||172|139|0|||||</li>
       <li>Slate||173|139|0|||||</li>
@@ -46232,6 +46250,8 @@
       <li>LTS_CobblestoneWall|BlocksSlate|149|140|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|154|140|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|157|140|0|||||player</li>
+      <li>DankPyon_Trestle|DankPyon_RawWood|168|140|1|||||player</li>
+      <li>DankPyon_Timber2x2Empty|WoodLog|170|140|3|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|171|140|0|||||player</li>
       <li>Slate||172|140|0|||||</li>
       <li>Slate||173|140|0|||||</li>
@@ -46517,14 +46537,19 @@
       <li>LTS_CobblestoneWall|BlocksSlate|130|141|0|||||player</li>
       <li>Shelf|BlocksSlate|131|141|3|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|134|141|0|||||player</li>
+      <li>DankPyon_ScribeTable|WoodLog|138|141|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|140|141|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|142|141|0|||||player</li>
       <li>TorchWallLamp|WoodLog|143|141|3||DV_Dwarven_WallTorch|||player</li>
+      <li>Shelf|BlocksSlate|147|141|1|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|149|141|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|154|141|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|155|141|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|156|141|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|157|141|0|||||player</li>
+      <li>HoldingSpot||159|141|0|||||player</li>
+      <li>HoldingSpot||162|141|0|||||player</li>
+      <li>HoldingSpot||165|141|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|171|141|0|||||player</li>
       <li>Slate||172|141|0|||||</li>
       <li>Slate||173|141|0|||||</li>
@@ -46809,6 +46834,7 @@
       <li>LTS_CobblestoneWall|BlocksSlate|128|142|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|129|142|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|130|142|0|||||player</li>
+      <li>Shelf|BlocksSlate|133|142|1|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|134|142|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|140|142|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|141|142|0|||||player</li>
@@ -47107,7 +47133,9 @@
       <li>LTS_CobblestoneWall|BlocksSlate|134|143|0|||||player</li>
       <li>PlantPot|WoodLog|140|143|0|Good||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|141|143|0|||||player</li>
+      <li>Avir_ArtificerSpot|WoodLog|143|143|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|145|143|0|||||player</li>
+      <li>DankPyon_Workbench|WoodLog|147|143|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|149|143|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|154|143|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|155|143|0|||||player</li>
@@ -47399,6 +47427,7 @@
       <li>LTS_CobblestoneWall|BlocksSlate|129|144|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|130|144|0|||||player</li>
       <li>PlantPot|WoodLog|132|144|0|Good||||player</li>
+      <li>Shelf|BlocksSlate|133|144|1|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|134|144|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|140|144|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|141|144|0|||||player</li>
@@ -47707,6 +47736,7 @@
       <li>LTS_FancyDoorOne|WoodLog|139|145|0|||||player</li>
       <li>LTS_ArchStone|BlocksSlate|139|145|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|140|145|0|||||player</li>
+      <li>Tav_Oven|BlocksSlate|142|145|2|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|144|145|0|||||player</li>
       <li>Slate||145|145|0|||||</li>
       <li>Slate||146|145|0|||||</li>
@@ -48609,8 +48639,10 @@
       <li>Slate||130|148|0|||||</li>
       <li>Slate||131|148|0|||||</li>
       <li>LTS_CobblestoneWall|BlocksSlate|132|148|0|||||player</li>
+      <li>SimpleResearchBench|WoodLog|136|148|1|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|138|148|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|140|148|0|||||player</li>
+      <li>TableButcher|WoodLog|142|148|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|144|148|0|||||player</li>
       <li>Slate||145|148|0|||||</li>
       <li>Slate||146|148|0|||||</li>
@@ -49777,6 +49809,7 @@
       <li>Slate||130|152|0|||||</li>
       <li>Slate||131|152|0|||||</li>
       <li>LTS_CobblestoneWall|BlocksSlate|132|152|0|||||player</li>
+      <li>SimpleResearchBench|WoodLog|136|152|1|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|138|152|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|142|152|0|||||player</li>
       <li>LTS_CobblestoneWall|BlocksSlate|143|152|0|||||player</li>
@@ -56602,8 +56635,9 @@
       <li>Slate||233|180|0|||||</li>
       <li>Slate||234|180|0|||||</li>
       <li>Slate||235|180|0|||||</li>
+      <li>Sarcophagus|BlocksGranite|239|180|2|Normal||||</li>
       <li>Wall|BlocksGranite|243|180|0|||||</li>
-      <li>DankPyon_AncientFootman||248|180|0|||||</li>
+      <li>DankPyon_AncientFootman||248|180|2|||||</li>
       <li>Slate||253|180|0|||||</li>
       <li>Slate||254|180|0|||||</li>
       <li>Slate||255|180|0|||||</li>
@@ -57272,8 +57306,8 @@
       <li>Slate||232|183|0|||||</li>
       <li>Slate||233|183|0|||||</li>
       <li>Slate||234|183|0|||||</li>
-      <li>DankPyon_AncientFootman||239|183|2|||||</li>
-      <li>DankPyon_AncientFootman||247|183|1|||||</li>
+      <li>DankPyon_AncientFootman||239|183|0|||||</li>
+      <li>DankPyon_AncientFootman||247|183|2|||||</li>
       <li>Slate||254|183|0|||||</li>
       <li>Slate||255|183|0|||||</li>
       <li>Slate||256|183|0|||||</li>
@@ -57704,7 +57738,7 @@
       <li>Slate||228|185|0|||||</li>
       <li>Slate||229|185|0|||||</li>
       <li>Slate||230|185|0|||||</li>
-      <li>DankPyon_AncientFootman||244|185|2|||||</li>
+      <li>DankPyon_AncientFootman||244|185|1|||||</li>
       <li>DankPyon_RustedHelmet||248|185|0|||||</li>
       <li>Slate||255|185|0|||||</li>
       <li>Slate||256|185|0|||||</li>
@@ -57919,7 +57953,7 @@
       <li>Slate||228|186|0|||||</li>
       <li>Slate||229|186|0|||||</li>
       <li>Slate||230|186|0|||||</li>
-      <li>DankPyon_RustedSwords||243|186|2|||||</li>
+      <li>DankPyon_RustedSwords||243|186|3|||||</li>
       <li>DankPyon_RustedHelmet||254|186|0|||||</li>
       <li>Slate||255|186|0|||||</li>
       <li>Slate||256|186|0|||||</li>
@@ -58135,10 +58169,10 @@
       <li>Slate||230|187|0|||||</li>
       <li>Slate||231|187|0|||||</li>
       <li>DankPyon_RustedSwords||238|187|3|||||</li>
-      <li>DankPyon_AncientFootman||244|187|3|||||</li>
-      <li>DankPyon_AncientFootman||246|187|1|||||</li>
+      <li>DankPyon_AncientFootman||244|187|1|||||</li>
+      <li>DankPyon_AncientFootman||246|187|3|||||</li>
       <li>DankPyon_AncientRuinedCart||251|187|0|||||</li>
-      <li>DankPyon_RustedSwords||254|187|3|||||</li>
+      <li>DankPyon_RustedSwords||254|187|2|||||</li>
       <li>Slate||255|187|0|||||</li>
       <li>Slate||256|187|0|||||</li>
       <li>Slate||257|187|0|||||</li>
@@ -58751,6 +58785,7 @@
       <li>Slate||129|190|0|||||</li>
       <li>Slate||130|190|0|||||</li>
       <li>Slate||131|190|0|||||</li>
+      <li>DankPyon_AncientRuinedCart||250|190|3|||||</li>
       <li>Slate||257|190|0|||||</li>
       <li>Slate||258|190|0|||||</li>
       <li>Slate||259|190|0|||||</li>
@@ -58951,7 +58986,7 @@
       <li>Slate||130|191|0|||||</li>
       <li>Slate||131|191|0|||||</li>
       <li>DankPyon_GolemRock_Iron_MapGen||216|191|0|||||</li>
-      <li>DankPyon_RustedSwords||236|191|1|||||</li>
+      <li>DankPyon_RustedSwords||236|191|3|||||</li>
       <li>DankPyon_RustedHelmet||240|191|0|||||</li>
       <li>DankPyon_RustedHelmet||248|191|0|||||</li>
       <li>Slate||257|191|0|||||</li>
@@ -59154,7 +59189,7 @@
       <li>Slate||130|192|0|||||</li>
       <li>Slate||131|192|0|||||</li>
       <li>Slate||132|192|0|||||</li>
-      <li>DankPyon_AncientFootman||252|192|3|||||</li>
+      <li>DankPyon_AncientFootman||252|192|0|||||</li>
       <li>Slate||256|192|0|||||</li>
       <li>Slate||257|192|0|||||</li>
       <li>Slate||258|192|0|||||</li>
@@ -59356,6 +59391,7 @@
       <li>Slate||130|193|0|||||</li>
       <li>Slate||131|193|0|||||</li>
       <li>Slate||132|193|0|||||</li>
+      <li>DankPyon_AncientRuinedCart||241|193|3|||||</li>
       <li>Slate||256|193|0|||||</li>
       <li>Slate||257|193|0|||||</li>
       <li>Slate||258|193|0|||||</li>
@@ -59559,7 +59595,7 @@
       <li>Slate||132|194|0|||||</li>
       <li>DankPyon_RustedHelmet||236|194|0|||||</li>
       <li>DankPyon_RustedHelmet||242|194|0|||||</li>
-      <li>DankPyon_RustedSwords||247|194|1|||||</li>
+      <li>DankPyon_RustedSwords||247|194|3|||||</li>
       <li>Slate||255|194|0|||||</li>
       <li>Slate||256|194|0|||||</li>
       <li>Slate||257|194|0|||||</li>
@@ -59761,6 +59797,7 @@
       <li>Slate||129|195|0|||||</li>
       <li>Slate||130|195|0|||||</li>
       <li>Slate||131|195|0|||||</li>
+      <li>DankPyon_RuinedBatteringRam||249|195|0|||||</li>
       <li>Slate||255|195|0|||||</li>
       <li>Slate||256|195|0|||||</li>
       <li>Slate||257|195|0|||||</li>
@@ -59961,7 +59998,7 @@
       <li>Slate||128|196|0|||||</li>
       <li>Slate||129|196|0|||||</li>
       <li>Slate||130|196|0|||||</li>
-      <li>DankPyon_RustedSwords||238|196|3|||||</li>
+      <li>DankPyon_RustedSwords||238|196|0|||||</li>
       <li>Slate||254|196|0|||||</li>
       <li>Slate||255|196|0|||||</li>
       <li>Slate||256|196|0|||||</li>
@@ -60560,7 +60597,7 @@
       <li>Slate||125|199|0|||||</li>
       <li>Slate||126|199|0|||||</li>
       <li>DankPyon_GolemRock_Iron_MapGen||159|199|0|||||</li>
-      <li>DankPyon_RustedSwords||235|199|3|||||</li>
+      <li>DankPyon_RustedSwords||235|199|2|||||</li>
       <li>DankPyon_RustedHelmet||250|199|0|||||</li>
       <li>Slate||254|199|0|||||</li>
       <li>Slate||255|199|0|||||</li>
@@ -60760,7 +60797,7 @@
       <li>Slate||125|200|0|||||</li>
       <li>DankPyon_RustedHelmet||240|200|0|||||</li>
       <li>DankPyon_RustedHelmet||244|200|0|||||</li>
-      <li>DankPyon_AncientFootman||246|200|3|||||</li>
+      <li>DankPyon_AncientFootman||246|200|2|||||</li>
       <li>Slate||254|200|0|||||</li>
       <li>Slate||255|200|0|||||</li>
       <li>Slate||256|200|0|||||</li>
@@ -62411,6 +62448,7 @@
       <li>Slate||204|208|0|||||</li>
       <li>Slate||205|208|0|||||</li>
       <li>Slate||206|208|0|||||</li>
+      <li>DankPyon_AncientRuinedCart||239|208|2|||||</li>
       <li>Slate||243|208|0|||||</li>
       <li>Slate||244|208|0|||||</li>
       <li>Slate||245|208|0|||||</li>
@@ -66887,7 +66925,7 @@
       <li>DankPyon_AncientRuinedCrate||168|227|0|||||</li>
       <li>DankPyon_AncientRuinedBarrel||172|227|0|||||</li>
       <li>DankPyon_AncientRuinedCrate||173|227|0|||||</li>
-      <li>DankPyon_AncientFootman||176|227|2|||||</li>
+      <li>DankPyon_AncientFootman||176|227|1|||||</li>
       <li>Slate||201|227|0|||||</li>
       <li>Slate||202|227|0|||||</li>
       <li>Slate||203|227|0|||||</li>
@@ -67421,11 +67459,11 @@
       <li>Slate||143|229|0|||||</li>
       <li>Slate||144|229|0|||||</li>
       <li>Slate||145|229|0|||||</li>
-      <li>DankPyon_RustedSwords||155|229|1|||||</li>
-      <li>DankPyon_RustedSwords||172|229|3|||||</li>
+      <li>DankPyon_RustedSwords||155|229|2|||||</li>
+      <li>DankPyon_RustedSwords||172|229|1|||||</li>
       <li>DankPyon_RustedHelmet||176|229|0|||||</li>
       <li>DankPyon_AncientRuinedCrate||177|229|0|||||</li>
-      <li>DankPyon_AncientFootman||178|229|0|||||</li>
+      <li>DankPyon_AncientFootman||178|229|2|||||</li>
       <li>Slate||200|229|0|||||</li>
       <li>Slate||201|229|0|||||</li>
       <li>Slate||202|229|0|||||</li>
@@ -67693,7 +67731,7 @@
       <li>Slate||143|230|0|||||</li>
       <li>Slate||144|230|0|||||</li>
       <li>Slate||145|230|0|||||</li>
-      <li>DankPyon_AncientFootman||164|230|2|||||</li>
+      <li>DankPyon_AncientFootman||164|230|1|||||</li>
       <li>DankPyon_AncientFootman||178|230|3|||||</li>
       <li>Slate||200|230|0|||||</li>
       <li>Slate||201|230|0|||||</li>
@@ -68229,7 +68267,7 @@
       <li>Slate||142|232|0|||||</li>
       <li>Slate||143|232|0|||||</li>
       <li>DankPyon_AncientRuinedCrate||174|232|0|||||</li>
-      <li>DankPyon_AncientFootman||178|232|2|||||</li>
+      <li>DankPyon_AncientFootman||178|232|0|||||</li>
       <li>Slate||199|232|0|||||</li>
       <li>Slate||200|232|0|||||</li>
       <li>Slate||201|232|0|||||</li>
@@ -68498,7 +68536,7 @@
       <li>DankPyon_AncientFootman||155|233|1|||||</li>
       <li>DankPyon_RustedHelmet||167|233|0|||||</li>
       <li>DankPyon_RustedHelmet||177|233|0|||||</li>
-      <li>DankPyon_AncientFootman||178|233|3|||||</li>
+      <li>DankPyon_AncientFootman||178|233|0|||||</li>
       <li>Slate||198|233|0|||||</li>
       <li>Slate||199|233|0|||||</li>
       <li>Slate||200|233|0|||||</li>
@@ -68765,7 +68803,7 @@
       <li>Slate||141|234|0|||||</li>
       <li>Slate||142|234|0|||||</li>
       <li>DankPyon_AncientRuinedCrate||163|234|0|||||</li>
-      <li>DankPyon_AncientFootman||167|234|1|||||</li>
+      <li>DankPyon_AncientFootman||167|234|3|||||</li>
       <li>Slate||198|234|0|||||</li>
       <li>Slate||199|234|0|||||</li>
       <li>Slate||200|234|0|||||</li>
@@ -69031,7 +69069,7 @@
       <li>Slate||140|235|0|||||</li>
       <li>Slate||141|235|0|||||</li>
       <li>Slate||142|235|0|||||</li>
-      <li>DankPyon_AncientFootman||170|235|3|||||</li>
+      <li>DankPyon_AncientFootman||170|235|0|||||</li>
       <li>Slate||197|235|0|||||</li>
       <li>Slate||198|235|0|||||</li>
       <li>Slate||199|235|0|||||</li>
@@ -69298,9 +69336,9 @@
       <li>Slate||140|236|0|||||</li>
       <li>Slate||141|236|0|||||</li>
       <li>Slate||142|236|0|||||</li>
-      <li>DankPyon_RustedSwords||163|236|1|||||</li>
-      <li>DankPyon_AncientFootman||168|236|2|||||</li>
-      <li>DankPyon_AncientFootman||178|236|0|||||</li>
+      <li>DankPyon_RustedSwords||163|236|2|||||</li>
+      <li>DankPyon_AncientFootman||168|236|3|||||</li>
+      <li>DankPyon_AncientFootman||178|236|3|||||</li>
       <li>Slate||197|236|0|||||</li>
       <li>Slate||198|236|0|||||</li>
       <li>Slate||199|236|0|||||</li>
@@ -69566,7 +69604,7 @@
       <li>Slate||140|237|0|||||</li>
       <li>Slate||141|237|0|||||</li>
       <li>DankPyon_RustedHelmet||156|237|0|||||</li>
-      <li>DankPyon_AncientFootman||162|237|1|||||</li>
+      <li>DankPyon_AncientFootman||162|237|3|||||</li>
       <li>Slate||196|237|0|||||</li>
       <li>Slate||197|237|0|||||</li>
       <li>Slate||198|237|0|||||</li>
@@ -70101,7 +70139,7 @@
       <li>Slate||140|239|0|||||</li>
       <li>Slate||141|239|0|||||</li>
       <li>DankPyon_RustedHelmet||155|239|0|||||</li>
-      <li>DankPyon_RustedSwords||160|239|3|||||</li>
+      <li>DankPyon_RustedSwords||160|239|1|||||</li>
       <li>Slate||196|239|0|||||</li>
       <li>Slate||197|239|0|||||</li>
       <li>Slate||198|239|0|||||</li>
@@ -70368,9 +70406,9 @@
       <li>Slate||140|240|0|||||</li>
       <li>Slate||141|240|0|||||</li>
       <li>Slate||142|240|0|||||</li>
-      <li>DankPyon_AncientFootman||162|240|2|||||</li>
-      <li>DankPyon_AncientFootman||164|240|2|||||</li>
-      <li>DankPyon_RustedSwords||174|240|0|||||</li>
+      <li>DankPyon_AncientFootman||162|240|0|||||</li>
+      <li>DankPyon_AncientFootman||164|240|0|||||</li>
+      <li>DankPyon_RustedSwords||174|240|1|||||</li>
       <li>Slate||195|240|0|||||</li>
       <li>Slate||196|240|0|||||</li>
       <li>Slate||197|240|0|||||</li>
@@ -70906,7 +70944,7 @@
       <li>Slate||140|242|0|||||</li>
       <li>Slate||141|242|0|||||</li>
       <li>Slate||142|242|0|||||</li>
-      <li>DankPyon_RustedSwords||164|242|3|||||</li>
+      <li>DankPyon_RustedSwords||164|242|2|||||</li>
       <li>Slate||195|242|0|||||</li>
       <li>Slate||196|242|0|||||</li>
       <li>Slate||197|242|0|||||</li>
@@ -71442,7 +71480,7 @@
       <li>Slate||143|244|0|||||</li>
       <li>DankPyon_AncientRuinedCrate||159|244|0|||||</li>
       <li>DankPyon_AncientRuinedCrate||166|244|0|||||</li>
-      <li>DankPyon_AncientFootman||178|244|1|||||</li>
+      <li>DankPyon_AncientFootman||178|244|3|||||</li>
       <li>Slate||196|244|0|||||</li>
       <li>Slate||197|244|0|||||</li>
       <li>Slate||198|244|0|||||</li>
@@ -71711,7 +71749,7 @@
       <li>Slate||142|245|0|||||</li>
       <li>Slate||143|245|0|||||</li>
       <li>Slate||144|245|0|||||</li>
-      <li>DankPyon_AncientFootman||155|245|2|||||</li>
+      <li>DankPyon_AncientFootman||155|245|0|||||</li>
       <li>Slate||197|245|0|||||</li>
       <li>Slate||198|245|0|||||</li>
       <li>Slate||199|245|0|||||</li>
@@ -71979,7 +72017,7 @@
       <li>Slate||143|246|0|||||</li>
       <li>Slate||144|246|0|||||</li>
       <li>DankPyon_AncientRuinedCrate||154|246|0|||||</li>
-      <li>DankPyon_AncientFootman||155|246|3|||||</li>
+      <li>DankPyon_AncientFootman||155|246|2|||||</li>
       <li>DankPyon_AncientRuinedCrate||156|246|0|||||</li>
       <li>DankPyon_RustedHelmet||167|246|0|||||</li>
       <li>DankPyon_RustedHelmet||176|246|0|||||</li>
@@ -72249,7 +72287,7 @@
       <li>Slate||143|247|0|||||</li>
       <li>Slate||144|247|0|||||</li>
       <li>Slate||145|247|0|||||</li>
-      <li>DankPyon_AncientFootman||155|247|3|||||</li>
+      <li>DankPyon_AncientFootman||155|247|0|||||</li>
       <li>DankPyon_AncientRuinedCrate||163|247|0|||||</li>
       <li>DankPyon_AncientRuinedBarrel||165|247|0|||||</li>
       <li>Slate||199|247|0|||||</li>
@@ -72787,7 +72825,7 @@
       <li>Slate||143|249|0|||||</li>
       <li>Slate||144|249|0|||||</li>
       <li>DankPyon_RustedHelmet||156|249|0|||||</li>
-      <li>DankPyon_RustedSwords||165|249|2|||||</li>
+      <li>DankPyon_RustedSwords||165|249|3|||||</li>
       <li>DankPyon_AncientFootman||176|249|0|||||</li>
       <li>Slate||199|249|0|||||</li>
       <li>Slate||200|249|0|||||</li>
@@ -73050,6 +73088,7 @@
       <li>Slate||142|250|0|||||</li>
       <li>Slate||143|250|0|||||</li>
       <li>Slate||144|250|0|||||</li>
+      <li>RG_BoulderRockLargeSlate||191|250|0|||||</li>
       <li>Slate||199|250|0|||||</li>
       <li>Slate||200|250|0|||||</li>
       <li>Slate||201|250|0|||||</li>
@@ -74280,6 +74319,7 @@
       <li>Slate||221|255|0|||||</li>
       <li>Slate||222|255|0|||||</li>
       <li>AncientExostriderLeg||235|255|0|||||</li>
+      <li>AncientExostriderRemains||239|255|0|||||</li>
       <li>AncientExostriderHead||241|255|0|||||</li>
       <li>Slate||257|255|0|||||</li>
       <li>Slate||258|255|0|||||</li>
@@ -74681,6 +74721,7 @@
       <li>Slate||142|257|0|||||</li>
       <li>Slate||143|257|0|||||</li>
       <li>Slate||144|257|0|||||</li>
+      <li>RG_BoulderRockLargeSlate||193|257|0|||||</li>
       <li>Slate||212|257|0|||||</li>
       <li>Slate||213|257|0|||||</li>
       <li>Slate||214|257|0|||||</li>
@@ -74691,6 +74732,7 @@
       <li>Slate||219|257|0|||||</li>
       <li>Slate||220|257|0|||||</li>
       <li>Slate||221|257|0|||||</li>
+      <li>AncientExostriderCannon||238|257|0|||||</li>
       <li>Slate||258|257|0|||||</li>
       <li>Slate||259|257|0|||||</li>
       <li>Slate||260|257|0|||||</li>
@@ -75167,6 +75209,7 @@
       <li>Slate||10|260|0|||||</li>
       <li>Slate||11|260|0|||||</li>
       <li>Wall|BlocksGranite|12|260|0|||||</li>
+      <li>AncientHermeticCrate||28|260|3|||||</li>
       <li>Wall|BlocksGranite|29|260|0|||||</li>
       <li>Slate||30|260|0|||||</li>
       <li>Slate||31|260|0|||||</li>
@@ -75276,6 +75319,7 @@
       <li>Slate||140|260|0|||||</li>
       <li>Slate||141|260|0|||||</li>
       <li>Slate||142|260|0|||||</li>
+      <li>RG_BoulderRockLargeSlate||159|260|0|||||</li>
       <li>Slate||213|260|0|||||</li>
       <li>Slate||214|260|0|||||</li>
       <li>Slate||215|260|0|||||</li>
@@ -80239,6 +80283,7 @@
       <li>Slate||130|282|0|||||</li>
       <li>Slate||131|282|0|||||</li>
       <li>Slate||132|282|0|||||</li>
+      <li>RG_BoulderRockLargeSlate||159|282|0|||||</li>
       <li>RG_BoulderRockMediumSlate||161|282|0|||||</li>
       <li>Slate||180|282|0|||||</li>
       <li>Slate||181|282|0|||||</li>
@@ -81845,6 +81890,7 @@
       <li>Slate||132|288|0|||||</li>
       <li>Slate||133|288|0|||||</li>
       <li>Slate||134|288|0|||||</li>
+      <li>RG_BoulderRockLargeSlate||165|288|0|||||</li>
       <li>Slate||189|288|0|||||</li>
       <li>Slate||190|288|0|||||</li>
       <li>Slate||191|288|0|||||</li>
@@ -83212,7 +83258,7 @@
       <li>Slate||274|293|0|||||</li>
       <li>Slate||275|293|0|||||</li>
       <li>Slate||276|293|0|||||</li>
-      <li>DankPyon_RustedSwords||280|293|3|||||</li>
+      <li>DankPyon_RustedSwords||280|293|1|||||</li>
       <li>Slate||301|293|0|||||</li>
       <li>Slate||302|293|0|||||</li>
       <li>DankPyon_MineableEmerald||303|293|0|||||</li>
@@ -84672,6 +84718,7 @@
       <li>Slate||264|299|0|||||</li>
       <li>Slate||265|299|0|||||</li>
       <li>Slate||266|299|0|||||</li>
+      <li>DankPyon_RuinedBatteringRam||277|299|0|||||</li>
       <li>Slate||297|299|0|||||</li>
       <li>Slate||298|299|0|||||</li>
       <li>Slate||299|299|0|||||</li>
@@ -85395,9 +85442,10 @@
       <li>Slate||260|302|0|||||</li>
       <li>Slate||261|302|0|||||</li>
       <li>Slate||262|302|0|||||</li>
-      <li>DankPyon_RustedSwords||264|302|2|||||</li>
-      <li>DankPyon_AncientFootman||265|302|0|||||</li>
+      <li>DankPyon_RustedSwords||264|302|1|||||</li>
+      <li>DankPyon_AncientFootman||265|302|3|||||</li>
       <li>DankPyon_RustedHelmet||268|302|0|||||</li>
+      <li>DankPyon_AncientRuinedCart||272|302|3|||||</li>
       <li>Slate||297|302|0|||||</li>
       <li>Slate||298|302|0|||||</li>
       <li>Slate||299|302|0|||||</li>
@@ -85643,6 +85691,7 @@
       <li>Slate||261|303|0|||||</li>
       <li>Slate||262|303|0|||||</li>
       <li>DankPyon_RustedHelmet||263|303|0|||||</li>
+      <li>DankPyon_RuinedBatteringRam||277|303|0|||||</li>
       <li>Slate||296|303|0|||||</li>
       <li>Slate||297|303|0|||||</li>
       <li>Slate||298|303|0|||||</li>
@@ -86142,6 +86191,7 @@
       <li>Slate||260|305|0|||||</li>
       <li>Slate||261|305|0|||||</li>
       <li>Slate||262|305|0|||||</li>
+      <li>DankPyon_RuinedSiegeTower||269|305|0|||||</li>
       <li>Slate||295|305|0|||||</li>
       <li>Slate||296|305|0|||||</li>
       <li>Slate||297|305|0|||||</li>
@@ -86393,6 +86443,7 @@
       <li>Slate||259|306|0|||||</li>
       <li>Slate||260|306|0|||||</li>
       <li>Slate||261|306|0|||||</li>
+      <li>DankPyon_RuinedSiegeTower||266|306|0|||||</li>
       <li>Slate||277|306|0|||||</li>
       <li>Slate||278|306|0|||||</li>
       <li>Slate||295|306|0|||||</li>
@@ -87161,7 +87212,7 @@
       <li>Slate||254|309|0|||||</li>
       <li>Slate||256|309|0|||||</li>
       <li>Slate||257|309|0|||||</li>
-      <li>DankPyon_AncientFootman||273|309|3|||||</li>
+      <li>DankPyon_AncientFootman||273|309|2|||||</li>
       <li>Slate||277|309|0|||||</li>
       <li>Slate||278|309|0|||||</li>
       <li>Slate||279|309|0|||||</li>
@@ -87666,7 +87717,8 @@
       <li>Slate||248|311|0|||||</li>
       <li>Slate||249|311|0|||||</li>
       <li>DankPyon_RustedHelmet||260|311|0|||||</li>
-      <li>DankPyon_AncientFootman||272|311|2|||||</li>
+      <li>DankPyon_AncientRuinedCart||268|311|2|||||</li>
+      <li>DankPyon_AncientFootman||272|311|3|||||</li>
       <li>Slate||277|311|0|||||</li>
       <li>Slate||278|311|0|||||</li>
       <li>Slate||279|311|0|||||</li>
@@ -88656,6 +88708,7 @@
       <li>Slate||220|315|0|||||</li>
       <li>Wall|AM_BlocksPristineLimestone|221|315|0|||||</li>
       <li>AncientCryptosleepCasket||223|315|1|||||</li>
+      <li>Sarcophagus|DA_GiantBone|235|315|2|Normal||||</li>
       <li>Wall|AM_BlocksPristineLimestone|236|315|0|||||</li>
       <li>Slate||237|315|0|||||</li>
       <li>Slate||238|315|0|||||</li>
@@ -89384,6 +89437,7 @@
       <li>Slate||219|318|0|||||</li>
       <li>Slate||220|318|0|||||</li>
       <li>Wall|AM_BlocksPristineLimestone|221|318|0|||||</li>
+      <li>AncientHermeticCrate||223|318|3|||||</li>
       <li>Wall|AM_BlocksPristineLimestone|228|318|0|||||</li>
       <li>Wall|AM_BlocksPristineLimestone|229|318|0|||||</li>
       <li>Wall|AM_BlocksPristineLimestone|230|318|0|||||</li>
@@ -91391,8 +91445,6 @@
       <li>Avir_PlantDuskGrass|155|164|0.201</li>
       <li>Avir_PlantDuskFern|156|164|1</li>
       <li>SmashedStump|157|164|1</li>
-      <li>Avir_PlantDuskGrass|164|164|1</li>
-      <li>Avir_PlantDuskGrass|165|164|1</li>
       <li>Avir_PlantDuskGrass|167|164|0.593</li>
       <li>Avir_PlantArcticPsychoid|168|164|0.496</li>
       <li>Avir_PlantArcticPsychoid|169|164|0.491</li>
@@ -92417,6 +92469,7 @@
       <li>Avir_PlantDuskShrub|204|187|1</li>
       <li>Avir_PlantDuskTallGrass|205|187|1</li>
       <li>Avir_PlantDuskGrass|208|187|1</li>
+      <li>Avir_PlantDuskFern|209|187|0.05</li>
       <li>Avir_PlantDuskGrass|210|187|0.21</li>
       <li>Avir_TreeTwilightOakYoung|212|187|1</li>
       <li>Avir_PlantDuskGrass|217|187|0.169</li>
@@ -96125,7 +96178,6 @@
       <li>Avir_PlantDuskGrass|159|278|1</li>
       <li>Avir_PlantDuskGrass|163|278|0.726</li>
       <li>Avir_TreeShelterFan|171|278|1</li>
-      <li>Avir_PlantDuskGrass|174|278|1</li>
       <li>Avir_PlantDuskGrass|176|278|1</li>
       <li>Avir_PlantDuskFern|177|278|0.163</li>
       <li>Avir_PlantDuskFern|196|278|1</li>
@@ -97341,6 +97393,17 @@
       <li>Room|2|224,276|</li>
       <li>Tomb|110|222,310|</li>
     </rooms>
+    <bills>
+      <li>143|135|Avir_ArtificerSpot|Make_Avir_HeartwingDraughtBulk</li>
+      <li>159|137|TableStonecutter|Make_StoneBlocksSlate</li>
+      <li>163|137|TableStonecutter|Make_StoneBlocksSlate</li>
+      <li>167|137|DankPyon_Trestle|DankPyon_Make_TimberBulkExtra</li>
+      <li>156|139|DankPyon_Furnace|DankPyon_MakeIngots_IronExtraBulk</li>
+      <li>168|140|DankPyon_Trestle|DankPyon_Make_TimberBulkExtra</li>
+      <li>143|143|Avir_ArtificerSpot|Avir_MakeArtifactSetting_Steel;Avir_SetArtifactHeart_Silver;Avir_SetArtifactHeart_Silver</li>
+      <li>142|145|Tav_Oven|Avir_Make_Blueberries_Batch</li>
+      <li>142|148|TableButcher|ButcherCorpseFlesh;ButcherCorpseFlesh</li>
+    </bills>
     <residents>
       <li>Arlinarie Starsong|DankPyon_Subject|Avir|Female|15|156,126|Intellectual:17,Artistic:10,Mining:9|</li>
       <li>Sha&apos;Alleign &apos;Alleign&apos; Wildmoon|DankPyon_Subject|Avir|Male|18|156,126|Construction:16,Melee:15,Crafting:10|</li>
