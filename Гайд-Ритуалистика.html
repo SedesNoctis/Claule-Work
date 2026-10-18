@@ -1,0 +1,435 @@
+<title>Ритуалистика Авир</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a single reading column with a sticky contents rail on wide screens; chalk-on-slate ritual palette, stream violet as the one accent. */
+:root{
+  --bg:#f3f1f6; --paper:#fbfaff; --ink:#24202e; --muted:#625a73; --line:#d9d3e4;
+  --violet:#6d3fc4; --violet-soft:#ece4fb; --chalk:#ffffff; --warn:#a34a1f; --warn-soft:#fbeadf; --ok:#2f7a55; --ok-soft:#e2f2e9;
+  --verb:#6d3fc4; --mod:#2f6c9e; --flow:#8a5a12;
+  --display:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#17141f; --paper:#1f1b2a; --ink:#ebe6f5; --muted:#a79fba; --line:#352f45;
+  --violet:#b48cff; --violet-soft:#2c2242; --chalk:#2a2438; --warn:#f0a070; --warn-soft:#3a2418; --ok:#7fd1a3; --ok-soft:#173226;
+  --verb:#b48cff; --mod:#7cb6e8; --flow:#e0b062; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#17141f; --paper:#1f1b2a; --ink:#ebe6f5; --muted:#a79fba; --line:#352f45;
+  --violet:#b48cff; --violet-soft:#2c2242; --chalk:#2a2438; --warn:#f0a070; --warn-soft:#3a2418; --ok:#7fd1a3; --ok-soft:#173226;
+  --verb:#b48cff; --mod:#7cb6e8; --flow:#e0b062; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:17px/1.6 var(--body);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-block:32px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}.rail{display:none}}
+.rail nav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);font:13px/1.5 var(--mono)}
+.rail a{display:block;color:var(--muted);text-decoration:none;padding:3px 0 3px 10px;border-left:2px solid var(--line)}
+.rail a:hover,.rail a:focus-visible{color:var(--violet);border-left-color:var(--violet);outline:none}
+main{min-width:0}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(44px,7vw,76px);font-weight:700;letter-spacing:-.5px}
+h2{font-size:clamp(30px,4vw,40px);font-weight:600;margin-top:72px;padding-top:12px;border-top:1px solid var(--line)}
+h3{font-size:24px;font-weight:600;margin-top:32px}
+p{margin:12px 0;max-width:68ch}
+.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--violet)}
+.lead{font-size:20px;color:var(--muted);max-width:60ch}
+code,.k{font-family:var(--mono);font-size:.86em}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:32px;align-items:center}
+@media (max-width:700px){.hero{grid-template-columns:minmax(0,1fr)}}
+.hero svg{width:100%;max-width:300px;height:auto}
+
+/* steps */
+ol.steps{list-style:none;padding:0;margin:20px 0;display:grid;gap:12px;counter-reset:s}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+ol.steps li::before{content:counter(s);font:700 26px/1 var(--display);color:var(--violet);text-align:center;padding-top:4px}
+ol.steps b{display:block}
+
+/* tables */
+.tbl{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rn{font-weight:600;white-space:nowrap}
+.en{display:block;font:12px var(--mono);color:var(--muted)}
+
+/* rune chips */
+.chip{display:inline-block;font:600 12px/1 var(--mono);padding:5px 8px;border-radius:999px;border:1px solid currentColor;margin:2px 3px 2px 0;white-space:nowrap}
+.v{color:var(--verb)} .m{color:var(--mod)} .f{color:var(--flow)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:14px;color:var(--muted);margin:8px 0}
+
+/* callouts */
+.note,.warn,.tip{border-radius:10px;padding:14px 16px;margin:18px 0;max-width:76ch}
+.note{background:var(--violet-soft)} .warn{background:var(--warn-soft)} .tip{background:var(--ok-soft)}
+.note b:first-child,.warn b:first-child,.tip b:first-child{display:block;font:600 12px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.warn b:first-child{color:var(--warn)} .tip b:first-child{color:var(--ok)} .note b:first-child{color:var(--violet)}
+
+/* formula */
+.formula{font:15px/1.7 var(--mono);background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--violet);border-radius:8px;padding:12px 16px;margin:16px 0;overflow-x:auto;white-space:nowrap}
+
+/* recipe cards */
+.recipes{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin:18px 0}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card h4{font:600 22px/1.15 var(--display);margin:0}
+.card .size{font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.card p{font-size:15px;margin:0}
+.rings{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:13px}
+.rings li{display:grid;grid-template-columns:58px minmax(0,1fr);gap:6px;align-items:baseline}
+.rings li>span:first-child{font:11px var(--mono);color:var(--muted)}
+.card.hidden-r{border-style:dashed}
+.comp{font:12px var(--mono);color:var(--muted)}
+
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:16px 0}
+.box{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.box h4{margin:0 0 6px;font:600 20px/1.2 var(--display)}
+.box ul{margin:6px 0 0;padding-left:18px}
+ul{padding-left:22px} li{margin:4px 0}
+.diagram{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;margin:18px 0;overflow-x:auto}
+.diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+footer{margin-top:72px;color:var(--muted);font-size:14px;border-top:1px solid var(--line);padding-top:16px}
+a{color:var(--violet)}
+@media (prefers-reduced-motion:no-preference){.spin{animation:spin 90s linear infinite;transform-origin:150px 150px}@keyframes spin{to{transform:rotate(360deg)}}}
+</style>
+
+<div class="wrap">
+<aside class="rail"><nav aria-label="Содержание">
+  <a href="#start">Быстрый старт</a>
+  <a href="#circle">Круг</a>
+  <a href="#reading">Как читается схема</a>
+  <a href="#runes">Руны</a>
+  <a href="#energy">Энергия</a>
+  <a href="#components">Компоненты</a>
+  <a href="#risk">Риск и выдержка</a>
+  <a href="#stream">Поток карты</a>
+  <a href="#recipes">Готовые ритуалы</a>
+  <a href="#hidden">Скрытые ритуалы</a>
+  <a href="#network">Сеть и хранители</a>
+  <a href="#mistakes">Почему не работает</a>
+  <a href="#cheat">Шпаргалка</a>
+</nav></aside>
+
+<main>
+<header class="hero">
+  <div>
+    <div class="eyebrow">Avir — Apex Predator · гайд игрока</div>
+    <h1>Ритуалистика Авир</h1>
+    <p class="lead">Как устроен круг, что делает каждая руна, откуда берётся энергия и почему одна схема заряжает артефакты, а другая взрывает ритуалиста. Все числа взяты из текущего кода мода.</p>
+  </div>
+  <svg viewBox="0 0 300 300" role="img" aria-label="Схема ритуального круга: центр, кольца рун и кружки компонентов">
+    <g class="spin" fill="none" stroke="var(--violet)">
+      <circle cx="150" cy="150" r="118" stroke-width="2"/>
+      <circle cx="150" cy="150" r="92" stroke-width="1.2" opacity=".7"/>
+      <circle cx="150" cy="150" r="66" stroke-width="1.2" opacity=".7"/>
+      <circle cx="150" cy="150" r="40" stroke-width="1.2" opacity=".7"/>
+      <g stroke-width="1" opacity=".5"><line x1="150" y1="20" x2="150" y2="280"/><line x1="20" y1="150" x2="280" y2="150"/><line x1="58" y1="58" x2="242" y2="242"/><line x1="242" y1="58" x2="58" y2="242"/></g>
+    </g>
+    <g fill="var(--paper)" stroke="var(--violet)" stroke-width="2">
+      <circle cx="150" cy="18" r="12"/><circle cx="264" cy="102" r="12"/><circle cx="221" cy="245" r="12"/><circle cx="79" cy="245" r="12"/><circle cx="36" cy="102" r="12"/>
+    </g>
+    <circle cx="150" cy="150" r="10" fill="var(--violet)"/>
+  </svg>
+</header>
+
+<!-- ============================================================ -->
+<h2 id="start">Быстрый старт</h2>
+<p>Если хочется сначала просто увидеть, как это работает, пройдите эти шаги с готовым ритуалом «charging» (зарядка). Он маленький, безопасный и ничего не требует.</p>
+<ol class="steps">
+  <li><div><b>Исследуйте «Stream ritualism I».</b> Это открывает круги, мел и базовые руны: Наполнение, Очищение, Широту, Якорь, Предохранение, Замыкание.</div></li>
+  <li><div><b>Постройте малый круг</b> (вкладка «Ритуалистика», 3×3). Под ним должен быть сухой открытый пол: не вода, не сквозь стены.</div></li>
+  <li><div><b>Нажмите «Choose ritual...»</b> на круге. Откроется книга ритуалов. Выберите «charging», материал «chalk» (мел) и нажмите «Draw into this circle».</div></li>
+  <li><div><b>Дождитесь рисунка.</b> Ритуалист с включённой работой «Ритуализм» нарисует схему. Чем выше у него Интеллект и Искусство, тем лучше рисунок, а значит и сильнее ритуал.</div></li>
+  <li><div><b>Положите в круг артефакт</b> с неполным зарядом (или поставьте рядом колониста в амулете) и нажмите «Begin ritual...». Ритуалист встанет в центр и будет держать поток, пока всё не зарядится.</div></li>
+</ol>
+<div class="tip"><b>Совет</b>Для повторяющихся задач включите на круге «Perform on its own». Тогда ритуалист сам начнёт ритуал, когда что-то в досягаемости разрядится ниже 75% или в кружках трансмутации лежит материал. Работает только для наполнения и трансмутации, после каждого ритуала круг отдыхает час.</div>
+
+<!-- ============================================================ -->
+<h2 id="circle">Круг</h2>
+<p>Размер круга определяет, сколько рун в него влезет, сколько у него кружков компонентов и насколько он мощный. Схема для маленького круга влезет в большой, наоборот нельзя.</p>
+<div class="tbl"><table>
+  <thead><tr><th>Круг</th><th>Площадь</th><th>Колец</th><th>Рун в кольце</th><th>Всего рун</th><th>Кружков компонентов</th><th>Мощь</th><th>Нестабильность за размер</th></tr></thead>
+  <tbody>
+    <tr><td class="rn">Малый<span class="en">small</span></td><td class="num">3×3</td><td class="num">2</td><td class="num">2</td><td class="num">4</td><td class="num">3</td><td class="num">×1.0</td><td class="num">+0.00</td></tr>
+    <tr><td class="rn">Средний<span class="en">medium</span></td><td class="num">5×5</td><td class="num">3</td><td class="num">3</td><td class="num">9</td><td class="num">5</td><td class="num">×1.6</td><td class="num">+0.15</td></tr>
+    <tr><td class="rn">Большой<span class="en">large</span></td><td class="num">7×7</td><td class="num">4</td><td class="num">4</td><td class="num">16</td><td class="num">7</td><td class="num">×2.4</td><td class="num">+0.30</td></tr>
+  </tbody>
+</table></div>
+
+<div class="diagram">
+<svg viewBox="0 0 720 300" role="img" aria-label="Порядок чтения: от центра к краю">
+  <g font-family="JetBrains Mono, monospace" font-size="13">
+    <g fill="none" stroke="var(--line)" stroke-width="2">
+      <circle cx="150" cy="150" r="126"/><circle cx="150" cy="150" r="96"/><circle cx="150" cy="150" r="66"/><circle cx="150" cy="150" r="36"/>
+    </g>
+    <circle cx="150" cy="150" r="9" fill="var(--violet)"/>
+    <text x="150" y="132" text-anchor="middle" fill="var(--violet)">1</text>
+    <text x="150" y="100" text-anchor="middle" fill="var(--violet)">2</text>
+    <text x="150" y="70" text-anchor="middle" fill="var(--violet)">3</text>
+    <text x="150" y="40" text-anchor="middle" fill="var(--violet)">4</text>
+    <g fill="var(--paper)" stroke="var(--muted)" stroke-width="1.5">
+      <rect x="280" y="140" width="20" height="20" rx="4"/><rect x="230" y="30" width="20" height="20" rx="4"/><rect x="230" y="250" width="20" height="20" rx="4"/>
+    </g>
+    <path d="M300 150 L330 150" stroke="var(--muted)" stroke-width="1.2"/>
+    <g fill="var(--ink)">
+      <text x="340" y="70">● центр: здесь стоит ритуалист</text>
+      <text x="340" y="104">1 → 2 → 3 → 4: кольца читаются от центра</text>
+      <text x="340" y="128" fill="var(--muted)">   глаголы срабатывают в этом порядке</text>
+      <text x="340" y="162">▢ кружки компонентов за краем круга:</text>
+      <text x="340" y="186" fill="var(--muted)">   у каждого своя клетка; работает то,</text>
+      <text x="340" y="208" fill="var(--muted)">   что лежит именно на ней</text>
+      <text x="340" y="244">Мел: быстро, смывается дождём</text>
+      <text x="340" y="268">Гравировка: ×5 дольше, +0.1 к качеству, вечная</text>
+    </g>
+  </g>
+</svg>
+</div>
+
+<h3>Рисунок и его качество</h3>
+<p>Качество рисунка напрямую умножает мощь ритуала. Его определяет рисовавший ритуалист:</p>
+<div class="formula">качество = 0.25 + 0.035 × Интеллект + 0.03 × Искусство ± 0.08 &nbsp;&nbsp;(от 0.2 до 1.6; гравировка +0.1, до 1.7)</div>
+<p>Например, ритуалист с Интеллектом 10 и Искусством 8 рисует примерно на 0.84, а с 18 и 15 — уже на 1.33.</p>
+<div class="cols">
+  <div class="box"><h4>Мел</h4><ul><li>Рисуется быстро.</li><li>Под открытым небом дождь или снег смывают его примерно за час.</li><li>Стирает любой, у кого включена «Уборка».</li><li>Якорь держит ритуал не дольше суток.</li></ul></div>
+  <div class="box"><h4>Гравировка</h4><ul><li>В 5 раз дольше; когтями Авир в 2,5 раза быстрее, чем у людей.</li><li>+0.1 к качеству, не смывается, её нельзя атаковать.</li><li>Круг с гравировкой нельзя разобрать, выровнять может строитель.</li><li>С Якорем повторяется бесконечно и может работать сам.</li></ul></div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="reading">Как читается схема</h2>
+<p>Это главное, что нужно понять, чтобы схемы перестали казаться случайными. Руны бывают трёх ролей, и роль решает, важно ли, где руна стоит.</p>
+<div class="cols">
+  <div class="box"><h4 class="v">Глаголы</h4><p>Что ритуал <b>делает</b>. Срабатывают по очереди, от центрального кольца к внешнему. Порядок важен: например, Вытягивание отдаёт добытое следующим шагам, а Перенос с Очищением после него переносит всё.</p></div>
+  <div class="box"><h4 class="m">Модификаторы</h4><p><b>Как</b> он это делает: сильнее, дальше, шире, дольше. Просто складываются: две Широты в любом месте схемы — это +8 клеток. Где стоят, не важно.</p></div>
+  <div class="box"><h4 class="f">Поток</h4><p>Что происходит с <b>энергией</b>: держать внутри, впускать снаружи, защищать, тянуть нити. Тоже складываются и стоят где угодно.</p></div>
+</div>
+<div class="note"><b>Важно</b>Ритуал без глагола ничего не делает. Исключения — особые узоры: Купол (Барьер + Якорь), Ловушка (одни Предохранения и Замыкания) и сырой поток (одни Фокусы), см. <a href="#hidden">скрытые ритуалы</a>.</div>
+<div class="note"><b>Узоры</b>Готовые и скрытые ритуалы узнаются по точному расположению: тот же размер и те же руны в тех же кольцах (порядок внутри кольца не важен). Если поставить руну в другое кольцо, узор может не распознаться, хотя глаголы сработают как обычно.</div>
+<p>Перед тем как рисовать, смотрите в книге ритуалов на текст справа от схемы. Там простыми словами написано, что ритуал сделает по шагам и чего ему не хватает.</p>
+
+<!-- ============================================================ -->
+<h2 id="runes">Руны</h2>
+<div class="legend"><span><span class="chip v">глагол</span> что делает</span><span><span class="chip m">модификатор</span> как делает</span><span><span class="chip f">поток</span> что с энергией</span></div>
+<p>Нестабильность складывается со всех рун и размера круга, отрицательная её снижает. Исследования: I — «chalk and runes», II — «memory and field», III — «the great runes».</p>
+
+<h3 class="v">Глаголы</h3>
+<div class="tbl"><table>
+<thead><tr><th>Руна</th><th>Что делает</th><th>Нестаб.</th><th>Иссл.</th></tr></thead>
+<tbody>
+<tr><td class="rn v">Наполнение<span class="en">filling</span></td><td>Заряжает всё в досягаемости и на нитях: лежащие, надетые и встроенные артефакты, кристальные батареи, хранители, пси-фокус пси-кастеров. Идёт, пока есть что заряжать. С Фокусом артефакты и амулеты ещё и черпают опыт из потока карты.</td><td class="num">0.05</td><td class="num">I</td></tr>
+<tr><td class="rn v">Очищение<span class="en">purging</span></td><td>Возвращает артефакт или амулет к состоянию «как сделан»: все открытые ячейки и камни отменены, все очки возвращены, заряд полный. Снимает с ваших людей рядом пси-похмелье, шок, откат и давление потока, нейронный жар.</td><td class="num">0.10</td><td class="num">I</td></tr>
+<tr><td class="rn v">Перенос<span class="en">transfer</span></td><td>Переливает опыт из одного сосуда в другой (амулет в амулет, артефакт в артефакт). Один — только свободный опыт. С Очищением <i>после</i> него — весь опыт, а источник очищается.</td><td class="num">0.15</td><td class="num">II</td></tr>
+<tr><td class="rn v">Удержание<span class="en">holding</span></td><td>Держит живых врагов в досягаемости на месте (оглушение), пока есть энергия.</td><td class="num">0.15</td><td class="num">II</td></tr>
+<tr><td class="rn v">Вытягивание<span class="en">drawing out</span></td><td>Забирает энергию: из пси-пилонов (часть ловится кристаллами), из сил врагов и чужаков (они устают и падают), по нити — из батарей и построек-артефактов. Добытое кормит следующие шаги; если это последний шаг, превращается в кристаллы.</td><td class="num">0.20</td><td class="num">II</td></tr>
+<tr><td class="rn v">Подъём<span class="en">lifting</span></td><td>Телекинез по площади: относит вещи на склад, сметает снег и грязь. С Высвобождением превращает взрыв в отталкивающую волну.</td><td class="num">0.10</td><td class="num">II</td></tr>
+<tr><td class="rn v">Рост<span class="en">growth</span></td><td>Растения растут и созревают, ваши люди и животные лечатся. С Якорем почва понемногу становится богаче.</td><td class="num">0.10</td><td class="num">II</td></tr>
+<tr><td class="rn v">Трансмутация<span class="en">transmutation</span></td><td>Превращает металл или нефрит в то, что названо Печатью, по стоимости. Без Печати, но с Нитью или Широтой — превращает саму энергию в ток для электробатарей. Никогда не делает эссенциум, тиссериум и фейгналлит.</td><td class="num">0.30</td><td class="num">—</td></tr>
+<tr><td class="rn v">Высвобождение<span class="en">release</span></td><td>15 секунд копит энергию и выпускает разом: взрыв вокруг круга или, с Дальностью, в выбранной точке. Без Дальности, Барьера и Предохранения — самоподрыв ритуалиста.</td><td class="num">0.40</td><td class="num">III</td></tr>
+<tr><td class="rn v">Перековка<span class="en">reforging</span></td><td>Меняет артефакт в круге: поднимает качество сердца, меняет металл сердца на металл Печати или перековывает спираль (почти сброс, но все очки возвращаются, даже сгоревшие). Только большой круг; само деяние поднимает поток карты.</td><td class="num">0.50</td><td class="num">III</td></tr>
+</tbody></table></div>
+
+<h3 class="m">Модификаторы</h3>
+<div class="tbl"><table>
+<thead><tr><th>Руна</th><th>Что делает</th><th>Нестаб.</th><th>Иссл.</th></tr></thead>
+<tbody>
+<tr><td class="rn m">Широта<span class="en">breadth</span></td><td>+4 клетки к досягаемости за каждую.</td><td class="num">0.05</td><td class="num">I</td></tr>
+<tr><td class="rn m">Якорь<span class="en">anchor</span></td><td>Ритуал повторяется, пока течёт энергия: мелом до суток, гравировкой бесконечно.</td><td class="num">0.10</td><td class="num">I</td></tr>
+<tr><td class="rn m">Усиление<span class="en">amplification</span></td><td>+30% мощи за каждое. Но и нестабильнее, а слишком большая мощь сама добавляет риск.</td><td class="num">0.25</td><td class="num">II</td></tr>
+<tr><td class="rn m">Дальность<span class="en">reach</span></td><td>Ритуал действует вокруг точки, которую вы выберете при начале, в любом месте карты.</td><td class="num">0.10</td><td class="num">II</td></tr>
+</tbody></table></div>
+
+<h3 class="f">Поток</h3>
+<div class="tbl"><table>
+<thead><tr><th>Руна</th><th>Что делает</th><th>Нестаб.</th><th>Иссл.</th></tr></thead>
+<tbody>
+<tr><td class="rn f">Замыкание<span class="en">closing</span></td><td>Держит энергию внутри. Без хотя бы одного Замыкания 30% энергии утекает. Почти в каждой схеме должно быть одно.</td><td class="num">−0.10</td><td class="num">I</td></tr>
+<tr><td class="rn f">Предохранение<span class="en">safety</span></td><td>Если выдержка ритуалиста сдаёт, его выбрасывает из круга до срыва, без ожогов и взрыва. Цена: каждое режет приток энергии до ×0.75.</td><td class="num">−0.25</td><td class="num">I</td></tr>
+<tr><td class="rn f">Фокус<span class="en">focus</span></td><td>Втягивает внешний поток карты: чем бурнее карта, тем больше энергии и тем больше риск.</td><td class="num">0.12</td><td class="num">II</td></tr>
+<tr><td class="rn f">Барьер<span class="en">barrier</span></td><td>Взрыв ритуала щадит ваших людей и постройки. С Якорем и без глагола — купол от выстрелов. Сам по себе тянет поток карты.</td><td class="num">−0.15</td><td class="num">III</td></tr>
+<tr><td class="rn f">Нить<span class="en">thread</span></td><td>Привязывает к кругу до 3 вещей за руну в любом месте карты (кнопка «Threads...» на круге). По нити Наполнение заряжает, Вытягивание забирает, Трансмутация в ток заряжает их сети.</td><td class="num">0.10</td><td class="num">III</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<h2 id="energy">Энергия</h2>
+<p>Пока ритуал идёт, энергия копится в его запасе («банке») и тратится на глаголы. Мощь круга умножает весь приток:</p>
+<div class="formula">мощь = размер (1 / 1.6 / 2.4) × (1 + 0.3 × Усилений) × качество рисунка × (Замыкание есть ? 1 : 0.7)</div>
+<div class="formula">приток = источники × мощь × (1 + бонус артефакта) × 0.75<sup>Предохранений</sup></div>
+
+<h3>Откуда берётся</h3>
+<div class="tbl"><table>
+<thead><tr><th>Источник</th><th>Сколько</th><th>Заметки</th></tr></thead>
+<tbody>
+<tr><td class="rn">Ритуалист и все колонисты в круге</td><td>по психочувствительности</td><td>Целые крылья Авир удваивают вклад, подрезанные режут вдвое. Отдающие устают и теряют насыщенность потоком.</td></tr>
+<tr><td class="rn">Фокус</td><td>растёт с потоком карты</td><td>На спокойной карте мало, в бурю очень много. Добавляет риск.</td></tr>
+<tr><td class="rn">Проводник-вещь</td><td>свой заряд</td><td>Если ритуал проводит не пешка, а постройка или артефакт (вкладка «Conduit» в книге).</td></tr>
+</tbody></table></div>
+<p>Когда запас пустеет, круг сам берёт энергию из запасов в таком порядке:</p>
+<ol class="steps">
+  <li><div><b>Кристаллы психической энергии</b> в кружке «Crystal»: по одному, 150 энергии каждый.</div></li>
+  <li><div><b>Перья Авир</b> в кружке «Feathers»: по 10 штук, 6 энергии за перо. Ритуалу Наполнения перья дают вдвое больше.</div></li>
+  <li><div><b>Кристальная батарея</b> в кружке «Battery»: до 150 за раз из её заряда.</div></li>
+  <li><div><b>Хранители энергии</b> на пурпурной сети, на которой стоит круг: до 150 за раз.</div></li>
+</ol>
+<div class="tip"><b>Усилитель</b>Любой артефакт в кружке «Artifact» усиливает весь приток: +15% и ещё +5% за каждую ступень качества.</div>
+
+<h3>Насыщенность потоком</h3>
+<p>У каждой пешки есть собственный заряд, 100% — это 300 единиц. Отдавая энергию ритуалу, пешка его теряет и психически тупеет (до −80% психочувствительности на нуле). Остаток запаса в конце ритуала с Замыканием достаётся ритуалисту, и насыщенность может уйти за 100%, даже за 1000%. Переполненная пешка психически сильнее (+50% за каждые лишние 100%), но держит ритуал хуже (−5% выдержки за каждые лишние 100%). За полдня всё возвращается к 100%.</p>
+
+<!-- ============================================================ -->
+<h2 id="components">Компоненты</h2>
+<p>Кружки за краем круга задаются в редакторе схемы. Носильщики сами кладут туда нужное. Работает только то, что лежит на клетке своего кружка. Пока идёт ритуал, разложенное никто не уносит.</p>
+<div class="tbl"><table>
+<thead><tr><th>Кружок</th><th>Что кладут</th><th>Зачем</th></tr></thead>
+<tbody>
+<tr><td class="rn">Crystal</td><td>кристаллы психической энергии (до 10)</td><td>Запасная энергия, 150 за кристалл.</td></tr>
+<tr><td class="rn">Feathers</td><td>перья Авир (до 50)</td><td>Запасная энергия, 6 за перо, ×2 для Наполнения.</td></tr>
+<tr><td class="rn">Battery</td><td>кристальная батарея</td><td>Отдаёт свой заряд, когда кристаллы и перья кончились.</td></tr>
+<tr><td class="rn">Artifact</td><td>любой артефакт</td><td>+15% к притоку и +5% за ступень качества. Перековка и Перенос работают с артефактами в круге.</td></tr>
+<tr><td class="rn">Seal</td><td>ничего, печать рисуется</td><td>Называет, что сделает Трансмутация (золото, пласталь...) или в какой металл Перековка переделает сердце.</td></tr>
+<tr><td class="rn">Material</td><td>металл или нефрит, сколько выставите</td><td>Из чего делает Трансмутация. Ритуал не начнётся, пока не лежит всё. Можно несколько разных материалов.</td></tr>
+</tbody></table></div>
+
+<h3>Сколько даёт трансмутация</h3>
+<p>Трансмутация идёт по стоимости: серебро на 100 даст золото на 100, если ничего не потеряно. Сколько доходит, зависит от мощи круга:</p>
+<div class="formula">выход = 0.45 + 0.25 × мощь &nbsp;&nbsp;(от 30% до 100%)</div>
+<div class="tbl"><table>
+<thead><tr><th>Схема (рисунок 1.0, есть Замыкание)</th><th>Мощь</th><th>Выход</th></tr></thead>
+<tbody>
+<tr><td>малый круг</td><td class="num">1.0</td><td class="num">70%</td></tr>
+<tr><td>малый круг без Замыкания</td><td class="num">0.7</td><td class="num">62%</td></tr>
+<tr><td>средний + Усиление</td><td class="num">2.08</td><td class="num">97%</td></tr>
+<tr><td>средний + 2 Усиления</td><td class="num">2.56</td><td class="num">100%</td></tr>
+<tr><td>большой</td><td class="num">2.4</td><td class="num">100%</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<h2 id="risk">Риск и выдержка</h2>
+<p>Раз в 10 секунд ритуал сравнивает свой риск с выдержкой ритуалиста. Если риск выше, есть шанс срыва.</p>
+<div class="formula">риск = нестабильность рун и размера + Фокусы × 0.04 × (поток карты / спокойный) + max(0, мощь − 1.5) × 0.2</div>
+<div class="formula">шанс срыва за проверку = (риск − выдержка) × 0.4</div>
+<div class="warn"><b>Ловушка мощи</b>Мощь выше 1.5 сама добавляет риск. Большой круг с двумя Усилениями даёт мощь около 3.8, а это +0.47 к риску. Сильная схема без Предохранения и Замыканий для слабого ритуалиста опасна.</div>
+
+<h3>Что случается при срыве</h3>
+<div class="tbl"><table>
+<thead><tr><th>Ситуация</th><th>Итог</th></tr></thead>
+<tbody>
+<tr><td>Есть Предохранение</td><td>Ритуалиста выбрасывает за круг, оглушение на 3 секунды. Ритуал кончается, больше ничего.</td></tr>
+<tr><td>Нет Предохранения</td><td>Откат: ожоги потоком.</td></tr>
+<tr><td>Превышение больше 0.8</td><td>Взрыв, тем сильнее, чем больше круг.</td></tr>
+<tr><td>Проводник — вещь</td><td>Удар принимает она. Её выдержка всегда 60%.</td></tr>
+</tbody></table></div>
+
+<h3>Из чего выдержка</h3>
+<div class="cols">
+  <div class="box"><h4>Характер</h4><ul><li>черты и настроение;</li><li>податливость убеждений;</li><li>психический гул или умиротворение;</li><li>уровень пси-связи и Интеллект.</li></ul></div>
+  <div class="box"><h4>Тренировка</h4><ul><li><b>Опыт:</b> энергия, проведённая через себя за жизнь, до +30%.</li><li><b>Спокойствие:</b> часы медитации за последние 3 дня, +2,5% за час, до +25%.</li></ul></div>
+  <div class="box"><h4>Авир</h4><ul><li>Базовая выдержка на 25% ниже, чем у людей.</li><li>Зато целые крылья вдвое больше дают энергии.</li><li>Переполненная насыщенность снижает выдержку.</li></ul></div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="stream">Поток карты</h2>
+<p>У каждой карты есть внешний поток. Его показывает шкала с лунами в книге ритуалов, и вид книги меняется вместе с ним.</p>
+<div class="tbl"><table>
+<thead><tr><th>Уровень</th><th>Поток</th><th>Что происходит</th></tr></thead>
+<tbody>
+<tr><td class="rn">Спокойный</td><td class="num">до 25 000</td><td>Ничего. Фокус даёт мало.</td></tr>
+<tr><td class="rn">Беспокойный</td><td class="num">до 50 000</td><td>Чаще грозы и метели.</td></tr>
+<tr><td class="rn">Бурный</td><td class="num">до 100 000</td><td>Похолодания, молнии.</td></tr>
+<tr><td class="rn">Буря</td><td class="num">до 250 000</td><td>Артефакты теряют заряд, чувствительные пешки получают «давление потока».</td></tr>
+<tr><td class="rn">Катаклизм</td><td class="num">выше</td><td>То же, сильнее.</td></tr>
+</tbody></table></div>
+<p>Поток поднимают крупные деяния (Перековка, Высвобождение), Фокус без глагола, Барьер и бесконечный вихрь. Само по себе он со временем успокаивается.</p>
+
+<!-- ============================================================ -->
+<h2 id="recipes">Готовые ритуалы</h2>
+<p>Все они есть в книге ритуалов. Кольца указаны от центра. Их можно взять как есть или открыть копию в редакторе и менять.</p>
+<div class="legend"><span><span class="chip v">глагол</span></span><span><span class="chip m">модификатор</span></span><span><span class="chip f">поток</span></span></div>
+
+<h3>Зарядка и артефакты</h3>
+<div class="recipes">
+  <article class="card"><span class="size">малый</span><h4>Charging · зарядка</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Наполнение</span></span></li><li><span>кольцо 2</span><span><span class="chip f">Замыкание</span></span></li></ul><p>Заряжает артефакты и батареи в круге и на тех, кто в нём стоит. Лучший первый ритуал.</p></article>
+  <article class="card"><span class="size">средний</span><h4>Wide charging · широкая зарядка</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Наполнение</span></span></li><li><span>кольцо 2</span><span><span class="chip m">Широта</span><span class="chip m">Широта</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Замыкание</span></span></li></ul><p>Всё в 8 клетках за краем круга, включая встроенное в постройки.</p></article>
+  <article class="card"><span class="size">средний</span><h4>Charging station · зарядная станция</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Наполнение</span></span></li><li><span>кольцо 2</span><span><span class="chip f">Нить</span><span class="chip m">Якорь</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Замыкание</span></span></li></ul><p>Привяжите нитями до 3 батарей или построек-артефактов в любом месте карты, и круг сутки держит их заряженными.</p></article>
+  <article class="card"><span class="size">средний</span><h4>Cleansing · очищение</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Очищение</span></span></li><li><span>кольцо 2</span><span><span class="chip f">Предохранение</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Замыкание</span></span></li></ul><p>Сбрасывает артефакты и амулеты в круге к исходному виду, все очки возвращаются.</p></article>
+  <article class="card"><span class="size">средний</span><h4>Pouring · переливание</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Перенос</span></span></li><li><span>кольцо 2</span><span><span class="chip v">Очищение</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Замыкание</span><span class="chip f">Предохранение</span></span></li></ul><p>Весь опыт одного сосуда переходит в другой, источник очищается. Работает, потому что Очищение стоит после Переноса.</p></article>
+  <article class="card"><span class="size">средний</span><h4>Gentle pouring · мягкое переливание</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Перенос</span></span></li><li><span>кольцо 2</span><span><span class="chip f">Замыкание</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Предохранение</span></span></li></ul><p>Только свободный опыт, источник сохраняет своё развитие.</p></article>
+  <article class="card"><span class="size">большой</span><h4>Reforging · перековка</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Перековка</span></span></li><li><span>кольцо 2</span><span><span class="chip m">Усиление</span><span class="chip f">Фокус</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Фокус</span><span class="chip f">Предохранение</span></span></li><li><span>кольцо 4</span><span><span class="chip f">Замыкание</span><span class="chip f">Замыкание</span></span></li></ul><p>Артефакт в кружке: выберите, поднять качество сердца, сменить его металл (нужна Печать) или перековать спираль.</p></article>
+  <article class="card"><span class="size">средний</span><h4>Crystallizing · кристаллизация</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Вытягивание</span></span></li><li><span>кольцо 2</span><span><span class="chip m">Широта</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Замыкание</span></span></li></ul><p>Забирает заряд пси-пилонов в ~6.5 клетках и ловит его кристаллами в центре. Лучше всего после бури, пока пилон теряет заряд. Есть и малая версия: только пилоны вплотную к кругу.</p></article>
+</div>
+
+<h3>Трансмутация</h3>
+<div class="recipes">
+  <article class="card"><span class="size">малый</span><h4>Silver into gold</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Трансмутация</span></span></li><li><span>кольцо 2</span><span><span class="chip f">Замыкание</span></span></li></ul><p class="comp">Material: серебро · Seal: золото</p><p>Первый урок трансмутации. Теряет около трети стоимости.</p></article>
+  <article class="card"><span class="size">средний</span><h4>Steel into plasteel</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Трансмутация</span></span></li><li><span>кольцо 2</span><span><span class="chip m">Усиление</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Замыкание</span></span></li></ul><p class="comp">Material: сталь · Seal: пласталь</p><p>Почти без потерь (около 97%).</p></article>
+  <article class="card"><span class="size">большой</span><h4>Great transmutation</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Трансмутация</span></span></li><li><span>кольцо 2</span><span><span class="chip m">Усиление</span><span class="chip m">Усиление</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Замыкание</span><span class="chip f">Замыкание</span></span></li><li><span>кольцо 4</span><span><span class="chip f">Предохранение</span></span></li></ul><p class="comp">Seal: золото · без Material — любой металл или нефрит в круге</p><p>Один к одному по стоимости. Рискованная: высокая мощь добавляет риск.</p></article>
+  <article class="card"><span class="size">средний</span><h4>Psychic current · психический ток</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Трансмутация</span></span></li><li><span>кольцо 2</span><span><span class="chip f">Нить</span><span class="chip m">Якорь</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Замыкание</span></span></li></ul><p>Без Печати: энергия становится током. Привяжите нитью по батарее из каждой электросети, и круг сутки их заряжает.</p></article>
+</div>
+
+<h3>Хозяйство</h3>
+<div class="recipes">
+  <article class="card"><span class="size">средний</span><h4>The long sweep · большая уборка</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Подъём</span></span></li><li><span>кольцо 2</span><span><span class="chip m">Широта</span><span class="chip m">Широта</span></span></li><li><span>кольцо 3</span><span><span class="chip m">Якорь</span><span class="chip f">Замыкание</span></span></li></ul><p>До суток уносит вещи на склад и сметает снег и грязь в 9 клетках.</p></article>
+  <article class="card"><span class="size">средний</span><h4>The ripening · созревание</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Рост</span></span></li><li><span>кольцо 2</span><span><span class="chip m">Широта</span><span class="chip m">Широта</span></span></li><li><span>кольцо 3</span><span><span class="chip m">Якорь</span><span class="chip f">Замыкание</span></span></li></ul><p>Растения в 9 клетках растут, люди и животные лечатся, почва богатеет.</p></article>
+  <article class="card"><span class="size">большой</span><h4>Kindling of a core · зажжение ядра</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Наполнение</span></span></li><li><span>кольцо 2</span><span><span class="chip f">Замыкание</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Замыкание</span></span></li><li><span>кольцо 4</span><span><span class="chip f">Предохранение</span></span></li></ul><p>Будит мёртвую сферу ядра Шпиля. Своя схема даёт ядро лучше: Усиления — сильнее и вместительнее, Замыкания — экономнее, Барьеры — лучше защита, Широта — дальше.</p></article>
+</div>
+
+<h3>Бой</h3>
+<div class="recipes">
+  <article class="card"><span class="size">средний</span><h4>Holding · удержание</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Удержание</span></span></li><li><span>кольцо 2</span><span><span class="chip m">Якорь</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Замыкание</span></span></li></ul><p>Держит врагов рядом с кругом, пока течёт энергия.</p></article>
+  <article class="card"><span class="size">средний</span><h4>Strike from afar · удар издалека</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Высвобождение</span></span></li><li><span>кольцо 2</span><span><span class="chip m">Дальность</span><span class="chip m">Усиление</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Барьер</span><span class="chip f">Замыкание</span></span></li></ul><p>15 секунд копит, потом взрыв в любой точке карты. Барьер щадит ваших.</p></article>
+  <article class="card"><span class="size">средний</span><h4>The shove · толчок</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip v">Высвобождение</span><span class="chip v">Подъём</span></span></li><li><span>кольцо 2</span><span><span class="chip f">Барьер</span><span class="chip f">Предохранение</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Замыкание</span></span></li></ul><p>Волна отбрасывает всех вокруг на несколько клеток и оглушает.</p></article>
+  <article class="card"><span class="size">средний</span><h4>Barrier dome · купол</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip f">Барьер</span><span class="chip f">Барьер</span></span></li><li><span>кольцо 2</span><span><span class="chip m">Якорь</span><span class="chip m">Широта</span></span></li><li><span>кольцо 3</span><span><span class="chip f">Замыкание</span></span></li></ul><p>Купол, который останавливает выстрелы снаружи. Радиус 5 + 3 за размер + 4 за Широту. Каждое попадание стоит энергии.</p></article>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="hidden">Скрытые ритуалы</h2>
+<p>Их нет в книге, пока вы их не составите сами. Как только схема совпадёт с узором, ритуал откроется и придёт письмо.</p>
+<div class="recipes">
+  <article class="card hidden-r"><span class="size">средний или большой</span><h4>Ловушка</h4><ul class="rings"><li><span>правило</span><span>только <span class="chip f">Предохранение</span> и <span class="chip f">Замыкание</span>, хотя бы одно Предохранение, всего от 3 рун</span></li></ul><p>Взведите кнопкой «Arm the Trap». Держит любого врага, вошедшего в круг (и вашего взбунтовавшегося заключённого). Гравированная подтаскивает врагов в 6 клетках.</p></article>
+  <article class="card hidden-r"><span class="size">ловушка + 1 руна</span><h4>Варианты ловушки</h4><ul class="rings"><li><span>+ Фокус</span><span>незавершённая: пленника кормит поток карты</span></li><li><span>+ Наполн. + Нить</span><span>кормящая: кормите вы по нити</span></li><li><span>+ Вытяг. + Нить</span><span>доильная: силы пленника идут в ваши батареи</span></li><li><span>+ Высвоб.</span><span>пульсирующая: пленник — турель, бьёт волной врагов в 18 клетках</span></li></ul></article>
+  <article class="card hidden-r"><span class="size">большой</span><h4>Глаз бури</h4><ul class="rings"><li><span>кольцо 1</span><span><span class="chip f">Фокус</span>×4</span></li><li><span>кольцо 2</span><span><span class="chip f">Фокус</span>×4</span></li><li><span>кольцо 3</span><span><span class="chip f">Предохр.</span>×2 <span class="chip f">Замык.</span>×2</span></li><li><span>кольцо 4</span><span><span class="chip f">Замыкание</span>×2</span></li></ul><p>Без глагола: вызывает грозу, молнии вокруг круга. Устоявший ритуалист выходит со штормовой мантией: купол в 6 клеток, который принимает удары и бьёт врагов.</p></article>
+  <article class="card hidden-r"><span class="size">любой</span><h4>Сырой поток и буря</h4><ul class="rings"><li><span>правило</span><span>только <span class="chip f">Фокус</span>, без глагола</span></li></ul><p>Тянет поток и держит его, давление на ритуалиста растёт. От 6 Фокусов вызывает бурю. Поток карты растёт.</p></article>
+  <article class="card hidden-r"><span class="size">любой</span><h4>Бесконечный вихрь</h4><ul class="rings"><li><span>правило</span><span><span class="chip v">Наполнение</span> + <span class="chip f">Фокус</span>, без <span class="chip f">Замыкания</span>, и наполнять нечего</span></li></ul><p>Вихрь растёт, тянет силы у всех рядом, зовёт бурю. Но это и насос: всё, привязанное к кругу, заряжается от него. Остановить: «Break the vortex».</p></article>
+  <article class="card hidden-r"><span class="size">любой</span><h4>Самоподрыв</h4><ul class="rings"><li><span>правило</span><span><span class="chip v">Высвобождение</span> без <span class="chip m">Дальности</span>, <span class="chip f">Барьера</span> и <span class="chip f">Предохранения</span></span></li></ul><p>Взрыв в руках ритуалиста, сильнее обычного. Легко сделать случайно.</p></article>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="network">Сеть, хранители и самоподдержание</h2>
+<div class="cols">
+  <div class="box"><h4>Провод потока</h4><ul><li>Вырезает строитель: 500 работы и 2 серебра на клетку.</li><li>Только в обработанном полу или под стеной; на воде можно.</li><li>Одна непрерывная линия — одна сеть с общим запасом.</li><li>Выберите провод или узел, и сеть подсветится пурпуром.</li></ul></div>
+  <div class="box"><h4>Хранитель энергии</h4><ul><li>Светильник-батарея в полу на 300 энергии.</li><li>Его заряжает Наполнение, по нити или через сеть.</li><li>В 6 клетках подзаряжает артефакты (кнопка «Charge around»).</li><li>Хранители на одной сети выравниваются между собой; их можно переносить.</li></ul></div>
+  <div class="box"><h4>Круг на сети</h4><ul><li>Достаёт всё в сети без руны Нити.</li><li>Наполнение заряжает сеть, Вытягивание из неё берёт.</li><li>Когда кончаются кристаллы, перья и батарея, круг берёт энергию у хранителей сети.</li></ul></div>
+  <div class="box"><h4>Самоподдержание</h4><ul><li>Гравировка с Якорем может работать сама (кнопка «Self-sustaining»).</li><li>В центре должен лежать проводник: артефакт, кристальная батарея, постройка-артефакт или пси-пилон.</li><li>Просыпается, когда есть работа: зарядить, держать врагов, растить, поднять купол.</li></ul></div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="mistakes">Почему не работает</h2>
+<div class="tbl"><table>
+<thead><tr><th>Что видите</th><th>Причина</th><th>Что сделать</th></tr></thead>
+<tbody>
+<tr><td>Ритуал начался и сразу кончился</td><td>Глаголу нечего делать: всё заряжено, врагов нет, нет материала.</td><td>Проверьте досягаемость, положите артефакт или материал.</td></tr>
+<tr><td>Ничего не происходит вообще</td><td>В схеме нет глагола.</td><td>Добавьте глагол, если это не Купол, Ловушка или сырой поток.</td></tr>
+<tr><td>Ритуал слабый, долго стоит</td><td>Нет Замыкания (−30%), много Предохранений (×0.75 каждое), плохой рисунок, мало источников.</td><td>Одно Замыкание, рисует ритуалист с Интеллектом и Искусством, кристаллы или перья в кружках.</td></tr>
+<tr><td>«Waiting for material»</td><td>Материала в кружках меньше, чем выставлено.</td><td>Дождитесь носильщиков или уменьшите количество.</td></tr>
+<tr><td>Трансмутация ничего не делает</td><td>Нет Печати, а без неё нужна Нить или Широта (тогда это ток).</td><td>Добавьте кружок Seal с нужным металлом.</td></tr>
+<tr><td>Схему нельзя нарисовать</td><td>Руна не исследована или схема больше круга.</td><td>Исследуйте ступень или нарисуйте в круге побольше.</td></tr>
+<tr><td>Ритуалиста обожгло или был взрыв</td><td>Риск выше выдержки, нет Предохранения.</td><td>Добавьте Предохранение, уберите лишние Усиления, тренируйте выдержку медитацией.</td></tr>
+<tr><td>Внезапный вихрь</td><td>Наполнение с Фокусом без Замыкания.</td><td>Всегда ставьте Замыкание к Наполнению с Фокусом.</td></tr>
+<tr><td>Нить не работает</td><td>Руна Нити есть, но вещи не привязаны.</td><td>Кнопка «Threads...» на круге, выберите до 3 вещей за руну.</td></tr>
+<tr><td>Дальность не туда</td><td>Точка выбирается при начале ритуала.</td><td>После «Begin ritual...» кликните по карте, куда действовать.</td></tr>
+<tr><td>Гравировку не видно в узоре</td><td>Руна стоит в другом кольце, чем в узоре.</td><td>Узоры сравниваются по кольцам; глаголы при этом всё равно работают.</td></tr>
+</tbody></table></div>
+
+<!-- ============================================================ -->
+<h2 id="cheat">Шпаргалка</h2>
+<div class="cols">
+  <div class="box"><h4>Почти всегда</h4><ul><li>Один глагол в центр.</li><li>Одно Замыкание.</li><li>Предохранение, если ритуалист слабый или схема мощная.</li></ul></div>
+  <div class="box"><h4>Хочу сильнее</h4><ul><li>Круг больше (×1.6, ×2.4).</li><li>Усиление (+30%, но риск).</li><li>Лучший рисовальщик, гравировка.</li><li>Артефакт в кружке.</li></ul></div>
+  <div class="box"><h4>Хочу дальше</h4><ul><li>Широта: +4 клетки.</li><li>Дальность: любая точка.</li><li>Нить: конкретные вещи.</li><li>Сеть: всё на проводе.</li></ul></div>
+  <div class="box"><h4>Хочу надолго</h4><ul><li>Якорь.</li><li>Гравировка для бесконечности.</li><li>Самоподдержание с проводником в центре.</li><li>Хранители на сети как запас.</li></ul></div>
+</div>
+<div class="note"><b>Порядок глаголов</b>Вытягивание перед другим глаголом кормит его. Перенос перед Очищением переносит всё. Высвобождение с Подъёмом в одном кольце даёт отталкивающую волну.</div>
+
+<footer>Гайд собран по коду мода Avir — Apex Predator. Числа могут поменяться при балансировке.</footer>
+</main>
+</div>
