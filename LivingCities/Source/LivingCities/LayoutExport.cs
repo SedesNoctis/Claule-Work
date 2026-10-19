@@ -34,6 +34,19 @@ namespace LivingCities
             L.colony = map.Parent?.LabelCap ?? "";
             L.biome = map.Biome?.defName ?? "";
             L.daysPlayed = GenDate.DaysPassed;
+
+            // ---------------- the colony's ideoligions and the styles they build in
+            if (ModsConfig.IdeologyActive && Faction.OfPlayer?.ideos != null)
+            {
+                Ideo primary = Faction.OfPlayer.ideos.PrimaryIdeo;
+                foreach (Ideo ideo in Faction.OfPlayer.ideos.AllIdeos)
+                {
+                    string memes = string.Join(";", ideo.memes.Select(m => N(m)));
+                    string styles = ideo.thingStyleCategories == null ? "" : string.Join(";", ideo.thingStyleCategories
+                        .Where(s => s.category != null).Select(s => N(s.category) + ":" + F(s.priority)));
+                    L.ideos.Add((ideo == primary ? "primary" : "") + "|" + ideo.name + "|" + N(ideo.culture) + "|" + memes + "|" + styles);
+                }
+            }
             L.size = new IntVec2(rect.Width, rect.Height);
             Use(map.Biome);
 
@@ -207,6 +220,7 @@ namespace LivingCities
             List("bills", L.bills);
             List("residents", L.residents);
             List("animals", L.animals);
+            List("ideos", L.ideos);
             sb.AppendLine("  </LivingCities.LayoutDef>");
             sb.AppendLine("</Defs>");
             return sb.ToString();

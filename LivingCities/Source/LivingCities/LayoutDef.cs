@@ -58,6 +58,8 @@ namespace LivingCities
         public List<string> bills = new List<string>();
         public List<string> residents = new List<string>();
         public List<string> animals = new List<string>();
+        /// <summary>The colony's ideoligions: "primary|name|culture|memes;...|style:priority;..." - the styles its buildings are made in.</summary>
+        public List<string> ideos = new List<string>();
 
         public const string Digits = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
