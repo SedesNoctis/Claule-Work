@@ -82,10 +82,10 @@ namespace Avir.Magic
         }
 
         // ---------------------------------------------------------------- where
-        private static List<IntVec3> Point(IntVec3 at, Map map, float radius) =>
+        public static List<IntVec3> Point(IntVec3 at, Map map, float radius) =>
             GenRadial.RadialCellsAround(at, radius, true).Where(c => c.InBounds(map)).ToList();
 
-        private static List<IntVec3> Beam(IntVec3 from, IntVec3 to, Map map, int breadth)
+        public static List<IntVec3> Beam(IntVec3 from, IntVec3 to, Map map, int breadth)
         {
             var cells = new HashSet<IntVec3>();
             foreach (IntVec3 c in GenSight.BresenhamCellsBetween(from, to))
@@ -98,7 +98,7 @@ namespace Avir.Magic
             return cells.ToList();
         }
 
-        private static List<IntVec3> Wall(IntVec3 from, IntVec3 at, Map map, int length)
+        public static List<IntVec3> Wall(IntVec3 from, IntVec3 at, Map map, int length)
         {
             Vector3 d = (at - from).ToVector3();
             if (d.sqrMagnitude < 0.01f) d = Vector3.forward;

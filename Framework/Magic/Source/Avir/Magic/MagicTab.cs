@@ -102,7 +102,7 @@ namespace Avir.Magic
             GUI.color = Ink; Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(r.x, r.y, r.width, 34f), pawn.LabelShortCap);
             Text.Font = GameFont.Small;
-            GUI.color = sorc ? Hediff_ArcaneCore.SorcererColor * 0.75f : Hediff_ArcaneCore.MageColor * 0.75f;
+            GUI.color = SpellGlyph.Ink(sorc ? Hediff_ArcaneCore.SorcererColor : Hediff_ArcaneCore.MageColor);
             Widgets.Label(new Rect(r.x, r.y + 34f, r.width, 24f), sorc ? "Sorcerer - born with magic" : "Mage - magic taken in");
             if (core == null) { GUI.color = InkSoft; Widgets.Label(new Rect(r.x, r.y + 64f, r.width, 60f), "No arcane core - the gift will grow it back."); return; }
             // the Arcana, large
@@ -168,8 +168,7 @@ namespace Avir.Magic
                 if (open && s != null)
                 {
                     RuneDef icon = Spells.Element(s) ?? RitualEvaluator.Read(s).verbs.FirstOrDefault();
-                    GUI.color = Spells.ColorOf(s);
-                    if (icon != null) GUI.DrawTexture(sl.ContractedBy(w * 0.22f), icon.Glow, ScaleMode.ScaleToFit);
+                    if (icon != null) SpellGlyph.Draw(sl.ContractedBy(w * 0.18f), icon.Glow, Spells.ColorOf(s));
                     GUI.color = Ink; Text.Font = GameFont.Tiny; Text.Anchor = TextAnchor.LowerCenter;
                     Widgets.Label(new Rect(sl.x - 6f, sl.yMax - 2f, sl.width + 12f, 18f), s.name.Truncate(sl.width + 12f));
                     Text.Anchor = TextAnchor.UpperLeft; Text.Font = GameFont.Small;
@@ -197,8 +196,7 @@ namespace Avir.Magic
                 Rect row = new Rect(0f, y, view.width, 60f);
                 if (Mouse.IsOver(row)) Widgets.DrawBoxSolid(row, new Color(1f, 0.9f, 0.6f, 0.14f));
                 RuneDef icon = Spells.Element(s) ?? RitualEvaluator.Read(s).verbs.FirstOrDefault();
-                GUI.color = Spells.ColorOf(s);
-                if (icon != null) GUI.DrawTexture(new Rect(row.x + 2f, row.y + 6f, 48f, 48f), icon.Glow, ScaleMode.ScaleToFit);
+                if (icon != null) SpellGlyph.Draw(new Rect(row.x + 2f, row.y + 6f, 48f, 48f), icon.Glow, Spells.ColorOf(s));
                 GUI.color = Ink;
                 Widgets.Label(new Rect(row.x + 56f, row.y + 4f, row.width - 260f, 24f), s.name);
                 Text.Font = GameFont.Tiny; GUI.color = InkSoft;

@@ -339,20 +339,70 @@ namespace Avir.Magic
         {
             base.ProcessInput(ev);
             var parms = new TargetingParameters { canTargetLocations = true, canTargetPawns = true, canTargetSelf = true, canTargetBuildings = false };
+            float range = Spells.Range(spell);
+            // while aiming: the reach around the mage and, at the cursor, where the spell will strike - every frame
             Find.Targeter.BeginTargeting(parms, t =>
             {
                 if (!mage.Spawned) return;
-                if (t.Cell.DistanceTo(mage.Position) > Spells.Range(spell)) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
+                if (t.Cell.DistanceTo(mage.Position) > range) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
                 Job j = JobMaker.MakeJob(MagicSpellDefOf.Avir_CastSpell, t);
                 JobDriver_CastSpell.Pending[j] = new KeyValuePair<RitualSchema, int>(spell.Copy(), slot);
                 if (!mage.jobs.TryTakeOrderedJob(j, JobTag.Misc)) JobDriver_CastSpell.Pending.Remove(j);
-            }, mage, null, null);
+            }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, null, null, true, null,
+            t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
         }
 
         public override void GizmoUpdateOnMouseover()
         {
             base.GizmoUpdateOnMouseover();
-            if (mage.Spawned) GenDraw.DrawRadiusRing(mage.Position, Spells.Range(spell));
+            if (mage.Spawned) SpellPreview.Draw(mage, spell, LocalTargetInfo.Invalid);
+        }
+    }
+
+    /// <summary>What a spell will touch, drawn on the map while it is aimed: its reach round the mage, and at the cursor
+    /// the cells each of its circles strikes (a point, a line, a wall, all round the mage...).</summary>
+    public static class SpellPreview
+    {
+        public static void Draw(Pawn mage, RitualSchema s, LocalTargetInfo t)
+        {
+            if (mage?.Map == null || s == null) return;
+            Map map = mage.Map;
+            float range = Spells.Range(s);
+            bool inReach = t.IsValid && t.Cell.InBounds(map) && t.Cell.DistanceTo(mage.Position) <= range;
+            if (range < GenRadial.MaxRadialPatternRadius) GenDraw.DrawRadiusRing(mage.Position, range, inReach || !t.IsValid ? Color.white : Color.red);
+            if (!t.IsValid || !t.Cell.InBounds(map)) return;
+            Color col = Spells.ColorOf(s);
+            IntVec3 at = t.Cell;
+            var cells = new HashSet<IntVec3>();
+            float widest = 0f;
+            IEnumerable<RitualSchema> parts = s.weave != null ? WeaveSpell.Small(s.weave).Where(c => c.element != null).Select(c => c.AsSchema()) : new[] { s };
+            foreach (RitualSchema one in parts)
+            {
+                RitualReading r = RitualEvaluator.Read(one);
+                float radius = 1.5f + 1.5f * r.breadth;
+                var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+                if (forms.Count == 0) { cells.UnionWith(FireMagic.Point(at, map, radius)); widest = Mathf.Max(widest, radius); continue; }
+                foreach (RuneDef f in forms)
+                    switch (f.kind)
+                    {
+                        case RuneKind.Aura: cells.UnionWith(FireMagic.Point(mage.Position, map, radius + 1.5f)); break;
+                        case RuneKind.Beam: cells.UnionWith(FireMagic.Beam(mage.Position, at, map, r.breadth)); break;
+                        case RuneKind.Shape: cells.UnionWith(FireMagic.Wall(mage.Position, at, map, 5 + 2 * r.breadth)); break;
+                        case RuneKind.Step: cells.UnionWith(GenSight.BresenhamCellsBetween(mage.Position, at).Where(c => c.InBounds(map))); break;
+                        case RuneKind.Enchant: cells.Add(at); break;
+                        case RuneKind.Summon: cells.Add(at); widest = Mathf.Max(widest, 7f); break;
+                        case RuneKind.Sense:
+                            float sr = 25f + 10f * r.reach;
+                            if (sr < GenRadial.MaxRadialPatternRadius) GenDraw.DrawRadiusRing(mage.Position, sr, col);
+                            break;
+                        default: cells.UnionWith(FireMagic.Point(at, map, radius)); widest = Mathf.Max(widest, radius); break;
+                    }
+            }
+            // steam and a great circle of life reach round the point
+            if (s.weave != null && (WeaveSpell.Steam(s.weave) || WeaveSpell.Wraps(s.weave, RuneKind.Life)))
+                widest = Mathf.Max(widest, 2f + 1.5f * s.weave.All().Sum(c => c.OwnRunes.Count(x => x.kind == RuneKind.Breadth)) + 1f);
+            if (cells.Count > 0) GenDraw.DrawFieldEdges(cells.ToList(), new Color(col.r, col.g, col.b, 1f));
+            if (widest > 0f && widest < GenRadial.MaxRadialPatternRadius) GenDraw.DrawRadiusRing(at, widest, col);
         }
     }
 }

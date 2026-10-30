@@ -108,6 +108,24 @@ namespace Avir.Magic
         private static string Cap(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s.Substring(1);
     }
 
+    /// <summary>A coloured glyph on a dark disc: pale fire, light, life or time would vanish on the parchment without it.</summary>
+    public static class SpellGlyph
+    {
+        public static void Draw(Rect r, Texture2D glyph, Color col)
+        {
+            if (glyph == null) return;
+            Color keep = GUI.color;
+            GUI.color = new Color(0.10f, 0.07f, 0.12f, 0.88f);
+            GUI.DrawTexture(r, RitualTex.Disc, ScaleMode.StretchToFill);
+            GUI.color = Color.Lerp(col, Color.white, 0.15f);
+            GUI.DrawTexture(r.ContractedBy(r.width * 0.14f), glyph, ScaleMode.ScaleToFit);
+            GUI.color = keep;
+        }
+
+        /// <summary>A colour dark enough to read as ink on the parchment.</summary>
+        public static Color Ink(Color c) => new Color(c.r * 0.45f, c.g * 0.45f, c.b * 0.45f, 1f);
+    }
+
     /// <summary>The effect plaque in the spell editor: the core in one sentence, the rest as small plaques.</summary>
     public static class EffectPlaque
     {
@@ -161,7 +179,7 @@ namespace Avir.Magic
                 if (x + cw > inner.xMax && x > inner.x) { x = inner.x; y += 26f; }
                 Rect chip = new Rect(x, y, cw, 22f);
                 bool price = c.Key.StartsWith("Price");
-                Widgets.DrawBoxSolid(chip, price ? new Color(0.55f, 0.15f, 0.08f, 0.85f) : new Color(col.r, col.g, col.b, 0.55f));
+                Widgets.DrawBoxSolid(chip, price ? new Color(0.55f, 0.15f, 0.08f, 0.92f) : new Color(col.r * 0.32f, col.g * 0.32f, col.b * 0.32f, 0.92f));
                 GUI.color = Color.white; Text.Anchor = TextAnchor.MiddleCenter;
                 Widgets.Label(chip, c.Key);
                 Text.Anchor = TextAnchor.UpperLeft;
