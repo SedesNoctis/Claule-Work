@@ -357,6 +357,19 @@ namespace Avir.Magic
             return power;
         }
 
+        /// <summary>A mage's own spell never kills the mage: no fire is set at their feet or right round them
+        /// (they may have just come out of the ground in the middle of it).</summary>
+        public static bool ByMage(IntVec3 c, Pawn caster) => caster != null && caster.Spawned && c.InHorDistOf(caster.Position, 2.5f);
+
+        /// <summary>And if some flame caught them anyway while their spell ran, it goes out.</summary>
+        public static void Unburn(Pawn caster)
+        {
+            if (caster == null || !caster.Spawned) return;
+            caster.GetAttachment(ThingDefOf.Fire)?.Destroy();
+            // the explosion of a fireball spreads flame on its own: none is left under the mage's feet
+            foreach (IntVec3 c in GenRadial.RadialCellsAround(caster.Position, 1.5f, true)) if (c.InBounds(caster.Map)) FireMagic.Extinguish(c, caster.Map);
+        }
+
         public static bool Foe(Pawn p, Pawn caster) => p != caster && !p.Dead && p.HostileTo(caster);
 
         public static bool Rooted(Pawn p) => p.health?.hediffSet?.GetFirstHediffOfDef(EarthAirDefOf.Avir_EarthWard) != null;
