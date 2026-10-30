@@ -64,7 +64,7 @@ namespace Avir.Magic
             {
                 case RuneKind.Restore: e.main = "Cauterizes: bleeding wounds of friends at the target are seared shut, as if tended."; break;
                 case RuneKind.Enchant: e.main = "Sets a friend's weapon burning (the mage's, if no friend stands there): blows add flame, shots may set foes alight."; break;
-                case RuneKind.Summon: e.main = "Calls a fire wisp at the target: for a while it throws flame at foes within 7 cells."; break;
+                case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Sense: e.main = "The mage feels every warm body within " + (25 + 10 * r.reach) + " cells - through walls and darkness - for a while."; break;
                 case RuneKind.Step: e.main = "The mage leaps to the target; along the way the fire " + (verbs.Count > 0 ? what : "stays held on the trail") + "."; break;
                 default:
@@ -105,14 +105,14 @@ namespace Avir.Magic
             {
                 case RuneKind.Restore: e.main = "Washes the wounds of friends at the target and binds them - the bleeding stops."; break;
                 case RuneKind.Enchant: e.main = "Wraps a friend's weapon in water (the mage's, if no friend stands there): blows soak the foe, and every blow on a soaked one weakens them further."; break;
-                case RuneKind.Summon: e.main = "Calls a water spirit that keeps by the mage: it soaks and shoves foes, puts out fires near it, and catches one shot meant for the mage - then it is gone."; break;
+                case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Sense: e.main = "There is water in every living thing: the mage feels them all within " + (25 + 10 * r.reach) + " cells, through walls - the unseen too, a ripple where they stand."; break;
-                case RuneKind.Step: e.main = "The mage rides a wave to the target, throwing aside whoever stands in the way" + (verbs.Count > 0 ? "; along the way the water " + what : "") + "."; break;
+                case RuneKind.Step: e.main = "The mage rides a wave to the target: it strikes whoever stands in its way and carries them on - wider and harder with breadth" + (verbs.Count > 0 ? "; and the water " + what : "") + "."; break;
                 case RuneKind.Shape: e.main = "The ground between two chosen points (up to " + FireMagic.WallMax(r) + " cells) turns to shallow water for a few hours: a moat - slow to cross, and fire will not burn there."; break;
                 default:
                     if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A ward of water on friends at the target." : "Water with nothing to do: add a verb or a form."; break; }
                     string where = form?.kind == RuneKind.Aura ? "all round the mage - and a mist stays round them for a while: foes in it are slowed and shoot poorly, fire does not start, and this happens again every few seconds"
-                                 : form?.kind == RuneKind.Beam ? "in a jet to the target - and the water flows on to " + (1 + r.breadth) + " more foe(s) nearby"
+                                 : form?.kind == RuneKind.Beam ? "in a jet to the target"
                                  : "at the point, " + radius.ToString("0.#") + " cells round";
                     e.main = Cap(what) + " - " + where + ".";
                     break;
@@ -131,7 +131,7 @@ namespace Avir.Magic
         {
             switch (v.kind)
             {
-                case RuneKind.Release: return "bursts, knocking foes back and soaking them";
+                case RuneKind.Release: return "bursts, striking foes, throwing them back and soaking them";
                 case RuneKind.Hold: return "lies there as standing water that slows foes and keeps fire away";
                 case RuneKind.Drain: return "draws the water out of foes and leaves them weak";
                 case RuneKind.Lift: return "rises as a geyser that throws foes up";
@@ -289,7 +289,6 @@ namespace Avir.Magic
             Make("Ride the wave", new[] { "Water", "Release" }, new[] { "Step" }),
             Make("Washing", new[] { "Water" }, new[] { "Restore" }),
             Make("Weapon of water", new[] { "Water" }, new[] { "Enchant" }),
-            Make("Water spirit", new[] { "Water" }, new[] { "Summon" }),
             Make("Ward of water", new[] { "Water", "Barrier" }),
         };
 
@@ -305,7 +304,6 @@ namespace Avir.Magic
             Make("Flame step", new[] { "Fire", "Release" }, new[] { "Step" }),
             Make("Cautery", new[] { "Fire" }, new[] { "Restore", "Purge" }),
             Make("Burning blade", new[] { "Fire" }, new[] { "Enchant" }),
-            Make("Fire wisp", new[] { "Fire" }, new[] { "Summon" }),
             Make("Warmth sense", new[] { "Fire" }, new[] { "Sense" }),
             Make("Ward of flame", new[] { "Fire", "Barrier" }),
         };

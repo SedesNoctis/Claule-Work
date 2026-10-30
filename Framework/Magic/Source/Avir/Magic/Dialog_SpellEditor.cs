@@ -109,7 +109,8 @@ namespace Avir.Magic
             if (!(r.Unlocked || Prefs.DevMode)) return false;
             switch (r.role)
             {
-                case RuneRole.Element: case RuneRole.Form: return r.magic;
+                case RuneRole.Element: return r.magic;
+                case RuneRole.Form: return r.magic && r.kind != RuneKind.Summon;   // spirits: not made yet
                 case RuneRole.Verb: return Spells.Made(r.kind);
                 case RuneRole.Modifier: return true;
                 case RuneRole.Flow: return r.kind == RuneKind.Barrier;
@@ -309,12 +310,12 @@ namespace Avir.Magic
                 case RuneKind.Growth: return "the water spreads, plants drink";
                 case RuneKind.Purge: return "washes fire, filth and poison away";
                 case RuneKind.Aura: return "a tide of mist round the mage";
-                case RuneKind.Beam: return "a jet that flows on to more foes";
+                case RuneKind.Beam: return "a jet to the target";
                 case RuneKind.Shape: return "the ground turns to shallow water";
-                case RuneKind.Step: return "the mage rides a wave there";
+                case RuneKind.Step: return "a wave that strikes and carries foes";
                 case RuneKind.Restore: return "wounds washed and bound";
                 case RuneKind.Enchant: return "blows that soak and weaken";
-                case RuneKind.Summon: return "a spirit that catches a shot";
+                case RuneKind.Summon: return "spirits are not made yet";
                 case RuneKind.Sense: return "feels the living, the unseen too";
                 case RuneKind.Barrier: return "a ward that puts out fires round it";
                 case RuneKind.Amplify: return "stronger; bursts throw further";
@@ -343,7 +344,7 @@ namespace Avir.Magic
                 case RuneKind.Step: return "a leap with a trail of fire";
                 case RuneKind.Restore: return "cautery of friends";
                 case RuneKind.Enchant: return "a burning weapon";
-                case RuneKind.Summon: return "a fire wisp";
+                case RuneKind.Summon: return "spirits are not made yet";
                 case RuneKind.Sense: return "warm bodies through walls";
                 case RuneKind.Barrier: return "a ward fire cannot pass";
                 case RuneKind.Water: return "steam, where the two meet";

@@ -106,9 +106,12 @@ namespace Avir.Magic
             if (!Spawned) return;
             // a ward in its way puts it out: the spell is spent, the ward is gone, nothing passes and nothing grows
             if (Position != mage?.Position && Ward.Quench(Position, Map, mage)) { Destroy(); return; }
-            // a trail behind it: embers for a ball, a running line of light for a beam
-            if (Beam) FleckMaker.ThrowFireGlow(DrawPos, Map, 0.55f);
-            else if (this.IsHashIntervalTick(2, delta)) { FleckMaker.ThrowFireGlow(DrawPos, Map, 0.9f); if (Rand.Chance(0.3f)) FleckMaker.ThrowMicroSparks(DrawPos, Map); }
+            // a trail behind it, of its own element: embers for fire, spray for water, a faint haze of its colour for the rest
+            RuneDef el = spell != null ? Spells.Element(spell) : null;
+            if (!this.IsHashIntervalTick(Beam ? 1 : 2, delta)) return;
+            if (el == null || el.kind == RuneKind.Fire) { FleckMaker.ThrowFireGlow(DrawPos, Map, Beam ? 0.55f : 0.9f); if (Rand.Chance(0.3f)) FleckMaker.ThrowMicroSparks(DrawPos, Map); }
+            else if (el.kind == RuneKind.Water) { if (Rand.Chance(Beam ? 0.6f : 0.8f)) FleckMaker.Static(DrawPos.ToIntVec3(), Map, FleckDefOf.WaterRipple, Beam ? 0.7f : 1.1f); }
+            else FleckMaker.ThrowDustPuffThick(DrawPos, Map, Beam ? 0.6f : 1f, new Color(el.color.r, el.color.g, el.color.b, 0.5f));
         }
 
         protected override void Impact(Thing hitThing, bool blockedByShield = false)

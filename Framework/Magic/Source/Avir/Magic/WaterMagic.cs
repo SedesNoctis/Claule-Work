@@ -47,7 +47,6 @@ namespace Avir.Magic
                     case RuneKind.Beam:
                         var line = FireMagic.Beam(caster.Position, at, map, r.breadth);
                         Apply(caster, map, verbs, line, caster.Position, power, r);
-                        Chain(caster, line.Count > 0 ? line.Last() : at, map, 1 + r.breadth, power);
                         break;
                     case RuneKind.Shape:
                         // the ground itself turns to shallow water for a while: a moat that slows everyone and takes no fire
@@ -57,16 +56,23 @@ namespace Avir.Magic
                         Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, r);
                         break;
                     case RuneKind.Step:
-                        var path = GenSight.BresenhamCellsBetween(caster.Position, at).Where(c => c.InBounds(map) && c != caster.Position).ToList();
-                        // the wave carries the mage; whoever stands in the way is thrown aside
-                        foreach (IntVec3 c in path) foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList()) if (p != caster && p.HostileTo(caster)) Push(p, c + (c - caster.Position).RotatedBy(Rot4.East), 2, map);
+                        // a wave rolls ahead of the mage, as wide as its breadth: whoever stands in it is struck and carried on
+                        var path = FireMagic.Beam(caster.Position, at, map, r.breadth).Where(c => c != caster.Position).ToList();
+                        IntVec3 back = caster.Position;
+                        foreach (Pawn p in PawnsIn(path, map))
+                        {
+                            if (p == caster || !p.HostileTo(caster)) continue;
+                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (8f + 3f * r.breadth) * power, 0f, -1f, caster));
+                            Soak(p, power);
+                            Push(p, back, 2 + r.breadth, map);
+                        }
+                        foreach (IntVec3 c in path) { FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.6f); FireMagic.Extinguish(c, map); if (Rand.Chance(0.3f)) Puddle(c, map); }
                         SpellDash.Carry(caster, at, RuneKind.Water);
-                        foreach (IntVec3 c in path) { FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.2f); FireMagic.Extinguish(c, map); }
                         if (verbs.Count > 0) Apply(caster, map, verbs, path, at, power, r);
                         break;
                     case RuneKind.Restore: Wash(caster, at, map, Mathf.Max(0.9f, radius - 1f), power); break;
                     case RuneKind.Enchant: Enchant(caster, at, map, power); break;
-                    case RuneKind.Summon: Spirit(caster, at, map, power, r.amplify); break;
+                    case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
                     case RuneKind.Sense: FireMagic.Sense(caster, map, 25f + 10f * r.reach, power); break;
                     default: if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); break;
                 }
@@ -88,9 +94,11 @@ namespace Avir.Magic
                         foreach (Pawn p in PawnsIn(cells, map))
                         {
                             if (p == caster || !p.HostileTo(caster)) continue;
-                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 5f * power, 0f, -1f, caster));
+                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (9f + 3f * r.amplify) * power, 0f, -1f, caster));
                             Soak(p, power);
-                            Push(p, from, 2 + r.amplify, map);
+                            Push(p, from, 3 + r.amplify, map);
+                            p.stances?.stunner?.StunFor(Mathf.RoundToInt(60f * power), caster);
+                            FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 2.2f);
                         }
                         foreach (IntVec3 c in cells) { if (Rand.Chance(0.5f)) FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.6f); if (Rand.Chance(0.35f)) Puddle(c, map); }
                         break;

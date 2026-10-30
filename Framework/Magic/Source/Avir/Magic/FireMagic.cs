@@ -65,7 +65,7 @@ namespace Avir.Magic
                         Enchant(caster, at, map, power);
                         break;
                     case RuneKind.Summon:
-                        Wisp(caster, at, map, power, r.amplify);
+                        Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false);
                         break;
                     case RuneKind.Sense:
                         Sense(caster, map, 25f + 10f * r.reach, power);
