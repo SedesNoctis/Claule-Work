@@ -109,6 +109,18 @@ namespace Avir.Magic
 
         private MageBook book;
         public MageBook Book => book ?? (book = new MageBook());
+        /// <summary>The mage's element - the path a ritual gives (null: none yet).</summary>
+        public RuneDef path;
+        /// <summary>What happened to the mage lately, newest last: "tick|text".</summary>
+        public List<string> log = new List<string>();
+        public float ventedToArtifacts;
+
+        public void Note(string text)
+        {
+            if (log == null) log = new List<string>();
+            log.Add(Find.TickManager.TicksGame + "|" + text);
+            while (log.Count > 6) log.RemoveAt(0);
+        }
 
         public bool Sorcerer => pawn.story?.traits?.GetTrait(MagicDefOf.Avir_ArcaneGift)?.Degree == Mages.Born;
 
@@ -141,6 +153,10 @@ namespace Avir.Magic
             Scribe_Values.Look(ref target, "target", 0.5f);
             Scribe_Values.Look(ref vent, "vent", true);
             Scribe_Deep.Look(ref book, "book");
+            Scribe_Defs.Look(ref path, "path");
+            Scribe_Collections.Look(ref log, "log", LookMode.Value);
+            Scribe_Values.Look(ref ventedToArtifacts, "ventedToArtifacts");
+            if (log == null) log = new List<string>();
         }
 
         public override void TickInterval(int delta)
@@ -373,7 +389,9 @@ namespace Avir.Magic
                 float g = Mathf.Min(give, (1f - st.charge) * cap);
                 st.charge = Mathf.Min(1f, st.charge + g / cap);
                 give -= g; c.arcana -= g;
+                c.ventedToArtifacts += g;
             }
+            if (c.ventedToArtifacts >= 10f) { c.Note("Let " + Mathf.FloorToInt(c.ventedToArtifacts) + " Arcana out into artifacts."); c.ventedToArtifacts = 0f; }
             if (give > 0.001f)
             {
                 c.arcana -= give;   // into the air

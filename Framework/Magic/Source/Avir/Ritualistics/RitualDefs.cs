@@ -172,6 +172,8 @@ namespace Avir.Ritualistics
         public RitualPresetDef preset;
         /// <summary>A spell's circles, if it is written as circles round circles (the spell editor). Null for rituals.</summary>
         public SpellCircle weave;
+        /// <summary>A spell's own sign, as the player made it (null: its element on a dark disc).</summary>
+        public SpellIcon icon;
 
         public IEnumerable<RuneDef> AllRunes => rings.SelectMany(r => r.runes).Where(r => r != null);
 
@@ -188,6 +190,7 @@ namespace Avir.Ritualistics
             foreach (RitualRing r in rings) c.rings.Add(r.Copy());
             foreach (RitualComponent k in components) c.components.Add(k.Copy());
             c.weave = weave?.Copy();
+            c.icon = icon?.Copy();
             return c;
         }
 
@@ -197,6 +200,7 @@ namespace Avir.Ritualistics
             Scribe_Values.Look(ref size, "size", RitualCircleSize.Small);
             Scribe_Defs.Look(ref preset, "preset");
             Scribe_Deep.Look(ref weave, "weave");
+            Scribe_Deep.Look(ref icon, "icon");
             // one list per ring
             List<string> packed = null;
             // "slots|rune,rune" per section (older files: just the runes)

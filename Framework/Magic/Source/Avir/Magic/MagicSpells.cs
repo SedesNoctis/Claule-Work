@@ -108,11 +108,13 @@ namespace Avir.Magic
                 g.Severity = Mathf.Min(1f, g.Severity + 0.08f);
                 FleckMaker.ThrowMicroSparks(caster.DrawPos, map);
                 Messages.Message(caster.LabelShortCap + " lost the hold on " + s.name + ": the Arcana burnt through.", caster, MessageTypeDefOf.NegativeEvent, false);
+                core.Note("Lost the hold on " + s.name + ".");
                 if (s.weave != null) WeaveSpell.Slip(caster, s.weave);
                 else if (FireMagic.Is(r.elements.FirstOrDefault())) FireMagic.Raging(caster);
                 return;
             }
             GameComponent_AvirComposure.Performed(caster, cost, risk, comp, GameComponent_AvirComposure.KeyOf(s));
+            core.Note("Cast " + s.name + " (" + cost.ToString("0.#") + " Arcana).");
             float power = Power(s);
             int tier = FlowTier(map);
             if (tier > 0)
@@ -350,6 +352,16 @@ namespace Avir.Magic
                 if (!mage.jobs.TryTakeOrderedJob(j, JobTag.Misc)) JobDriver_CastSpell.Pending.Remove(j);
             }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, null, null, true, null,
             t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
+        }
+
+        /// <summary>A sign the player made is drawn as itself; without one, the element's glyph as before.</summary>
+        public override void DrawIcon(Rect rect, Material buttonMat, GizmoRenderParms parms)
+        {
+            if (spell?.icon == null) { base.DrawIcon(rect, buttonMat, parms); return; }
+            Color keep = GUI.color;
+            SpellIconArt.Draw(rect.ContractedBy(rect.width * 0.08f), spell);
+            if (disabled && !parms.lowLight) { GUI.color = new Color(0f, 0f, 0f, 0.45f); GUI.DrawTexture(rect, BaseContent.WhiteTex); }
+            GUI.color = keep;
         }
 
         public override void GizmoUpdateOnMouseover()

@@ -126,24 +126,121 @@ namespace Avir.Magic
             bool v = core.vent;
             Widgets.CheckboxLabeled(vt, "Let the excess out (above the white mark)", ref v);
             core.vent = v;
-            // the facts
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine("Core: level " + core.level + " - it holds " + Mathf.FloorToInt(core.Capacity) + " (100 a level" + (MagicConductors.CapacityFactor(pawn) < 0.999f ? ", less for what steadies the mage" : "") + ").");
-            sb.AppendLine("Safe band: " + lo.ToStringPercent() + " - " + hi.ToStringPercent() + ", from composure " + core.Composure.ToStringPercent() + ".");
-            if (MagicConductors.Horned(pawn)) sb.AppendLine("Horns: a natural conductor - composure +" + MagicConductors.HornComposure.ToStringPercent() + ", a wider band, a smaller core.");
-            int a = MagicConductors.Artifacts(pawn);
-            if (a > 0) sb.AppendLine("Artifacts worn: " + a + " - a wider band, a smaller core.");
+            // below: six blocks - the path, the Arcana coming in, the core, the casting, what steadies, what happened
+            Rect area = new Rect(r.x, vt.yMax + 8f, r.width, r.yMax - vt.yMax - 8f);
+            Rect view = new Rect(0f, 0f, area.width - 16f, mageH > 0f ? mageH : 900f);
+            RitualScroll.Begin(area, ref mageScroll, view);
+            float y = 0f, w = view.width;
+            Map map = pawn.MapHeld;
+            int tier = Spells.FlowTier(map);
+            MapComponent_ExternalFlow ext = map != null ? MapComponent_ExternalFlow.Of(map) : null;
+            string tierName = ext != null ? MapComponent_ExternalFlow.Tier(ext.Total) : "calm";
+            CompSanctuary sanct = CompSanctuary.Near(pawn);
+
+            // 1. the path
+            Heading(ref y, w, "Path");
+            if (core.path != null)
+            {
+                SpellGlyph.Draw(new Rect(0f, y, 40f, 40f), core.path.Glow, core.path.color);
+                int own = core.Book.spells.Count(sp => Spells.Element(sp) == core.path);
+                Line(new Rect(48f, y, w - 48f, 44f), core.path.LabelCap + " - the mage's element. Spells of it in the book: " + own + ".", Ink);
+                y += 48f;
+            }
+            else y += Line(new Rect(0f, y, w, 60f), "No path yet. The path ritual will give the mage an element - and the first spells of it.", InkSoft);
+
+            // 2. the Arcana coming in, an hour
+            Heading(ref y, w, "Arcana coming in, an hour");
+            float med = core.Capacity * 0.25f * (1f + 0.5f * MapComponent_ExternalFlow.TierIndex(ext?.Total ?? 0f));
+            y += Row(y, w, "Meditation", "+" + med.ToString("0") + (sanct != null ? " (x3 here: " + (med * 3f).ToString("0") + ")" : ""), true);
+            int seepTier = MapComponent_ExternalFlow.TierIndex(ext?.Total ?? 0f);
+            y += Row(y, w, "The stream (" + tierName + ")", seepTier > 0 ? "+" + (core.Capacity * 0.02f * seepTier).ToString("0.#") : "none while calm", seepTier > 0);
+            y += Row(y, w, "Sanctuary", sanct != null ? sanct.element.LabelCap + ", " + sanct.Fill.ToStringPercent() + " stored" : "none near", sanct != null);
+            y += Row(y, w, "Filling ritual", "fills the core first, in its reach", true);
+
+            // 3. the core
+            Heading(ref y, w, "The core");
+            y += Row(y, w, "Level " + core.level, "holds " + Mathf.FloorToInt(core.Capacity), true);
+            y += Bar(y, w, "Composure", core.Composure, new Color(0.35f, 0.55f, 0.85f), "Composure " + core.Composure.ToStringPercent() + ": the safe band is " + lo.ToStringPercent() + " - " + hi.ToStringPercent() + ". Wider with composure and with what steadies the mage.");
             Hediff g = pawn.health.hediffSet.GetFirstHediffOfDef(MagicDefOf.Avir_ArcaneGreatness);
-            if (g != null) sb.AppendLine("Greatness: " + g.Severity.ToStringPercent() + " (" + g.LabelCap + ") - it holds work beneath the mage.");
+            y += Bar(y, w, "Greatness", g?.Severity ?? 0f, new Color(0.9f, 0.62f, 0.15f), "Greatness swells above the band and with the stream's casts" + (g != null ? " (" + g.LabelCap + ")" : "") + ". It holds work beneath the mage; held long, the Arcana breaks out.");
             Hediff h = pawn.health.hediffSet.GetFirstHediffOfDef(MagicDefOf.Avir_ArcaneHollow);
-            if (h != null) sb.AppendLine("Hollow: " + h.Severity.ToStringPercent() + ".");
-            CompSanctuary s = CompSanctuary.Near(pawn);
-            if (s != null) sb.AppendLine("Near a sanctuary of " + s.element.label + " (" + s.Fill.ToStringPercent() + "): meditation here fills three times as fast.");
-            sb.AppendLine();
-            sb.AppendLine("Filled by meditation, by a filling ritual in whose reach the mage stands, slowly by the stream, and beside a lit sanctuary.");
-            sb.Append("Above the band greatness swells; held there long, the Arcana breaks out. Below it the mage grows hollow, never ordinary.");
-            GUI.color = InkSoft;
-            Widgets.Label(new Rect(r.x, vt.yMax + 10f, r.width, r.yMax - vt.yMax - 10f), sb.ToString());
+            y += Bar(y, w, "Hollow", h?.Severity ?? 0f, new Color(0.45f, 0.42f, 0.5f), "Below the band the mage grows hollow - never ordinary again.");
+
+            // 4. the casting
+            Heading(ref y, w, "Casting");
+            y += Row(y, w, sorc ? "Sorcerer: quick" : "Mage: slow", "a small circle in " + ((sorc ? 60f : 150f) / 60f).ToString("0.#") + " s", true);
+            RitualSchema probe = SpellExamples.Fire().FirstOrDefault();
+            if (probe != null) y += Row(y, w, "Hold, a simple spell", Spells.HoldChance(pawn, probe).ToStringPercent(), true);
+            y += Row(y, w, "The stream's strength", tier > 0 ? "+" + (15 * tier) + "% power, greatness +" + (0.02f * tier).ToStringPercent() + " a cast" : "none while calm", tier > 0);
+
+            // 5. what steadies
+            Heading(ref y, w, "What steadies the mage");
+            bool horned = MagicConductors.Horned(pawn);
+            y += Row(y, w, "Horns", horned ? "composure +" + MagicConductors.HornComposure.ToStringPercent() + ", core x0.7" : "none", horned);
+            int arts = MagicConductors.Artifacts(pawn);
+            y += Row(y, w, "Artifacts worn", arts > 0 ? arts + ": band +" + Mathf.Min(0.1f, 0.05f * arts).ToStringPercent() + ", core x" + Mathf.Pow(0.85f, arts).ToString("0.00") : "none", arts > 0);
+            y += Row(y, w, "Core in all", "x" + MagicConductors.CapacityFactor(pawn).ToString("0.00") + " of its size", true);
+
+            // 6. what happened lately
+            Heading(ref y, w, "Lately");
+            if (core.log.NullOrEmpty()) y += Line(new Rect(0f, y, w, 26f), "Nothing yet.", InkSoft);
+            else
+                foreach (string e in Enumerable.Reverse(core.log))
+                {
+                    int cut = e.IndexOf('|');
+                    int tick = cut > 0 && int.TryParse(e.Substring(0, cut), out int tk) ? tk : 0;
+                    string ago = (Find.TickManager.TicksGame - tick).ToStringTicksToPeriod(true, true) + " ago";
+                    y += Line(new Rect(0f, y, w, 44f), ago + ": " + (cut > 0 ? e.Substring(cut + 1) : e), Ink);
+                }
+            mageH = y + 10f;
+            Widgets.EndScrollView();
+        }
+
+        private Vector2 mageScroll;
+        private float mageH;
+
+        private static void Heading(ref float y, float w, string label)
+        {
+            y += 6f;
+            GUI.color = SpellGlyph.Ink(new Color(0.9f, 0.6f, 0.2f));
+            Widgets.Label(new Rect(0f, y, w, 24f), label.ToUpper());
+            GUI.color = new Color(0.55f, 0.4f, 0.2f, 0.5f);
+            Widgets.DrawLineHorizontal(0f, y + 23f, w);
+            y += 28f;
+        }
+
+        private static float Line(Rect r, string text, Color c)
+        {
+            GUI.color = c;
+            float h = Text.CalcHeight(text, r.width);
+            Widgets.Label(new Rect(r.x, r.y, r.width, h), text);
+            return h + 2f;
+        }
+
+        private static float Row(float y, float w, string label, string value, bool on)
+        {
+            GUI.color = Ink;
+            Widgets.Label(new Rect(0f, y, w * 0.5f, 24f), label);
+            GUI.color = on ? Ink : InkSoft;
+            Text.Anchor = TextAnchor.UpperRight;
+            Widgets.Label(new Rect(w * 0.42f, y, w * 0.58f, 24f), value);
+            Text.Anchor = TextAnchor.UpperLeft;
+            return 24f;
+        }
+
+        private static float Bar(float y, float w, string label, float v, Color c, string tip)
+        {
+            GUI.color = Ink;
+            Widgets.Label(new Rect(0f, y, 110f, 24f), label);
+            Rect b = new Rect(112f, y + 4f, w - 112f, 16f);
+            Widgets.DrawBoxSolid(b, new Color(0.93f, 0.86f, 0.7f, 0.8f));
+            Widgets.DrawBoxSolid(new Rect(b.x, b.y, b.width * Mathf.Clamp01(v), b.height), c);
+            GUI.color = new Color(0.4f, 0.3f, 0.18f, 0.8f); Widgets.DrawBox(b, 1);
+            GUI.color = Ink; Text.Anchor = TextAnchor.MiddleCenter;
+            Widgets.Label(new Rect(b.x, b.y - 4f, b.width, 24f), v.ToStringPercent());
+            Text.Anchor = TextAnchor.UpperLeft;
+            TooltipHandler.TipRegion(new Rect(0f, y, w, 24f), tip);
+            return 26f;
         }
 
         private Vector2 spellScroll;
@@ -168,7 +265,7 @@ namespace Avir.Magic
                 if (open && s != null)
                 {
                     RuneDef icon = Spells.Element(s) ?? RitualEvaluator.Read(s).verbs.FirstOrDefault();
-                    if (icon != null) SpellGlyph.Draw(sl.ContractedBy(w * 0.18f), icon.Glow, Spells.ColorOf(s));
+                    SpellIconArt.Draw(sl.ContractedBy(w * 0.14f), s);
                     GUI.color = Ink; Text.Anchor = TextAnchor.UpperCenter;
                     Widgets.Label(new Rect(sl.x - 8f, sl.yMax + 2f, sl.width + 16f, 22f), s.name.Truncate(sl.width + 16f));
                     Text.Anchor = TextAnchor.UpperLeft; Text.Font = GameFont.Small;
@@ -201,7 +298,7 @@ namespace Avir.Magic
                 if (Mouse.IsOver(row)) Widgets.DrawBoxSolid(row.ContractedBy(4f), new Color(1f, 0.9f, 0.6f, 0.12f));
                 Rect body = row.ContractedBy(10f);
                 RuneDef icon = Spells.Element(s) ?? RitualEvaluator.Read(s).verbs.FirstOrDefault();
-                if (icon != null) SpellGlyph.Draw(new Rect(body.x, body.y, 56f, 56f), icon.Glow, Spells.ColorOf(s));
+                SpellIconArt.Draw(new Rect(body.x, body.y, 56f, 56f), s);
                 float tx = body.x + 66f, tw = body.width - 66f;
                 GUI.color = Ink;
                 Widgets.Label(new Rect(tx, body.y - 2f, tw - 90f, 24f), s.name.Truncate(tw - 90f));

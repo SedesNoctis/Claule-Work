@@ -99,4 +99,27 @@ namespace Avir.Ritualistics
             return c;
         }
     }
+
+    /// <summary>A spell's sign, made by the player: a background (diamond, shield, circle or none) with its plate and
+    /// rim, a main glyph, and a small second glyph in the corner - each in a colour of its own.</summary>
+    public class SpellIcon : IExposable
+    {
+        public enum Shape { None, Diamond, Shield, Circle }
+        public Shape shape = Shape.Circle;
+        public RuneDef main, second;
+        public Color plate = new Color(0.12f, 0.08f, 0.14f), rim = new Color(0.95f, 0.86f, 0.6f), glyph = Color.white, glyph2 = new Color(0.95f, 0.86f, 0.6f);
+
+        public SpellIcon Copy() => new SpellIcon { shape = shape, main = main, second = second, plate = plate, rim = rim, glyph = glyph, glyph2 = glyph2 };
+
+        public void ExposeData()
+        {
+            Scribe_Values.Look(ref shape, "shape", Shape.Circle);
+            Scribe_Defs.Look(ref main, "main");
+            Scribe_Defs.Look(ref second, "second");
+            Scribe_Values.Look(ref plate, "plate");
+            Scribe_Values.Look(ref rim, "rim");
+            Scribe_Values.Look(ref glyph, "glyph", Color.white);
+            Scribe_Values.Look(ref glyph2, "glyph2");
+        }
+    }
 }

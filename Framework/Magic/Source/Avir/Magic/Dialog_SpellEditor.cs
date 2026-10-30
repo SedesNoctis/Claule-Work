@@ -191,7 +191,7 @@ namespace Avir.Magic
                 Rect row = new Rect(0f, y, view.width, h);
                 if (Mouse.IsOver(row)) Widgets.DrawBoxSolid(row, new Color(1f, 0.9f, 0.6f, 0.18f));
                 RuneDef icon = Spells.Element(sp);
-                if (icon != null) SpellGlyph.Draw(new Rect(row.x + 2f, row.y + 6f, 44f, 44f), icon.Glow, Spells.ColorOf(sp));
+                SpellIconArt.Draw(new Rect(row.x + 2f, row.y + 6f, 44f, 44f), sp);
                 GUI.color = Ink;
                 ArtInk.Label(new Rect(row.x + 52f, row.y + 2f, row.width - 54f, 24f), sp.name);
                 GUI.color = InkSoft;
@@ -400,7 +400,12 @@ namespace Avir.Magic
         private void DrawMiddle(Rect r)
         {
             // name
-            Rect nameR = new Rect(r.x, r.y, r.width, 30f);
+            // the spell's sign, and the button that opens its editor
+            Rect signR = new Rect(r.x, r.y - 2f, 34f, 34f);
+            SpellIconArt.Draw(signR, s);
+            if (Button(new Rect(r.xMax - 110f, r.y, 110f, 30f), "Sign...", true))
+                Find.WindowStack.Add(new Dialog_SpellIcon(s, ic => s.icon = ic));
+            Rect nameR = new Rect(r.x + 40f, r.y, r.width - 156f, 30f);
             Widgets.DrawBoxSolid(nameR, new Color(0.93f, 0.86f, 0.70f, 0.9f));
             GUI.color = new Color(Gold.r, Gold.g, Gold.b, 0.9f); Widgets.DrawBox(nameR, 1); GUI.color = Ink;
             s.name = Widgets.TextField(nameR.ContractedBy(2f), s.name, 48);
