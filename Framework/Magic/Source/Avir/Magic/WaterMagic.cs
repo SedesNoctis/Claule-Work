@@ -56,6 +56,7 @@ namespace Avir.Magic
                         Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, r);
                         break;
                     case RuneKind.Step:
+                        if (r.thread > 0) { SpellDash.Pull(caster, target, RuneKind.Water, power, radius); break; }
                         // a wave rolls ahead of the mage, as wide as its breadth: whoever stands in it is struck and carried on
                         var path = FireMagic.Beam(caster.Position, at, map, r.breadth).Where(c => c != caster.Position).ToList();
                         IntVec3 back = caster.Position;

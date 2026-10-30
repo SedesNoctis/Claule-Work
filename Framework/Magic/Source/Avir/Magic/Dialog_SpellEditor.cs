@@ -322,6 +322,7 @@ namespace Avir.Magic
                 case RuneKind.Breadth: return "wider";
                 case RuneKind.Reach: return "further (+5% cast)";
                 case RuneKind.Anchor: return "stone stands longer";
+                case RuneKind.Thread: return "with a step - drags one to the mage, stunned";
                 default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
             }
         }
@@ -339,7 +340,7 @@ namespace Avir.Magic
                 case RuneKind.Growth: return "the wind spreads wider";
                 case RuneKind.Purge: return "clean air: small fires, poison gone";
                 case RuneKind.Aura: return "a whirlwind round the mage";
-                case RuneKind.Beam: return "lightning that jumps foe to foe";
+                case RuneKind.Beam: return "a blow that leaps foe to foe (lightning with water)";
                 case RuneKind.Shape: return "a wall of wind that throws back";
                 case RuneKind.Step: return "flight over walls and foes";
                 case RuneKind.Restore: return "a second wind";
@@ -347,10 +348,11 @@ namespace Avir.Magic
                 case RuneKind.Summon: return "spirits are not made yet";
                 case RuneKind.Sense: return "every sound, the unseen too";
                 case RuneKind.Barrier: return "a ward that throws attackers back";
-                case RuneKind.Amplify: return "stronger; more lightning jumps";
-                case RuneKind.Breadth: return "wider; more lightning jumps";
+                case RuneKind.Amplify: return "stronger; the blow leaps further";
+                case RuneKind.Breadth: return "wider; the blow leaps further";
                 case RuneKind.Reach: return "further (+5% cast)";
                 case RuneKind.Anchor: return "the wind blows longer";
+                case RuneKind.Thread: return "with a step - snatches one to the mage, reeling";
                 default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
             }
         }
@@ -384,6 +386,7 @@ namespace Avir.Magic
                 case RuneKind.Breadth: return "wider";
                 case RuneKind.Reach: return "further (+5% cast)";
                 case RuneKind.Anchor: return "the water stands longer";
+                case RuneKind.Thread: return "with a step - sweeps foes to the mage";
                 default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
             }
         }
@@ -414,6 +417,7 @@ namespace Avir.Magic
                 case RuneKind.Breadth: return "wider";
                 case RuneKind.Reach: return "further (+5% cast)";
                 case RuneKind.Anchor: return "purged ground lasts longer";
+                case RuneKind.Thread: return "with a step - draws one through flame";
                 default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
             }
         }

@@ -47,11 +47,30 @@ namespace Avir.Magic
             RuneDef el = r.elements.FirstOrDefault();
             var e = new SpellEffect();
             if (el == null) { e.main = "No element yet: write one (fire, water, earth or air) - it is what the spell is made of."; return e; }
+            if (r.thread > 0 && r.verbs.Any(v => v.kind == RuneKind.Step) && (WaterMagic.Is(el) || EarthMagic.Is(el) || AirMagic.Is(el) || FireMagic.Is(el)))
+            {
+                SpellEffect pulled = WaterMagic.Is(el) ? Water(r) : EarthMagic.Is(el) ? Earth(r) : AirMagic.Is(el) ? Air(r) : Fire(r);
+                pulled.main = Pulled(el.kind);
+                pulled.extras.Insert(0, new KeyValuePair<string, string>("The step turned round", "The thread turns the step: not the mage goes, but the one at the target is carried to the mage. A friend comes unharmed; a foe was not ready for it. Whoever the earth roots cannot be moved."));
+                return pulled;
+            }
             if (WaterMagic.Is(el)) return Water(r);
             if (EarthMagic.Is(el)) return Earth(r);
             if (AirMagic.Is(el)) return Air(r);
             if (!FireMagic.Is(el)) { e.main = el.LabelCap + " is not made yet - for now it only strikes a plain pulse at the point."; return e; }
             return Fire(r);
+        }
+
+        private static string Pulled(RuneKind el)
+        {
+            switch (el)
+            {
+                case RuneKind.Fire: return "Draws one at the target to the mage through flame: fire bursts where they stood and burns them, but at the mage's end it is only light - they land at the mage's feet, knocked down.";
+                case RuneKind.Water: return "An undertow: every foe at the target is swept to the mage - soaked, struck and knocked off their feet when the water sets them down.";
+                case RuneKind.Air: return "The wind snatches one at the target and carries them to the mage over anything in the way: they land reeling - slow, clumsy and shooting wild for a while.";
+                case RuneKind.Earth: return "The ground swallows one at the target - anywhere the mage can reach - and throws them up beside the mage, stunned senseless for several seconds.";
+                default: return "";
+            }
         }
 
         private static SpellEffect Fire(RitualReading r)
@@ -199,11 +218,11 @@ namespace Avir.Magic
                 default:
                     if (verbs.Count == 0)
                     {
-                        if (form?.kind == RuneKind.Beam) { e.main = "Lightning: it strikes the first foe on the line and jumps to " + (1 + r.breadth + r.amplify) + " more nearby - burns and a short stun; machines are struck harder."; break; }
+                        if (form?.kind == RuneKind.Beam) { e.main = "A chained blow: the wind strikes the first foe on the line and leaps on to " + (1 + r.breadth + r.amplify) + " more nearby, throwing each one on. With water in the spell it is a storm, and the blow becomes lightning."; break; }
                         e.main = r.barrier > 0 ? "A ward of air on friends at the target." : "Air with nothing to do: add a verb or a form."; break;
                     }
                     string where = form?.kind == RuneKind.Aura ? "all round the mage - and a whirlwind stays round them for a while: foes in it are slowed and shoot poorly, and those who come close are thrown back"
-                                 : form?.kind == RuneKind.Beam ? "along the line - and with it lightning, that jumps from foe to foe (" + (2 + r.breadth + r.amplify) + " in all)"
+                                 : form?.kind == RuneKind.Beam ? "along the line - and with it a chained blow that leaps from foe to foe (" + (2 + r.breadth + r.amplify) + " in all; lightning, in a storm with water)"
                                  : "at the point, " + radius.ToString("0.#") + " cells round";
                     e.main = Cap(what) + " - " + where + ".";
                     break;
@@ -396,6 +415,7 @@ namespace Avir.Magic
             Make("Rich soil", new[] { "Earth", "Growth" }, new[] { "Breadth" }),
             Make("Firm ground", new[] { "Earth", "Hold" }, new[] { "Aura" }),
             Make("Through the earth", new[] { "Earth" }, new[] { "Step" }),
+            Make("Dragged under", new[] { "Earth" }, new[] { "Step", "Thread" }),
             Make("Stone splints", new[] { "Earth" }, new[] { "Restore" }),
             Make("Weapon of earth", new[] { "Earth" }, new[] { "Enchant" }),
             Make("Tremorsense", new[] { "Earth" }, new[] { "Sense" }),
@@ -405,7 +425,8 @@ namespace Avir.Magic
         public static List<RitualSchema> Air() => new List<RitualSchema>
         {
             Make("Gust", new[] { "Air", "Release" }, new[] { "Breadth" }),
-            Make("Chain lightning", new[] { "Air" }, new[] { "Beam" }),
+            Make("Chained gust", new[] { "Air" }, new[] { "Beam" }),
+            Make("Snatched by the wind", new[] { "Air" }, new[] { "Step", "Thread" }),
             Make("Wall of wind", new[] { "Air", "Release" }, new[] { "Shape" }),
             Make("Still air", new[] { "Air", "Hold" }),
             Make("Stolen breath", new[] { "Air", "Drain" }),
@@ -429,6 +450,7 @@ namespace Avir.Magic
             Make("Geyser", new[] { "Water", "Lift" }),
             Make("Cleansing rain", new[] { "Water", "Purge" }, new[] { "Aura" }),
             Make("Ride the wave", new[] { "Water", "Release" }, new[] { "Step" }),
+            Make("Undertow", new[] { "Water" }, new[] { "Step", "Thread" }),
             Make("Washing", new[] { "Water" }, new[] { "Restore" }),
             Make("Weapon of water", new[] { "Water" }, new[] { "Enchant" }),
             Make("Ward of water", new[] { "Water", "Barrier" }),
@@ -448,6 +470,7 @@ namespace Avir.Magic
             Make("Burning blade", new[] { "Fire" }, new[] { "Enchant" }),
             Make("Warmth sense", new[] { "Fire" }, new[] { "Sense" }),
             Make("Ward of flame", new[] { "Fire", "Barrier" }),
+            Make("Drawn through flame", new[] { "Fire" }, new[] { "Step", "Thread" }),
         };
     }
 }

@@ -53,7 +53,7 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Step:
                         // the mage sinks into the ground and comes up wherever they chose - the whole map is in reach
-                        SpellDash.Carry(caster, at, RuneKind.Earth, power);
+                        if (r.thread > 0) SpellDash.Pull(caster, target, RuneKind.Earth, power, radius); else SpellDash.Carry(caster, at, RuneKind.Earth, power);
                         break;
                     case RuneKind.Restore:
                         foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(at, map, Mathf.Max(0.9f, radius - 1f)), map))
@@ -152,6 +152,9 @@ namespace Avir.Magic
     {
         public static bool Is(RuneDef el) => el != null && el.kind == RuneKind.Air;
 
+        /// <summary>Water and air in one spell: a storm - the chained strike of the wind becomes lightning.</summary>
+        public static bool Storm;
+
         public static void Cast(Pawn caster, RitualSchema s, RitualReading r, LocalTargetInfo target, float power)
         {
             Map map = caster.Map;
@@ -172,9 +175,10 @@ namespace Avir.Magic
                         MapComponent_Tides.Raise(caster, radius + 1.5f, power, verbs, RuneKind.Air);
                         break;
                     case RuneKind.Beam:
-                        // lightning: it strikes the first foe on the line and leaps on to the next, and the next
+                        // a chained strike: it hits the first foe on the line and leaps on to the next, and the next -
+                        // the wind's blow; in a storm (water with it) a bolt of lightning
                         var line = FireMagic.Beam(caster.Position, at, map, r.breadth);
-                        Lightning(caster, line, map, 1 + r.breadth + r.amplify, power);
+                        Chain(caster, line, map, 1 + r.breadth + r.amplify, power, Storm);
                         Apply(caster, map, verbs, line, caster.Position, power, r);
                         break;
                     case RuneKind.Shape:
@@ -186,7 +190,7 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Step:
                         // the wind lifts the mage over whatever stands between - walls, rivers, foes
-                        SpellDash.Carry(caster, at, RuneKind.Air, power);
+                        if (r.thread > 0) SpellDash.Pull(caster, target, RuneKind.Air, power, radius); else SpellDash.Carry(caster, at, RuneKind.Air, power);
                         break;
                     case RuneKind.Restore:
                         // a second wind: breath back, tiredness lifted
@@ -208,22 +212,38 @@ namespace Avir.Magic
             }
         }
 
-        private static void Lightning(Pawn caster, List<IntVec3> line, Map map, int jumps, float power)
+        private static void Chain(Pawn caster, List<IntVec3> line, Map map, int jumps, float power, bool storm)
         {
             Pawn first = MagicFx.PawnsIn(line, map).Where(p => MagicFx.Foe(p, caster)).OrderBy(p => p.Position.DistanceToSquared(caster.Position)).FirstOrDefault();
             Vector3 prev = caster.DrawPos;
+            IntVec3 prevCell = caster.Position;
             var hit = new HashSet<Pawn>();
             Pawn cur = first;
             for (int i = 0; cur != null && i <= jumps; i++)
             {
                 hit.Add(cur);
-                FleckMaker.ConnectingLine(prev, cur.DrawPos, FleckDefOf.LineEMP, map);
-                FleckMaker.ThrowLightningGlow(cur.DrawPos, map, 1.4f);
-                cur.TakeDamage(new DamageInfo(DamageDefOf.Burn, 8f * power, 0.3f, -1f, caster));
-                if (cur.RaceProps.IsMechanoid) cur.TakeDamage(new DamageInfo(DamageDefOf.EMP, 10f * power, 0f, -1f, caster));
-                MagicFx.Stun(cur, 50, caster);
-                prev = cur.DrawPos;
                 IntVec3 from = cur.Position;
+                Vector3 at = cur.DrawPos;
+                if (storm)
+                {
+                    // the discharge: burns and a jolt; machines are struck harder, the soaked take more
+                    FleckMaker.ConnectingLine(prev, at, FleckDefOf.LineEMP, map);
+                    FleckMaker.ThrowLightningGlow(at, map, 1.4f);
+                    float wet = cur.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Soaked) != null ? 1.5f : 1f;
+                    cur.TakeDamage(new DamageInfo(DamageDefOf.Burn, 8f * power * wet, 0.3f, -1f, caster));
+                    if (!cur.Dead && cur.RaceProps.IsMechanoid) cur.TakeDamage(new DamageInfo(DamageDefOf.EMP, 10f * power, 0f, -1f, caster));
+                    if (!cur.Dead) MagicFx.Stun(cur, 50, caster);
+                }
+                else
+                {
+                    // the wind's blow, passed from one to the next: each is struck and thrown on
+                    Vector3 d = at - prev;
+                    int n = Mathf.Clamp(Mathf.RoundToInt(d.MagnitudeHorizontal()), 2, 8);
+                    for (int k = 1; k <= n; k++) FleckMaker.ThrowDustPuffThick(prev + d * (k / (float)n), map, 1.1f, MagicFx.AirDust);
+                    cur.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 7f * power, 0f, -1f, caster));
+                    if (!cur.Dead) MagicFx.Push(cur, prevCell, 2, map);
+                }
+                prev = at; prevCell = from;
                 cur = GenRadial.RadialDistinctThingsAround(from, map, 5.5f, true).OfType<Pawn>()
                     .Where(p => MagicFx.Foe(p, caster) && !hit.Contains(p) && GenSight.LineOfSight(from, p.Position, map))
                     .OrderBy(p => p.Position.DistanceToSquared(from)).FirstOrDefault();
@@ -459,7 +479,7 @@ namespace Avir.Magic
     [DefOf]
     public static class EarthAirDefOf
     {
-        public static HediffDef Avir_Rooted, Avir_StoneSkin, Avir_HeavyGround, Avir_Heavy, Avir_StoredStone, Avir_EarthWard, Avir_EarthEnchant, Avir_Petrified;
+        public static HediffDef Avir_Rooted, Avir_Dizzy, Avir_StoneSkin, Avir_HeavyGround, Avir_Heavy, Avir_StoredStone, Avir_EarthWard, Avir_EarthEnchant, Avir_Petrified;
         public static HediffDef Avir_Breathless, Avir_Buffeted, Avir_StoredAir, Avir_AirWard, Avir_AirEnchant, Avir_Winded;
         public static ThingDef Avir_EarthWall, Avir_AirWall;
         static EarthAirDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EarthAirDefOf)); }

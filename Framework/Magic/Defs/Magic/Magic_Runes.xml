@@ -49,7 +49,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Air</defName>
     <label>air</label>
-    <description>Air. Wind and breath: a gust that throws foes back, air too thin to breathe, an updraft, a wall of wind, and lightning that leaps from one foe to the next. The wind feeds fire as easily as it snuffs it out. An air mage can be carried over walls and water. Price - winded: if the hold slips, the wind tears the breath out of the mage.</description>
+    <description>Air. Wind and breath: a gust that throws foes back, air too thin to breathe, an updraft, a wall of wind, a blow that leaps from one foe to the next - and lightning, when water joins it in a storm. The wind feeds fire as easily as it snuffs it out. An air mage can be carried over walls and water. Price - winded: if the hold slips, the wind tears the breath out of the mage.</description>
     <role>Element</role>
     <kind>Air</kind>
     <glyph>Air</glyph>

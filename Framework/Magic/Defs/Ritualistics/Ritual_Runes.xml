@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- RUNES (Ritualistics/RitualDefs.cs). 19 glyphs by the author: Textures/UI/Ritualistics/Runes/{Ink,Glow}/Rune_*.png.
+       role: Verb (what the energy does) / Modifier (how) / Flow (how much and where).
+       instability: risk against the performer's composure; actWeight: external flow the deed draws by itself.
+       implemented=false: described, effect comes in a later slice. -->
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Fill</defName>
+    <label>filling</label>
+    <description>Pours energy into whatever can hold it in reach - artifacts worn, loose or set in buildings, crystal batteries, a psycaster's psyfocus - until they are full. A ritual works while there is something to fill; unclosed and fed by focus with nothing to fill, it becomes an endless vortex.</description>
+    <role>Verb</role>
+    <kind>Fill</kind>
+    <glyph>Fill</glyph>
+    <instability>0.05</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <uiOrder>0</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Transfer</defName>
+    <label>transfer</label>
+    <description>Pours experience from one vessel into another - amulet into amulet, artifact into artifact. Alone it moves only the free experience; followed by purging, everything moves and the source is purged.</description>
+    <role>Verb</role>
+    <kind>Transfer</kind>
+    <glyph>Transfer</glyph>
+    <instability>0.15</instability>
+    <actWeight>1000</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>true</implemented>
+    <uiOrder>1</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Purge</defName>
+    <label>purging</label>
+    <description>Washes a vessel back to how it was made: every opened cell or stone undone, every point returned, the charge full again. It also takes psychic states off your people in reach: hangover, shock, the stream's backlash and pressure, neural heat.</description>
+    <role>Verb</role>
+    <kind>Purge</kind>
+    <glyph>Purge</glyph>
+    <instability>0.1</instability>
+    <actWeight>500</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <uiOrder>2</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Reforge</defName>
+    <label>reforging</label>
+    <description>Changes the artifact laid in the circle: its heart a quality step up, its heart into the metal a seal names, or its spiral reforged - almost a reset, but every point returns, burnt ones too, and the artifact scoops more experience out of the map's stream. Large circle only; the deed pulls the stream.</description>
+    <role>Verb</role>
+    <kind>Reforge</kind>
+    <glyph>Reforge</glyph>
+    <instability>0.5</instability>
+    <actWeight>20000</actWeight>
+    <research>Avir_Ritualism_Avir</research>
+    <implemented>true</implemented>
+    <uiOrder>3</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Infuse</defName>
+    <label>infusion</label>
+    <description>Pours the ritual's energy into the artifact laid in the circle, and the artifact drinks it as experience - as if it had lived through days of use in an hour. Its spiral is not touched. One point of development a ritual at most, two in a large circle. Medium or large circle.</description>
+    <role>Verb</role>
+    <kind>Infuse</kind>
+    <glyph>Infuse</glyph>
+    <instability>0.3</instability>
+    <actWeight>6000</actWeight>
+    <research>Avir_Ritualism_Avir</research>
+    <implemented>true</implemented>
+    <uiOrder>3</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Transmute</defName>
+    <label>transmutation</label>
+    <description>Turns one material into another. A seal in a component circle names what it makes; material circles name what it works on (or any metal and jade lying in the circle). It goes by value: a weak circle loses part of it; a strong one gives back more than it took - a medium circle up to half as much again, a large one up to twice the value (a small one never more than it took). Never essentium, tisserium or feignallite. Without a seal, but with a thread or breadth, it turns the energy itself into current for electric batteries.</description>
+    <role>Verb</role>
+    <kind>Transmute</kind>
+    <glyph>Transmute</glyph>
+    <instability>0.3</instability>
+    <actWeight>8000</actWeight>
+    <implemented>true</implemented>
+    <uiOrder>4</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Release</defName>
+    <label>release</label>
+    <description>Gathers energy for fifteen seconds, then lets it out at once: a blast around the circle - or, with reach, at a chosen point. With lifting it is a wave that throws everyone back. With no reach, barrier or safety the performer is its conduit: self-detonation.</description>
+    <role>Verb</role>
+    <kind>Release</kind>
+    <glyph>Release</glyph>
+    <instability>0.4</instability>
+    <actWeight>10000</actWeight>
+    <research>Avir_Ritualism_Avir</research>
+    <implemented>true</implemented>
+    <uiOrder>5</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Hold</defName>
+    <label>holding</label>
+    <description>Holds the living foes within its reach where they stand. With an anchor it holds while the energy streams.</description>
+    <role>Verb</role>
+    <kind>Hold</kind>
+    <glyph>Hold</glyph>
+    <instability>0.15</instability>
+    <actWeight>1000</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>true</implemented>
+    <uiOrder>6</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Drain</defName>
+    <label>drawing out</label>
+    <description>Draws stored energy out of what is in its reach: psychic pylons (part caught as crystals), the strength of foes and strangers (they tire, then collapse), and with a thread the charge of bound batteries and artifact buildings. What it takes feeds the steps after it; as the last step, it is caught as crystals.</description>
+    <role>Verb</role>
+    <kind>Drain</kind>
+    <glyph>Drain</glyph>
+    <instability>0.2</instability>
+    <actWeight>2000</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>true</implemented>
+    <uiOrder>7</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Lift</defName>
+    <label>lifting</label>
+    <description>Telekinesis over an area: carries loose things to storage, sweeps snow and filth. With release, the blast becomes a wave that throws foes back.</description>
+    <role>Verb</role>
+    <kind>Lift</kind>
+    <glyph>Lift</glyph>
+    <instability>0.1</instability>
+    <actWeight>500</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>true</implemented>
+    <uiOrder>8</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Growth</defName>
+    <label>growth</label>
+    <description>Ecological: plants in the area grow and ripen, your people and animals heal; anchored, the soil grows richer a cell at a time.</description>
+    <role>Verb</role>
+    <kind>Growth</kind>
+    <glyph>Growth</glyph>
+    <instability>0.1</instability>
+    <actWeight>2000</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>true</implemented>
+    <uiOrder>9</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Amplify</defName>
+    <label>amplification</label>
+    <description>More power, and more instability.</description>
+    <role>Modifier</role>
+    <kind>Amplify</kind>
+    <glyph>Amplify</glyph>
+    <instability>0.25</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>true</implemented>
+    <uiOrder>10</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Reach</defName>
+    <label>reach</label>
+    <description>Carries the effect to a point you choose when the ritual begins, anywhere on the map: filling, purging, holding, drawing out, lifting, growth, release and the barrier dome all act there.</description>
+    <role>Modifier</role>
+    <kind>Reach</kind>
+    <glyph>Reach</glyph>
+    <instability>0.1</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>true</implemented>
+    <uiOrder>11</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Breadth</defName>
+    <label>breadth</label>
+    <description>Widens the reach of the ritual by four cells.</description>
+    <role>Modifier</role>
+    <kind>Breadth</kind>
+    <glyph>Breadth</glyph>
+    <instability>0.05</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <uiOrder>12</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Anchor</defName>
+    <label>anchor</label>
+    <description>Makes the effect last: the ritual repeats while the energy streams.</description>
+    <role>Modifier</role>
+    <kind>Anchor</kind>
+    <glyph>Anchor</glyph>
+    <instability>0.1</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <uiOrder>13</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Safety</defName>
+    <label>safety</label>
+    <description>Locks the stream in and out and cuts the power. When the performer's composure gives, it throws them clear before the ritual breaks. A circle of nothing but safety runes is a Trap.</description>
+    <role>Flow</role>
+    <kind>Safety</kind>
+    <glyph>Safety</glyph>
+    <instability>-0.25</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <uiOrder>14</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Closing</defName>
+    <label>closing</label>
+    <description>Keeps the energy inside: no leaks. Without it a part leaks out - and a ritual that never fills may become an endless vortex.</description>
+    <role>Flow</role>
+    <kind>Closing</kind>
+    <glyph>Closing</glyph>
+    <instability>-0.1</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <uiOrder>15</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Focus</defName>
+    <label>focus</label>
+    <description>Draws the external stream into the ritual: the more energy on the map, the more it gives - and the less predictable it is.</description>
+    <role>Flow</role>
+    <kind>Focus</kind>
+    <glyph>Focus</glyph>
+    <instability>0.12</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>true</implemented>
+    <uiOrder>16</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Barrier</defName>
+    <label>barrier</label>
+    <description>A blast of the ritual spares your people and buildings. Anchored, with no verb: a dome that stops shots from outside while the energy holds it. A barrier pulls the map's stream by itself.</description>
+    <role>Flow</role>
+    <kind>Barrier</kind>
+    <glyph>Barrier</glyph>
+    <instability>-0.15</instability>
+    <actWeight>3000</actWeight>
+    <research>Avir_Ritualism_Avir</research>
+    <implemented>true</implemented>
+    <uiOrder>17</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Thread</defName>
+    <label>thread</label>
+    <description>Draws a thin grey thread from the circle to chosen things anywhere on the map, three per rune: filling reaches them, drawing out takes from them, a Trap feeds or milks along them, transmutation into current charges their grids. In a spell it turns a step round: not the mage goes to the target - the one at the target is drawn to the mage.</description>
+    <role>Flow</role>
+    <kind>Thread</kind>
+    <glyph>Thread</glyph>
+    <instability>0.1</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Avir</research>
+    <implemented>true</implemented>
+    <uiOrder>18</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+</Defs>

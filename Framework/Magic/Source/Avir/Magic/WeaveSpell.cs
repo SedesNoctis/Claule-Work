@@ -53,6 +53,13 @@ namespace Avir.Magic
             return els.Contains(RuneKind.Fire) && els.Contains(RuneKind.Water);
         }
 
+        /// <summary>Water and air together: a storm - the wind's chained strike turns to lightning.</summary>
+        public static bool Storm(SpellCircle root)
+        {
+            var els = Small(root).Select(c => c.element?.kind).ToList();
+            return els.Contains(RuneKind.Water) && els.Contains(RuneKind.Air);
+        }
+
         public static bool Wraps(SpellCircle root, RuneKind k) => Greats(root).Any(c => c.element?.kind == k && c.inner.Count > 0);
 
         // ------------------------------------------------------------------------------ the effect, in words
@@ -82,6 +89,7 @@ namespace Avir.Magic
             foreach (var g in smalls.GroupBy(c => c.element).Where(g => g.Key != null && g.Count() > 1))
                 e.extras.Insert(0, new KeyValuePair<string, string>(g.Key.LabelCap + " ×" + g.Count() + ": resonance", "Circles of the same element strengthen each other: +" + (25 * (g.Count() - 1)) + "% to each."));
             if (Steam(root)) e.extras.Insert(0, new KeyValuePair<string, string>("Steam: fire + water", "Where fire and water strike together, scalding steam bursts at the point."));
+            if (Storm(root)) e.extras.Insert(0, new KeyValuePair<string, string>("Storm: water + air", "The chained strike of the air becomes lightning: it burns and jolts, strikes machines harder, and the soaked take half again."));
             if (Wraps(root, RuneKind.Life)) e.extras.Insert(0, new KeyValuePair<string, string>("Life wraps", "Friends within the spell's reach are healed as it strikes."));
             // the price chip last, once
             var price = e.extras.Where(x => x.Key.StartsWith("Price")).ToList();
@@ -96,6 +104,14 @@ namespace Avir.Magic
         {
             SpellCircle root = s.weave;
             Map map = caster.Map;
+            AirMagic.Storm = Storm(root);
+            try { CastCircles(caster, root, target, power); } finally { AirMagic.Storm = false; }
+            float radius = 2f + 1.5f * root.Working.Sum(c => c.OwnRunes.Count(x => x.kind == RuneKind.Breadth));
+            AfterCircles(caster, root, target, power, map, radius);
+        }
+
+        private static void CastCircles(Pawn caster, SpellCircle root, LocalTargetInfo target, float power)
+        {
             foreach (SpellCircle c in Small(root))
             {
                 if (c.element == null) continue;
@@ -107,7 +123,10 @@ namespace Avir.Magic
                 else if (EarthMagic.Is(c.element)) EarthMagic.Cast(caster, one, r, target, p);
                 else if (AirMagic.Is(c.element)) AirMagic.Cast(caster, one, r, target, p);
             }
-            float radius = 2f + 1.5f * root.Working.Sum(c => c.OwnRunes.Count(x => x.kind == RuneKind.Breadth));
+        }
+
+        private static void AfterCircles(Pawn caster, SpellCircle root, LocalTargetInfo target, float power, Map map, float radius)
+        {
             if (Steam(root))
             {
                 foreach (Pawn q in GenRadial.RadialDistinctThingsAround(target.Cell, map, radius, true).OfType<Pawn>().ToList())
@@ -143,6 +162,6 @@ namespace Avir.Magic
 
         /// <summary>A spell that takes the mage under the ground: it can come up anywhere on the map.</summary>
         public static bool Burrows(SpellCircle root) =>
-            Small(root).Any(c => EarthMagic.Is(c.element) && c.OwnRunes.Any(x => x.kind == RuneKind.Step));
+            Small(root).Any(c => EarthMagic.Is(c.element) && c.OwnRunes.Any(x => x.kind == RuneKind.Step) && !c.OwnRunes.Any(x => x.kind == RuneKind.Thread));
     }
 }

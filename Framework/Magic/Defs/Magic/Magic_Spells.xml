@@ -777,4 +777,28 @@
       <heightFactor>2.5</heightFactor>
     </pawnFlyer>
   </ThingDef>
+  <HediffDef>
+    <defName>Avir_Dizzy</defName>
+    <label>reeling</label>
+    <description>Spun through the air by a mage's wind and set down hard: the world will not stand still. Walking, aiming and working with the hands are all harder until it passes.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>1250~1250</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods>
+          <li><capacity>Moving</capacity><offset>-0.3</offset></li>
+          <li><capacity>Manipulation</capacity><offset>-0.2</offset></li>
+        </capMods>
+        <statOffsets><ShootingAccuracyPawn>-0.4</ShootingAccuracyPawn><MeleeHitChance>-0.3</MeleeHitChance></statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
 </Defs>

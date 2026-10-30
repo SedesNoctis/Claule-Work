@@ -16,6 +16,95 @@ namespace Avir.Magic
     {
         public RuneKind element = RuneKind.Fire;
         public float power = 1f;
+        /// <summary>Set when the step is turned round (a thread in the circle): not the mage going, but someone
+        /// dragged to the mage - and they were not ready for it.</summary>
+        public Pawn puller;
+
+        /// <summary>The step turned round: whoever is chosen is carried to the mage the way the mage would have gone
+        /// to them. Water gathers every foe at the point; fire, earth and air take one. A friend comes unharmed; a foe
+        /// was not ready, and suffers for it: fire bursts where they stood (and they arrive without the flame), water
+        /// soaks and knocks them down, air leaves them reeling, earth drags them under and they come up stunned
+        /// senseless. Those the earth roots in place cannot be moved.</summary>
+        public static void Pull(Pawn mage, LocalTargetInfo target, RuneKind el, float power, float radius)
+        {
+            Map map = mage.Map;
+            if (map == null || !target.Cell.InBounds(map)) return;
+            var taken = new List<Pawn>();
+            if (target.Thing is Pawn chosen && chosen != mage) taken.Add(chosen);
+            else
+            {
+                var near = MagicFx.PawnsIn(FireMagic.Point(target.Cell, map, radius), map).Where(p => p != mage).OrderBy(p => p.Position.DistanceToSquared(target.Cell)).ToList();
+                if (el == RuneKind.Water) taken.AddRange(near.Where(p => MagicFx.Foe(p, mage)));
+                else { Pawn one = near.FirstOrDefault(p => MagicFx.Foe(p, mage)) ?? near.FirstOrDefault(); if (one != null) taken.Add(one); }
+            }
+            if (taken.Count == 0) { Messages.Message("No one there to draw in.", MessageTypeDefOf.RejectInput, false); return; }
+            string name = el == RuneKind.Earth ? "Avir_SpellBurrow" : el == RuneKind.Air ? "Avir_SpellFlight" : "Avir_SpellDash";
+            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(name);
+            if (def == null) return;
+            var used = new HashSet<IntVec3>();
+            foreach (Pawn p in taken)
+            {
+                if (p.Dead || !p.Spawned || MagicFx.Rooted(p)) continue;
+                IntVec3 to = BesideMage(mage, p.Position, used);
+                if (!to.IsValid) break;
+                used.Add(to);
+                bool foe = MagicFx.Foe(p, mage);
+                IntVec3 from = p.Position;
+                if (foe && el == RuneKind.Fire)
+                {
+                    // the flash where the path begins; at the mage's end it is only light
+                    FleckMaker.Static(from.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 3f);
+                    p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 8f * power, 0f, -1f, mage));
+                    foreach (IntVec3 c in GenRadial.RadialCellsAround(from, 1.5f, true)) if (c.InBounds(map) && Rand.Chance(0.5f)) FireUtility.TryStartFireIn(c, map, 0.3f, mage);
+                    if (p.Dead || !p.Spawned) continue;
+                }
+                var flyer = (SpellDash)MakeFlyer(def, p, to, null, null);
+                if (flyer == null) continue;
+                flyer.element = el; flyer.power = power; flyer.puller = foe ? mage : null;
+                GenSpawn.Spawn(flyer, from, map);
+            }
+        }
+
+        /// <summary>A free cell by the mage, on the side the pulled one comes from.</summary>
+        private static IntVec3 BesideMage(Pawn mage, IntVec3 from, HashSet<IntVec3> used)
+        {
+            Map map = mage.Map;
+            return GenRadial.RadialCellsAround(mage.Position, 3.5f, false)
+                .Where(c => c.InBounds(map) && c.Standable(map) && c.GetFirstPawn(map) == null && !used.Contains(c))
+                .OrderBy(c => c.DistanceToSquared(mage.Position) * 4 + c.DistanceToSquared(from) * 0.01f)
+                .FirstOrFallback(IntVec3.Invalid);
+        }
+
+        /// <summary>A foe dragged to the mage lands unready.</summary>
+        private static void Arrive(Pawn p, Pawn mage, RuneKind el, float power, Map map)
+        {
+            switch (el)
+            {
+                case RuneKind.Water:
+                    WaterMagic.Soak(p, power);
+                    FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 2f);
+                    p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 5f * power, 0f, -1f, mage));
+                    if (!p.Dead) AmuletLayDown(p, Mathf.RoundToInt(90f * power));
+                    break;
+                case RuneKind.Air:
+                    MagicFx.Give(p, EarthAirDefOf.Avir_Dizzy, Mathf.RoundToInt(GenDate.TicksPerHour * 0.5f * power));
+                    p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 4f * power, 0f, -1f, mage));
+                    break;
+                case RuneKind.Earth:
+                    FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 2.2f, MagicFx.EarthDust);
+                    MagicFx.Rubble(p.Position, map);
+                    p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 6f * power, 0f, -1f, mage));
+                    if (!p.Dead) p.stances?.stunner?.StunFor(Mathf.RoundToInt(420f * power), mage);
+                    break;
+                default:
+                    p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 4f * power, 0f, -1f, mage));
+                    if (!p.Dead) AmuletLayDown(p, 60);
+                    break;
+            }
+        }
+
+        private static void AmuletLayDown(Pawn p, int ticks) =>
+            Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(p, Mathf.Max(30, Mathf.RoundToInt(ticks * Avir.Artifactorics.AmuletBattleTelekinesis.KnockdownFactor(p))));
 
         public static void Carry(Pawn p, IntVec3 dest, RuneKind el, float power = 1f)
         {
@@ -52,6 +141,7 @@ namespace Avir.Magic
             base.ExposeData();
             Scribe_Values.Look(ref element, "element", RuneKind.Fire);
             Scribe_Values.Look(ref power, "power", 1f);
+            Scribe_References.Look(ref puller, "puller");
         }
 
         public override void DynamicDrawPhaseAt(DrawPhase phase, Vector3 drawLoc, bool flip = false)
@@ -62,9 +152,10 @@ namespace Avir.Magic
 
         protected override void RespawnPawn()
         {
-            Map map = Map; IntVec3 at = Position; Pawn mage = FlyingPawn; RuneKind el = element; float pw = power;
+            Map map = Map; IntVec3 at = Position; Pawn mage = FlyingPawn; RuneKind el = element; float pw = power; Pawn by = puller;
             base.RespawnPawn();
             if (map == null || mage == null) return;
+            if (by != null) { if (!mage.Dead) Arrive(mage, by, el, pw, map); return; }
             if (el == RuneKind.Earth)
             {
                 // the ground breaks open and throws the mage up; those standing round are thrown off their feet

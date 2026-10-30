@@ -620,6 +620,24 @@ namespace Avir.Magic
         [DebugAction(Cat, "Throw it up (fall, power 3)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevLiftHard(Pawn p) => SpellHurl.Lift(p, null, 3f);
 
+        [DebugAction(Cat, "Draw it to the nearest colonist (fire)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevPullFire(Pawn p) => DevPull(p, RuneKind.Fire);
+
+        [DebugAction(Cat, "Draw it to the nearest colonist (water)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevPullWater(Pawn p) => DevPull(p, RuneKind.Water);
+
+        [DebugAction(Cat, "Draw it to the nearest colonist (earth)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevPullEarth(Pawn p) => DevPull(p, RuneKind.Earth);
+
+        [DebugAction(Cat, "Draw it to the nearest colonist (air)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevPullAir(Pawn p) => DevPull(p, RuneKind.Air);
+
+        private static void DevPull(Pawn p, RuneKind el)
+        {
+            Pawn mage = p.Map.mapPawns.FreeColonistsSpawned.Where(c => c != p).OrderBy(c => c.Position.DistanceToSquared(p.Position)).FirstOrDefault();
+            if (mage != null) SpellDash.Pull(mage, p, el, 1f, 2f);
+        }
+
         [DebugAction(Cat, "Root it (8 s)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevRoot(Pawn p) => MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, 480);
 
