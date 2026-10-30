@@ -24,6 +24,8 @@ namespace Avir.Magic
         private readonly System.Action<RitualSchema> keep;
         private readonly Pawn mage;
         private SpellCircle sel;
+        /// <summary>Which in the chain each circle is (shown on it while the spell has more than one).</summary>
+        private readonly Dictionary<SpellCircle, int> orderOf = new Dictionary<SpellCircle, int>();
         private int section;                    // -1: the centre
         private RuneDef shown, hovered;
         // the rune chosen on the circles: its circle, its section (-1: the centre element) and place
@@ -586,6 +588,9 @@ namespace Avir.Magic
             const float controls = 156f;
             Rect area = new Rect(r.x, r.y + 38f, r.width, r.height - 38f - controls - 8f);
             Node root = Measure(s.weave);
+            var ord = MapComponent_SpellChain.Order(s.weave);
+            orderOf.Clear();
+            if (ord.Count > 1) for (int k = 0; k < ord.Count; k++) orderOf[ord[k]] = k + 1;
             float fit = Mathf.Min(area.width, area.height) * 0.47f / (root.R * 1.06f);
             // a circle asked to be brought close: zoomed until it fills the view, moved to its centre
             if (focus != null)
@@ -697,6 +702,17 @@ namespace Avir.Magic
             }
             else Plate(c, n.core * 0.78f * scale, col, n.c.element, new Hit { c = n.c, section = -1, rune = -1, slot = -1 },
                        "The centre: this circle's element - fire, water, earth or air (or a great one, if it stands round the heart alone).");
+            if (orderOf.TryGetValue(n.c, out int nth))
+            {
+                // its place in the chain, just off the top-left of its rim
+                float d = R * 0.78f;
+                Rect lr = new Rect(c.x - d - 14f, c.y - d - 14f, 28f, 28f);
+                Text.Font = GameFont.Medium; Text.Anchor = TextAnchor.MiddleCenter;
+                GUI.color = Ink;
+                Widgets.Label(lr, nth.ToString());
+                Text.Anchor = TextAnchor.UpperLeft; Text.Font = GameFont.Small; GUI.color = Color.white;
+                TooltipHandler.TipRegion(lr, "Its place in the chain: the circles act one after another, each where the one before it ended.");
+            }
             // the sections
             float inner = n.core, band = n.kids.Count > 0 ? GreatBand : Band;
             int secs = n.c.sections.Count;

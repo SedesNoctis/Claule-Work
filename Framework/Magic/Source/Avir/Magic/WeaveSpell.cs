@@ -69,14 +69,22 @@ namespace Avir.Magic
             var e = new SpellEffect();
             var smalls = Small(root);
             var greats = Greats(root);
-            if (root.Working.All(c => c.element == null)) { e.main = "An empty circle. Write an element into its centre: fire for now - the others come later."; return e; }
+            if (root.Working.All(c => c.element == null)) { e.main = "An empty circle. Write an element into its centre: fire, water, earth or air."; return e; }
             var parts = new List<string>();
-            foreach (var g in smalls.GroupBy(c => c.element))
+            // one after another, from the heart outward: each strikes where the one before it ended
+            var order = MapComponent_SpellChain.Order(root);
+            for (int k = 0; k < order.Count; k++)
             {
-                if (g.Key == null) continue;
-                if (!FireMagic.Is(g.Key) && !WaterMagic.Is(g.Key)) { parts.Add(g.Key.LabelCap + " (not made yet)"); continue; }
-                SpellEffect one = SpellText.ExplainSchema(g.First().AsSchema());
-                parts.Add((g.Count() > 1 ? g.Count() + " circles of " + g.Key.label + ": " : "") + one.main.TrimEnd('.'));
+                SpellCircle c = order[k];
+                SpellEffect one = SpellText.ExplainSchema(c.AsSchema());
+                string where = "";
+                if (k > 0)
+                {
+                    RitualReading prev = RitualEvaluator.Read(order[k - 1].AsSchema());
+                    bool step = prev.verbs.Any(v => v.kind == RuneKind.Step), aura = prev.verbs.Any(v => v.kind == RuneKind.Aura);
+                    where = step && prev.thread == 0 ? "then, once the mage is there, round them: " : step || aura ? "then, by the mage: " : "then: ";
+                }
+                parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + where + c.element.LabelCap + " - " + one.main.TrimEnd('.'));
                 foreach (var x in one.extras) if (!e.extras.Any(y => y.Key == x.Key)) e.extras.Add(x);
             }
             foreach (SpellCircle g in greats)
@@ -85,7 +93,8 @@ namespace Avir.Magic
                 if (g.element.kind == RuneKind.Life) parts.Add(g.inner.Count > 0 ? "and Life round it: every friend the spell touches is healed" : "Life alone: it heals friends at the point");
                 else parts.Add(g.element.LabelCap + (g.inner.Count > 0 ? " round it" : "") + " (not made yet)");
             }
-            e.main = string.Join("; ", parts) + ".";
+            e.main = string.Join(order.Count > 1 ? "\n" : "; ", parts) + ".";
+            if (order.Count > 1) e.extras.Insert(0, new KeyValuePair<string, string>("In order", "The circles act one after another, from the heart outward: those round the heart first, " + (MapComponent_SpellChain.Widdershins(root) ? "counter-clockwise from the top (Darkness and Space turn the spell the other way)" : "clockwise from the top") + ", then those inside the great circles. Each waits until the one before it has ended, and strikes where it ended."));
             foreach (var g in smalls.GroupBy(c => c.element).Where(g => g.Key != null && g.Count() > 1))
                 e.extras.Insert(0, new KeyValuePair<string, string>(g.Key.LabelCap + " ×" + g.Count() + ": resonance", "Circles of the same element strengthen each other: +" + (25 * (g.Count() - 1)) + "% to each."));
             if (Steam(root)) e.extras.Insert(0, new KeyValuePair<string, string>("Steam: fire + water", "Where fire and water strike together, scalding steam bursts at the point."));
@@ -104,29 +113,14 @@ namespace Avir.Magic
         {
             SpellCircle root = s.weave;
             Map map = caster.Map;
-            AirMagic.Storm = Storm(root);
-            try { CastCircles(caster, root, target, power); } finally { AirMagic.Storm = false; }
+            // one circle after another, from the heart outward - each where the one before it ended
+            MapComponent_SpellChain.Start(caster, root, target, power);
+        }
+
+        /// <summary>What the circles leave together, once the last of them has struck: steam, Life round them.</summary>
+        public static void AfterCircles(Pawn caster, SpellCircle root, LocalTargetInfo target, float power, Map map)
+        {
             float radius = 2f + 1.5f * root.Working.Sum(c => c.OwnRunes.Count(x => x.kind == RuneKind.Breadth));
-            AfterCircles(caster, root, target, power, map, radius);
-        }
-
-        private static void CastCircles(Pawn caster, SpellCircle root, LocalTargetInfo target, float power)
-        {
-            foreach (SpellCircle c in Small(root))
-            {
-                if (c.element == null) continue;
-                float p = power * (1f + 0.25f * (Resonance(root, c.element) - 1));
-                RitualSchema one = c.AsSchema();
-                RitualReading r = RitualEvaluator.Read(one);
-                if (FireMagic.Is(c.element)) FireMagic.Cast(caster, one, r, target, p);
-                else if (WaterMagic.Is(c.element)) WaterMagic.Cast(caster, one, r, target, p);
-                else if (EarthMagic.Is(c.element)) EarthMagic.Cast(caster, one, r, target, p);
-                else if (AirMagic.Is(c.element)) AirMagic.Cast(caster, one, r, target, p);
-            }
-        }
-
-        private static void AfterCircles(Pawn caster, SpellCircle root, LocalTargetInfo target, float power, Map map, float radius)
-        {
             if (Steam(root))
             {
                 foreach (Pawn q in GenRadial.RadialDistinctThingsAround(target.Cell, map, radius, true).OfType<Pawn>().ToList())

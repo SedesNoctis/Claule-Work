@@ -157,12 +157,8 @@ namespace Avir.Magic
                     case RuneKind.Drain:
                         float took = 0f;
                         foreach (IntVec3 c in cells) took += Extinguish(c, map);
-                        if (took > 0f)
-                        {
-                            Hediff h = caster.health.hediffSet.GetFirstHediffOfDef(FireDefOf.Avir_StoredHeat) ?? caster.health.AddHediff(FireDefOf.Avir_StoredHeat);
-                            h.Severity = Mathf.Min(1f, h.Severity + 0.15f * took);
-                            FleckMaker.ThrowHeatGlow(caster.Position, map, 1.5f);
-                        }
+                        if (took > 0f) FleckMaker.ThrowHeatGlow(caster.Position, map, 1.5f);
+                        power = MagicFx.Drained(caster, verbs, v, FireDefOf.Avir_StoredHeat, 0.15f * took, power);
                         break;
                     case RuneKind.Lift:
                         foreach (IntVec3 c in cells)

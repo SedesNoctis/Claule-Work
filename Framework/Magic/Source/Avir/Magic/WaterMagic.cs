@@ -116,11 +116,7 @@ namespace Avir.Magic
                             FleckMaker.ConnectingLine(p.DrawPos, caster.DrawPos, FleckDefOf.LineEMP, map);
                         }
                         foreach (IntVec3 c in cells) foreach (HeldWater w in c.GetThingList(map).OfType<HeldWater>().ToList()) { took += 0.1f; w.Destroy(); }
-                        if (took > 0f)
-                        {
-                            Hediff k = caster.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_StoredWater) ?? caster.health.AddHediff(WaterDefOf.Avir_StoredWater);
-                            k.Severity = Mathf.Min(1f, k.Severity + took);
-                        }
+                        power = MagicFx.Drained(caster, verbs, v, WaterDefOf.Avir_StoredWater, took, power);
                         break;
                     case RuneKind.Lift:
                         foreach (Pawn p in PawnsIn(cells, map))

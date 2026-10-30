@@ -20,6 +20,9 @@ namespace Avir.Magic
         /// dragged to the mage - and they were not ready for it.</summary>
         public Pawn puller;
 
+        /// <summary>Who the last pull took - the chain of a spell waits until they have arrived.</summary>
+        public static List<Pawn> LastPulled;
+
         /// <summary>The step turned round: whoever is chosen is carried to the mage the way the mage would have gone
         /// to them. Water gathers every foe at the point; fire, earth and air take one. A friend comes unharmed; a foe
         /// was not ready, and suffers for it: fire bursts where they stood (and they arrive without the flame), water
@@ -62,6 +65,7 @@ namespace Avir.Magic
                 if (flyer == null) continue;
                 flyer.element = el; flyer.power = power; flyer.puller = foe ? mage : null;
                 GenSpawn.Spawn(flyer, from, map);
+                (LastPulled ?? (LastPulled = new List<Pawn>())).Add(p);
             }
         }
 
@@ -106,7 +110,11 @@ namespace Avir.Magic
         private static void AmuletLayDown(Pawn p, int ticks) =>
             Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(p, Mathf.Max(30, Mathf.RoundToInt(ticks * Avir.Artifactorics.AmuletBattleTelekinesis.KnockdownFactor(p))));
 
-        public static void Carry(Pawn p, IntVec3 dest, RuneKind el, float power = 1f)
+        /// <summary>The verbs of the step's own circle, worked round the mage where they come out (earth, air).</summary>
+        public List<RuneDef> verbs;
+        public int amplify, breadth;
+
+        public static void Carry(Pawn p, IntVec3 dest, RuneKind el, float power = 1f, List<RuneDef> verbs = null, RitualReading r = null)
         {
             Map map = p.Map;
             if (map == null || !dest.InBounds(map) || !dest.Standable(map) || dest == p.Position) return;
@@ -119,6 +127,7 @@ namespace Avir.Magic
             if (flyer == null) return;
             flyer.element = el;
             flyer.power = power;
+            if (verbs != null && verbs.Count > 0) { flyer.verbs = verbs.ToList(); flyer.amplify = r?.amplify ?? 0; flyer.breadth = r?.breadth ?? 0; }
             GenSpawn.Spawn(flyer, from, map);
         }
 
@@ -142,6 +151,9 @@ namespace Avir.Magic
             Scribe_Values.Look(ref element, "element", RuneKind.Fire);
             Scribe_Values.Look(ref power, "power", 1f);
             Scribe_References.Look(ref puller, "puller");
+            Scribe_Collections.Look(ref verbs, "verbs", LookMode.Def);
+            Scribe_Values.Look(ref amplify, "amplify");
+            Scribe_Values.Look(ref breadth, "breadth");
         }
 
         public override void DynamicDrawPhaseAt(DrawPhase phase, Vector3 drawLoc, bool flip = false)
@@ -156,6 +168,14 @@ namespace Avir.Magic
             base.RespawnPawn();
             if (map == null || mage == null) return;
             if (by != null) { if (!mage.Dead) Arrive(mage, by, el, pw, map); return; }
+            if (verbs != null && verbs.Count > 0 && !mage.Dead)
+            {
+                // the circle's verbs, outward of the step: they work where the mage comes out
+                var rr = new RitualReading { amplify = amplify, breadth = breadth };
+                var cells = FireMagic.Point(at, map, FireMagic.PointRadius(rr)).Where(c => c != at).ToList();
+                if (el == RuneKind.Earth) EarthMagic.Apply(mage, map, verbs, cells, at, pw, rr);
+                else if (el == RuneKind.Air) AirMagic.Apply(mage, map, verbs, cells, at, pw, rr);
+            }
             if (el == RuneKind.Earth)
             {
                 // the ground breaks open and throws the mage up; those standing round are thrown off their feet

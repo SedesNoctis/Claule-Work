@@ -61,6 +61,12 @@ namespace Avir.Magic
             return Fire(r);
         }
 
+        /// <summary>A drain feeds the verbs written after it (outward of it) at once; as the last verb it is kept.</summary>
+        private static string DrainNote(List<RuneDef> verbs, string what, string el) =>
+            MagicFx.Later(verbs, verbs.First(v => v.kind == RuneKind.Drain))
+                ? "The " + what + " taken goes at once into the verbs written after the drain - they strike harder."
+                : "The " + what + " taken is kept by the mage: their next " + el + " spell is stronger. (Write a verb after the drain, and it is fed into that verb at once.)";
+
         private static string Pulled(RuneKind el)
         {
             switch (el)
@@ -105,7 +111,7 @@ namespace Avir.Magic
             if (verbs.Any(v => v.kind == RuneKind.Purge) && (form?.kind == RuneKind.Aura || r.anchor > 0))
                 e.Add("Ground that takes no fire", "The purged ground will not take fire for some hours: flames that reach it die.");
             if (verbs.Any(v => v.kind == RuneKind.Hold)) e.Add("Warms friends", "Friends by the held fire bear the cold far better for a day.");
-            if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Stores heat", "The heat taken is kept by the mage: their next fire spell is stronger by it.");
+            if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Stores heat", DrainNote(verbs, "heat", "fire"));
             if (form?.kind == RuneKind.Restore && verbs.Any(v => v.kind == RuneKind.Purge)) e.Add("Burns infection", "Infection and parasites are burnt back.");
             if (form?.kind == RuneKind.Restore && verbs.Any(v => v.kind == RuneKind.Growth)) e.Add("Better cautery", "The seared wounds hold better.");
             if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader line - and each one makes the cast 8% longer.");
@@ -141,7 +147,7 @@ namespace Avir.Magic
             Repeats(e, verbs);
             if (r.barrier > 0) e.Add("Ward of water", "Friends there get a ward of water: magic and fire bite less, and every fire within three cells of them goes out.");
             if (verbs.Any(v => v.kind == RuneKind.Release) && r.amplify > 0) e.Add("Further back", "Amplified, the burst throws foes further.");
-            if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the water", "The water drawn out stays with the mage: their next water spell is stronger.");
+            if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the water", DrainNote(verbs, "water", "water"));
             if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader jet - and each one makes the cast 8% longer.");
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
             e.Add("Price: chilled", "If the hold slips, the water soaks the mage instead - slower, and the cold bites hard for a few hours.");
@@ -162,7 +168,7 @@ namespace Avir.Magic
                 case RuneKind.Enchant: e.main = "Makes a friend's weapon heavy with stone (the mage's, if no friend stands there): blows hit harder and now and then knock the foe senseless."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Sense: e.main = "Every step is felt through the ground: the mage knows where everyone walks within " + (35 + 10 * r.reach) + " cells, even through walls and the unseen."; break;
-                case RuneKind.Step: e.main = "The mage sinks into the ground and comes up anywhere on the map - only a crack of dust runs above. Where they come out the ground bursts: foes round about are thrown aside and stunned."; break;
+                case RuneKind.Step: e.main = "The mage sinks into the ground and comes up anywhere on the map - only a crack of dust runs above. Where they come out the ground bursts: foes round about are thrown aside and stunned" + (verbs.Count > 0 ? "; and there, round the mage, the earth " + what : "") + "."; break;
                 case RuneKind.Shape: e.main = "Stone walls rise between two chosen points (up to " + FireMagic.WallMax(r) + " cells): they stop feet and shots and crumble after a few hours" + (verbs.Any(v => v.kind != RuneKind.Hold) ? "; and along them the earth " + Verbs(verbs.Where(v => v.kind != RuneKind.Hold).ToList(), EarthVerb) : "") + "."; break;
                 default:
                     if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A ward of earth on friends at the target." : "Earth with nothing to do: add a verb or a form."; break; }
@@ -176,7 +182,7 @@ namespace Avir.Magic
             Repeats(e, verbs);
             if (r.barrier > 0) e.Add("Ward of earth", "Friends there get a ward of earth: magic cannot throw them off their feet or stun them, and blunt blows bite less.");
             if (r.amplify > 0) e.Add("Heavier", "Amplification: the blows of stone are harder.");
-            if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the weight", "The weight taken from foes stays with the mage: their next earth spell is stronger.");
+            if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the weight", DrainNote(verbs, "weight", "earth"));
             if (form?.kind == RuneKind.Shape && (r.anchor > 0 || verbs.Any(v => v.kind == RuneKind.Hold))) e.Add("Stands longer", "Holding and anchors keep the stone up longer.");
             if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader crack - and each one makes the cast 8% longer.");
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
@@ -213,7 +219,7 @@ namespace Avir.Magic
                 case RuneKind.Enchant: e.main = "Wraps a friend's weapon in wind (the mage's, if no friend stands there): every blow throws the foe back."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Sense: e.main = "The wind brings every sound: the mage hears everyone within " + (30 + 10 * r.reach) + " cells, through walls - the unseen too."; break;
-                case RuneKind.Step: e.main = "The wind lifts the mage high and carries them to the target over anything in the way - walls, water, foes. They land on a gust that throws close foes aside."; break;
+                case RuneKind.Step: e.main = "The wind lifts the mage high and carries them to the target over anything in the way - walls, water, foes. They land on a gust that throws close foes aside" + (verbs.Count > 0 ? "; and there, round the mage, the air " + what : "") + "."; break;
                 case RuneKind.Shape: e.main = "A wall of wind between two chosen points (up to " + FireMagic.WallMax(r) + " cells): foes who step into it are thrown back the way they came. It blows for a couple of hours."; break;
                 default:
                     if (verbs.Count == 0)
@@ -232,7 +238,7 @@ namespace Avir.Magic
             if (r.barrier > 0) e.Add("Ward of air", "Friends there get a ward of air: whoever strikes them in close combat is thrown back.");
             if (verbs.Any(v => v.kind == RuneKind.Release) && r.amplify > 0) e.Add("Further back", "Amplified, the gust throws foes further.");
             if (verbs.Any(v => v.kind == RuneKind.Release)) e.Add("Feeds fire", "Fires the gust passes over flare up - careful near your own walls.");
-            if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the breath", "The breath taken stays with the mage: their next air spell is stronger.");
+            if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the breath", DrainNote(verbs, "breath", "air"));
             if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area, a broader line, more jumps of lightning - and each one makes the cast 8% longer.");
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
             if (verbs.Any(v => v.kind == RuneKind.Lift)) e.Add("The fall", "Whoever is thrown up hangs out of reach of any blow or shot, then falls: the legs take it first, bones may crack, a bad fall kills. Under a roof they strike the ceiling too.");

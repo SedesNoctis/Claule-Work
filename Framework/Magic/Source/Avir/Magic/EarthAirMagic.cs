@@ -53,7 +53,7 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Step:
                         // the mage sinks into the ground and comes up wherever they chose - the whole map is in reach
-                        if (r.thread > 0) SpellDash.Pull(caster, target, RuneKind.Earth, power, radius); else SpellDash.Carry(caster, at, RuneKind.Earth, power);
+                        if (r.thread > 0) SpellDash.Pull(caster, target, RuneKind.Earth, power, radius); else SpellDash.Carry(caster, at, RuneKind.Earth, power, verbs, r);
                         break;
                     case RuneKind.Restore:
                         foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(at, map, Mathf.Max(0.9f, radius - 1f)), map))
@@ -108,7 +108,7 @@ namespace Avir.Magic
                             MagicFx.Give(p, EarthAirDefOf.Avir_Heavy, Mathf.RoundToInt(GenDate.TicksPerHour * 2f * power));
                             took += 0.3f;
                         }
-                        if (took > 0f) MagicFx.Store(caster, EarthAirDefOf.Avir_StoredStone, took);
+                        power = MagicFx.Drained(caster, verbs, v, EarthAirDefOf.Avir_StoredStone, took, power);
                         break;
                     case RuneKind.Lift:
                         // stone spikes burst up under them
@@ -190,7 +190,7 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Step:
                         // the wind lifts the mage over whatever stands between - walls, rivers, foes
-                        if (r.thread > 0) SpellDash.Pull(caster, target, RuneKind.Air, power, radius); else SpellDash.Carry(caster, at, RuneKind.Air, power);
+                        if (r.thread > 0) SpellDash.Pull(caster, target, RuneKind.Air, power, radius); else SpellDash.Carry(caster, at, RuneKind.Air, power, verbs, r);
                         break;
                     case RuneKind.Restore:
                         // a second wind: breath back, tiredness lifted
@@ -287,7 +287,7 @@ namespace Avir.Magic
                             took += 0.3f;
                         }
                         foreach (IntVec3 c in cells) FireMagic.Extinguish(c, map);
-                        if (took > 0f) MagicFx.Store(caster, EarthAirDefOf.Avir_StoredAir, took);
+                        power = MagicFx.Drained(caster, verbs, v, EarthAirDefOf.Avir_StoredAir, took, power);
                         break;
                     case RuneKind.Lift:
                         // an updraft: they are thrown up, hang there, and fall
@@ -335,6 +335,19 @@ namespace Avir.Magic
 
         public static IEnumerable<Pawn> PawnsIn(List<IntVec3> cells, Map map) =>
             cells.SelectMany(c => c.GetThingList(map).OfType<Pawn>()).Where(p => !p.Dead).Distinct().ToList();
+
+        /// <summary>Is there a verb after this one in the circle (outward of it)? What a drain takes then feeds those
+        /// at once, instead of being kept for the next spell.</summary>
+        public static bool Later(List<RuneDef> verbs, RuneDef v) => verbs.LastIndexOf(v) < verbs.Count - 1;
+
+        /// <summary>What a drain took: fed straight into the verbs after it, or kept by the mage for the next spell.</summary>
+        public static float Drained(Pawn caster, List<RuneDef> verbs, RuneDef v, HediffDef keep, float took, float power)
+        {
+            if (took <= 0f) return power;
+            if (Later(verbs, v)) { FleckMaker.ThrowLightningGlow(caster.DrawPos, caster.Map, 0.8f); return power * (1f + Mathf.Min(1f, took)); }
+            Store(caster, keep, took);
+            return power;
+        }
 
         public static bool Foe(Pawn p, Pawn caster) => p != caster && !p.Dead && p.HostileTo(caster);
 
