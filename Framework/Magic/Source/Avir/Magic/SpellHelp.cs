@@ -133,14 +133,14 @@ namespace Avir.Magic
         {
             Text.Font = GameFont.Small;
             float h = 30f + Text.CalcHeight(e.main, w - 28f) + 8f;
-            if (!e.details.NullOrEmpty()) { Text.Font = GameFont.Tiny; h += Text.CalcHeight(e.details, w - 28f) + 4f; Text.Font = GameFont.Small; }
-            if (e.extras.Count > 0) h += Rows(e, w - 28f) * 26f + 6f;
+            if (!e.details.NullOrEmpty()) { Text.Font = GameFont.Small; h += Text.CalcHeight(e.details, w - 28f) + 4f; Text.Font = GameFont.Small; }
+            if (e.extras.Count > 0) h += Rows(e, w - 28f) * 32f + 6f;
             return h + 10f;
         }
 
         private static int Rows(SpellEffect e, float w)
         {
-            Text.Font = GameFont.Tiny;
+            Text.Font = GameFont.Small;
             int rows = 1; float x = 0f;
             foreach (var c in e.extras)
             {
@@ -167,17 +167,17 @@ namespace Avir.Magic
             float x = inner.x, y = inner.y + 26f + th;
             if (!e.details.NullOrEmpty())
             {
-                Text.Font = GameFont.Tiny; GUI.color = new Color(0.4f, 0.28f, 0.16f, 1f);
+                Text.Font = GameFont.Small; GUI.color = new Color(0.34f, 0.22f, 0.12f, 1f);
                 float dh = Text.CalcHeight(e.details, inner.width);
                 Widgets.Label(new Rect(inner.x, y, inner.width, dh), e.details);
                 y += dh + 4f; Text.Font = GameFont.Small;
             }
-            Text.Font = GameFont.Tiny;
+            Text.Font = GameFont.Small;
             foreach (var c in e.extras)
             {
                 float cw = Text.CalcSize(c.Key).x + 16f;
-                if (x + cw > inner.xMax && x > inner.x) { x = inner.x; y += 26f; }
-                Rect chip = new Rect(x, y, cw, 22f);
+                if (x + cw > inner.xMax && x > inner.x) { x = inner.x; y += 32f; }
+                Rect chip = new Rect(x, y, cw, 28f);
                 bool price = c.Key.StartsWith("Price");
                 Widgets.DrawBoxSolid(chip, price ? new Color(0.55f, 0.15f, 0.08f, 0.92f) : new Color(col.r * 0.32f, col.g * 0.32f, col.b * 0.32f, 0.92f));
                 GUI.color = Color.white; Text.Anchor = TextAnchor.MiddleCenter;
