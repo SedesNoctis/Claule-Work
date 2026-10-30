@@ -170,7 +170,13 @@ namespace Avir.Magic
             // the book of the mage
             float top = r.y + 52f + w + 20f;
             GUI.color = Ink;
-            Widgets.Label(new Rect(r.x, top, r.width - 130f, 26f), "The book (" + b.spells.Count + ")");
+            Widgets.Label(new Rect(r.x, top, r.width - 260f, 26f), "The book (" + b.spells.Count + ")");
+            if (Widgets.ButtonText(new Rect(r.xMax - 254f, top - 2f, 124f, 28f), "Examples..."))
+                Find.WindowStack.Add(new FloatMenu(SpellExamples.Fire().Select(ex => new FloatMenuOption(ex.name + " - " + SpellText.Explain(ex).main.Truncate(320f), () =>
+                {
+                    b.spells.Add(ex);
+                    Messages.Message(ex.name + " is written into the book. Open it with Edit to see how it is made.", MessageTypeDefOf.NeutralEvent, false);
+                })).ToList()));
             if (Widgets.ButtonText(new Rect(r.xMax - 124f, top - 2f, 124f, 28f), "New spell..."))
                 Find.WindowStack.Add(new Dialog_RitualEditor(new RitualSchema { name = "New spell", size = RitualCircleSize.Small }, sp => b.spells.Add(sp)));
             Rect area = new Rect(r.x, top + 32f, r.width, r.yMax - top - 32f);

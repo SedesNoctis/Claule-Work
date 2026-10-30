@@ -64,6 +64,7 @@ namespace Avir.Magic
             RitualReading r = RitualEvaluator.Read(s);
             var parts = new List<string>();
             RuneDef el = r.elements.FirstOrDefault();
+            if (FireMagic.Is(el)) return SpellText.Explain(s).main + "\nArcana " + Cost(s).ToString("0") + ", range " + Range(s).ToString("0");
             foreach (RuneDef v in r.verbs) parts.Add(v.LabelCap + (Made(v.kind) ? "" : " (not made yet)"));
             return (el != null ? el.LabelCap + " - " : "") + string.Join(", ", parts) + "\nArcana " + Cost(s).ToString("0") + ", range " + Range(s).ToString("0");
         }
@@ -90,11 +91,13 @@ namespace Avir.Magic
                 g.Severity = Mathf.Min(1f, g.Severity + 0.08f);
                 FleckMaker.ThrowMicroSparks(caster.DrawPos, map);
                 Messages.Message(caster.LabelShortCap + " lost the hold on " + s.name + ": the Arcana burnt through.", caster, MessageTypeDefOf.NegativeEvent, false);
+                if (FireMagic.Is(r.elements.FirstOrDefault())) FireMagic.Raging(caster);
                 return;
             }
             GameComponent_AvirComposure.Performed(caster, cost, risk, comp, GameComponent_AvirComposure.KeyOf(s));
             float power = Power(s);
             RuneDef el = r.elements.FirstOrDefault();
+            if (FireMagic.Is(el)) { FireMagic.Cast(caster, s, r, target, power); return; }
             IntVec3 at = target.Cell;
             float radius = 1.5f + 1.5f * r.breadth;
             foreach (RuneDef v in r.verbs)

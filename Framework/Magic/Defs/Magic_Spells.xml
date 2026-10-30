@@ -42,4 +42,150 @@
       </li>
     </stages>
   </HediffDef>
+
+  <!-- ===== Fire ===== -->
+  <HediffDef>
+    <defName>Avir_FireWard</defName>
+    <label>ward of flame</label>
+    <description>A ward woven of flame. Fire does not pass it - at most it puts out what reaches the body.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.55, 0.2)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_Fireproof" />
+    </comps>
+    <stages>
+      <li>
+        <damageFactors>
+          <li><damageDef>Flame</damageDef><factor>0</factor></li>
+          <li><damageDef>Burn</damageDef><factor>0</factor></li>
+        </damageFactors>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_FireWarmth</defName>
+    <label>warmed by fire</label>
+    <description>Warmed through by a mage's held fire: the cold bites far less for a while.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.7, 0.4)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>60000~60000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <statOffsets>
+          <ComfyTemperatureMin>-25</ComfyTemperatureMin>
+        </statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_StoredHeat</defName>
+    <label>stored heat</label>
+    <description>Heat taken out of fire and kept. The mage's next fire spell is stronger by it; kept too long, it slowly fades.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.5, 0.15)</defaultLabelColor>
+    <isBad>false</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay">
+        <severityPerDay>-0.5</severityPerDay>
+      </li>
+    </comps>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_FireEnchant</defName>
+    <label>burning weapon</label>
+    <description>The weapon burns: blows add flame and may set the foe alight; shots may set what they hit on fire.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.5, 0.15)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_RagingFlame</defName>
+    <label>raging flame</label>
+    <description>The mage has lost hold of their fire. For a while flame keeps breaking out around them, and they cannot hold it back.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.9, 0.25, 0.1)</defaultLabelColor>
+    <isBad>true</isBad>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>1200~1200</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_RagingFlame" />
+    </comps>
+  </HediffDef>
+
+  <ThingDef>
+    <defName>Avir_HeldFlame</defName>
+    <label>held flame</label>
+    <description>Fire held in its place by a mage: it never spreads, it smoulders and warms - and it burns the mage's foes who stand in it.</description>
+    <thingClass>Avir.Magic.HeldFlame</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>false</selectable>
+    <drawerType>RealtimeOnly</drawerType>
+    <graphicData>
+      <texPath>Things/Special/Fire</texPath>
+      <graphicClass>Graphic_Flicker</graphicClass>
+      <shaderType>TransparentPostLight</shaderType>
+    </graphicData>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>5</glowRadius>
+        <glowColor>(255,140,60,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
+
+  <ThingDef>
+    <defName>Avir_FireWisp</defName>
+    <label>fire wisp</label>
+    <description>A small spirit of fire called by a mage. It throws flame at their foes until it burns out.</description>
+    <thingClass>Avir.Magic.FireWisp</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>true</selectable>
+    <drawerType>RealtimeOnly</drawerType>
+    <graphicData>
+      <texPath>Things/Special/Fire</texPath>
+      <graphicClass>Graphic_Flicker</graphicClass>
+      <shaderType>TransparentPostLight</shaderType>
+      <drawSize>0.8</drawSize>
+    </graphicData>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>6</glowRadius>
+        <glowColor>(255,160,70,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
 </Defs>
