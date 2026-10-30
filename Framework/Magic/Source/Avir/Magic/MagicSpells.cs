@@ -73,7 +73,7 @@ namespace Avir.Magic
             return risk > comp ? Mathf.Clamp01(1f - (risk - comp) * 0.4f) : 1f;
         }
         public static int Cooldown(RitualSchema s) => Mathf.RoundToInt(GenDate.TicksPerHour * 0.25f * (1f + (int)s.size));
-        public static float Range(RitualSchema s) => 16f + 10f * (s.weave != null ? WeaveSpell.Reach(s.weave) : RitualEvaluator.Read(s).reach);
+        public static float Range(RitualSchema s) => s.weave != null && WeaveSpell.Burrows(s.weave) ? 999f : 16f + 10f * (s.weave != null ? WeaveSpell.Reach(s.weave) : RitualEvaluator.Read(s).reach);
         public static float Power(RitualSchema s) => RitualCircles.PowerFactor(s.size) * (1f + 0.3f * RitualEvaluator.Read(s).amplify);
         public static RuneDef Element(RitualSchema s) => s.weave != null ? (s.weave.element ?? s.weave.All().Select(c => c.element).FirstOrDefault(e => e != null)) : RitualEvaluator.Read(s).elements.FirstOrDefault();
 
@@ -115,6 +115,8 @@ namespace Avir.Magic
                 if (s.weave != null) WeaveSpell.Slip(caster, s.weave);
                 else if (FireMagic.Is(r.elements.FirstOrDefault())) FireMagic.Raging(caster);
                 else if (WaterMagic.Is(r.elements.FirstOrDefault())) WaterMagic.Chilled(caster);
+                else if (EarthMagic.Is(r.elements.FirstOrDefault())) EarthMagic.Petrified(caster);
+                else if (AirMagic.Is(r.elements.FirstOrDefault())) AirMagic.Winded(caster);
                 return;
             }
             GameComponent_AvirComposure.Performed(caster, cost, risk, comp, GameComponent_AvirComposure.KeyOf(s));
@@ -146,6 +148,8 @@ namespace Avir.Magic
             if (s.weave != null) { WeaveSpell.Resolve(caster, s, target, power); return; }
             if (FireMagic.Is(el)) { FireMagic.Cast(caster, s, r, target, power); return; }
             if (WaterMagic.Is(el)) { WaterMagic.Cast(caster, s, r, target, power); return; }
+            if (EarthMagic.Is(el)) { EarthMagic.Cast(caster, s, r, target, power); return; }
+            if (AirMagic.Is(el)) { AirMagic.Cast(caster, s, r, target, power); return; }
             IntVec3 at = target.Cell;
             float radius = 1.5f + 1.5f * r.breadth;
             foreach (RuneDef v in r.verbs)

@@ -113,7 +113,7 @@ namespace Avir.Magic
         public const float Need = 300f;
 
         /// <summary>The ready spells of a path (fire and water, for now).</summary>
-        public static List<RitualSchema> Examples(RuneDef el) => el == null ? new List<RitualSchema>() : el.kind == RuneKind.Fire ? SpellExamples.Fire() : el.kind == RuneKind.Water ? SpellExamples.Water() : new List<RitualSchema>();
+        public static List<RitualSchema> Examples(RuneDef el) => el == null ? new List<RitualSchema>() : el.kind == RuneKind.Fire ? SpellExamples.Fire() : el.kind == RuneKind.Water ? SpellExamples.Water() : el.kind == RuneKind.Earth ? SpellExamples.Earth() : el.kind == RuneKind.Air ? SpellExamples.Air() : new List<RitualSchema>();
 
         /// <summary>Elements whose spells are made: the paths a stranger may walk for now.</summary>
         public static List<RuneDef> Made => DefDatabase<RuneDef>.AllDefsListForReading.Where(r => r.role == RuneRole.Element && r.magic && Examples(r).Count > 0).ToList();

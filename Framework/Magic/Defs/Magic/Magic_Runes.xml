@@ -34,7 +34,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Earth</defName>
     <label>earth</label>
-    <description>Earth: stone, soil, weight. It binds, shields and shapes the ground. Its spells are not made yet. Price: not decided yet.</description>
+    <description>Earth. Stone, soil and weight: a tremor that knocks foes off their feet, stone that grips them, spikes from below, walls raised between two points, a crack running through the ground. An earth mage can go under the ground and come up anywhere they like, and the ground breaks open where they do. Price - stone-bound: if the hold slips, the mage stiffens like stone for a while.</description>
     <role>Element</role>
     <kind>Earth</kind>
     <glyph>Earth</glyph>
@@ -49,7 +49,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Air</defName>
     <label>air</label>
-    <description>Air: wind, breath, pressure. It pushes, carries, chokes and lifts. Its spells are not made yet. Price: not decided yet.</description>
+    <description>Air. Wind and breath: a gust that throws foes back, air too thin to breathe, an updraft, a wall of wind, and lightning that leaps from one foe to the next. The wind feeds fire as easily as it snuffs it out. An air mage can be carried over walls and water. Price - winded: if the hold slips, the wind tears the breath out of the mage.</description>
     <role>Element</role>
     <kind>Air</kind>
     <glyph>Air</glyph>

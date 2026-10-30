@@ -284,7 +284,7 @@ namespace Avir.Magic
             if (RitualUI.Button(new Rect(r.xMax - 340f, top - 4f, 182f, 32f), "Kept spells..."))
                 Find.WindowStack.Add(new Dialog_SpellLibrary(pawn));
             if (Prefs.DevMode && RitualUI.Button(new Rect(r.xMax - 524f, top - 4f, 176f, 32f), "Dev: all spells"))
-                foreach (RitualSchema ex in SpellExamples.Fire().Concat(SpellExamples.Water())) if (!b.spells.Any(x => x.name == ex.name)) b.spells.Add(ex);
+                foreach (RitualSchema ex in SpellExamples.Fire().Concat(SpellExamples.Water()).Concat(SpellExamples.Earth()).Concat(SpellExamples.Air())) if (!b.spells.Any(x => x.name == ex.name)) b.spells.Add(ex);
             if (RitualUI.Button(new Rect(r.xMax - 150f, top - 4f, 150f, 32f), "New spell..."))
                 Find.WindowStack.Add(new Dialog_SpellEditor(new RitualSchema { name = "New spell" }, pawn, sp => b.spells.Add(sp)));
             Rect area = new Rect(r.x, top + 32f, r.width, r.yMax - top - 32f);
@@ -375,9 +375,9 @@ namespace Avir.Magic
             {
                 RuneDef e = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + el);
                 if (e != null) SpellGlyph.Draw(new Rect(r.x, y, 24f, 24f), e);
-                bool made = el == "Fire" || el == "Water";
+                bool made = true;
                 GUI.color = made ? Ink : InkSoft;
-                string line = el + " - " + (el == "Fire" ? Dialog_SpellEditor.FireLine(rn) : el == "Water" ? Dialog_SpellEditor.WaterLine(rn) : "not made yet");
+                string line = el + " - " + Dialog_SpellEditor.LineFor(el, rn);
                 float lh = Text.CalcHeight(line, r.width - 32f);
                 Widgets.Label(new Rect(r.x + 32f, y, r.width - 32f, lh), line);
                 y += Mathf.Max(28f, lh + 4f);

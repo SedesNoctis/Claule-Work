@@ -416,4 +416,320 @@
       <heightFactor>0.15</heightFactor>
     </pawnFlyer>
   </ThingDef>
+  <HediffDef>
+    <defName>Avir_StoneSkin</defName>
+    <label>skin of stone</label>
+    <description>Stone grown over the skin by an earth mage. Blows and cuts bite less; it is heavy to carry.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Moving</capacity><offset>-0.05</offset></li></capMods>
+        <statOffsets><ArmorRating_Blunt>0.25</ArmorRating_Blunt><ArmorRating_Sharp>0.25</ArmorRating_Sharp></statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_HeavyGround</defName>
+    <label>sucking ground</label>
+    <description>The ground of an earth mage clings to the feet like mud.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>90~90</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Moving</capacity><offset>-0.3</offset></li></capMods>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_Heavy</defName>
+    <label>heavy limbs</label>
+    <description>An earth mage has poured weight into the body: every step is hard.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Moving</capacity><offset>-0.3</offset></li></capMods>
+        <capMods><li><capacity>Manipulation</capacity><offset>-0.1</offset></li></capMods>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_StoredStone</defName>
+    <label>drawn weight</label>
+    <description>Weight taken from foes and kept. The mage's next earth spell is stronger by it; it slowly settles away.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
+    <isBad>false</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay"><severityPerDay>-0.5</severityPerDay></li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_EarthWard</defName>
+    <label>ward of earth</label>
+    <description>A ward of earth: magic cannot throw the wearer off their feet or stun them, and blunt blows bite less.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <damageFactors><li><damageDef>Blunt</damageDef><factor>0.7</factor></li></damageFactors>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_EarthEnchant</defName>
+    <label>weapon of earth</label>
+    <description>The weapon is heavy with stone: blows land harder and may knock the foe senseless.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_Petrified</defName>
+    <label>stone-bound</label>
+    <description>The earth took the mage when they lost hold of it: the limbs are stiff as stone for a while.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>5000~5000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Moving</capacity><offset>-0.5</offset></li></capMods>
+        <capMods><li><capacity>Manipulation</capacity><offset>-0.2</offset></li></capMods>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_Breathless</defName>
+    <label>breathless</label>
+    <description>The air round them was stilled or pulled away. Hard to breathe, hard to move.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>1250~1250</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Breathing</capacity><offset>-0.35</offset></li></capMods>
+        <capMods><li><capacity>Moving</capacity><offset>-0.15</offset></li></capMods>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_Buffeted</defName>
+    <label>buffeted</label>
+    <description>A mage's wind beats at them: slow to walk and hard to aim.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>90~90</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Moving</capacity><offset>-0.2</offset></li></capMods>
+        <statOffsets><ShootingAccuracyPawn>-0.3</ShootingAccuracyPawn></statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_StoredAir</defName>
+    <label>drawn breath</label>
+    <description>Breath taken from foes and kept. The mage's next air spell is stronger by it; it slowly slips away.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
+    <isBad>false</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay"><severityPerDay>-0.5</severityPerDay></li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_AirWard</defName>
+    <label>ward of air</label>
+    <description>A ward of wind: whoever strikes the wearer in close combat is thrown back.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_AirEnchant</defName>
+    <label>weapon of air</label>
+    <description>The weapon is wrapped in wind: blows throw the foe back.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_Winded</defName>
+    <label>winded</label>
+    <description>The wind tore the breath out of the mage when they lost hold of it.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Breathing</capacity><offset>-0.3</offset></li></capMods>
+        <capMods><li><capacity>Moving</capacity><offset>-0.1</offset></li></capMods>
+      </li>
+    </stages>
+  </HediffDef>
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_EarthWall</defName>
+    <label>raised stone</label>
+    <description>A wall of stone raised from the ground by an earth mage. It stops feet and shots alike, and crumbles back into the ground after some hours.</description>
+    <thingClass>Avir.Magic.EarthWall</thingClass>
+    <category>Building</category>
+    <tickerType>Normal</tickerType>
+    <graphicData>
+      <texPath>Things/Item/Chunk/ChunkStone</texPath>
+      <graphicClass>Graphic_Random</graphicClass>
+      <color>(0.55, 0.5, 0.44)</color>
+      <drawSize>(1.3, 1.3)</drawSize>
+    </graphicData>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>Impassable</passability>
+    <blockWind>true</blockWind>
+    <castEdgeShadows>true</castEdgeShadows>
+    <fillPercent>1</fillPercent>
+    <coversFloor>false</coversFloor>
+    <canOverlapZones>true</canOverlapZones>
+    <statBases>
+      <MaxHitPoints>350</MaxHitPoints>
+      <Flammability>0</Flammability>
+    </statBases>
+    <building>
+      <isInert>true</isInert>
+      <deconstructible>false</deconstructible>
+      <claimable>false</claimable>
+      <isEdifice>true</isEdifice>
+    </building>
+    <rotatable>false</rotatable>
+    <selectable>true</selectable>
+    <destroyable>true</destroyable>
+    <useHitPoints>true</useHitPoints>
+    <holdsRoof>false</holdsRoof>
+    <staticSunShadowHeight>0.6</staticSunShadowHeight>
+  </ThingDef>
+  <ThingDef>
+    <defName>Avir_AirWall</defName>
+    <label>wall of wind</label>
+    <description>A wall of wind held in its place by a mage. The mage's foes who try to cross it are thrown back.</description>
+    <thingClass>Avir.Magic.AirWall</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>false</selectable>
+    <drawerType>RealtimeOnly</drawerType>
+  </ThingDef>
+  <ThingDef>
+    <defName>Avir_SpellBurrow</defName>
+    <label>under the ground</label>
+    <thingClass>Avir.Magic.SpellDash</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Skyfaller</altitudeLayer>
+    <drawerType>RealtimeOnly</drawerType>
+    <useHitPoints>false</useHitPoints>
+    <pawnFlyer>
+      <flightDurationMin>1.2</flightDurationMin>
+      <flightSpeed>18</flightSpeed>
+      <heightFactor>0</heightFactor>
+    </pawnFlyer>
+  </ThingDef>
+  <ThingDef>
+    <defName>Avir_SpellFlight</defName>
+    <label>carried by the wind</label>
+    <thingClass>Avir.Magic.SpellDash</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Skyfaller</altitudeLayer>
+    <drawerType>RealtimeOnly</drawerType>
+    <useHitPoints>false</useHitPoints>
+    <pawnFlyer>
+      <flightDurationMin>0.5</flightDurationMin>
+      <flightSpeed>14</flightSpeed>
+      <heightFactor>1.2</heightFactor>
+    </pawnFlyer>
+  </ThingDef>
 </Defs>

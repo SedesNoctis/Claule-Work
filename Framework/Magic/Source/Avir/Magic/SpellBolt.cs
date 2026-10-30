@@ -55,7 +55,7 @@ namespace Avir.Magic
             {
                 // the caster's own side is flown over, as any shot is; a foe's ward stops it
                 if (p == caster || p.Dead || (caster != null && !p.HostileTo(caster))) continue;
-                Hediff w = p.health.hediffSet.hediffs.FirstOrDefault(h => h.def == FireDefOf.Avir_FireWard || h.def == MagicSpellDefOf.Avir_ArcaneWard);
+                Hediff w = p.health.hediffSet.hediffs.FirstOrDefault(h => h.def == FireDefOf.Avir_FireWard || h.def == WaterDefOf.Avir_WaterWard || h.def == EarthAirDefOf.Avir_EarthWard || h.def == EarthAirDefOf.Avir_AirWard || h.def == MagicSpellDefOf.Avir_ArcaneWard);
                 if (w == null) continue;
                 p.health.RemoveHediff(w);
                 FleckMaker.ThrowLightningGlow(p.DrawPos, map, 1.2f);

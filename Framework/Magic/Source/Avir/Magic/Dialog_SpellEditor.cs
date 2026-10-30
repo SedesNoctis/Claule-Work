@@ -289,13 +289,75 @@ namespace Avir.Magic
                 RuneDef e = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + el);
                 GUI.color = e?.color ?? Color.white;
                 if (e != null) Glyph(new Rect(c.x, y, 20f, 20f), e);
-                bool made = el == "Fire" || el == "Water";
+                bool made = true;
                 GUI.color = made ? Ink : InkSoft;
-                ArtInk.Label(new Rect(c.x + 26f, y, c.width - 26f, 22f), el + " - " + (el == "Fire" ? FireLine(rune) : el == "Water" ? WaterLine(rune) : "not made yet"));
+                ArtInk.Label(new Rect(c.x + 26f, y, c.width - 26f, 22f), el + " - " + LineFor(el, rune));
                 y += 22f;
             }
             Text.Font = GameFont.Small;
         }
+
+        /// <summary>What a rune does with earth, in a few words.</summary>
+        internal static string EarthLine(RuneDef r)
+        {
+            switch (r.kind)
+            {
+                case RuneKind.Earth: return "the circle is stone";
+                case RuneKind.Release: return "a tremor: blunt blows, foes fall";
+                case RuneKind.Hold: return "foes rooted to the spot";
+                case RuneKind.Drain: return "weight into foes, kept by the mage";
+                case RuneKind.Lift: return "stone spikes from below";
+                case RuneKind.Growth: return "rich soil, plants grow";
+                case RuneKind.Purge: return "smothers fire, swallows filth";
+                case RuneKind.Aura: return "the mage's ground: stone skin, mud";
+                case RuneKind.Beam: return "a fissure that throws foes down";
+                case RuneKind.Shape: return "a wall of stone between two points";
+                case RuneKind.Step: return "under the ground - anywhere on the map";
+                case RuneKind.Restore: return "stone splints and stone skin";
+                case RuneKind.Enchant: return "heavy blows that may stun";
+                case RuneKind.Summon: return "spirits are not made yet";
+                case RuneKind.Sense: return "every step through the ground";
+                case RuneKind.Barrier: return "a ward: no stun, no push";
+                case RuneKind.Amplify: return "harder blows";
+                case RuneKind.Breadth: return "wider";
+                case RuneKind.Reach: return "further (+5% cast)";
+                case RuneKind.Anchor: return "stone stands longer";
+                default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
+            }
+        }
+
+        /// <summary>What a rune does with air, in a few words.</summary>
+        internal static string AirLine(RuneDef r)
+        {
+            switch (r.kind)
+            {
+                case RuneKind.Air: return "the circle blows";
+                case RuneKind.Release: return "a gust that throws foes back";
+                case RuneKind.Hold: return "still air: no breath, fires starve";
+                case RuneKind.Drain: return "breath pulled out, kept by the mage";
+                case RuneKind.Lift: return "an updraft: up, and down hard";
+                case RuneKind.Growth: return "the wind spreads wider";
+                case RuneKind.Purge: return "clean air: small fires, poison gone";
+                case RuneKind.Aura: return "a whirlwind round the mage";
+                case RuneKind.Beam: return "lightning that jumps foe to foe";
+                case RuneKind.Shape: return "a wall of wind that throws back";
+                case RuneKind.Step: return "flight over walls and foes";
+                case RuneKind.Restore: return "a second wind";
+                case RuneKind.Enchant: return "blows that throw foes back";
+                case RuneKind.Summon: return "spirits are not made yet";
+                case RuneKind.Sense: return "every sound, the unseen too";
+                case RuneKind.Barrier: return "a ward that throws attackers back";
+                case RuneKind.Amplify: return "stronger; more lightning jumps";
+                case RuneKind.Breadth: return "wider; more lightning jumps";
+                case RuneKind.Reach: return "further (+5% cast)";
+                case RuneKind.Anchor: return "the wind blows longer";
+                default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
+            }
+        }
+
+        /// <summary>A rune with a named element, in a few words.</summary>
+        internal static string LineFor(string el, RuneDef r) =>
+            el == "Fire" ? FireLine(r) : el == "Water" ? WaterLine(r) : el == "Earth" ? EarthLine(r) : el == "Air" ? AirLine(r) : "not made yet";
 
         /// <summary>What a rune does with water, in a few words.</summary>
         internal static string WaterLine(RuneDef r)

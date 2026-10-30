@@ -46,8 +46,10 @@ namespace Avir.Magic
             RitualReading r = RitualEvaluator.Read(s);
             RuneDef el = r.elements.FirstOrDefault();
             var e = new SpellEffect();
-            if (el == null) { e.main = "No element yet: write one (fire, for now) - it is what the spell is made of."; return e; }
+            if (el == null) { e.main = "No element yet: write one (fire, water, earth or air) - it is what the spell is made of."; return e; }
             if (WaterMagic.Is(el)) return Water(r);
+            if (EarthMagic.Is(el)) return Earth(r);
+            if (AirMagic.Is(el)) return Air(r);
             if (!FireMagic.Is(el)) { e.main = el.LabelCap + " is not made yet - for now it only strikes a plain pulse at the point."; return e; }
             return Fire(r);
         }
@@ -125,6 +127,110 @@ namespace Avir.Magic
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
             e.Add("Price: chilled", "If the hold slips, the water soaks the mage instead - slower, and the cold bites hard for a few hours.");
             return e;
+        }
+
+        private static SpellEffect Earth(RitualReading r)
+        {
+            var e = new SpellEffect();
+            var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
+            var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            RuneDef form = forms.FirstOrDefault();
+            float radius = FireMagic.PointRadius(r);
+            string what = Verbs(verbs, EarthVerb);
+            switch (form?.kind)
+            {
+                case RuneKind.Restore: e.main = "Binds the wounds of friends at the target in stone, like splints, and covers them in stone skin for an hour."; break;
+                case RuneKind.Enchant: e.main = "Makes a friend's weapon heavy with stone (the mage's, if no friend stands there): blows hit harder and now and then knock the foe senseless."; break;
+                case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
+                case RuneKind.Sense: e.main = "Every step is felt through the ground: the mage knows where everyone walks within " + (35 + 10 * r.reach) + " cells, even through walls and the unseen."; break;
+                case RuneKind.Step: e.main = "The mage sinks into the ground and comes up anywhere on the map - only a crack of dust runs above. Where they come out the ground bursts: foes round about are thrown aside and stunned."; break;
+                case RuneKind.Shape: e.main = "Stone walls rise between two chosen points (up to " + FireMagic.WallMax(r) + " cells): they stop feet and shots and crumble after a few hours" + (verbs.Any(v => v.kind != RuneKind.Hold) ? "; and along them the earth " + Verbs(verbs.Where(v => v.kind != RuneKind.Hold).ToList(), EarthVerb) : "") + "."; break;
+                default:
+                    if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A ward of earth on friends at the target." : "Earth with nothing to do: add a verb or a form."; break; }
+                    string where = form?.kind == RuneKind.Aura ? "all round the mage - and the ground stays theirs for a while: friends in it wear stone skin, foes wade as through mud, and this happens again every few seconds"
+                                 : form?.kind == RuneKind.Beam ? "along a crack that runs to the target and throws down whoever stands on it"
+                                 : "at the point, " + radius.ToString("0.#") + " cells round";
+                    e.main = Cap(what) + " - " + where + ".";
+                    break;
+            }
+            if (forms.Count > 1) e.Add("Several forms", "Each form works on its own: the spell happens once for each.");
+            Repeats(e, verbs);
+            if (r.barrier > 0) e.Add("Ward of earth", "Friends there get a ward of earth: magic cannot throw them off their feet or stun them, and blunt blows bite less.");
+            if (r.amplify > 0) e.Add("Heavier", "Amplification: the blows of stone are harder.");
+            if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the weight", "The weight taken from foes stays with the mage: their next earth spell is stronger.");
+            if (form?.kind == RuneKind.Shape && (r.anchor > 0 || verbs.Any(v => v.kind == RuneKind.Hold))) e.Add("Stands longer", "Holding and anchors keep the stone up longer.");
+            if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader crack - and each one makes the cast 8% longer.");
+            if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
+            e.Add("Price: stone-bound", "If the hold slips, the stone takes the mage instead: they stand stunned for a moment and their limbs are stiff for a couple of hours.");
+            return e;
+        }
+
+        private static string EarthVerb(RuneDef v)
+        {
+            switch (v.kind)
+            {
+                case RuneKind.Release: return "shakes, striking foes and knocking them off their feet";
+                case RuneKind.Hold: return "grips the feet of foes and holds them fast";
+                case RuneKind.Drain: return "pours weight into foes' limbs and keeps some for the mage";
+                case RuneKind.Lift: return "bursts up in stone spikes";
+                case RuneKind.Growth: return "grows rich, and the plants grow faster";
+                case RuneKind.Purge: return "smothers fires and swallows filth";
+                default: return v.label;
+            }
+        }
+
+        private static SpellEffect Air(RitualReading r)
+        {
+            var e = new SpellEffect();
+            var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
+            var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            RuneDef form = forms.FirstOrDefault();
+            float radius = FireMagic.PointRadius(r);
+            string what = Verbs(verbs, AirVerb);
+            switch (form?.kind)
+            {
+                case RuneKind.Restore: e.main = "A second wind for friends at the target: tiredness lifts, breath comes back, poison in the blood thins."; break;
+                case RuneKind.Enchant: e.main = "Wraps a friend's weapon in wind (the mage's, if no friend stands there): every blow throws the foe back."; break;
+                case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
+                case RuneKind.Sense: e.main = "The wind brings every sound: the mage hears everyone within " + (30 + 10 * r.reach) + " cells, through walls - the unseen too."; break;
+                case RuneKind.Step: e.main = "The wind lifts the mage high and carries them to the target over anything in the way - walls, water, foes. They land on a gust that throws close foes aside."; break;
+                case RuneKind.Shape: e.main = "A wall of wind between two chosen points (up to " + FireMagic.WallMax(r) + " cells): foes who step into it are thrown back the way they came. It blows for a couple of hours."; break;
+                default:
+                    if (verbs.Count == 0)
+                    {
+                        if (form?.kind == RuneKind.Beam) { e.main = "Lightning: it strikes the first foe on the line and jumps to " + (1 + r.breadth + r.amplify) + " more nearby - burns and a short stun; machines are struck harder."; break; }
+                        e.main = r.barrier > 0 ? "A ward of air on friends at the target." : "Air with nothing to do: add a verb or a form."; break;
+                    }
+                    string where = form?.kind == RuneKind.Aura ? "all round the mage - and a whirlwind stays round them for a while: foes in it are slowed and shoot poorly, and those who come close are thrown back"
+                                 : form?.kind == RuneKind.Beam ? "along the line - and with it lightning, that jumps from foe to foe (" + (2 + r.breadth + r.amplify) + " in all)"
+                                 : "at the point, " + radius.ToString("0.#") + " cells round";
+                    e.main = Cap(what) + " - " + where + ".";
+                    break;
+            }
+            if (forms.Count > 1) e.Add("Several forms", "Each form works on its own: the spell happens once for each.");
+            Repeats(e, verbs);
+            if (r.barrier > 0) e.Add("Ward of air", "Friends there get a ward of air: whoever strikes them in close combat is thrown back.");
+            if (verbs.Any(v => v.kind == RuneKind.Release) && r.amplify > 0) e.Add("Further back", "Amplified, the gust throws foes further.");
+            if (verbs.Any(v => v.kind == RuneKind.Release)) e.Add("Feeds fire", "Fires the gust passes over flare up - careful near your own walls.");
+            if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the breath", "The breath taken stays with the mage: their next air spell is stronger.");
+            if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area, a broader line, more jumps of lightning - and each one makes the cast 8% longer.");
+            if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
+            e.Add("Price: winded", "If the hold slips, the wind tears the breath out of the mage: a moment stunned, and an hour short of breath.");
+            return e;
+        }
+
+        private static string AirVerb(RuneDef v)
+        {
+            switch (v.kind)
+            {
+                case RuneKind.Release: return "blows in a gust that throws foes back";
+                case RuneKind.Hold: return "stands still and thin: foes can hardly breathe, fires starve";
+                case RuneKind.Drain: return "is pulled out of foes' lungs and kept by the mage";
+                case RuneKind.Lift: return "rises in an updraft that throws foes up and drops them";
+                case RuneKind.Growth: return "spreads wide, pushing foes further round";
+                case RuneKind.Purge: return "clears: small flames blown out, poison breathed away";
+                default: return v.label;
+            }
         }
 
         private static string WaterVerb(RuneDef v)
@@ -276,6 +382,40 @@ namespace Avir.Magic
             s.rings.Clear();
             return s;
         }
+
+        public static List<RitualSchema> Earth() => new List<RitualSchema>
+        {
+            Make("Tremor", new[] { "Earth", "Release" }, new[] { "Breadth" }),
+            Make("Fissure", new[] { "Earth", "Release" }, new[] { "Beam" }),
+            Make("Stone wall", new[] { "Earth", "Hold" }, new[] { "Shape" }),
+            Make("Rooting", new[] { "Earth", "Hold" }),
+            Make("Weight of stone", new[] { "Earth", "Drain" }),
+            Make("Stone spikes", new[] { "Earth", "Lift" }),
+            Make("Rich soil", new[] { "Earth", "Growth" }, new[] { "Breadth" }),
+            Make("Firm ground", new[] { "Earth", "Hold" }, new[] { "Aura" }),
+            Make("Through the earth", new[] { "Earth" }, new[] { "Step" }),
+            Make("Stone splints", new[] { "Earth" }, new[] { "Restore" }),
+            Make("Weapon of earth", new[] { "Earth" }, new[] { "Enchant" }),
+            Make("Tremorsense", new[] { "Earth" }, new[] { "Sense" }),
+            Make("Ward of earth", new[] { "Earth", "Barrier" }),
+        };
+
+        public static List<RitualSchema> Air() => new List<RitualSchema>
+        {
+            Make("Gust", new[] { "Air", "Release" }, new[] { "Breadth" }),
+            Make("Chain lightning", new[] { "Air" }, new[] { "Beam" }),
+            Make("Wall of wind", new[] { "Air", "Release" }, new[] { "Shape" }),
+            Make("Still air", new[] { "Air", "Hold" }),
+            Make("Stolen breath", new[] { "Air", "Drain" }),
+            Make("Updraft", new[] { "Air", "Lift" }),
+            Make("Whirlwind", new[] { "Air", "Release" }, new[] { "Aura" }),
+            Make("Clear air", new[] { "Air", "Purge" }, new[] { "Breadth" }),
+            Make("On the wind", new[] { "Air" }, new[] { "Step" }),
+            Make("Second wind", new[] { "Air" }, new[] { "Restore" }),
+            Make("Weapon of air", new[] { "Air" }, new[] { "Enchant" }),
+            Make("Carried sound", new[] { "Air" }, new[] { "Sense" }),
+            Make("Ward of air", new[] { "Air", "Barrier" }),
+        };
 
         public static List<RitualSchema> Water() => new List<RitualSchema>
         {

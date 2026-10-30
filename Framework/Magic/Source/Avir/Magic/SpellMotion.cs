@@ -8,29 +8,76 @@ using Verse;
 
 namespace Avir.Magic
 {
-    /// <summary>A mage carried by their element - flame or a wave - across the ground, seen all the way: no sudden
-    /// vanishing. (A true jump through space belongs to the runes of space.)</summary>
+    /// <summary>A mage carried by their element, seen all the way: no sudden vanishing (a true jump through space
+    /// belongs to the runes of space). Fire and water run along the ground; air lifts the mage high over whatever
+    /// stands between; earth takes the mage under the ground - only a running crack of dust shows where they go - and
+    /// throws them up again anywhere on the map, scattering the foes about them.</summary>
     public class SpellDash : PawnFlyer
     {
         public RuneKind element = RuneKind.Fire;
+        public float power = 1f;
 
-        public static void Carry(Pawn p, IntVec3 dest, RuneKind el)
+        public static void Carry(Pawn p, IntVec3 dest, RuneKind el, float power = 1f)
         {
             Map map = p.Map;
             if (map == null || !dest.InBounds(map) || !dest.Standable(map) || dest == p.Position) return;
-            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_SpellDash");
+            string name = el == RuneKind.Earth ? "Avir_SpellBurrow" : el == RuneKind.Air ? "Avir_SpellFlight" : "Avir_SpellDash";
+            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(name) ?? DefDatabase<ThingDef>.GetNamedSilentFail("Avir_SpellDash");
             IntVec3 from = p.Position;
             if (def == null) { p.Position = dest; p.Notify_Teleported(true, false); return; }
+            if (el == RuneKind.Earth) Burst(from, map, p, 1.5f, 0, power);
             var flyer = (SpellDash)MakeFlyer(def, p, dest, null, null);
             if (flyer == null) return;
             flyer.element = el;
+            flyer.power = power;
             GenSpawn.Spawn(flyer, from, map);
+        }
+
+        /// <summary>Foes round a point thrown off and stunned; with dust of the element.</summary>
+        public static void Burst(IntVec3 at, Map map, Pawn mage, float radius, int push, float power)
+        {
+            Color dust = MagicFx.EarthDust;
+            foreach (IntVec3 c in GenRadial.RadialCellsAround(at, radius, true))
+                if (c.InBounds(map)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 2f, dust);
+            if (push <= 0) return;
+            foreach (Pawn q in GenRadial.RadialDistinctThingsAround(at, map, radius, true).OfType<Pawn>().ToList())
+            {
+                if (!MagicFx.Foe(q, mage)) continue;
+                MagicFx.Push(q, at, push, map);
+                MagicFx.Stun(q, Mathf.RoundToInt(120f * power), mage);
+            }
         }
 
         public override void ExposeData()
         {
             base.ExposeData();
             Scribe_Values.Look(ref element, "element", RuneKind.Fire);
+            Scribe_Values.Look(ref power, "power", 1f);
+        }
+
+        public override void DynamicDrawPhaseAt(DrawPhase phase, Vector3 drawLoc, bool flip = false)
+        {
+            if (element == RuneKind.Earth) return; // under the ground: nothing of the mage is seen
+            base.DynamicDrawPhaseAt(phase, drawLoc, flip);
+        }
+
+        protected override void RespawnPawn()
+        {
+            Map map = Map; IntVec3 at = Position; Pawn mage = FlyingPawn; RuneKind el = element; float pw = power;
+            base.RespawnPawn();
+            if (map == null || mage == null) return;
+            if (el == RuneKind.Earth)
+            {
+                // the ground breaks open and throws the mage up; those standing round are thrown off their feet
+                Burst(at, map, mage, 2.5f + 0.5f * pw, 2, pw);
+                foreach (IntVec3 c in GenRadial.RadialCellsAround(at, 2.5f, true)) if (Rand.Chance(0.4f)) MagicFx.Rubble(c, map);
+            }
+            else if (el == RuneKind.Air)
+            {
+                // the mage comes down on a gust
+                foreach (IntVec3 c in GenRadial.RadialCellsAround(at, 2f, true)) if (c.InBounds(map) && Rand.Chance(0.6f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.6f, MagicFx.AirDust);
+                foreach (Pawn q in GenRadial.RadialDistinctThingsAround(at, map, 2f, true).OfType<Pawn>().ToList()) if (MagicFx.Foe(q, mage)) MagicFx.Push(q, at, 2, map);
+            }
         }
 
         protected override void TickInterval(int delta)
@@ -42,6 +89,15 @@ namespace Avir.Magic
             {
                 if (this.IsHashIntervalTick(2, delta)) FleckMaker.Static(at.ToIntVec3(), Map, FleckDefOf.WaterSplash, 1.4f);
                 if (this.IsHashIntervalTick(4, delta)) FleckMaker.Static(at.ToIntVec3(), Map, FleckDefOf.WaterRipple, 1.6f);
+            }
+            else if (element == RuneKind.Earth)
+            {
+                // the crack running through the ground above
+                if (this.IsHashIntervalTick(3, delta)) FleckMaker.ThrowDustPuffThick(new Vector3(at.x, 0f, at.z) + Rand.InsideUnitCircleVec3 * 0.3f, Map, 1.3f, MagicFx.EarthDust);
+            }
+            else if (element == RuneKind.Air)
+            {
+                if (this.IsHashIntervalTick(4, delta)) FleckMaker.ThrowDustPuffThick(at, Map, 1.2f, MagicFx.AirDust);
             }
             else
             {
@@ -55,17 +111,46 @@ namespace Avir.Magic
     /// will not start in it; its verbs work again every few seconds.</summary>
     public class MapComponent_Tides : MapComponent
     {
-        public class Tide { public Pawn mage; public float radius, power; public int until; public List<RuneDef> verbs; }
+        public class Tide { public Pawn mage; public float radius, power; public int until; public List<RuneDef> verbs; public RuneKind element = RuneKind.Water; }
         public readonly List<Tide> tides = new List<Tide>();
 
         public MapComponent_Tides(Map map) : base(map) { }
 
-        public static void Raise(Pawn mage, float radius, float power, List<RuneDef> verbs)
+        public static void Raise(Pawn mage, float radius, float power, List<RuneDef> verbs, RuneKind element = RuneKind.Water)
         {
             var c = mage.Map?.GetComponent<MapComponent_Tides>();
             if (c == null) return;
             c.tides.RemoveAll(t => t.mage == mage);
-            c.tides.Add(new Tide { mage = mage, radius = radius, power = power, verbs = verbs, until = Find.TickManager.TicksGame + Mathf.RoundToInt(2500f * power) });
+            c.tides.Add(new Tide { mage = mage, radius = radius, power = power, verbs = verbs, element = element, until = Find.TickManager.TicksGame + Mathf.RoundToInt(2500f * power) });
+        }
+
+        /// <summary>The earth and air fields. Earth: friends in it get skin of stone, foes wade as through mud.
+        /// Air: a whirlwind - foes buffeted, slowed and shooting badly, and thrown back when they come close.</summary>
+        private void Field(Tide t, int now)
+        {
+            IntVec3 c = t.mage.Position;
+            bool earth = t.element == RuneKind.Earth;
+            if (now % 15 == 0)
+                for (int i = 0; i < 2; i++)
+                    FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted() + Rand.InsideUnitCircleVec3 * t.radius, map, Rand.Range(1.2f, 2f), earth ? MagicFx.EarthDust : MagicFx.AirDust);
+            if (now % 60 == 0)
+            {
+                var cells = FireMagic.Point(c, map, t.radius);
+                foreach (Pawn p in MagicFx.PawnsIn(cells, map))
+                {
+                    if (p == t.mage) continue;
+                    if (!p.HostileTo(t.mage)) { if (earth) MagicFx.Give(p, EarthAirDefOf.Avir_StoneSkin, 120); continue; }
+                    MagicFx.Give(p, earth ? EarthAirDefOf.Avir_HeavyGround : EarthAirDefOf.Avir_Buffeted, 90);
+                    if (!earth && p.Position.DistanceTo(c) < 2.5f) MagicFx.Push(p, c, 2, map);
+                }
+            }
+            if (now % 180 == 0 && t.verbs != null && t.verbs.Count > 0)
+            {
+                var cells = FireMagic.Point(c, map, t.radius);
+                var r = new RitualReading();
+                if (earth) EarthMagic.Apply(t.mage, map, t.verbs, cells, c, t.power * 0.6f, r);
+                else AirMagic.Apply(t.mage, map, t.verbs, cells, c, t.power * 0.6f, r);
+            }
         }
 
         public override void MapComponentTick()
@@ -76,6 +161,7 @@ namespace Avir.Magic
             foreach (Tide t in tides)
             {
                 IntVec3 c = t.mage.Position;
+                if (t.element != RuneKind.Water) { Field(t, now); continue; }
                 // the mist, all round
                 if (now % 12 == 0)
                     for (int i = 0; i < 3; i++)
@@ -177,6 +263,7 @@ namespace Avir.Magic
                 att.TakeDamage(new DamageInfo(DamageDefOf.Burn, 4f, 0f, -1f, t));
                 FleckMaker.ThrowFireGlow(att.DrawPos, att.Map, 0.8f);
             }
+            if (att.Spawned && t.health.hediffSet.GetFirstHediffOfDef(EarthAirDefOf.Avir_AirWard) != null) MagicFx.Push(att, t.Position, 2, att.Map);
         }
     }
 }

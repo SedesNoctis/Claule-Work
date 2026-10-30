@@ -104,6 +104,8 @@ namespace Avir.Magic
                 RitualReading r = RitualEvaluator.Read(one);
                 if (FireMagic.Is(c.element)) FireMagic.Cast(caster, one, r, target, p);
                 else if (WaterMagic.Is(c.element)) WaterMagic.Cast(caster, one, r, target, p);
+                else if (EarthMagic.Is(c.element)) EarthMagic.Cast(caster, one, r, target, p);
+                else if (AirMagic.Is(c.element)) AirMagic.Cast(caster, one, r, target, p);
             }
             float radius = 2f + 1.5f * root.Working.Sum(c => c.OwnRunes.Count(x => x.kind == RuneKind.Breadth));
             if (Steam(root))
@@ -135,6 +137,12 @@ namespace Avir.Magic
         {
             if (Small(root).Any(c => FireMagic.Is(c.element))) FireMagic.Raging(caster);
             if (Small(root).Any(c => WaterMagic.Is(c.element))) WaterMagic.Chilled(caster);
+            if (Small(root).Any(c => EarthMagic.Is(c.element))) EarthMagic.Petrified(caster);
+            if (Small(root).Any(c => AirMagic.Is(c.element))) AirMagic.Winded(caster);
         }
+
+        /// <summary>A spell that takes the mage under the ground: it can come up anywhere on the map.</summary>
+        public static bool Burrows(SpellCircle root) =>
+            Small(root).Any(c => EarthMagic.Is(c.element) && c.OwnRunes.Any(x => x.kind == RuneKind.Step));
     }
 }
