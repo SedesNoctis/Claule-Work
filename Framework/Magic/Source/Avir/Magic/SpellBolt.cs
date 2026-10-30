@@ -47,6 +47,9 @@ namespace Avir.Magic
     /// wears it - and goes out itself. It does not throw the spell back.</summary>
     public static class Ward
     {
+        private static bool ComboWard(HediffDef d) => d != null && (d == ComboDefOf.Avir_SteamWard || d == ComboDefOf.Avir_StormWard || d == ComboDefOf.Avir_MagmaWard
+                                                                  || d == ComboDefOf.Avir_HazeWard || d == ComboDefOf.Avir_MossWard || d == ComboDefOf.Avir_DustWard);
+
         public static bool Quench(IntVec3 c, Map map, Pawn caster)
         {
             if (map == null || !c.InBounds(map)) return false;
@@ -55,7 +58,7 @@ namespace Avir.Magic
             {
                 // the caster's own side is flown over, as any shot is; a foe's ward stops it
                 if (p == caster || p.Dead || (caster != null && !p.HostileTo(caster))) continue;
-                Hediff w = p.health.hediffSet.hediffs.FirstOrDefault(h => h.def == FireDefOf.Avir_FireWard || h.def == WaterDefOf.Avir_WaterWard || h.def == EarthAirDefOf.Avir_EarthWard || h.def == EarthAirDefOf.Avir_AirWard || h.def == MagicSpellDefOf.Avir_ArcaneWard);
+                Hediff w = p.health.hediffSet.hediffs.FirstOrDefault(h => h.def == FireDefOf.Avir_FireWard || h.def == WaterDefOf.Avir_WaterWard || h.def == EarthAirDefOf.Avir_EarthWard || h.def == EarthAirDefOf.Avir_AirWard || ComboWard(h.def) || h.def == MagicSpellDefOf.Avir_ArcaneWard);
                 if (w == null) continue;
                 p.health.RemoveHediff(w);
                 FleckMaker.ThrowLightningGlow(p.DrawPos, map, 1.2f);

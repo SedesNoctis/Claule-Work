@@ -568,7 +568,9 @@ namespace Avir.Magic
         }
 
         private static readonly Color BindingColor = new Color(0.92f, 0.84f, 0.66f);
-        private static Color ColorOf(SpellCircle c) => c.binding ? BindingColor : c.element?.color ?? new Color(0.85f, 0.78f, 0.62f);
+        /// <summary>Circles whose elements met: both wear the colour of what they made.</summary>
+        private static readonly Dictionary<SpellCircle, ComboKind> met = new Dictionary<SpellCircle, ComboKind>();
+        private static Color ColorOf(SpellCircle c) => c.binding ? BindingColor : met.TryGetValue(c, out ComboKind k) ? Combos.ColorOf(k) : c.element?.color ?? new Color(0.85f, 0.78f, 0.62f);
         private static Color Light(Color c, float k) => new Color(c.r + (1f - c.r) * k, c.g + (1f - c.g) * k, c.b + (1f - c.b) * k, 1f);
         private static Color Dark(Color c) => new Color(c.r * 0.28f, c.g * 0.28f, c.b * 0.28f, 0.92f);
 
@@ -595,6 +597,8 @@ namespace Avir.Magic
             Node root = Measure(s.weave);
             var ord = MapComponent_SpellChain.Order(s.weave);
             orderOf.Clear();
+            met.Clear();
+            foreach (var kv in Combos.Pairs(s.weave)) met[kv.Key] = kv.Value;
             if (ord.Count > 1) for (int k = 0; k < ord.Count; k++) orderOf[ord[k]] = k + 1;
             float fit = Mathf.Min(area.width, area.height) * 0.47f / (Outer(root) * 1.06f);
             // a circle asked to be brought close: zoomed until it fills the view, moved to its centre
@@ -991,9 +995,15 @@ namespace Avir.Magic
             bool whole = sel.binding || s.weave.Working.Count() <= 1 || !s.weave.All().Contains(sel);
             RitualSchema shownSpell = whole ? s : new RitualSchema { name = s.name, weave = SpellCircle.Bound(sel.Copy()) };
             SpellEffect fx = SpellText.Explain(shownSpell);
+            // a circle whose element met its neighbour's: it works as what they made
+            if (!whole && met.TryGetValue(sel, out ComboKind selMet))
+            {
+                SpellEffect cfx = ComboText.Explain(selMet, sel.AsSchema());
+                cfx.details = fx.details; fx = cfx;
+            }
             if (!whole) fx.details = (fx.details ?? "") + "\nThe whole spell: choose the outer rim (or click the sky).";
             float ph = EffectPlaque.Height(fx, r.width);
-            EffectPlaque.Draw(new Rect(r.x, r.y + 40f, r.width, ph), fx, Spells.ColorOf(shownSpell), whole ? "THE MAIN EFFECT" : "THIS CIRCLE ALONE");
+            EffectPlaque.Draw(new Rect(r.x, r.y + 40f, r.width, ph), fx, !whole && met.TryGetValue(sel, out ComboKind tint) ? Combos.ColorOf(tint) : Spells.ColorOf(shownSpell), whole ? "THE MAIN EFFECT" : "THIS CIRCLE ALONE");
             float y = r.y + 40f + ph + 10f;
             float oh = Mathf.Max(64f, Mathf.Min(r.yMax - 60f - y - 120f, 40f + 26f * OutlineRows().Count));
             DrawOutline(new Rect(r.x, y, r.width, oh)); y += oh + 10f;

@@ -317,7 +317,7 @@ namespace Avir.Magic
             if (RitualUI.Button(new Rect(r.xMax - 340f, top - 4f, 182f, 32f), "Kept spells..."))
                 Find.WindowStack.Add(new Dialog_SpellLibrary(pawn));
             if (Prefs.DevMode && RitualUI.Button(new Rect(r.xMax - 524f, top - 4f, 176f, 32f), "Dev: all spells"))
-                foreach (RitualSchema ex in SpellExamples.Fire().Concat(SpellExamples.Water()).Concat(SpellExamples.Earth()).Concat(SpellExamples.Air())) if (!b.spells.Any(x => x.name == ex.name)) b.spells.Add(ex);
+                foreach (RitualSchema ex in SpellExamples.Fire().Concat(SpellExamples.Water()).Concat(SpellExamples.Earth()).Concat(SpellExamples.Air()).Concat(SpellExamples.Meetings())) if (!b.spells.Any(x => x.name == ex.name)) b.spells.Add(ex);
             if (RitualUI.Button(new Rect(r.xMax - 150f, top - 4f, 150f, 32f), "New spell..."))
                 Find.WindowStack.Add(new Dialog_SpellEditor(new RitualSchema { name = "New spell" }, pawn, sp => b.spells.Add(sp)));
             Rect area = new Rect(r.x, top + 32f, r.width, r.yMax - top - 32f);

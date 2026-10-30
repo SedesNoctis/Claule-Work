@@ -47,18 +47,10 @@ namespace Avir.Magic
 
         public static int Resonance(SpellCircle root, RuneDef el) => Small(root).Count(c => c.element == el);
 
-        public static bool Steam(SpellCircle root)
-        {
-            var els = Small(root).Select(c => c.element?.kind).ToList();
-            return els.Contains(RuneKind.Fire) && els.Contains(RuneKind.Water);
-        }
+        public static bool Steam(SpellCircle root) => Combos.Pairs(root).ContainsValue(ComboKind.Steam);
 
         /// <summary>Water and air together: a storm - the wind's chained strike turns to lightning.</summary>
-        public static bool Storm(SpellCircle root)
-        {
-            var els = Small(root).Select(c => c.element?.kind).ToList();
-            return els.Contains(RuneKind.Water) && els.Contains(RuneKind.Air);
-        }
+        public static bool Storm(SpellCircle root) => Combos.Pairs(root).ContainsValue(ComboKind.Storm);
 
         public static bool Wraps(SpellCircle root, RuneKind k) => Greats(root).Any(c => c.element?.kind == k && c.inner.Count > 0);
 
@@ -73,10 +65,12 @@ namespace Avir.Magic
             var parts = new List<string>();
             // one after another, from the heart outward: each strikes where the one before it ended
             var order = MapComponent_SpellChain.Order(root);
+            var pairs = Combos.Pairs(root);
             for (int k = 0; k < order.Count; k++)
             {
                 SpellCircle c = order[k];
-                SpellEffect one = SpellText.ExplainSchema(c.AsSchema());
+                bool met = pairs.TryGetValue(c, out ComboKind ck);
+                SpellEffect one = met ? ComboText.Explain(ck, c.AsSchema()) : SpellText.ExplainSchema(c.AsSchema());
                 string where = "";
                 if (k > 0)
                 {
@@ -84,7 +78,7 @@ namespace Avir.Magic
                     bool step = prev.verbs.Any(v => v.kind == RuneKind.Step), aura = prev.verbs.Any(v => v.kind == RuneKind.Aura);
                     where = step && !SpellMods.Pulls(order[k - 1].AsSchema()) ? "then, once the mage is there, round them: " : step || aura ? "then, by the mage: " : "then: ";
                 }
-                parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + where + c.element.LabelCap + " - " + one.main.TrimEnd('.'));
+                parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + where + (met ? Combos.Label(ck).CapitalizeFirst() + " (" + c.element.label + ")" : c.element.LabelCap) + " - " + one.main.TrimEnd('.'));
                 foreach (var x in one.extras) if (!e.extras.Any(y => y.Key == x.Key)) e.extras.Add(x);
             }
             foreach (SpellCircle g in greats)
@@ -97,8 +91,7 @@ namespace Avir.Magic
             if (order.Count > 1) e.extras.Insert(0, new KeyValuePair<string, string>("In order", "The circles act one after another, from the heart outward: those round the heart first, " + (MapComponent_SpellChain.Widdershins(root) ? "counter-clockwise from the top (Darkness and Space turn the spell the other way)" : "clockwise from the top") + ", then those inside the great circles. Each waits until the one before it has ended, and strikes where it ended."));
             foreach (var g in smalls.GroupBy(c => c.element).Where(g => g.Key != null && g.Count() > 1))
                 e.extras.Insert(0, new KeyValuePair<string, string>(g.Key.LabelCap + " ×" + g.Count() + ": resonance", "Circles of the same element strengthen each other: +" + (25 * (g.Count() - 1)) + "% to each."));
-            if (Steam(root)) e.extras.Insert(0, new KeyValuePair<string, string>("Steam: fire + water", "Where fire and water strike together, scalding steam bursts at the point."));
-            if (Storm(root)) e.extras.Insert(0, new KeyValuePair<string, string>("Storm: water + air", "The chained strike of the air becomes lightning: it burns and jolts, strikes machines harder, and the soaked take half again."));
+            foreach (ComboKind ck in pairs.Values.Distinct()) e.extras.Insert(0, new KeyValuePair<string, string>(Combos.Label(ck).CapitalizeFirst() + ": two elements met", ComboText.Short(ck)));
             if (Wraps(root, RuneKind.Life)) e.extras.Insert(0, new KeyValuePair<string, string>("Life wraps", "Friends within the spell's reach are healed as it strikes."));
             // the price chip last, once
             var price = e.extras.Where(x => x.Key.StartsWith("Price")).ToList();
@@ -121,7 +114,7 @@ namespace Avir.Magic
         public static void AfterCircles(Pawn caster, SpellCircle root, LocalTargetInfo target, float power, Map map)
         {
             float radius = 2f + 1.5f * root.Working.Sum(c => c.OwnRunes.Count(x => x.kind == RuneKind.Breadth));
-            if (Steam(root))
+            if (false)
             {
                 foreach (Pawn q in GenRadial.RadialDistinctThingsAround(target.Cell, map, radius, true).OfType<Pawn>().ToList())
                     if (q.HostileTo(caster)) q.TakeDamage(new DamageInfo(DamageDefOf.Burn, 5f * power, 0f, -1f, caster));
@@ -151,6 +144,7 @@ namespace Avir.Magic
             if (Small(root).Any(c => FireMagic.Is(c.element))) FireMagic.Raging(caster);
             if (Small(root).Any(c => WaterMagic.Is(c.element))) WaterMagic.Chilled(caster);
             if (Small(root).Any(c => EarthMagic.Is(c.element))) EarthMagic.Petrified(caster);
+            foreach (ComboKind k in Combos.Pairs(root).Values.Distinct()) ComboMagic.Price(k, caster);
             if (Small(root).Any(c => AirMagic.Is(c.element))) AirMagic.Winded(caster);
         }
 

@@ -156,9 +156,23 @@ namespace Avir.Magic
             Scribe_Values.Look(ref breadth, "breadth");
         }
 
+        private static Material waveMat;
+
         public override void DynamicDrawPhaseAt(DrawPhase phase, Vector3 drawLoc, bool flip = false)
         {
             if (element == RuneKind.Earth) return; // under the ground: nothing of the mage is seen
+            if (element == RuneKind.Water && puller == null && phase == DrawPhase.Draw)
+            {
+                // the wave itself, rolling ahead of the mage
+                if (waveMat == null) waveMat = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Wave_Water", ShaderDatabase.Transparent);
+                Vector3 dir = (DestinationPos - drawLoc); dir.y = 0f;
+                if (dir.sqrMagnitude > 0.01f)
+                {
+                    float ang = dir.AngleFlat();
+                    Vector3 at = drawLoc + dir.normalized * 0.7f; at.y = AltitudeLayer.MoteOverhead.AltitudeFor();
+                    Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(at, Quaternion.AngleAxis(ang, Vector3.up), new Vector3(3f, 1f, 3f)), waveMat, 0);
+                }
+            }
             base.DynamicDrawPhaseAt(phase, drawLoc, flip);
         }
 

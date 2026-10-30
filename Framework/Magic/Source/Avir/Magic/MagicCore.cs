@@ -655,6 +655,39 @@ namespace Avir.Magic
             if (mage != null) SpellDash.Pull(mage, p, el, 1f, 2f);
         }
 
+        [DebugAction(Cat, "Field of steam here (r 4, 30 s)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevFieldSteam() => DevField(ComboKind.Steam);
+
+        [DebugAction(Cat, "Field of storm here (r 4, 30 s)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevFieldStorm() => DevField(ComboKind.Storm);
+
+        [DebugAction(Cat, "Field of magma here (r 4, 30 s)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevFieldMagma() => DevField(ComboKind.Magma);
+
+        [DebugAction(Cat, "Field of haze here (r 4, 30 s)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevFieldHaze() => DevField(ComboKind.Haze);
+
+        [DebugAction(Cat, "Field of moss here (r 4, 30 s)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevFieldMoss() => DevField(ComboKind.Moss);
+
+        [DebugAction(Cat, "Field of dust here (r 4, 30 s)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevFieldDust() => DevField(ComboKind.Dust);
+
+        private static void DevField(ComboKind k)
+        {
+            Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell();
+            Pawn by = map.mapPawns.FreeColonistsSpawned.FirstOrDefault();
+            if (k == ComboKind.Magma) foreach (IntVec3 x in FireMagic.Point(c, map, 2.5f)) MagmaPool.Pour(x, map, by, 1f, 1800, false);
+            else if (k == ComboKind.Moss) foreach (IntVec3 x in FireMagic.Point(c, map, 2.5f)) MossPatch.Grow(x, map, by, 30000);
+            else MapComponent_ComboFields.Raise(map, k, by, c, 4f, 1f, 1800, false);
+        }
+
+        [DebugAction(Cat, "Magma wall here (sets into stone)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevMagmaWall() { Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell(); for (int i = -2; i <= 2; i++) MagmaPool.Pour(c + new IntVec3(i, 0, 0), map, null, 1f, 300, true, 5000); }
+
+        [DebugAction(Cat, "Give the six meeting spells (into the book)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevMeetings(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) foreach (RitualSchema s in SpellExamples.Meetings()) c.Book.spells.Add(s); }
+
         [DebugAction(Cat, "Root it (8 s)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevRoot(Pawn p) => MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, 480);
 

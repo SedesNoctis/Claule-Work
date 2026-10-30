@@ -77,11 +77,18 @@ namespace Avir.Magic
             return risk > comp ? Mathf.Clamp01(1f - (risk - comp) * 0.4f) : 1f;
         }
         public static int Cooldown(RitualSchema s) => Mathf.RoundToInt(GenDate.TicksPerHour * 0.25f * (1f + (int)s.size));
-        public static float Range(RitualSchema s) => s.weave != null && WeaveSpell.Burrows(s.weave) ? 999f : 16f + 10f * (s.weave != null ? WeaveSpell.Reach(s.weave) : RitualEvaluator.Read(s).reach);
+        public static float Range(RitualSchema s) => s.weave != null && WeaveSpell.Burrows(s.weave) ? 30f + 10f * WeaveSpell.Reach(s.weave) : 16f + 10f * (s.weave != null ? WeaveSpell.Reach(s.weave) : RitualEvaluator.Read(s).reach);
         public static float Power(RitualSchema s) => RitualCircles.PowerFactor(s.size) * (1f + 0.3f * RitualEvaluator.Read(s).amplify);
         public static RuneDef Element(RitualSchema s) => s.weave != null ? (s.weave.element ?? s.weave.All().Select(c => c.element).FirstOrDefault(e => e != null)) : RitualEvaluator.Read(s).elements.FirstOrDefault();
 
-        public static Color ColorOf(RitualSchema s) => s.weave != null ? (Element(s)?.color ?? new Color(0.9f, 0.8f, 0.6f)) : RitualAspects.ColorOfRitual(s);
+        public static Color ColorOf(RitualSchema s)
+        {
+            if (s.weave == null) return RitualAspects.ColorOfRitual(s);
+            // a spell that opens with two elements met takes the colour of what they made
+            SpellCircle first = MapComponent_SpellChain.Order(s.weave).FirstOrDefault();
+            ComboKind k = Combos.Of(s.weave, first);
+            return k != ComboKind.None ? Combos.ColorOf(k) : Element(s)?.color ?? new Color(0.9f, 0.8f, 0.6f);
+        }
 
         public static string Describe(RitualSchema s)
         {

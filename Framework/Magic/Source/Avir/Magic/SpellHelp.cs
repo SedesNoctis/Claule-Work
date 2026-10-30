@@ -418,6 +418,28 @@ namespace Avir.Magic
             return s;
         }
 
+        /// <summary>Two circles side by side, their elements meeting: one spell for each of the six.</summary>
+        public static List<RitualSchema> Meetings()
+        {
+            RitualSchema Two(string name, string a, string av, string b, string bv)
+            {
+                RitualSchema one = Make(name, new[] { a, av });
+                RitualSchema two = Make(name, new[] { b, bv });
+                var root = SpellCircle.Bound(one.weave);
+                root.inner.Add(two.weave);
+                return new RitualSchema { name = name, size = RitualCircleSize.Small, weave = root };
+            }
+            return new List<RitualSchema>
+            {
+                Two("Scalding cloud", "Fire", "Release", "Water", "Release"),
+                Two("Thunderhead", "Water", "Hold", "Air", "Hold"),
+                Two("Eruption", "Fire", "Release", "Earth", "Release"),
+                Two("Shimmer", "Fire", "Hold", "Air", "Hold"),
+                Two("Green carpet", "Water", "Hold", "Earth", "Hold"),
+                Two("Sandblast", "Earth", "Release", "Air", "Release"),
+            };
+        }
+
         public static List<RitualSchema> Earth() => new List<RitualSchema>
         {
             Make("Tremor", new[] { "Earth", "Release" }, new[] { "Breadth" }),

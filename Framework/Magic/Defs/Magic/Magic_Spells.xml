@@ -117,6 +117,13 @@
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>glow</kind>
+        <color>(1,1,1,1)</color>
+        <interval>40</interval>
+        <scale>0.7</scale>
+        <height>0.25</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -239,6 +246,13 @@
     <isBad>true</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>splash</kind>
+        <color>(1,1,1,1)</color>
+        <interval>70</interval>
+        <scale>0.8</scale>
+        <height>0.3</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -317,6 +331,13 @@
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>splash</kind>
+        <color>(1,1,1,1)</color>
+        <interval>60</interval>
+        <scale>0.7</scale>
+        <height>0.25</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -331,6 +352,13 @@
     <defaultLabelColor>(0.5, 0.6, 0.9)</defaultLabelColor>
     <isBad>true</isBad>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.85, 0.92, 1, 0.5)</color>
+        <interval>70</interval>
+        <scale>0.7</scale>
+        <height>0.3</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -426,6 +454,13 @@
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.6, 0.6, 0.6, 0.45)</color>
+        <interval>90</interval>
+        <scale>0.8</scale>
+        <height>0.3</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -467,6 +502,13 @@
     <isBad>true</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.55, 0.42, 0.3, 0.6)</color>
+        <interval>60</interval>
+        <scale>0.8</scale>
+        <height>0</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -521,6 +563,13 @@
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.55, 0.42, 0.3, 0.6)</color>
+        <interval>45</interval>
+        <scale>0.7</scale>
+        <height>0.25</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -578,6 +627,13 @@
     <isBad>true</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.85, 0.92, 0.95, 0.45)</color>
+        <interval>30</interval>
+        <scale>0.8</scale>
+        <height>0.2</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>90~90</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -627,6 +683,13 @@
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.85, 0.92, 0.95, 0.45)</color>
+        <interval>35</interval>
+        <scale>0.7</scale>
+        <height>0.25</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -787,6 +850,13 @@
     <isBad>true</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>stars</kind>
+        <color>(0.85, 0.92, 1, 0.55)</color>
+        <interval>30</interval>
+        <scale>0.6</scale>
+        <height>0.5</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>1250~1250</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -822,5 +892,456 @@
       <allowsFire>false</allowsFire>
       <cleaningSound>Interact_CleanFilth_Fluid</cleaningSound>
     </filth>
+  </ThingDef>
+  <HediffDef>
+    <defName>Avir_Dazzled</defName>
+    <label>dazzled</label>
+    <description>A flash of heat and light: the eyes will not clear for a while.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.85, 0.5)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>900~900</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>stars</kind>
+        <color>(1, 0.9, 0.6, 0.5)</color>
+        <interval>40</interval>
+        <scale>0.7</scale>
+        <height>0.5</height>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Sight</capacity><offset>-0.5</offset></li></capMods>
+        <statOffsets><ShootingAccuracyPawn>-0.3</ShootingAccuracyPawn></statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_Hazed</defName>
+    <label>in the haze</label>
+    <description>The air shimmers round them: nothing stands where it seems to.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.78, 0.45)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>90~90</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>heat</kind>
+        <color>(1,1,1,1)</color>
+        <interval>45</interval>
+        <scale>1.0</scale>
+        <height>0.2</height>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <statOffsets><ShootingAccuracyPawn>-0.5</ShootingAccuracyPawn><MeleeHitChance>-0.2</MeleeHitChance></statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_Dusted</defName>
+    <label>dust in the eyes</label>
+    <description>Dust in the eyes and the throat: hard to see, hard to aim.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.8, 0.69, 0.48)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>600~600</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.8, 0.7, 0.5, 0.5)</color>
+        <interval>35</interval>
+        <scale>0.8</scale>
+        <height>0.4</height>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Sight</capacity><offset>-0.3</offset></li></capMods>
+        <statOffsets><ShootingAccuracyPawn>-0.4</ShootingAccuracyPawn></statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_Soggy</defName>
+    <label>in the moss</label>
+    <description>Wet moss underfoot: every step slips and sinks.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.42, 0.62, 0.28)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>150~150</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.4, 0.6, 0.3, 0.5)</color>
+        <interval>50</interval>
+        <scale>0.7</scale>
+        <height>0</height>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Moving</capacity><offset>-0.25</offset></li></capMods>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_Overgrown</defName>
+    <label>overgrown</label>
+    <description>The moss took the mage when they lost hold of it: it grows on them, stiff and heavy, for a few hours.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.42, 0.62, 0.28)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>7500~7500</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.4, 0.65, 0.3, 0.55)</color>
+        <interval>80</interval>
+        <scale>0.8</scale>
+        <height>0.3</height>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Moving</capacity><offset>-0.25</offset></li></capMods>
+        <capMods><li><capacity>Manipulation</capacity><offset>-0.15</offset></li></capMods>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_SteamWard</defName>
+    <label>ward of steam</label>
+    <description>A ward of steam: when foes are near, a little cloud wraps its wearer.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.86, 0.89, 0.93)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.9, 0.92, 0.95, 0.45)</color>
+        <interval>120</interval>
+        <scale>0.8</scale>
+        <height>0.3</height>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_ComboWard" />
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_StormWard</defName>
+    <label>ward of storm</label>
+    <description>A ward of storm: whoever strikes its wearer is jolted and stunned.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.42, 0.55, 0.95)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>lightning</kind>
+        <color>(0.6, 0.7, 1, 0.5)</color>
+        <interval>120</interval>
+        <scale>0.8</scale>
+        <height>0.3</height>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_MagmaWard</defName>
+    <label>ward of magma</label>
+    <description>A crust of molten stone: blows bite less, and whoever strikes its wearer is burnt.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.36, 0.08)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>glow</kind>
+        <color>(1, 0.5, 0.2, 0.6)</color>
+        <interval>120</interval>
+        <scale>0.8</scale>
+        <height>0.3</height>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <statOffsets><ArmorRating_Blunt>0.2</ArmorRating_Blunt><ArmorRating_Sharp>0.2</ArmorRating_Sharp></statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_HazeWard</defName>
+    <label>ward of haze</label>
+    <description>A ward of haze: bullets often pass through a shape of its wearer that is not there.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.78, 0.45)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>heat</kind>
+        <color>(1, 0.85, 0.6, 0.35)</color>
+        <interval>120</interval>
+        <scale>0.8</scale>
+        <height>0.3</height>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_MossWard</defName>
+    <label>ward of moss</label>
+    <description>A ward of moss: its wearer slowly mends.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.42, 0.62, 0.28)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.4, 0.65, 0.3, 0.55)</color>
+        <interval>120</interval>
+        <scale>0.8</scale>
+        <height>0.3</height>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_ComboWard" />
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_DustWard</defName>
+    <label>ward of dust</label>
+    <description>A ward of dust: whoever strikes its wearer gets dust in the eyes.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.8, 0.69, 0.48)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.8, 0.7, 0.5, 0.55)</color>
+        <interval>120</interval>
+        <scale>0.8</scale>
+        <height>0.3</height>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_SteamEnchant</defName>
+    <label>weapon of steam</label>
+    <description>The weapon is wrapped in steam: blows scald and leave a puff of cloud.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.86, 0.89, 0.93)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.9, 0.92, 0.95, 0.45)</color>
+        <interval>45</interval>
+        <scale>0.7</scale>
+        <height>0.25</height>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_StormEnchant</defName>
+    <label>weapon of storm</label>
+    <description>The weapon is wrapped in storm: blows jolt - machines worse - and sometimes stun.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.42, 0.55, 0.95)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>lightning</kind>
+        <color>(0.6, 0.7, 1, 0.5)</color>
+        <interval>45</interval>
+        <scale>0.7</scale>
+        <height>0.25</height>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_MagmaEnchant</defName>
+    <label>weapon of magma</label>
+    <description>The weapon is wrapped in magma: blows burn and may set the foe alight.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.36, 0.08)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>glow</kind>
+        <color>(1, 0.5, 0.2, 0.6)</color>
+        <interval>45</interval>
+        <scale>0.7</scale>
+        <height>0.25</height>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_HazeEnchant</defName>
+    <label>weapon of haze</label>
+    <description>The weapon is wrapped in haze: blows dazzle.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.78, 0.45)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>heat</kind>
+        <color>(1, 0.85, 0.6, 0.35)</color>
+        <interval>45</interval>
+        <scale>0.7</scale>
+        <height>0.25</height>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_MossEnchant</defName>
+    <label>weapon of moss</label>
+    <description>The weapon is wrapped in moss: blows root the foe for a moment.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.42, 0.62, 0.28)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.4, 0.65, 0.3, 0.55)</color>
+        <interval>45</interval>
+        <scale>0.7</scale>
+        <height>0.25</height>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_DustEnchant</defName>
+    <label>weapon of dust</label>
+    <description>The weapon is wrapped in dust: blows grind and blind.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.8, 0.69, 0.48)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.8, 0.7, 0.5, 0.55)</color>
+        <interval>45</interval>
+        <scale>0.7</scale>
+        <height>0.25</height>
+      </li>
+    </comps>
+  </HediffDef>
+  <ThingDef>
+    <defName>Avir_Magma</defName>
+    <label>magma</label>
+    <description>Molten ground made by a mage. Whoever stands on it burns; it cools into rubble - or, poured as a wall, into stone.</description>
+    <thingClass>Avir.Magic.MagmaPool</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Filth</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>true</selectable>
+    <drawerType>RealtimeOnly</drawerType>
+    <graphicData>
+      <texPath>Things/Avir/Magic/Magma</texPath>
+      <graphicClass>Graphic_Random</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.6, 1.6)</drawSize>
+    </graphicData>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>2.5</glowRadius>
+        <glowColor>(255,110,30,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
+  <ThingDef>
+    <defName>Avir_Moss</defName>
+    <label>magic moss</label>
+    <description>A living carpet of moss made by a mage. Friends on it mend and walk softly; fire will not take it; foes slip in it.</description>
+    <thingClass>Avir.Magic.MossPatch</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Filth</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>false</selectable>
+    <drawerType>RealtimeOnly</drawerType>
+    <graphicData>
+      <texPath>Things/Avir/Magic/Moss</texPath>
+      <graphicClass>Graphic_Random</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.5, 1.5)</drawSize>
+    </graphicData>
   </ThingDef>
 </Defs>

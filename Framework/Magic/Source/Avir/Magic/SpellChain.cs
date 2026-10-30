@@ -38,6 +38,7 @@ namespace Avir.Magic
             public List<Pawn> waitFor;
             public int giveUp;
             public bool endByMage;
+            public Dictionary<SpellCircle, ComboKind> combos;
 
             public void ExposeData()
             {
@@ -53,7 +54,7 @@ namespace Avir.Magic
                 Scribe_Collections.Look(ref waitFor, "waitFor", LookMode.Reference);
                 Scribe_Values.Look(ref giveUp, "giveUp");
                 Scribe_Values.Look(ref endByMage, "endByMage");
-                if (Scribe.mode == LoadSaveMode.PostLoadInit && root != null) links = Order(root);
+                if (Scribe.mode == LoadSaveMode.PostLoadInit && root != null) { links = Order(root); combos = Combos.Pairs(root); }
             }
         }
 
@@ -102,7 +103,7 @@ namespace Avir.Magic
             var c = new Chain
             {
                 caster = caster, root = root, links = Order(root), power = power, target = target,
-                storm = WeaveSpell.Storm(root), wallTo = FireMagic.WallTo
+                storm = false, wallTo = FireMagic.WallTo, combos = Combos.Pairs(root)
             };
             // the map is taken before the first circle: a step may carry the mage off it (under the ground, in the air)
             Map map = caster.Map;
@@ -128,7 +129,9 @@ namespace Avir.Magic
             SpellDash.LastPulled = null;
             try
             {
-                if (FireMagic.Is(circle.element)) FireMagic.Cast(caster, one, r, c.target, p);
+                // two elements that met work as what they made
+                if (c.combos != null && c.combos.TryGetValue(circle, out ComboKind k)) ComboMagic.Cast(k, caster, one, r, c.target, p);
+                else if (FireMagic.Is(circle.element)) FireMagic.Cast(caster, one, r, c.target, p);
                 else if (WaterMagic.Is(circle.element)) WaterMagic.Cast(caster, one, r, c.target, p);
                 else if (EarthMagic.Is(circle.element)) EarthMagic.Cast(caster, one, r, c.target, p);
                 else if (AirMagic.Is(circle.element)) AirMagic.Cast(caster, one, r, c.target, p);
@@ -211,9 +214,11 @@ namespace Avir.Magic
         public static bool OfAir(RitualSchema s)
         {
             if (s == null) return false;
-            var els = s.weave != null ? WeaveSpell.Small(s.weave).Where(c => c.element != null).Select(c => c.element).ToList()
-                                      : RitualEvaluator.Read(s).elements;
-            return els.Count > 0 && els.All(e => e.kind == RuneKind.Air);
+            if (s.weave == null) { var els = RitualEvaluator.Read(s).elements; return els.Count > 0 && els.All(e => e.kind == RuneKind.Air); }
+            // air alone, or air in its meetings (storm, haze, dust): every circle of the spell is of the air
+            var pairs = Combos.Pairs(s.weave);
+            var circles = MapComponent_SpellChain.Order(s.weave);
+            return circles.Count > 0 && circles.All(c => c.element.kind == RuneKind.Air || (pairs.TryGetValue(c, out ComboKind k) && Combos.WithAir(k)));
         }
 
         public static void Order(Pawn mage, RitualSchema spell, int slot, LocalTargetInfo target, IntVec3 wallEnd)

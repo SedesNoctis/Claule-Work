@@ -219,7 +219,7 @@ namespace Avir.Magic
             }
         }
 
-        private static void Chain(Pawn caster, List<IntVec3> line, Map map, int jumps, float power, bool storm)
+        internal static void Chain(Pawn caster, List<IntVec3> line, Map map, int jumps, float power, bool storm)
         {
             Pawn first = MagicFx.PawnsIn(line, map).Where(p => MagicFx.Foe(p, caster)).OrderBy(p => p.Position.DistanceToSquared(caster.Position)).FirstOrDefault();
             Vector3 prev = caster.DrawPos;
@@ -504,7 +504,12 @@ namespace Avir.Magic
                 foe.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 5f + 6f * e.Severity, 0f, -1f, p));
                 if (!foe.Dead && Rand.Chance(0.25f)) MagicFx.Stun(foe, 70, p);
             }
-            if (!foe.Dead && foe.Spawned && p.health.hediffSet.GetFirstHediffOfDef(EarthAirDefOf.Avir_AirEnchant) != null) MagicFx.Push(foe, p.Position, 2, foe.Map);
+            if (!foe.Dead && foe.Spawned && p.health.hediffSet.GetFirstHediffOfDef(EarthAirDefOf.Avir_AirEnchant) != null)
+            {
+                // a gust off the weapon: seen, and the foe thrown back
+                for (int i = 0; i < 3; i++) FleckMaker.ThrowDustPuffThick(foe.DrawPos + Rand.InsideUnitCircleVec3 * 0.3f, foe.Map, 1.2f, MagicFx.AirDust);
+                MagicFx.Push(foe, p.Position, 2, foe.Map);
+            }
         }
     }
 
