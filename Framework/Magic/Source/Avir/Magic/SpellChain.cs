@@ -106,9 +106,10 @@ namespace Avir.Magic
             bool step = r.verbs.Any(v => v.kind == RuneKind.Step);
             bool aura = r.verbs.Any(v => v.kind == RuneKind.Aura);
             int now = Find.TickManager.TicksGame;
-            c.waitCaster = step && r.thread == 0 && !caster.Spawned;
-            c.waitFor = step && r.thread > 0 && SpellDash.LastPulled != null && SpellDash.LastPulled.Count > 0 ? SpellDash.LastPulled : null;
-            c.endByMage = aura || (step && r.thread > 0);
+            bool pulls = SpellMods.Pulls(one);
+            c.waitCaster = step && !pulls && !caster.Spawned;
+            c.waitFor = step && pulls && SpellDash.LastPulled != null && SpellDash.LastPulled.Count > 0 ? SpellDash.LastPulled : null;
+            c.endByMage = aura || (step && pulls);
             if (!c.waitCaster && !c.endByMage && !step) c.target = new LocalTargetInfo(c.target.Cell);
             if (!c.waitCaster && c.endByMage) c.target = new LocalTargetInfo(caster.Position);
             c.giveUp = now + Patience;

@@ -43,11 +43,19 @@ namespace Avir.Magic
 
         private static SpellEffect ExplainCore(RitualSchema s)
         {
+            SpellEffect e = ExplainPlain(s);
+            List<string> by = SpellMods.Bindings(s);
+            if (by.Count > 0) e.extras.Insert(0, new KeyValuePair<string, string>("By their place", "A modifier works on the verb or form just inward of it; next to the element - on the whole circle.\n" + string.Join("\n", by.Select(x => "• " + x))));
+            return e;
+        }
+
+        private static SpellEffect ExplainPlain(RitualSchema s)
+        {
             RitualReading r = RitualEvaluator.Read(s);
             RuneDef el = r.elements.FirstOrDefault();
             var e = new SpellEffect();
             if (el == null) { e.main = "No element yet: write one (fire, water, earth or air) - it is what the spell is made of."; return e; }
-            if (r.thread > 0 && r.verbs.Any(v => v.kind == RuneKind.Step) && (WaterMagic.Is(el) || EarthMagic.Is(el) || AirMagic.Is(el) || FireMagic.Is(el)))
+            if (SpellMods.Pulls(s) && (WaterMagic.Is(el) || EarthMagic.Is(el) || AirMagic.Is(el) || FireMagic.Is(el)))
             {
                 SpellEffect pulled = WaterMagic.Is(el) ? Water(r) : EarthMagic.Is(el) ? Earth(r) : AirMagic.Is(el) ? Air(r) : Fire(r);
                 pulled.main = Pulled(el.kind);

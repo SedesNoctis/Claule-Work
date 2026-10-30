@@ -25,6 +25,7 @@ namespace Avir.Magic
 
         public static void Cast(Pawn caster, RitualSchema s, RitualReading r, LocalTargetInfo target, float power)
         {
+            r = SpellMods.Begin(s, r);
             Map map = caster.Map;
             Hediff kept = caster.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_StoredWater);
             bool drains = r.verbs.Any(v => v.kind == RuneKind.Drain);
@@ -34,48 +35,50 @@ namespace Avir.Magic
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             float radius = FireMagic.PointRadius(r);
             if (r.barrier > 0) Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power);
+            MagicFx.WardMage(caster, power, WaterDefOf.Avir_WaterWard, "Avir_Rune_Water");
             if (forms.Count == 0) { if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); return; }
             foreach (RuneDef f in forms)
             {
+                RitualReading rf = SpellMods.Verb(r, f); float fradius = FireMagic.PointRadius(rf);
                 switch (f.kind)
                 {
                     case RuneKind.Aura:
                         // the tide: a field of mist round the mage for a while; its verbs work at once, then again and again
-                        Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, radius + 1.5f), caster.Position, power, r);
-                        MapComponent_Tides.Raise(caster, radius + 1.5f, power, verbs);
+                        Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, fradius + 1.5f), caster.Position, power, rf);
+                        MapComponent_Tides.Raise(caster, fradius + 1.5f, power, verbs);
                         break;
                     case RuneKind.Beam:
-                        var line = FireMagic.Beam(caster.Position, at, map, r.breadth);
-                        Apply(caster, map, verbs, line, caster.Position, power, r);
+                        var line = FireMagic.Beam(caster.Position, at, map, rf.breadth);
+                        Apply(caster, map, verbs, line, caster.Position, power, rf);
                         break;
                     case RuneKind.Shape:
                         // the ground itself turns to shallow water for a while: a moat that slows everyone and takes no fire
-                        var wall = FireMagic.WallTo.IsValid ? FireMagic.WallLine(at, FireMagic.WallTo, map, FireMagic.WallMax(r)) : FireMagic.Wall(caster.Position, at, map, 5 + 2 * r.breadth);
-                        int life = Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power * (1 + r.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0)));
+                        var wall = FireMagic.WallTo.IsValid ? FireMagic.WallLine(at, FireMagic.WallTo, map, FireMagic.WallMax(rf)) : FireMagic.Wall(caster.Position, at, map, 5 + 2 * rf.breadth);
+                        int life = Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power * (1 + rf.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0)));
                         foreach (IntVec3 c in wall) { map.GetComponent<MapComponent_RaisedWater>()?.Raise(c, life); FireMagic.Extinguish(c, map); FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.4f); }
-                        Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, r);
+                        Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, rf);
                         break;
                     case RuneKind.Step:
-                        if (r.thread > 0) { SpellDash.Pull(caster, target, RuneKind.Water, power, radius); break; }
+                        if (rf.thread > 0) { SpellDash.Pull(caster, target, RuneKind.Water, power, fradius); break; }
                         // a wave rolls ahead of the mage, as wide as its breadth: whoever stands in it is struck and carried on
-                        var path = FireMagic.Beam(caster.Position, at, map, r.breadth).Where(c => c != caster.Position).ToList();
+                        var path = FireMagic.Beam(caster.Position, at, map, rf.breadth).Where(c => c != caster.Position).ToList();
                         IntVec3 back = caster.Position;
                         foreach (Pawn p in PawnsIn(path, map))
                         {
                             if (p == caster || !p.HostileTo(caster)) continue;
-                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (8f + 3f * r.breadth) * power, 0f, -1f, caster));
+                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (8f + 3f * rf.breadth) * power, 0f, -1f, caster));
                             Soak(p, power);
-                            Push(p, back, 2 + r.breadth, map);
+                            Push(p, back, 2 + rf.breadth, map);
                         }
                         foreach (IntVec3 c in path) { FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.6f); FireMagic.Extinguish(c, map); if (Rand.Chance(0.3f)) Puddle(c, map); }
                         SpellDash.Carry(caster, at, RuneKind.Water);
-                        if (verbs.Count > 0) Apply(caster, map, verbs, path, at, power, r);
+                        if (verbs.Count > 0) Apply(caster, map, verbs, path, at, power, rf);
                         break;
-                    case RuneKind.Restore: Wash(caster, at, map, Mathf.Max(0.9f, radius - 1f), power); break;
+                    case RuneKind.Restore: Wash(caster, at, map, Mathf.Max(0.9f, fradius - 1f), power); break;
                     case RuneKind.Enchant: Enchant(caster, at, map, power); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
-                    case RuneKind.Sense: FireMagic.Sense(caster, map, 25f + 10f * r.reach, power); break;
-                    default: if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); break;
+                    case RuneKind.Sense: FireMagic.Sense(caster, map, 25f + 10f * rf.reach, power); break;
+                    default: if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf); break;
                 }
             }
         }
@@ -88,6 +91,7 @@ namespace Avir.Magic
             if (cells.Count == 0) return;
             foreach (RuneDef v in verbs)
             {
+                RitualReading rv = SpellMods.Verb(r, v);
                 switch (v.kind)
                 {
                     case RuneKind.Release:
@@ -95,10 +99,10 @@ namespace Avir.Magic
                         foreach (Pawn p in PawnsIn(cells, map))
                         {
                             if (p == caster || !p.HostileTo(caster)) continue;
-                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (9f + 3f * r.amplify) * power, 0f, -1f, caster));
+                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (9f + 3f * rv.amplify) * power, 0f, -1f, caster));
                             Soak(p, power);
                             FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 2.2f);
-                            SpellHurl.Fell(p, from, 3 + r.amplify, map, caster, power, Mathf.RoundToInt(60f * power));
+                            SpellHurl.Fell(p, from, 3 + rv.amplify, map, caster, power, Mathf.RoundToInt(60f * power));
                         }
                         foreach (IntVec3 c in cells) { if (Rand.Chance(0.5f)) FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.6f); if (Rand.Chance(0.35f)) Puddle(c, map); }
                         break;

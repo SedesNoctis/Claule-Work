@@ -25,6 +25,7 @@ namespace Avir.Magic
 
         public static void Cast(Pawn caster, RitualSchema s, RitualReading r, LocalTargetInfo target, float power)
         {
+            r = SpellMods.Begin(s, r);
             Map map = caster.Map;
             Hediff heat = caster.health.hediffSet.GetFirstHediffOfDef(FireDefOf.Avir_StoredHeat);
             bool drains = r.verbs.Any(v => v.kind == RuneKind.Drain);
@@ -34,6 +35,7 @@ namespace Avir.Magic
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             float radius = PointRadius(r);
             if (r.barrier > 0) Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power);
+            MagicFx.WardMage(caster, power, FireDefOf.Avir_FireWard, "Avir_Rune_Fire");
             if (forms.Count == 0)
             {
                 if (verbs.Count > 0) Apply(caster, map, verbs, Point(at, map, radius), at, power, r, false);
@@ -41,26 +43,27 @@ namespace Avir.Magic
             }
             foreach (RuneDef f in forms)
             {
+                RitualReading rf = SpellMods.Verb(r, f); float fradius = FireMagic.PointRadius(rf);
                 switch (f.kind)
                 {
                     case RuneKind.Aura:
-                        Apply(caster, map, verbs, Point(caster.Position, map, radius + 1.5f), caster.Position, power, r, true);
+                        Apply(caster, map, verbs, Point(caster.Position, map, fradius + 1.5f), caster.Position, power, rf, true);
                         break;
                     case RuneKind.Beam:
-                        Apply(caster, map, verbs, Beam(caster.Position, at, map, r.breadth), at, power, r, false);
+                        Apply(caster, map, verbs, Beam(caster.Position, at, map, rf.breadth), at, power, rf, false);
                         break;
                     case RuneKind.Shape:
-                        Apply(caster, map, verbs, WallTo.IsValid ? WallLine(at, WallTo, map, WallMax(r)) : Wall(caster.Position, at, map, 5 + 2 * r.breadth), at, power, r, false);
+                        Apply(caster, map, verbs, WallTo.IsValid ? WallLine(at, WallTo, map, WallMax(rf)) : Wall(caster.Position, at, map, 5 + 2 * rf.breadth), at, power, rf, false);
                         break;
                     case RuneKind.Step:
                         var path = GenSight.BresenhamCellsBetween(caster.Position, at).Where(c => c.InBounds(map) && c != caster.Position).ToList();
                         // the flame carries the mage there - seen all the way
-                        if (r.thread > 0) { SpellDash.Pull(caster, target, RuneKind.Fire, power, radius); break; }
+                        if (rf.thread > 0) { SpellDash.Pull(caster, target, RuneKind.Fire, power, fradius); break; }
                         SpellDash.Carry(caster, at, RuneKind.Fire);
-                        Apply(caster, map, verbs.Count > 0 ? verbs : new List<RuneDef> { RuneDefOfFire.Hold }, path, at, power, r, false);
+                        Apply(caster, map, verbs.Count > 0 ? verbs : new List<RuneDef> { RuneDefOfFire.Hold }, path, at, power, rf, false);
                         break;
                     case RuneKind.Restore:
-                        Cauterize(caster, at, map, radius, power, verbs);
+                        Cauterize(caster, at, map, fradius, power, verbs);
                         break;
                     case RuneKind.Enchant:
                         Enchant(caster, at, map, power);
@@ -69,10 +72,10 @@ namespace Avir.Magic
                         Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false);
                         break;
                     case RuneKind.Sense:
-                        Sense(caster, map, 25f + 10f * r.reach, power);
+                        Sense(caster, map, 25f + 10f * rf.reach, power);
                         break;
                     default:
-                        if (verbs.Count > 0) Apply(caster, map, verbs, Point(at, map, radius), at, power, r, false);
+                        if (verbs.Count > 0) Apply(caster, map, verbs, Point(at, map, fradius), at, power, rf, false);
                         break;
                 }
             }
@@ -135,6 +138,7 @@ namespace Avir.Magic
             if (cells.Count == 0) return;
             foreach (RuneDef v in verbs)
             {
+                RitualReading rv = SpellMods.Verb(r, v);
                 switch (v.kind)
                 {
                     case RuneKind.Release:
@@ -146,8 +150,8 @@ namespace Avir.Magic
                             foreach (IntVec3 c in cells) FleckMaker.ThrowFireGlow(c.ToVector3Shifted(), map, 1.1f);
                         }
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) FireUtility.TryStartFireIn(c, map, 0.3f + 0.2f * power, caster);
-                        if (r.amplify > 0)
-                            GenExplosion.DoExplosion(aroundSelf ? at : cells[cells.Count - 1], map, 1.9f + r.amplify, DamageDefOf.Flame, caster, Mathf.RoundToInt(12f * power), -1f,
+                        if (rv.amplify > 0)
+                            GenExplosion.DoExplosion(aroundSelf ? at : cells[cells.Count - 1], map, 1.9f + rv.amplify, DamageDefOf.Flame, caster, Mathf.RoundToInt(12f * power), -1f,
                                 null, null, null, null, null, 0f, 1, null, null, 255, false, null, 0f, 1, 0.5f, false, null, new List<Thing> { caster });
                         break;
                     case RuneKind.Hold:
@@ -179,7 +183,7 @@ namespace Avir.Magic
                     case RuneKind.Purge:
                         foreach (IntVec3 c in cells) Extinguish(c, map);
                         foreach (Pawn p in PawnsIn(cells, map)) if (!p.HostileTo(caster)) BurnAwayInfection(p, power);
-                        if (aroundSelf || r.anchor > 0) map.GetComponent<MapComponent_FireMagic>()?.AddNoFire(cells, Mathf.RoundToInt(GenDate.TicksPerHour * 6f * power * (1 + r.anchor)));
+                        if (aroundSelf || rv.anchor > 0) map.GetComponent<MapComponent_FireMagic>()?.AddNoFire(cells, Mathf.RoundToInt(GenDate.TicksPerHour * 6f * power * (1 + rv.anchor)));
                         break;
                 }
             }

@@ -20,6 +20,7 @@ namespace Avir.Magic
 
         public static void Cast(Pawn caster, RitualSchema s, RitualReading r, LocalTargetInfo target, float power)
         {
+            r = SpellMods.Begin(s, r);
             Map map = caster.Map;
             Hediff kept = caster.health.hediffSet.GetFirstHediffOfDef(EarthAirDefOf.Avir_StoredStone);
             if (kept != null && !r.verbs.Any(v => v.kind == RuneKind.Drain)) { power *= 1f + kept.Severity; caster.health.RemoveHediff(kept); }
@@ -28,35 +29,37 @@ namespace Avir.Magic
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             float radius = FireMagic.PointRadius(r);
             if (r.barrier > 0) MagicFx.Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power, EarthAirDefOf.Avir_EarthWard, "Avir_Rune_Earth");
+            MagicFx.WardMage(caster, power, EarthAirDefOf.Avir_EarthWard, "Avir_Rune_Earth");
             if (forms.Count == 0) { if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); return; }
             foreach (RuneDef f in forms)
             {
+                RitualReading rf = SpellMods.Verb(r, f); float fradius = FireMagic.PointRadius(rf);
                 switch (f.kind)
                 {
                     case RuneKind.Aura:
-                        Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, radius + 1.5f), caster.Position, power, r);
-                        MapComponent_Tides.Raise(caster, radius + 1.5f, power, verbs, RuneKind.Earth);
+                        Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, fradius + 1.5f), caster.Position, power, rf);
+                        MapComponent_Tides.Raise(caster, fradius + 1.5f, power, verbs, RuneKind.Earth);
                         break;
                     case RuneKind.Beam:
                         // a fissure runs along the line: the ground cracks under whoever stands on it
-                        var line = FireMagic.Beam(caster.Position, at, map, r.breadth);
+                        var line = FireMagic.Beam(caster.Position, at, map, rf.breadth);
                         foreach (IntVec3 c in line) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.4f, MagicFx.EarthDust);
                         foreach (Pawn p in MagicFx.PawnsIn(line, map)) if (MagicFx.Foe(p, caster)) MagicFx.Fell(p, p.Position, 0, map, caster, power, Mathf.RoundToInt(80f * power));
-                        Apply(caster, map, verbs, line, caster.Position, power, r);
+                        Apply(caster, map, verbs, line, caster.Position, power, rf);
                         break;
                     case RuneKind.Shape:
                         // a wall of stone rises between the two chosen points; with holding or an anchor it stands longer
-                        var wall = FireMagic.WallTo.IsValid ? FireMagic.WallLine(at, FireMagic.WallTo, map, FireMagic.WallMax(r)) : FireMagic.Wall(caster.Position, at, map, 5 + 2 * r.breadth);
-                        int life = Mathf.RoundToInt(GenDate.TicksPerHour * 3f * power * (1 + r.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0)));
+                        var wall = FireMagic.WallTo.IsValid ? FireMagic.WallLine(at, FireMagic.WallTo, map, FireMagic.WallMax(rf)) : FireMagic.Wall(caster.Position, at, map, 5 + 2 * rf.breadth);
+                        int life = Mathf.RoundToInt(GenDate.TicksPerHour * 3f * power * (1 + rf.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0)));
                         foreach (IntVec3 c in wall) EarthWall.Raise(c, map, life);
-                        Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, r);
+                        Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, rf);
                         break;
                     case RuneKind.Step:
                         // the mage sinks into the ground and comes up wherever they chose - the whole map is in reach
-                        if (r.thread > 0) SpellDash.Pull(caster, target, RuneKind.Earth, power, radius); else SpellDash.Carry(caster, at, RuneKind.Earth, power, verbs, r);
+                        if (rf.thread > 0) SpellDash.Pull(caster, target, RuneKind.Earth, power, fradius); else SpellDash.Carry(caster, at, RuneKind.Earth, power, verbs, rf);
                         break;
                     case RuneKind.Restore:
-                        foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(at, map, Mathf.Max(0.9f, radius - 1f)), map))
+                        foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)), map))
                         {
                             if (p.HostileTo(caster)) continue;
                             foreach (Hediff_Injury inj in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => !i.IsTended()).Take(6).ToList()) inj.Tended(Mathf.Clamp01(0.4f + 0.15f * power), 1f);
@@ -66,8 +69,8 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, EarthAirDefOf.Avir_EarthEnchant); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
-                    case RuneKind.Sense: FireMagic.Sense(caster, map, 35f + 10f * r.reach, power); break;
-                    default: if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); break;
+                    case RuneKind.Sense: FireMagic.Sense(caster, map, 35f + 10f * rf.reach, power); break;
+                    default: if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf); break;
                 }
             }
         }
@@ -77,6 +80,7 @@ namespace Avir.Magic
             if (cells.Count == 0) return;
             foreach (RuneDef v in verbs)
             {
+                RitualReading rv = SpellMods.Verb(r, v);
                 switch (v.kind)
                 {
                     case RuneKind.Release:
@@ -84,7 +88,7 @@ namespace Avir.Magic
                         foreach (Pawn p in MagicFx.PawnsIn(cells, map))
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
-                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (10f + 3f * r.amplify) * power, 0f, -1f, caster));
+                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (10f + 3f * rv.amplify) * power, 0f, -1f, caster));
                             if (!p.Dead) MagicFx.Fell(p, from, 1, map, caster, power, Mathf.RoundToInt(90f * power));
                         }
                         foreach (IntVec3 c in cells) { if (Rand.Chance(0.5f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.8f, MagicFx.EarthDust); if (Rand.Chance(0.25f)) MagicFx.Rubble(c, map); }
@@ -115,7 +119,7 @@ namespace Avir.Magic
                         foreach (Pawn p in MagicFx.PawnsIn(cells, map))
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
-                            p.TakeDamage(new DamageInfo(DamageDefOf.Stab, (8f + 2f * r.amplify) * power, 0.2f, -1f, caster));
+                            p.TakeDamage(new DamageInfo(DamageDefOf.Stab, (8f + 2f * rv.amplify) * power, 0.2f, -1f, caster));
                             if (!p.Dead) MagicFx.Lift(p, caster, power * 0.7f);
                         }
                         foreach (IntVec3 c in cells) { if (Rand.Chance(0.4f)) MagicFx.Rubble(c, map); FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1f, MagicFx.EarthDust); }
@@ -157,6 +161,7 @@ namespace Avir.Magic
 
         public static void Cast(Pawn caster, RitualSchema s, RitualReading r, LocalTargetInfo target, float power)
         {
+            r = SpellMods.Begin(s, r);
             Map map = caster.Map;
             Hediff kept = caster.health.hediffSet.GetFirstHediffOfDef(EarthAirDefOf.Avir_StoredAir);
             if (kept != null && !r.verbs.Any(v => v.kind == RuneKind.Drain)) { power *= 1f + kept.Severity; caster.health.RemoveHediff(kept); }
@@ -165,36 +170,38 @@ namespace Avir.Magic
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             float radius = FireMagic.PointRadius(r);
             if (r.barrier > 0) MagicFx.Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power, EarthAirDefOf.Avir_AirWard, "Avir_Rune_Air");
+            MagicFx.WardMage(caster, power, EarthAirDefOf.Avir_AirWard, "Avir_Rune_Air");
             if (forms.Count == 0) { if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); return; }
             foreach (RuneDef f in forms)
             {
+                RitualReading rf = SpellMods.Verb(r, f); float fradius = FireMagic.PointRadius(rf);
                 switch (f.kind)
                 {
                     case RuneKind.Aura:
-                        Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, radius + 1.5f), caster.Position, power, r);
-                        MapComponent_Tides.Raise(caster, radius + 1.5f, power, verbs, RuneKind.Air);
+                        Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, fradius + 1.5f), caster.Position, power, rf);
+                        MapComponent_Tides.Raise(caster, fradius + 1.5f, power, verbs, RuneKind.Air);
                         break;
                     case RuneKind.Beam:
                         // a chained strike: it hits the first foe on the line and leaps on to the next, and the next -
                         // the wind's blow; in a storm (water with it) a bolt of lightning
-                        var line = FireMagic.Beam(caster.Position, at, map, r.breadth);
-                        Chain(caster, line, map, 1 + r.breadth + r.amplify, power, Storm);
-                        Apply(caster, map, verbs, line, caster.Position, power, r);
+                        var line = FireMagic.Beam(caster.Position, at, map, rf.breadth);
+                        Chain(caster, line, map, 1 + rf.breadth + rf.amplify, power, Storm);
+                        Apply(caster, map, verbs, line, caster.Position, power, rf);
                         break;
                     case RuneKind.Shape:
                         // a wall of wind between the two chosen points: foes who try to cross are thrown back
-                        var wall = FireMagic.WallTo.IsValid ? FireMagic.WallLine(at, FireMagic.WallTo, map, FireMagic.WallMax(r)) : FireMagic.Wall(caster.Position, at, map, 5 + 2 * r.breadth);
-                        int life = Mathf.RoundToInt(GenDate.TicksPerHour * 2f * power * (1 + r.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0)));
+                        var wall = FireMagic.WallTo.IsValid ? FireMagic.WallLine(at, FireMagic.WallTo, map, FireMagic.WallMax(rf)) : FireMagic.Wall(caster.Position, at, map, 5 + 2 * rf.breadth);
+                        int life = Mathf.RoundToInt(GenDate.TicksPerHour * 2f * power * (1 + rf.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0)));
                         foreach (IntVec3 c in wall) AirWall.Place(c, map, caster, life);
-                        Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, r);
+                        Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, rf);
                         break;
                     case RuneKind.Step:
                         // the wind lifts the mage over whatever stands between - walls, rivers, foes
-                        if (r.thread > 0) SpellDash.Pull(caster, target, RuneKind.Air, power, radius); else SpellDash.Carry(caster, at, RuneKind.Air, power, verbs, r);
+                        if (rf.thread > 0) SpellDash.Pull(caster, target, RuneKind.Air, power, fradius); else SpellDash.Carry(caster, at, RuneKind.Air, power, verbs, rf);
                         break;
                     case RuneKind.Restore:
                         // a second wind: breath back, tiredness lifted
-                        foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(at, map, Mathf.Max(0.9f, radius - 1f)), map))
+                        foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)), map))
                         {
                             if (p.HostileTo(caster)) continue;
                             if (p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Min(1f, p.needs.rest.CurLevel + 0.25f * power);
@@ -206,8 +213,8 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, EarthAirDefOf.Avir_AirEnchant); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
-                    case RuneKind.Sense: FireMagic.Sense(caster, map, 30f + 10f * r.reach, power); break;
-                    default: if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); break;
+                    case RuneKind.Sense: FireMagic.Sense(caster, map, 30f + 10f * rf.reach, power); break;
+                    default: if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf); break;
                 }
             }
         }
@@ -255,6 +262,7 @@ namespace Avir.Magic
             if (cells.Count == 0) return;
             foreach (RuneDef v in verbs)
             {
+                RitualReading rv = SpellMods.Verb(r, v);
                 switch (v.kind)
                 {
                     case RuneKind.Release:
@@ -262,8 +270,8 @@ namespace Avir.Magic
                         foreach (Pawn p in MagicFx.PawnsIn(cells, map))
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
-                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (5f + 2f * r.amplify) * power, 0f, -1f, caster));
-                            MagicFx.Push(p, from, 4 + r.amplify, map);
+                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (5f + 2f * rv.amplify) * power, 0f, -1f, caster));
+                            MagicFx.Push(p, from, 4 + rv.amplify, map);
                         }
                         foreach (IntVec3 c in cells)
                         {
@@ -395,6 +403,14 @@ namespace Avir.Magic
                 Give(p, ward, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
             }
             MapComponent_WardsDrawn.Raise(map, at, radius, DefDatabase<RuneDef>.GetNamedSilentFail(rune), caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
+        }
+
+        /// <summary>A barrier on the very edge of the circle: a ward on the mage, wherever the spell takes them.</summary>
+        public static void WardMage(Pawn caster, float power, HediffDef ward, string rune)
+        {
+            if (!SpellMods.WardOnMage || ward == null || caster.Dead) return;
+            Give(caster, ward, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
+            if (caster.Spawned) MapComponent_WardsDrawn.Raise(caster.Map, caster.Position, 0.9f, DefDatabase<RuneDef>.GetNamedSilentFail(rune), caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
         }
 
         public static void Enchant(Pawn caster, IntVec3 at, Map map, float power, HediffDef def)

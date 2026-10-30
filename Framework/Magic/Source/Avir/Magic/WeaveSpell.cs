@@ -82,7 +82,7 @@ namespace Avir.Magic
                 {
                     RitualReading prev = RitualEvaluator.Read(order[k - 1].AsSchema());
                     bool step = prev.verbs.Any(v => v.kind == RuneKind.Step), aura = prev.verbs.Any(v => v.kind == RuneKind.Aura);
-                    where = step && prev.thread == 0 ? "then, once the mage is there, round them: " : step || aura ? "then, by the mage: " : "then: ";
+                    where = step && !SpellMods.Pulls(order[k - 1].AsSchema()) ? "then, once the mage is there, round them: " : step || aura ? "then, by the mage: " : "then: ";
                 }
                 parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + where + c.element.LabelCap + " - " + one.main.TrimEnd('.'));
                 foreach (var x in one.extras) if (!e.extras.Any(y => y.Key == x.Key)) e.extras.Add(x);
@@ -156,6 +156,6 @@ namespace Avir.Magic
 
         /// <summary>A spell that takes the mage under the ground: it can come up anywhere on the map.</summary>
         public static bool Burrows(SpellCircle root) =>
-            Small(root).Any(c => EarthMagic.Is(c.element) && c.OwnRunes.Any(x => x.kind == RuneKind.Step) && !c.OwnRunes.Any(x => x.kind == RuneKind.Thread));
+            Small(root).Any(c => EarthMagic.Is(c.element) && c.OwnRunes.Any(x => x.kind == RuneKind.Step) && !SpellMods.Pulls(c.AsSchema()));
     }
 }
