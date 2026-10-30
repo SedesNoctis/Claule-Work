@@ -15,31 +15,31 @@ namespace Avir.Magic
     // =====================================================================================
     public static class WeaveSpell
     {
-        public static List<SpellCircle> Small(SpellCircle root) => root.All().Where(c => !c.Great).ToList();
-        public static List<SpellCircle> Greats(SpellCircle root) => root.All().Where(c => c.Great).ToList();
+        public static List<SpellCircle> Small(SpellCircle root) => root.Working.Where(c => !c.Great).ToList();
+        public static List<SpellCircle> Greats(SpellCircle root) => root.Working.Where(c => c.Great).ToList();
 
-        public static int Runes(SpellCircle root) => root.All().Sum(c => c.OwnRunes.Count() + (c.element != null ? 1 : 0));
+        public static int Runes(SpellCircle root) => root.Working.Sum(c => c.OwnRunes.Count() + (c.element != null ? 1 : 0));
 
-        public static int Reach(SpellCircle root) => root.All().Sum(c => c.OwnRunes.Count(r => r.kind == RuneKind.Reach));
+        public static int Reach(SpellCircle root) => root.Working.Sum(c => c.OwnRunes.Count(r => r.kind == RuneKind.Reach));
 
         public static float Cost(SpellCircle root)
         {
             float cost = 0f;
-            foreach (SpellCircle c in root.All()) cost += (2f + c.OwnRunes.Count() + (c.element != null ? 1 : 0)) * (c.Great ? 1.5f : 1f);
-            int els = root.All().Where(c => c.element != null).Select(c => c.element).Distinct().Count();
+            foreach (SpellCircle c in root.Working) cost += (2f + c.OwnRunes.Count() + (c.element != null ? 1 : 0)) * (c.Great ? 1.5f : 1f);
+            int els = root.Working.Where(c => c.element != null).Select(c => c.element).Distinct().Count();
             return cost + 3f * Mathf.Max(0, els - 1);
         }
 
         public static int CastTicks(bool sorcerer, SpellCircle root)
         {
-            int n = root.All().Count();
+            int n = root.Working.Count();
             return Mathf.RoundToInt((sorcerer ? 60f : 150f) * (1f + 0.25f * (n - 1)) * (1f + 0.05f * Reach(root)));
         }
 
         /// <summary>What it asks of composure: the hardest circle, and a little more for every other one.</summary>
         public static float Risk(SpellCircle root)
         {
-            var all = root.All().ToList();
+            var all = root.Working.ToList();
             float max = all.Max(c => RitualEvaluator.Read(c.AsSchema()).Risk(1f, 1f, 0f));
             return max + 0.08f * (all.Count - 1);
         }
@@ -61,7 +61,7 @@ namespace Avir.Magic
             var e = new SpellEffect();
             var smalls = Small(root);
             var greats = Greats(root);
-            if (root.All().All(c => c.element == null)) { e.main = "An empty circle. Write an element into its centre: fire for now - the others come later."; return e; }
+            if (root.Working.All(c => c.element == null)) { e.main = "An empty circle. Write an element into its centre: fire for now - the others come later."; return e; }
             var parts = new List<string>();
             foreach (var g in smalls.GroupBy(c => c.element))
             {
@@ -103,7 +103,7 @@ namespace Avir.Magic
                 RitualReading r = RitualEvaluator.Read(one);
                 if (FireMagic.Is(c.element)) FireMagic.Cast(caster, one, r, target, p);
             }
-            float radius = 2f + 1.5f * root.All().Sum(c => c.OwnRunes.Count(x => x.kind == RuneKind.Breadth));
+            float radius = 2f + 1.5f * root.Working.Sum(c => c.OwnRunes.Count(x => x.kind == RuneKind.Breadth));
             if (Steam(root))
             {
                 foreach (Pawn q in GenRadial.RadialDistinctThingsAround(target.Cell, map, radius, true).OfType<Pawn>().ToList())

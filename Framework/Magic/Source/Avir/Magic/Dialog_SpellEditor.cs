@@ -45,10 +45,11 @@ namespace Avir.Magic
             s = start?.Copy() ?? new RitualSchema { name = "New spell" };
             if (s.weave == null)
             {
-                s.weave = s.rings.Any(r => r.runes.Any()) ? SpellCircle.FromRings(s) : NewCircle();
+                s.weave = s.rings.Any(r => r.runes.Any()) ? SpellCircle.Bound(SpellCircle.FromRings(s)) : NewSpell();
                 s.rings.Clear();
             }
-            sel = s.weave;
+            s.weave = SpellCircle.Bound(s.weave);
+            sel = s.weave.inner.FirstOrDefault() ?? s.weave;
             section = -1;
             view.max = 80f;
             doWindowBackground = false;
@@ -59,6 +60,9 @@ namespace Avir.Magic
         }
 
         private static SpellCircle NewCircle() => new SpellCircle { sections = { new RitualRing { slots = 2 } } };
+
+        /// <summary>A fresh spell: the binding rim round the heart, one empty circle in it.</summary>
+        private static SpellCircle NewSpell() { var b = new SpellCircle { binding = true }; b.inner.Add(NewCircle()); return b; }
 
         protected override float Margin => 0f;
         public override Vector2 InitialSize => new Vector2(Mathf.Min(1320f, Verse.UI.screenWidth - 40f), Mathf.Min(820f, Verse.UI.screenHeight - 40f));
@@ -98,7 +102,7 @@ namespace Avir.Magic
 
         // ================================================================== left: the runes and the card
 
-        private static readonly string[] Tabs = { "All", "Elements", "Verbs", "Forms", "Modifiers", "Spells" };
+        private static readonly string[] Tabs = { "All", "Elements", "Verbs", "Forms", "Modifiers", "Pinned", "Spells" };
 
         private static bool ForSpells(RuneDef r)
         {
@@ -122,8 +126,11 @@ namespace Avir.Magic
                 case 2: return all.Where(r => r.role == RuneRole.Verb).ToList();
                 case 3: return all.Where(r => r.role == RuneRole.Form).ToList();
                 case 4: return all.Where(r => r.role == RuneRole.Modifier || r.role == RuneRole.Flow).ToList();
+                case 5: return all.Where(Dialog_RitualCodex.Pinned).ToList();
             }
-            return all.ToList();
+            // pinned in the codex: first
+            var list = all.ToList();
+            return list.Where(Dialog_RitualCodex.Pinned).Concat(list.Where(r => !Dialog_RitualCodex.Pinned(r))).ToList();
         }
 
         private void DrawLeft(Rect r)
@@ -131,7 +138,7 @@ namespace Avir.Magic
             GUI.color = Ink; Text.Font = GameFont.Medium;
             ArtInk.Label(new Rect(r.x, r.y, r.width, 32f), "Runes");
             Text.Font = GameFont.Small; GUI.color = InkSoft;
-            ArtInk.Label(new Rect(r.x, r.y + 32f, r.width, 44f), tab == 5 ? "The spells of this mage's book: click one to open it here." : "Choose a circle or a section, then click a rune to write it there. Point at a rune to read it.");
+            ArtInk.Label(new Rect(r.x, r.y + 32f, r.width, 44f), tab == 6 ? "The spells of this mage's book: click one to open it here." : "Choose a circle or a section, then click a rune to write it there. Point at a rune to read it.");
             // the tabs, in two rows so they read
             float tx = r.x, ty = r.y + 80f;
             for (int i = 0; i < Tabs.Length; i++)
@@ -139,11 +146,11 @@ namespace Avir.Magic
                 float w = (r.width - 8f) / 3f;
                 if (Button(new Rect(r.x + (i % 3) * (w + 4f), ty + (i / 3) * 32f, w, 28f), Tabs[i], true, tab == i)) { tab = i; leftScroll = Vector2.zero; }
             }
-            const float cardH = 290f, encH = 34f;
-            Rect list = new Rect(r.x, r.y + 148f, r.width, r.height - 148f - cardH - encH - 12f);
-            if (tab == 5)
+            const float cardH = 290f, encH = 34f, top = 180f;
+            Rect list = new Rect(r.x, r.y + top, r.width, r.height - top - cardH - encH - 12f);
+            if (tab == 6)
             {
-                DrawSpellList(new Rect(r.x, list.y, r.width, r.height - 148f - encH - 6f));
+                DrawSpellList(new Rect(r.x, list.y, r.width, r.height - top - encH - 6f));
                 if (Button(new Rect(r.x, r.yMax - encH, r.width, encH), "Encyclopedia of runes...", true))
                     Find.WindowStack.Add(new Dialog_RitualCodex(Find.CurrentMap));
                 return;
@@ -159,11 +166,15 @@ namespace Avir.Magic
                 if (Mouse.IsOver(row)) hovered = rune;
                 if (shown == rune && !RitualArt.Selected(row)) Widgets.DrawBoxSolid(row, new Color(Gold.r, Gold.g, Gold.b, 0.18f));
                 else if (Mouse.IsOver(row)) Widgets.DrawBoxSolid(row, new Color(1f, 0.9f, 0.6f, 0.14f));
+                string refused = rune.role == RuneRole.Element ? ElementRefused(rune) : sel.binding ? "The binding rim holds no runes - choose a circle round the heart." : null;
+                if (refused != null) TooltipHandler.TipRegion(row, refused);
                 Glyph(new Rect(row.x + 2f, row.y + 3f, 40f, 40f), rune);
-                GUI.color = Ink;
+                if (refused != null) Widgets.DrawBoxSolid(new Rect(row.x + 2f, row.y + 3f, 40f, 40f), new Color(0.88f, 0.8f, 0.64f, 0.6f));   // faded: it cannot go into the chosen circle
+                GUI.color = refused != null ? FlowStyle.InkGrey : Ink;
                 ArtInk.Label(new Rect(row.x + 48f, row.y + 3f, row.width - 50f, 22f), rune.LabelCap);
                 GUI.color = InkSoft;
-                ArtInk.Label(new Rect(row.x + 48f, row.y + 23f, row.width - 50f, 22f), Role(rune));
+                ArtInk.Label(new Rect(row.x + 48f, row.y + 23f, row.width - 50f, 22f), Role(rune) + (Dialog_RitualCodex.Pinned(rune) ? " · pinned" : ""));
+                if (Dialog_RitualCodex.Pinned(rune)) { GUI.color = new Color(Gold.r, Gold.g, Gold.b, 0.9f); Widgets.DrawBox(row, 1); }
                 Text.Font = GameFont.Small;
                 // one click writes into the chosen place (the second click of a double one writes nothing more)
                 if (Widgets.ButtonInvisible(row) && Time.realtimeSinceStartup - lastWrite > 0.35f) { Write(rune); lastWrite = Time.realtimeSinceStartup; }
@@ -211,8 +222,8 @@ namespace Avir.Magic
                 if (Widgets.ButtonInvisible(row))
                 {
                     s.name = sp.name;
-                    s.weave = sp.weave != null ? sp.weave.Copy() : SpellCircle.FromRings(sp);
-                    sel = s.weave; section = -1; focus = s.weave;
+                    s.weave = SpellCircle.Bound(sp.weave != null ? sp.weave.Copy() : SpellCircle.FromRings(sp));
+                    sel = s.weave.inner.FirstOrDefault() ?? s.weave; section = -1; focus = s.weave; ClearPick();
                     tab = 0;
                     SoundDefOf.Tick_High.PlayOneShotOnCamera();
                 }
@@ -301,35 +312,50 @@ namespace Avir.Magic
             }
         }
 
-        /// <summary>An element into the chosen circle's centre; anything else into its chosen section (a full one grows a slot).</summary>
+        /// <summary>Whether this element may stand in the chosen circle: a great one only in a circle round the heart
+        /// (its seal), a small one only in a circle that holds no others.</summary>
+        private string ElementRefused(RuneDef rune)
+        {
+            if (sel.binding) return "The binding rim holds no runes - choose a circle round the heart.";
+            SpellCircle parent = s.weave.ParentOf(sel);
+            bool great = SpellCircle.GreatElement(rune);
+            if (great && parent != null && !parent.binding) return "A circle inside a great one takes a small element - fire, water, earth or air.";
+            if (!great && sel.inner.Count > 0) return "This is a great circle: its seal takes a great element - Life, Light, Time, Space or Darkness.";
+            if (great && !sel.Great && s.weave.GreatCount >= SpellCircle.MaxGreat) return "A spell holds at most " + SpellCircle.MaxGreat + " great circles.";
+            return null;
+        }
+
+        /// <summary>An element into the chosen circle's centre (a great circle's seal); anything else into the chosen
+        /// place, or else at the end of the chosen section (a full one grows a place).</summary>
         private void Write(RuneDef rune)
         {
             shown = rune;
             if (rune.role == RuneRole.Element)
             {
-                if (sel.inner.Count > 0 && !SpellCircle.GreatElement(rune))
-                {
-                    Messages.Message("A small element cannot wrap circles - only Life, Light, Time, Space or Darkness can.", MessageTypeDefOf.RejectInput, false);
-                    return;
-                }
-                if (SpellCircle.GreatElement(rune) && !sel.Great && s.weave.GreatCount >= SpellCircle.MaxGreat)
-                {
-                    Messages.Message("A spell holds at most " + SpellCircle.MaxGreat + " great circles.", MessageTypeDefOf.RejectInput, false);
-                    return;
-                }
+                string no = ElementRefused(rune);
+                if (no != null) { Messages.Message(no, MessageTypeDefOf.RejectInput, false); return; }
                 sel.element = rune;
+                section = -1;
                 SoundDefOf.Tick_High.PlayOneShotOnCamera();
                 return;
             }
+            if (sel.binding) { Messages.Message("The binding rim holds no runes - choose a circle round the heart.", MessageTypeDefOf.RejectInput, false); return; }
             if (sel.sections.Count == 0) sel.sections.Add(new RitualRing { slots = 1 });
-            int i = section < 0 ? 0 : Mathf.Min(section, sel.sections.Count - 1);
+            bool place = pickC == sel && pickSec >= 0 && pickSec < sel.sections.Count && pickK >= 0;
+            int i = place ? pickSec : section < 0 ? 0 : Mathf.Min(section, sel.sections.Count - 1);
             RitualRing ring = sel.sections[i];
-            if (ring.runes.Count >= ring.Slots)
+            if (place && pickK < ring.runes.Count) ring.runes[pickK] = rune;   // the chosen place held a rune: it is replaced
+            else
             {
-                if (ring.Slots >= SpellCircle.MaxSlots) { Messages.Message("Section " + (i + 1) + " is full.", MessageTypeDefOf.RejectInput, false); return; }
-                ring.slots = ring.Slots + 1;
+                if (ring.runes.Count >= ring.Slots)
+                {
+                    if (ring.Slots >= SpellCircle.MaxSlots) { Messages.Message("Section " + (i + 1) + " is full.", MessageTypeDefOf.RejectInput, false); return; }
+                    ring.slots = ring.Slots + 1;
+                }
+                ring.runes.Add(rune);
+                // an empty place chosen: the next empty one is chosen after it, so a section fills place by place
+                if (place) { if (ring.runes.Count < ring.Slots) pickK = ring.runes.Count; else ClearPick(); }
             }
-            ring.runes.Add(rune);
             section = i;
             SoundDefOf.Tick_High.PlayOneShotOnCamera();
         }
@@ -339,38 +365,53 @@ namespace Avir.Magic
         private class Node
         {
             public SpellCircle c;
-            public float R, core;             // outer radius; for a small circle its centre plate, for a great one the space it wraps
+            public float R, core;             // outer radius; for a small circle its centre plate, for a great one the space it holds
             public List<Node> kids = new List<Node>();
             public List<Vector2> at = new List<Vector2>();
         }
 
-        private const float Core = 34f, Band = 40f, GreatBand = 46f, Inside = 0.90f;
+        private const float Core = 34f, Band = 40f, GreatBand = 46f, Inside = 0.90f, Heart = 46f;
 
         private static Node Measure(SpellCircle c)
         {
             var n = new Node { c = c };
+            foreach (SpellCircle k in c.inner) n.kids.Add(Measure(k));
+            int m = n.kids.Count;
+            if (c.binding)
+            {
+                // the circles stand round the heart, as far out as the largest of them needs - none touching another
+                float rmax = m > 0 ? n.kids.Max(k => k.R) * 1.06f : Core * 2f;
+                float d = Heart + 34f + rmax;
+                if (m > 1) d = Mathf.Max(d, rmax / Mathf.Sin(Mathf.PI / m) + 8f);
+                for (int i = 0; i < m; i++)
+                {
+                    float a = (-90f + 360f * i / m) * Mathf.Deg2Rad;
+                    n.at.Add(new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * d);
+                }
+                n.core = (m > 0 ? d + rmax : Heart + 34f) + 16f;
+                n.R = n.core / 0.94f;
+                return n;
+            }
             int secs = Mathf.Max(1, c.sections.Count);
-            if (c.inner.Count == 0)
+            if (m == 0)
             {
                 n.core = Core;
                 n.R = (Core + secs * Band) / Inside;
                 return n;
             }
-            foreach (SpellCircle k in c.inner) n.kids.Add(Measure(k));
-            float rmax = n.kids.Max(k => k.R) * 1.07f;
-            int m = n.kids.Count;
-            float d = m == 1 ? 0f : rmax / Mathf.Sin(Mathf.PI / m) + 4f;
+            float rk = n.kids.Max(k => k.R) * 1.07f;
+            float dk = m == 1 ? 0f : rk / Mathf.Sin(Mathf.PI / m) + 4f;
             for (int i = 0; i < m; i++)
             {
                 float a = (-90f + 360f * i / m) * Mathf.Deg2Rad;
-                n.at.Add(new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * d);
+                n.at.Add(new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * dk);
             }
-            n.core = d + rmax + 8f;
+            n.core = dk + rk + 8f;
             n.R = (n.core + c.sections.Count * GreatBand) / Inside;
             return n;
         }
 
-        private static Texture2D bg, frame, disc, outline, thin, dashed, thick;
+        private static Texture2D bg, frame, disc, outline, thin, dashed, thick, heart;
         private static Texture2D Tex(ref Texture2D t, string path) => t ?? (t = ContentFinder<Texture2D>.Get(path, false));
         private static Texture2D Ring(ref Texture2D t, float hole, bool dash = false)
         {
@@ -399,19 +440,19 @@ namespace Avir.Magic
             GUI.DrawTexture(new Rect(c.x - r, c.y - r, r * 2f, r * 2f), t);
         }
 
-        private static Color ColorOf(SpellCircle c) => c.element?.color ?? new Color(0.85f, 0.78f, 0.62f);
+        private static readonly Color BindingColor = new Color(0.92f, 0.84f, 0.66f);
+        private static Color ColorOf(SpellCircle c) => c.binding ? BindingColor : c.element?.color ?? new Color(0.85f, 0.78f, 0.62f);
         private static Color Light(Color c, float k) => new Color(c.r + (1f - c.r) * k, c.g + (1f - c.g) * k, c.b + (1f - c.b) * k, 1f);
         private static Color Dark(Color c) => new Color(c.r * 0.28f, c.g * 0.28f, c.b * 0.28f, 0.92f);
 
-        private struct Hit { public SpellCircle c; public int section; public RitualRing ring; public int rune; }
+        private struct Hit { public SpellCircle c; public int section; public RitualRing ring; public int rune; public int slot; }
         private readonly List<KeyValuePair<Rect, Hit>> plates = new List<KeyValuePair<Rect, Hit>>();
         private readonly List<KeyValuePair<Node, Vector2>> placed = new List<KeyValuePair<Node, Vector2>>();
         private float scale;
 
         private void DrawMiddle(Rect r)
         {
-            // name
-            // the spell's sign, and the button that opens its editor
+            // the spell's sign, its name, and the button that opens the sign editor
             Rect signR = new Rect(r.x, r.y - 2f, 34f, 34f);
             SpellIconArt.Draw(signR, s);
             if (Button(new Rect(r.xMax - 110f, r.y, 110f, 30f), "Sign...", true))
@@ -425,7 +466,7 @@ namespace Avir.Magic
             const float controls = 156f;
             Rect area = new Rect(r.x, r.y + 38f, r.width, r.height - 38f - controls - 8f);
             Node root = Measure(s.weave);
-            float fit = Mathf.Min(area.width, area.height) * 0.47f / (root.R * 1.16f);
+            float fit = Mathf.Min(area.width, area.height) * 0.47f / (root.R * 1.06f);
             // a circle asked to be brought close: zoomed until it fills the view, moved to its centre
             if (focus != null)
             {
@@ -436,8 +477,7 @@ namespace Avir.Magic
                 }
                 focus = null;
             }
-            Rect outlineR = new Rect(area.x + 8f, area.y + 30f, Mathf.Min(280f, area.width * 0.32f), Mathf.Min(area.height * 0.6f, 28f + 24f * s.weave.All().Count()));
-            if (!Mouse.IsOver(outlineR)) view.Handle(area, area.center, root.R * 1.16f * fit);
+            view.Handle(area, area.center, root.R * 1.06f * fit);
             scale = fit * view.zoom;
 
             GUI.BeginGroup(area);
@@ -447,15 +487,11 @@ namespace Avir.Magic
             if (sky != null) GUI.DrawTexture(local, sky, ScaleMode.ScaleAndCrop); else Widgets.DrawBoxSolid(local, new Color(0.08f, 0.07f, 0.14f));
             Vector2 c = local.center + view.pan;
             plates.Clear(); placed.Clear();
-            DrawAt(c, root.R * 1.14f * scale, Tex(ref frame, "UI/Avir/Herald/PathRing"), new Color(ColorOf(root.c).r, ColorOf(root.c).g, ColorOf(root.c).b, 0.4f));
             DrawNode(root, c);
-            Rect outlineLocal = new Rect(outlineR.x - area.x, outlineR.y - area.y, outlineR.width, outlineR.height);
-            DrawOutline(outlineLocal);
-            if (!Mouse.IsOver(outlineLocal)) HandleClicks(local);
+            HandleClicks(local);
             GUI.color = new Color(0.94f, 0.9f, 0.82f, 0.9f); Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(10f, local.height - 26f, local.width - 20f, 24f), "wheel - zoom · drag - move · click a circle or a section to choose it · double-click a circle to bring it close · click a rune of the chosen section to rub it out");
+            Widgets.Label(new Rect(10f, local.height - 26f, local.width - 20f, 24f), "wheel - zoom · drag - move · click a circle, a section or a place · double-click a circle to bring it close");
             Widgets.Label(new Rect(10f, 4f, local.width - 20f, 24f), Chosen());
-            Text.Font = GameFont.Small;
             GUI.EndGroup();
             GUI.color = new Color(Gold.r, Gold.g, Gold.b, 0.7f); Widgets.DrawBox(area, 2); GUI.color = Color.white;
             DrawControls(new Rect(r.x, area.yMax + 8f, r.width, controls));
@@ -471,51 +507,30 @@ namespace Avir.Magic
             return false;
         }
 
-        private static string NameOf(SpellCircle c) =>
-            (c.Great ? "Great: " : "") + (c.element != null ? c.element.LabelCap.ToString() : "empty circle") + (c.inner.Count > 0 ? " (" + c.inner.Count + " inside)" : "");
-
-        /// <summary>Every circle of the spell as a list: click to choose it, double-click to bring it close.</summary>
-        private void DrawOutline(Rect r)
+        private static string NameOf(SpellCircle c)
         {
-            var rows = new List<KeyValuePair<SpellCircle, int>>();
-            void Walk(SpellCircle c, int depth) { rows.Add(new KeyValuePair<SpellCircle, int>(c, depth)); foreach (SpellCircle k in c.inner) Walk(k, depth + 1); }
-            Walk(s.weave, 0);
-            Widgets.DrawBoxSolid(r, new Color(0.05f, 0.04f, 0.10f, 0.72f));
-            GUI.color = new Color(Gold.r, Gold.g, Gold.b, 0.6f); Widgets.DrawBox(r, 1);
-            Text.Font = GameFont.Small; GUI.color = new Color(0.95f, 0.88f, 0.7f);
-            Widgets.Label(new Rect(r.x + 6f, r.y + 3f, r.width - 12f, 20f), "Circles: " + s.weave.GreatCount + "/" + SpellCircle.MaxGreat + " great · " + s.weave.SmallCount + "/" + SpellCircle.MaxSmall + " small");
-            Rect list = new Rect(r.x, r.y + 26f, r.width, r.height - 28f);
-            Rect inner = new Rect(0f, 0f, list.width - 16f, rows.Count * 24f);
-            Widgets.BeginScrollView(list, ref outlineScroll, inner);
-            float y = 0f;
-            foreach (var kv in rows)
-            {
-                SpellCircle c = kv.Key;
-                Rect row = new Rect(0f, y, inner.width, 24f);
-                if (c == sel) Widgets.DrawBoxSolid(row, new Color(Gold.r, Gold.g, Gold.b, 0.35f));
-                else if (Mouse.IsOver(row)) Widgets.DrawBoxSolid(row, new Color(1f, 1f, 1f, 0.12f));
-                Rect g = new Rect(row.x + 4f + 14f * kv.Value, row.y + 2f, 18f, 18f);
-                if (c.element != null) { GUI.color = Light(c.element.color, 0.2f); GUI.DrawTexture(g, c.element.Glow, ScaleMode.ScaleToFit); }
-                else { GUI.color = new Color(1f, 1f, 1f, 0.5f); GUI.DrawTexture(g, Ring(ref dashed, 0.88f, true)); }
-                GUI.color = c == sel ? Color.white : new Color(0.92f, 0.86f, 0.74f);
-                Widgets.Label(new Rect(g.xMax + 4f, row.y + 1f, row.width - g.xMax - 4f, 24f), NameOf(c));
-                if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && Mouse.IsOver(row))
-                {
-                    if (Event.current.clickCount == 2) focus = c;
-                    sel = c; section = -1;
-                    SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
-                    Event.current.Use();
-                }
-                y += 24f;
-            }
-            Widgets.EndScrollView();
-            Text.Font = GameFont.Small; GUI.color = Color.white;
+            if (c.binding) return "The binding - " + c.inner.Count + " round the heart";
+            if (c.Great) return "Great: " + (c.element != null ? c.element.LabelCap.ToString() : "no seal yet") + " (" + c.inner.Count + " inside)";
+            return c.element != null ? c.element.LabelCap.ToString() : "empty circle";
         }
 
         private string Chosen()
         {
-            string name = sel.element != null ? sel.element.LabelCap.ToString() : "an empty circle";
-            return "Chosen: " + name + " · " + (section < 0 ? "its centre" : "section " + (section + 1));
+            if (sel.binding) return "Chosen: the binding rim - it holds the circles round the heart";
+            string name = sel.element != null ? sel.element.LabelCap.ToString() : sel.Great ? "a great circle" : "an empty circle";
+            string where = section < 0 ? (sel.Great ? "its seal" : "its centre") : "section " + (section + 1);
+            if (pickC == sel && pickSec >= 0 && pickSec == section) where += ", place " + (pickK + 1);
+            return "Chosen: " + name + " · " + where;
+        }
+
+        /// <summary>A thread of the Song between two circles, from edge to edge.</summary>
+        private static void Thread(Vector2 a, float ra, Vector2 b, float rb, Color col)
+        {
+            Vector2 d = b - a;
+            float len = d.magnitude;
+            if (len <= ra + rb + 1f) return;
+            d /= len;
+            Widgets.DrawLine(a + d * ra, b - d * rb, col, 2f);
         }
 
         private void DrawNode(Node n, Vector2 c)
@@ -523,26 +538,44 @@ namespace Avir.Magic
             placed.Add(new KeyValuePair<Node, Vector2>(n, c));
             Color col = ColorOf(n.c);
             float R = n.R * scale;
-            DrawAt(c, R * 1.02f, disc ?? Ring(ref disc, 0f), new Color(col.r, col.g, col.b, 0.06f));
-            Texture2D rim = RitualTex.Rim;
-            DrawAt(c, R / 0.94f, rim, col);
-            if (n.c == sel)
+            if (n.c.binding)
             {
-                // the chosen circle: a soft gold wash, a firm gold rim, and a halo that breathes
-                float pulse = 0.55f + 0.35f * Mathf.Sin(Time.realtimeSinceStartup * 4f);
-                DrawAt(c, R * 1.02f, Ring(ref disc, 0f), new Color(Gold.r, Gold.g, Gold.b, 0.10f));
-                DrawAt(c, R * 1.09f, Ring(ref thick, 0.96f), new Color(Gold.r, Gold.g, Gold.b, 1f));
-                DrawAt(c, R * 1.14f, Ring(ref thick, 0.96f), new Color(1f, 0.8f, 0.3f, pulse));
+                // the binding: a plain rim round everything, the heart in the middle where the mage stands,
+                // threads from every circle to the heart and from each to the next
+                DrawAt(c, R / 0.94f, RitualTex.Rim, new Color(col.r, col.g, col.b, 0.95f));
+                if (n.c == sel) Chosen(c, R);
+                int m = n.kids.Count;
+                float hr = Heart * scale;
+                Color th = new Color(0.92f, 0.86f, 1f, 0.55f);
+                for (int i = 0; i < m; i++)
+                {
+                    Vector2 p = c + n.at[i] * scale;
+                    Thread(c, hr * 0.8f, p, n.kids[i].R * scale, th);
+                    if (m > 2) { int j = (i + 1) % m; Thread(p, n.kids[i].R * scale, c + n.at[j] * scale, n.kids[j].R * scale, new Color(th.r, th.g, th.b, 0.35f)); }
+                    else if (m == 2 && i == 0) Thread(p, n.kids[0].R * scale, c + n.at[1] * scale, n.kids[1].R * scale, new Color(th.r, th.g, th.b, 0.35f));
+                }
+                Texture2D star = Tex(ref heart, "UI/Avir/Herald/Star_Lit");
+                Rect hRect = new Rect(c.x - hr, c.y - hr, hr * 2f, hr * 2f);
+                if (star != null) { GUI.color = Color.white; GUI.DrawTexture(hRect, star, ScaleMode.ScaleToFit); }
+                else DrawAt(c, hr * 0.6f, Ring(ref disc, 0f), new Color(1f, 0.85f, 0.5f, 0.9f));
+                if (Mouse.IsOver(hRect)) TooltipHandler.TipRegion(hRect, "The heart of the spell: here the mage stands. Every circle is bound to it by a thread.");
+                for (int i = 0; i < m; i++) DrawNode(n.kids[i], c + n.at[i] * scale);
+                return;
             }
-            // inside: the wrapped circles, or the centre plate
-            if (n.kids.Count > 0)
+            DrawAt(c, R * 1.02f, disc ?? Ring(ref disc, 0f), new Color(col.r, col.g, col.b, 0.06f));
+            DrawAt(c, R / 0.94f, RitualTex.Rim, col);
+            if (n.c == sel) Chosen(c, R);
+            // inside: the circles it holds, or the centre plate
+            if (n.kids.Count > 0 || n.c.Great)
             {
                 for (int i = 0; i < n.kids.Count; i++) DrawNode(n.kids[i], c + n.at[i] * scale);
-                // its element sits as a seal on the top of its rim
+                // its great element sits as a seal on the top of its rim
                 float sr = Mathf.Clamp(GreatBand * 0.42f * scale, 6f, 40f);
-                Plate(c + new Vector2(0f, -R), sr, col, n.c.element, new Hit { c = n.c, section = -1, rune = -1 });
+                Plate(c + new Vector2(0f, -R), sr, col, n.c.element, new Hit { c = n.c, section = -1, rune = -1, slot = -1 },
+                      "The seal of this great circle: write a great element here - Life, Light, Time, Space or Darkness.");
             }
-            else Plate(c, n.core * 0.78f * scale, col, n.c.element, new Hit { c = n.c, section = -1, rune = -1 });
+            else Plate(c, n.core * 0.78f * scale, col, n.c.element, new Hit { c = n.c, section = -1, rune = -1, slot = -1 },
+                       "The centre: this circle's element - fire, water, earth or air (or a great one, if it stands round the heart alone).");
             // the sections
             float inner = n.core, band = n.kids.Count > 0 ? GreatBand : Band;
             int secs = n.c.sections.Count;
@@ -566,9 +599,18 @@ namespace Avir.Magic
                 {
                     float a = (-90f + off + k * 360f / per) * Mathf.Deg2Rad;
                     Vector2 p = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * mid;
-                    Plate(p, pr, col, k < ring.runes.Count ? ring.runes[k] : null, new Hit { c = n.c, section = i, ring = ring, rune = k < ring.runes.Count ? k : -1 });
+                    Plate(p, pr, col, k < ring.runes.Count ? ring.runes[k] : null, new Hit { c = n.c, section = i, ring = ring, rune = k < ring.runes.Count ? k : -1, slot = k }, null);
                 }
             }
+        }
+
+        /// <summary>The chosen circle: a soft gold wash, a firm gold rim, and a halo that breathes.</summary>
+        private void Chosen(Vector2 c, float R)
+        {
+            float pulse = 0.55f + 0.35f * Mathf.Sin(Time.realtimeSinceStartup * 4f);
+            DrawAt(c, R * 1.02f, Ring(ref disc, 0f), new Color(Gold.r, Gold.g, Gold.b, 0.08f));
+            DrawAt(c, R * 1.09f, Ring(ref thick, 0.96f), new Color(Gold.r, Gold.g, Gold.b, 1f));
+            DrawAt(c, R * 1.14f, Ring(ref thick, 0.96f), new Color(1f, 0.8f, 0.3f, pulse));
         }
 
         /// <summary>Turns a great circle's runes so none sits on the four stars of the rim, nor on the seal at the top.</summary>
@@ -588,19 +630,34 @@ namespace Avir.Magic
             return bo;
         }
 
-        private void Plate(Vector2 p, float r, Color col, RuneDef rune, Hit hit)
+        private bool IsPicked(Hit h) => pickC == h.c && pickSec == h.section && (h.section < 0 || pickK == h.slot);
+
+        private void Plate(Vector2 p, float r, Color col, RuneDef rune, Hit hit, string emptyTip)
         {
             Rect box = new Rect(p.x - r, p.y - r, r * 2f, r * 2f);
-            if (rune != null && hit.c == pickC && hit.section == pickSec && (hit.section < 0 || hit.rune == pickK)) RitualPick.Mark(box);
+            bool picked = IsPicked(hit);
+            if (picked) RitualPick.Mark(box);
             if (rune != null)
             {
                 DrawAt(p, r, Ring(ref disc, 0f), Dark(col));
                 DrawAt(p, r, Ring(ref outline, 0.86f), Light(col, 0.35f));
                 GUI.color = rune.role == RuneRole.Element ? Light(rune.color, 0.25f) : Light(col, 0.3f);
                 GUI.DrawTexture(box.ContractedBy(r * 0.22f), rune.Glow, ScaleMode.ScaleToFit);
-                if (Mouse.IsOver(box)) { DrawAt(p, r, Ring(ref disc, 0f), new Color(0.8f, 0.2f, 0.15f, 0.35f)); TooltipHandler.TipRegion(box, rune.LabelCap + "\n\nClick to choose it; click it again (or press Delete) to rub it out."); }
+                if (Mouse.IsOver(box))
+                {
+                    DrawAt(p, r, Ring(ref disc, 0f), picked ? new Color(0.8f, 0.2f, 0.15f, 0.35f) : new Color(1f, 0.85f, 0.4f, 0.25f));
+                    TooltipHandler.TipRegion(box, rune.LabelCap + "\n\n" + (picked ? "Click again (or press Delete) to rub it out; click a rune on the left to put another here." : "Click to choose this place."));
+                }
             }
-            else DrawAt(p, r * 0.92f, Ring(ref dashed, 0.88f, true), Light(col, 0.4f));
+            else
+            {
+                DrawAt(p, r * 0.92f, Ring(ref dashed, 0.88f, true), picked ? new Color(1f, 0.85f, 0.4f, 1f) : Light(col, 0.4f));
+                if (Mouse.IsOver(box))
+                {
+                    DrawAt(p, r * 0.9f, Ring(ref disc, 0f), new Color(1f, 0.85f, 0.4f, 0.22f));
+                    TooltipHandler.TipRegion(box, (emptyTip ?? "An empty place.") + "\n\nClick to choose it, then click a rune on the left to write it here.");
+                }
+            }
             plates.Add(new KeyValuePair<Rect, Hit>(box, hit));
             GUI.color = Color.white;
         }
@@ -616,17 +673,16 @@ namespace Avir.Magic
             }
             if (e.type != EventType.MouseUp || e.button != 0 || view.dragged || !Mouse.IsOver(local)) return;
             Vector2 m = e.mousePosition;
-            // a rune plate first (the innermost drawn last): one click chooses it, a second rubs it out
+            // a place first (the innermost drawn last): one click chooses it - filled or empty; a second click on a filled one rubs it out
             for (int i = plates.Count - 1; i >= 0; i--)
             {
                 if (!plates[i].Key.Contains(m)) continue;
                 Hit h = plates[i].Value;
+                bool filled = h.section < 0 ? h.c.element != null : h.rune >= 0;
+                bool same = IsPicked(h);
                 sel = h.c; section = h.section;
-                bool hasRune = h.section < 0 ? h.c.element != null : h.ring != null && h.rune >= 0;
-                bool already = hasRune && pickC == h.c && pickSec == h.section && (h.section < 0 || pickK == h.rune);
-                if (already) RubPicked();
-                else if (hasRune) { pickC = h.c; pickSec = h.section; pickK = h.rune; SoundDefOf.Tick_High.PlayOneShotOnCamera(); }
-                else { ClearPick(); SoundDefOf.Tick_Tiny.PlayOneShotOnCamera(); }
+                if (same && filled) RubPicked();
+                else { pickC = h.c; pickSec = h.section; pickK = h.section < 0 ? -1 : h.slot; SoundDefOf.Tick_High.PlayOneShotOnCamera(); }
                 e.Use();
                 return;
             }
@@ -639,7 +695,7 @@ namespace Avir.Magic
                 if (d > n.R) continue;
                 sel = n.c;
                 float band = n.kids.Count > 0 ? GreatBand : Band;
-                section = d < n.core ? -1 : Mathf.Clamp(Mathf.FloorToInt((d - n.core) / band), 0, Mathf.Max(0, n.c.sections.Count - 1));
+                section = n.c.binding || d < n.core ? -1 : Mathf.Clamp(Mathf.FloorToInt((d - n.core) / band), 0, Mathf.Max(0, n.c.sections.Count - 1));
                 if (n.c.sections.Count == 0) section = -1;
                 SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
                 e.Use();
@@ -649,62 +705,93 @@ namespace Avir.Magic
 
         // ================================================================== under the circles
 
-        private int Wraps()
-        {
-            int n = 0;
-            SpellCircle c = s.weave;
-            while (c.Great && c.inner.Count == 1 && n < 99) { n++; c = c.inner[0]; }
-            return n;
-        }
-
         private void DrawControls(Rect r)
         {
+            SpellCircle root = s.weave;
+            if (!root.All().Contains(sel)) { sel = root; section = -1; }
+            SpellCircle parent = root.ParentOf(sel);
+            // the circle round the heart the chosen one belongs to
+            SpellCircle group = sel.binding ? null : parent == root ? sel : parent;
+            int gi = group != null ? root.inner.IndexOf(group) : -1;
             float half = (r.width - 12f) / 2f, y = r.y;
-            int wraps = Wraps();
-            int greats = s.weave.GreatCount, smalls = s.weave.SmallCount;
-            bool roomGreat = greats < SpellCircle.MaxGreat;
-            Stepper(new Rect(r.x, y, half, 30f), "Great circles round it", wraps, SpellCircle.MaxWraps, 0,
-                () => { if (s.weave.inner.Count == 1) { s.weave = s.weave.inner[0]; sel = s.weave; section = -1; } },
-                () => { var g = new SpellCircle { sections = { new RitualRing { slots = 3 } } }; g.inner.Add(s.weave); s.weave = g; sel = g; section = -1; }, roomGreat);
-            // a circle may take one more inside while the whole spell has room: a small one more, and a great one more if this one becomes great
-            bool canHold = (sel.element == null || SpellCircle.GreatElement(sel.element)) && smalls < SpellCircle.MaxSmall + (sel.Great ? 0 : 1)
-                           && (sel.Great || roomGreat) && sel.inner.Count < SpellCircle.MaxInner;
-            Stepper(new Rect(r.x + half + 12f, y, half, 30f), "Circles inside", sel.inner.Count, SpellCircle.MaxInner, 0,
-                () => { sel.inner.RemoveAt(sel.inner.Count - 1); },
-                () => { var k = NewCircle(); sel.inner.Add(k); }, canHold);
-            if (!s.weave.All().Contains(sel)) { sel = s.weave; section = -1; }
-            y += 36f;
-            string name = sel.element != null ? sel.element.label : "circle";
-            Stepper(new Rect(r.x, y, half, 30f), "Sections in " + name, sel.sections.Count, sel.MaxSections, sel.inner.Count > 0 ? 0 : 1,
-                () => { sel.sections.RemoveAt(sel.sections.Count - 1); section = Mathf.Min(section, sel.sections.Count - 1); },
-                () => { sel.sections.Add(new RitualRing { slots = 2 }); section = sel.sections.Count - 1; });
-            if (section >= 0 && section < sel.sections.Count)
+            bool roomSmall = root.SmallCount < SpellCircle.MaxSmall, roomGreat = root.GreatCount < SpellCircle.MaxGreat;
+            Stepper(new Rect(r.x, y, half, 30f), "Circles round the heart", root.inner.Count, SpellCircle.MaxInner, 0,
+                () => { root.inner.Remove(gi >= 0 ? group : root.inner.Last()); sel = root; section = -1; ClearPick(); },
+                () => { var k = NewCircle(); root.inner.Add(k); sel = k; section = -1; ClearPick(); }, roomSmall);
+            Rect right = new Rect(r.x + half + 12f, y, half, 30f);
+            if (group == null) { GUI.color = InkSoft; Text.Anchor = TextAnchor.MiddleCenter; ArtInk.Label(right, "choose a circle round the heart"); Text.Anchor = TextAnchor.UpperLeft; }
+            else if (!group.Great)
             {
-                RitualRing cur = sel.sections[section];
-                Stepper(new Rect(r.x + half + 12f, y, half, 30f), "Slots in section " + (section + 1), cur.Slots, SpellCircle.MaxSlots, 1,
-                    () => { cur.slots = cur.Slots - 1; if (cur.runes.Count > cur.slots) cur.runes.RemoveAt(cur.runes.Count - 1); },
-                    () => cur.slots = cur.Slots + 1);
+                if (Button(right, "Make it a great circle (up to 5 inside)", roomGreat))
+                {
+                    var g = new SpellCircle { sections = { new RitualRing { slots = 2 } } };
+                    g.inner.Add(group);
+                    root.inner[gi] = g;
+                    sel = g; section = -1; ClearPick();
+                }
             }
-            else { GUI.color = InkSoft; Text.Anchor = TextAnchor.MiddleCenter; ArtInk.Label(new Rect(r.x + half + 12f, y, half, 30f), "choose a section for its slots"); Text.Anchor = TextAnchor.UpperLeft; }
-            y += 36f;
-            // where a clicked rune goes: the centre (its element) or one of the sections
-            GUI.color = Ink; Text.Anchor = TextAnchor.MiddleLeft;
-            ArtInk.Label(new Rect(r.x, y, 90f, 30f), "Write into:");
-            Text.Anchor = TextAnchor.UpperLeft;
-            float cx = r.x + 92f;
-            if (Button(new Rect(cx, y, 70f, 30f), "Centre", true, section < 0)) section = -1;
-            cx += 74f;
-            for (int i = 0; i < sel.sections.Count; i++)
+            else
             {
-                if (Button(new Rect(cx, y, 84f, 30f), "Section " + (i + 1), true, section == i)) section = i;
-                cx += 88f;
+                SpellCircle g = group;
+                Stepper(right, "Small circles in it", g.inner.Count, SpellCircle.MaxInner, 0,
+                    () =>
+                    {
+                        // the last one out; a great circle left with one plain circle and nothing of its own opens back into it
+                        if (g.inner.Count == 1 && g.element == null && !g.OwnRunes.Any()) { root.inner[gi] = g.inner[0]; sel = g.inner[0]; }
+                        else { SpellCircle last = g.inner.Last(); g.inner.Remove(last); if (sel == last) sel = g; }
+                        section = -1; ClearPick();
+                    },
+                    () => { var k = NewCircle(); g.inner.Add(k); sel = k; section = -1; ClearPick(); }, roomSmall);
             }
-            Text.Font = GameFont.Small;
+            y += 36f;
+            if (sel.binding)
+            {
+                GUI.color = InkSoft; Text.Anchor = TextAnchor.MiddleCenter;
+                ArtInk.Label(new Rect(r.x, y, r.width, 30f), "The binding rim holds no runes - choose a circle round the heart.");
+                Text.Anchor = TextAnchor.UpperLeft;
+            }
+            else
+            {
+                string name = sel.element != null ? sel.element.label : "circle";
+                Stepper(new Rect(r.x, y, half, 30f), "Sections in " + name, sel.sections.Count, sel.MaxSections, sel.Great ? 0 : 1,
+                    () => { sel.sections.RemoveAt(sel.sections.Count - 1); section = Mathf.Min(section, sel.sections.Count - 1); ClearPick(); },
+                    () => { sel.sections.Add(new RitualRing { slots = 2 }); section = sel.sections.Count - 1; });
+                if (section >= 0 && section < sel.sections.Count)
+                {
+                    RitualRing cur = sel.sections[section];
+                    Stepper(new Rect(r.x + half + 12f, y, half, 30f), "Places in section " + (section + 1), cur.Slots, SpellCircle.MaxSlots, 1,
+                        () => { cur.slots = cur.Slots - 1; if (cur.runes.Count > cur.slots) cur.runes.RemoveAt(cur.runes.Count - 1); ClearPick(); },
+                        () => cur.slots = cur.Slots + 1);
+                }
+                else { GUI.color = InkSoft; Text.Anchor = TextAnchor.MiddleCenter; ArtInk.Label(new Rect(r.x + half + 12f, y, half, 30f), "choose a section for its places"); Text.Anchor = TextAnchor.UpperLeft; }
+            }
+            y += 36f;
+            // where a clicked rune goes: the centre (or a great circle's seal) or one of the sections
+            if (!sel.binding)
+            {
+                GUI.color = Ink; Text.Anchor = TextAnchor.MiddleLeft;
+                ArtInk.Label(new Rect(r.x, y, 90f, 30f), "Write into:");
+                Text.Anchor = TextAnchor.UpperLeft;
+                float cx = r.x + 92f;
+                if (Button(new Rect(cx, y, 70f, 30f), sel.Great ? "Seal" : "Centre", true, section < 0)) { section = -1; ClearPick(); }
+                cx += 74f;
+                for (int i = 0; i < sel.sections.Count; i++)
+                {
+                    if (Button(new Rect(cx, y, 84f, 30f), "Section " + (i + 1), true, section == i)) { section = i; ClearPick(); }
+                    cx += 88f;
+                }
+            }
             y += 38f;
-            float w = (r.width - 16f) / 3f;
-            if (Button(new Rect(r.x, y, w, 34f), "Rub out all", true)) { s.weave = NewCircle(); sel = s.weave; section = -1; }
-            if (Button(new Rect(r.x + w + 8f, y, w, 34f), "Bring the chosen circle close", true)) focus = sel;
-            if (Button(new Rect(r.x + 2f * (w + 8f), y, w, 34f), "Reset the view", view.Changed)) view.Reset();
+            float w = (r.width - 24f) / 4f;
+            if (Button(new Rect(r.x, y, w, 34f), "Rub out all", true)) { s.weave = NewSpell(); sel = s.weave.inner[0]; section = -1; ClearPick(); }
+            if (Button(new Rect(r.x + (w + 8f), y, w, 34f), "Remove this circle", !sel.binding))
+            {
+                SpellCircle p = root.ParentOf(sel);
+                if (p != null) { p.inner.Remove(sel); if (p != root && p.inner.Count == 0 && p.element == null && !p.OwnRunes.Any()) root.inner.Remove(p); }
+                sel = root; section = -1; ClearPick();
+            }
+            if (Button(new Rect(r.x + 2f * (w + 8f), y, w, 34f), "Bring it close", true)) focus = sel;
+            if (Button(new Rect(r.x + 3f * (w + 8f), y, w, 34f), "Reset the view", view.Changed)) view.Reset();
         }
 
         private static void Stepper(Rect r, string label, int value, int max, int min, System.Action less, System.Action more, bool room = true)
@@ -729,6 +816,8 @@ namespace Avir.Magic
             float ph = EffectPlaque.Height(fx, r.width);
             EffectPlaque.Draw(new Rect(r.x, r.y + 40f, r.width, ph), fx, Spells.ColorOf(s));
             float y = r.y + 40f + ph + 10f;
+            float oh = Mathf.Min(r.yMax - 60f - y - 120f, 34f + 26f * OutlineRows().Count);
+            if (oh > 60f) { DrawOutline(new Rect(r.x, y, r.width, oh)); y += oh + 10f; }
             string line = ArlieLine();
             if (Arlia.On && !line.NullOrEmpty())
             {
@@ -743,10 +832,75 @@ namespace Avir.Magic
             }
         }
 
+        private readonly HashSet<SpellCircle> folded = new HashSet<SpellCircle>();
+
+        private List<KeyValuePair<SpellCircle, int>> OutlineRows()
+        {
+            var rows = new List<KeyValuePair<SpellCircle, int>>();
+            void Walk(SpellCircle c, int depth)
+            {
+                rows.Add(new KeyValuePair<SpellCircle, int>(c, depth));
+                if (!folded.Contains(c)) foreach (SpellCircle k in c.inner) Walk(k, depth + 1);
+            }
+            Walk(s.weave, 0);
+            return rows;
+        }
+
+        /// <summary>Every circle of the spell as a list: click to choose it, double-click to bring it close, the arrow
+        /// folds a circle's branch away (nothing is removed).</summary>
+        private void DrawOutline(Rect r)
+        {
+            var rows = OutlineRows();
+            if (RitualArt.HasCard) RitualArt.CardAt(r); else Widgets.DrawBoxSolid(r, new Color(0.93f, 0.86f, 0.72f, 0.9f));
+            Rect c = r.ContractedBy(8f);
+            GUI.color = new Color(0.66f, 0.27f, 0.1f);
+            ArtInk.Label(new Rect(c.x, c.y, c.width, 22f), "CIRCLES  ·  " + s.weave.GreatCount + "/" + SpellCircle.MaxGreat + " great  ·  " + s.weave.SmallCount + "/" + SpellCircle.MaxSmall + " small");
+            Rect list = new Rect(c.x, c.y + 24f, c.width, c.height - 24f);
+            Rect inner = new Rect(0f, 0f, list.width - 16f, rows.Count * 26f);
+            RitualScroll.Begin(list, ref outlineScroll, inner);
+            float y = 0f;
+            foreach (var kv in rows)
+            {
+                SpellCircle sc = kv.Key;
+                Rect row = new Rect(0f, y, inner.width, 26f);
+                if (sc == sel) Widgets.DrawBoxSolid(row, new Color(Gold.r, Gold.g, Gold.b, 0.35f));
+                else if (Mouse.IsOver(row)) Widgets.DrawBoxSolid(row, new Color(1f, 0.9f, 0.6f, 0.18f));
+                float x = 4f + 18f * kv.Value;
+                if (sc.inner.Count > 0)
+                {
+                    Rect fold = new Rect(x, row.y + 4f, 18f, 18f);
+                    GUI.color = Ink; Text.Anchor = TextAnchor.MiddleCenter;
+                    Widgets.Label(fold, folded.Contains(sc) ? "▸" : "▾");
+                    Text.Anchor = TextAnchor.UpperLeft;
+                    TooltipHandler.TipRegion(fold, folded.Contains(sc) ? "Unfold this branch" : "Fold this branch away (nothing is removed)");
+                    if (Widgets.ButtonInvisible(fold)) { if (!folded.Remove(sc)) folded.Add(sc); SoundDefOf.Tick_Tiny.PlayOneShotOnCamera(); y += 26f; continue; }
+                }
+                x += 20f;
+                Rect g = new Rect(x, row.y + 3f, 20f, 20f);
+                if (sc.element != null) Glyph(g, sc.element);
+                else if (sc.binding) { GUI.color = Color.white; Texture2D st = Tex(ref heart, "UI/Avir/Herald/Star_Lit"); if (st != null) GUI.DrawTexture(g, st, ScaleMode.ScaleToFit); }
+                else { GUI.color = InkSoft; GUI.DrawTexture(g, Ring(ref dashed, 0.88f, true)); }
+                GUI.color = sc == sel ? Ink : InkSoft;
+                ArtInk.Label(new Rect(g.xMax + 4f, row.y + 2f, row.width - g.xMax - 4f, 24f), NameOf(sc));
+                if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && Mouse.IsOver(row))
+                {
+                    if (Event.current.clickCount == 2) focus = sc;
+                    sel = sc; section = -1; ClearPick();
+                    SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
+                    Event.current.Use();
+                }
+                y += 26f;
+            }
+            Widgets.EndScrollView();
+            GUI.color = Color.white;
+        }
+
         private string WhyNot()
         {
-            var all = s.weave.All().ToList();
+            var all = s.weave.Working.ToList();
+            if (all.Count == 0) return "no circle - add one round the heart";
             if (all.All(c => c.element == null)) return "no element";
+            if (all.Any(c => c.Great && c.element == null)) return "a great circle has no seal";
             if (all.Any(c => c.element == null)) return "a circle has no element";
             if (all.Where(c => !c.Great).All(c => !c.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form || x.kind == RuneKind.Barrier))
                 && !all.Any(c => c.Great && c.OwnRunes.Any()))
@@ -758,10 +912,12 @@ namespace Avir.Magic
         private string ArlieLine()
         {
             SpellCircle root = s.weave;
-            var all = root.All().ToList();
+            var all = root.Working.ToList();
             var smalls = all.Where(c => !c.Great).ToList();
-            if (all.All(c => c.element == null && !c.OwnRunes.Any())) return "Start in the centre. Which element? Fire, for now - the others are still being worked out.";
-            if (sel.element == null) return "This circle has no heart yet. Give it an element - double-click one on the left.";
+            if (sel.binding) return "The rim binds it all, and you stand in the heart. Choose a circle round you - or add one below.";
+            if (all.All(c => c.element == null && !c.OwnRunes.Any())) return "Start in the centre of the circle. Which element? Fire, for now - the others are still being worked out.";
+            if (sel.Great && sel.element == null) return "A great circle wants its seal - the plate on top: Life, Light, Time, Space or Darkness.";
+            if (sel.element == null) return "This circle has no heart yet. Click an element on the left.";
             if (all.Count >= 10) return "So many circles. Whoever holds this - I would like to meet them.";
             if (smalls.Any(c => c.element != null && !c.OwnRunes.Any())) return "A circle of " + smalls.First(c => c.element != null && !c.OwnRunes.Any()).element.label + " with nothing to do. Give it a verb - release, hold, drain...";
             var same = smalls.Where(c => c.element != null).GroupBy(c => c.element).FirstOrDefault(g => g.Count() >= 3);
@@ -790,7 +946,7 @@ namespace Avir.Magic
             return pickC.sections[pickSec].runes[pickK];
         }
 
-        private string PickedWhere() => (pickC?.element != null ? "Circle of " + pickC.element.label : "An empty circle") + " · " + (pickSec < 0 ? "its centre" : "section " + (pickSec + 1) + ", place " + (pickK + 1));
+        private string PickedWhere() => (pickC?.element != null ? (pickC.Great ? "Great circle of " : "Circle of ") + pickC.element.label : "An empty circle") + " · " + (pickSec < 0 ? (pickC != null && pickC.Great ? "its seal" : "its centre") : "section " + (pickSec + 1) + ", place " + (pickK + 1));
 
         private void RubPicked()
         {

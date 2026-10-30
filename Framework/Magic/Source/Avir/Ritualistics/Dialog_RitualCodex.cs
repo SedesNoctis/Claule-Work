@@ -18,6 +18,8 @@ namespace Avir.Ritualistics
         private static Color Gold => FlowStyle.Gold;
 
         private RuneDef shown;
+        private int part;   // the section of the codex shown on the left
+        private static readonly string[] Parts = { "All", "Verbs", "Modifiers", "Flow", "Elements", "Forms", "Pinned" };
         private Vector2 scroll, textScroll;
         private readonly Map map;
 
@@ -79,6 +81,32 @@ namespace Avir.Ritualistics
         protected override float Margin => 0f;
         public override Vector2 InitialSize => new Vector2(Mathf.Min(1100f, Verse.UI.screenWidth - 60f), Mathf.Min(760f, Verse.UI.screenHeight - 60f));
 
+        private static string Section(RuneDef r)
+        {
+            switch (r.role)
+            {
+                case RuneRole.Verb: return "Verbs";
+                case RuneRole.Modifier: return "Modifiers";
+                case RuneRole.Element: return "Elements of magic";
+                case RuneRole.Form: return "Forms of magic";
+                default: return "Flow";
+            }
+        }
+
+        private bool InPart(RuneDef r)
+        {
+            switch (part)
+            {
+                case 1: return r.role == RuneRole.Verb;
+                case 2: return r.role == RuneRole.Modifier;
+                case 3: return r.role != RuneRole.Verb && r.role != RuneRole.Modifier && r.role != RuneRole.Element && r.role != RuneRole.Form;
+                case 4: return r.role == RuneRole.Element;
+                case 5: return r.role == RuneRole.Form;
+                case 6: return Pinned(r);
+            }
+            return true;
+        }
+
         private bool simpleHas(RuneDef r) => simple.ContainsKey(r.kind.ToString());
         private static string simple_(RuneDef r) => simple[r.kind.ToString()];
 
@@ -107,13 +135,28 @@ namespace Avir.Ritualistics
             GUI.color = Ink; Text.Font = GameFont.Medium;
             ArtInk.Label(new Rect(left.x, left.y, left.width, 34f), "Codex");
             Text.Font = GameFont.Small;
-            List<RuneDef> all = RuneDef.All;
-            Rect area = new Rect(left.x, left.y + 40f, left.width, left.height - 40f);
-            Rect view = new Rect(0f, 0f, area.width - 16f, all.Count * 58f);
+            // the sections: one per kind of rune, and the pinned ones
+            float bw = (left.width - 8f) / 4f;
+            for (int i = 0; i < Parts.Length; i++)
+                if (RitualUI.Button(new Rect(left.x + (i % 4) * (bw + 2.6f), left.y + 40f + (i / 4) * 32f, bw, 28f), Parts[i], true, part == i)) { part = i; scroll = Vector2.zero; }
+            List<RuneDef> all = RuneDef.All.Where(InPart).OrderBy(x => x.role == RuneRole.Verb ? 0 : x.role == RuneRole.Modifier ? 1 : x.role == RuneRole.Element ? 3 : x.role == RuneRole.Form ? 4 : 2).ThenBy(x => x.uiOrder).ToList();
+            Rect area = new Rect(left.x, left.y + 108f, left.width, left.height - 108f);
+            float headH = part == 0 ? 30f * all.Select(Section).Distinct().Count() : 0f;
+            Rect view = new Rect(0f, 0f, area.width - 16f, all.Count * 58f + headH);
             RitualScroll.Begin(area, ref scroll, view);
             float y = 0f;
+            string lastHead = null;
+            if (all.Count == 0) { GUI.color = InkSoft; ArtInk.Label(new Rect(0f, 0f, view.width, 60f), part == 6 ? "Nothing pinned yet: pin a rune on its page." : "Nothing here."); }
             foreach (RuneDef r in all)
             {
+                if (part == 0 && Section(r) != lastHead)
+                {
+                    lastHead = Section(r);
+                    GUI.color = new Color(0.66f, 0.27f, 0.1f);
+                    ArtInk.Label(new Rect(4f, y + 4f, view.width, 24f), lastHead.ToUpper());
+                    GUI.color = new Color(Gold.r, Gold.g, Gold.b, 0.6f); Widgets.DrawLineHorizontal(0f, y + 27f, view.width);
+                    y += 30f;
+                }
                 Rect row = new Rect(0f, y, view.width, 54f);
                 bool on = r == shown;
                 if (on && !RitualArt.Selected(row)) { Widgets.DrawBoxSolid(row, new Color(Gold.r, Gold.g, Gold.b, 0.2f)); GUI.color = Gold; Widgets.DrawBox(row, 1); }

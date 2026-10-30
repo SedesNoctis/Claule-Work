@@ -90,7 +90,7 @@ namespace Avir.Magic
                                                || k == RuneKind.Restore || k == RuneKind.Barrier || k == RuneKind.Step || k == RuneKind.Purge;
 
         /// <summary>The spell takes effect.</summary>
-        public static void Resolve(Pawn caster, Hediff_ArcaneCore core, RitualSchema s, LocalTargetInfo target)
+        public static void Resolve(Pawn caster, Hediff_ArcaneCore core, RitualSchema s, LocalTargetInfo target, IntVec3? wallTo = null)
         {
             Map map = caster.Map;
             if (map == null) return;
@@ -124,6 +124,20 @@ namespace Avir.Magic
                 Hediff gr = caster.health.hediffSet.GetFirstHediffOfDef(MagicDefOf.Avir_ArcaneGreatness) ?? caster.health.AddHediff(MagicDefOf.Avir_ArcaneGreatness);
                 gr.Severity = Mathf.Min(1f, gr.Severity + 0.02f * tier);
             }
+            // a ball or a beam flies there - and may be stopped on the way, by a wall or a shield
+            if (SpellBolt.Flies(s, out bool beam) && target.Cell != caster.Position) { SpellBolt.Launch(caster, s, target, power, beam); return; }
+            FireMagic.WallTo = wallTo ?? IntVec3.Invalid;
+            try { Land(caster, s, target, power); }
+            finally { FireMagic.WallTo = IntVec3.Invalid; }
+        }
+
+        /// <summary>The spell takes effect at the target (after its flight, for a ball or a beam).</summary>
+        public static void Land(Pawn caster, RitualSchema s, LocalTargetInfo target, float power)
+        {
+            Map map = caster.Map;
+            if (map == null) return;
+            RitualReading r = RitualEvaluator.Read(s);
+            Hediff_ArcaneCore core = Mages.Core(caster);
             RuneDef el = r.elements.FirstOrDefault();
             if (s.weave != null) { WeaveSpell.Resolve(caster, s, target, power); return; }
             if (FireMagic.Is(el)) { FireMagic.Cast(caster, s, r, target, power); return; }
@@ -146,7 +160,7 @@ namespace Avir.Magic
                             Hediff_ArcaneCore qc = Mages.Core(q);
                             float took = qc != null ? Mathf.Min(qc.arcana, 15f * power) : 6f * power;
                             if (qc != null) qc.Add(-took);
-                            core.Add(took);
+                            core?.Add(took);
                             FleckMaker.ConnectingLine(q.DrawPos, caster.DrawPos, FleckDefOf.LineEMP, map);
                         }
                         break;
@@ -246,6 +260,9 @@ namespace Avir.Magic
         public static readonly HashSet<JobDriver_CastSpell> Casting = new HashSet<JobDriver_CastSpell>();
         /// <summary>The spell a cast job was ordered with, until its driver takes it.</summary>
         public static readonly Dictionary<Job, KeyValuePair<RitualSchema, int>> Pending = new Dictionary<Job, KeyValuePair<RitualSchema, int>>();
+        /// <summary>Where a wall ordered with two clicks ends, until its driver takes it.</summary>
+        public static readonly Dictionary<Job, IntVec3> WallEnds = new Dictionary<Job, IntVec3>();
+        public IntVec3 wallEnd = IntVec3.Invalid;
         private int started;
 
         public override void ExposeData()
@@ -253,6 +270,7 @@ namespace Avir.Magic
             base.ExposeData();
             Scribe_Deep.Look(ref spell, "spell");
             Scribe_Values.Look(ref slot, "slot", -1);
+            Scribe_Values.Look(ref wallEnd, "wallEnd", IntVec3.Invalid);
         }
 
         public override bool TryMakePreToilReservations(bool errorOnFailed) => true;
@@ -260,6 +278,7 @@ namespace Avir.Magic
         protected override IEnumerable<Toil> MakeNewToils()
         {
             if (spell == null && Pending.TryGetValue(job, out var p)) { spell = p.Key; slot = p.Value; Pending.Remove(job); }
+            if (WallEnds.TryGetValue(job, out IntVec3 we)) { wallEnd = we; WallEnds.Remove(job); }
             Hediff_ArcaneCore core = Mages.Core(pawn);
             this.FailOn(() => core == null || spell == null);
             Toil cast = Toils_General.Wait(core != null && spell != null ? Spells.CastTicks(core, spell) : 60);
@@ -270,7 +289,7 @@ namespace Avir.Magic
             yield return cast;
             yield return Toils_General.Do(() =>
             {
-                Spells.Resolve(pawn, core, spell, job.targetA);
+                Spells.Resolve(pawn, core, spell, job.targetA, wallEnd);
                 MageBook b = core.Book;
                 if (slot >= 0 && slot < 5) b.cooldown[slot] = Find.TickManager.TicksGame + Spells.Cooldown(spell);
             });
@@ -342,6 +361,7 @@ namespace Avir.Magic
             base.ProcessInput(ev);
             var parms = new TargetingParameters { canTargetLocations = true, canTargetPawns = true, canTargetSelf = true, canTargetBuildings = false };
             float range = Spells.Range(spell);
+            if (SpellBolt.Walls(spell)) { AimWall(parms, range); return; }
             // while aiming: the reach around the mage and, at the cursor, where the spell will strike - every frame
             Find.Targeter.BeginTargeting(parms, t =>
             {
@@ -350,6 +370,31 @@ namespace Avir.Magic
                 Job j = JobMaker.MakeJob(MagicSpellDefOf.Avir_CastSpell, t);
                 JobDriver_CastSpell.Pending[j] = new KeyValuePair<RitualSchema, int>(spell.Copy(), slot);
                 if (!mage.jobs.TryTakeOrderedJob(j, JobTag.Misc)) JobDriver_CastSpell.Pending.Remove(j);
+            }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, null, null, true, null,
+            t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
+        }
+
+        /// <summary>A wall: the first click sets where it begins, the second where it ends - straight or slanting.</summary>
+        private void AimWall(TargetingParameters parms, float range)
+        {
+            Messages.Message("Choose where the wall begins.", MessageTypeDefOf.SilentInput, false);
+            Find.Targeter.BeginTargeting(parms, start =>
+            {
+                if (!mage.Spawned) return;
+                if (start.Cell.DistanceTo(mage.Position) > range) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
+                SpellPreview.WallStart = start.Cell;
+                Messages.Message("Now choose where it ends.", MessageTypeDefOf.SilentInput, false);
+                Find.Targeter.BeginTargeting(parms, end =>
+                {
+                    SpellPreview.WallStart = IntVec3.Invalid;
+                    if (!mage.Spawned) return;
+                    if (end.Cell.DistanceTo(mage.Position) > range) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
+                    Job j = JobMaker.MakeJob(MagicSpellDefOf.Avir_CastSpell, start.Cell);
+                    JobDriver_CastSpell.Pending[j] = new KeyValuePair<RitualSchema, int>(spell.Copy(), slot);
+                    JobDriver_CastSpell.WallEnds[j] = end.Cell;
+                    if (!mage.jobs.TryTakeOrderedJob(j, JobTag.Misc)) { JobDriver_CastSpell.Pending.Remove(j); JobDriver_CastSpell.WallEnds.Remove(j); }
+                }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, () => SpellPreview.WallStart = IntVec3.Invalid, null, true, null,
+                t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
             }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, null, null, true, null,
             t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
         }
@@ -375,6 +420,9 @@ namespace Avir.Magic
     /// the cells each of its circles strikes (a point, a line, a wall, all round the mage...).</summary>
     public static class SpellPreview
     {
+        /// <summary>The first click of a wall, while the second is being chosen.</summary>
+        public static IntVec3 WallStart = IntVec3.Invalid;
+
         public static void Draw(Pawn mage, RitualSchema s, LocalTargetInfo t)
         {
             if (mage?.Map == null || s == null) return;
@@ -391,7 +439,7 @@ namespace Avir.Magic
             foreach (RitualSchema one in parts)
             {
                 RitualReading r = RitualEvaluator.Read(one);
-                float radius = 1.5f + 1.5f * r.breadth;
+                float radius = FireMagic.PointRadius(r);
                 var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
                 if (forms.Count == 0) { cells.UnionWith(FireMagic.Point(at, map, radius)); widest = Mathf.Max(widest, radius); continue; }
                 foreach (RuneDef f in forms)
@@ -399,7 +447,9 @@ namespace Avir.Magic
                     {
                         case RuneKind.Aura: cells.UnionWith(FireMagic.Point(mage.Position, map, radius + 1.5f)); break;
                         case RuneKind.Beam: cells.UnionWith(FireMagic.Beam(mage.Position, at, map, r.breadth)); break;
-                        case RuneKind.Shape: cells.UnionWith(FireMagic.Wall(mage.Position, at, map, 5 + 2 * r.breadth)); break;
+                        case RuneKind.Shape:
+                            cells.UnionWith(WallStart.IsValid ? FireMagic.WallLine(WallStart, at, map, FireMagic.WallMax(r)) : new List<IntVec3> { at });
+                            break;
                         case RuneKind.Step: cells.UnionWith(GenSight.BresenhamCellsBetween(mage.Position, at).Where(c => c.InBounds(map))); break;
                         case RuneKind.Enchant: cells.Add(at); break;
                         case RuneKind.Summon: cells.Add(at); widest = Mathf.Max(widest, 7f); break;

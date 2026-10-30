@@ -188,4 +188,45 @@
       </li>
     </comps>
   </ThingDef>
+  <!-- spells that fly: a ball of the element, a beam -->
+  <ThingDef Name="Avir_SpellBoltBase" Abstract="True">
+    <thingClass>Avir.Magic.Projectile_Spell</thingClass>
+    <category>Projectile</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Projectile</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <neverMultiSelect>true</neverMultiSelect>
+  </ThingDef>
+  <ThingDef ParentName="Avir_SpellBoltBase">
+    <defName>Avir_SpellBall</defName>
+    <label>ball of fire</label>
+    <graphicData>
+      <texPath>Things/Mote/FireGlow</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>MoteGlow</shaderType>
+      <color>(1.0, 0.55, 0.2)</color>
+      <drawSize>(1.6, 1.6)</drawSize>
+    </graphicData>
+    <projectile>
+      <damageDef>Flame</damageDef>
+      <damageAmountBase>1</damageAmountBase>
+      <speed>32</speed>
+    </projectile>
+  </ThingDef>
+  <ThingDef ParentName="Avir_SpellBoltBase">
+    <defName>Avir_SpellBeam</defName>
+    <label>beam</label>
+    <graphicData>
+      <texPath>Things/Mote/FireGlow</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>MoteGlow</shaderType>
+      <color>(1.0, 0.75, 0.35)</color>
+      <drawSize>(0.7, 2.6)</drawSize>
+    </graphicData>
+    <projectile>
+      <damageDef>Flame</damageDef>
+      <damageAmountBase>1</damageAmountBase>
+      <speed>110</speed>
+    </projectile>
+  </ThingDef>
 </Defs>

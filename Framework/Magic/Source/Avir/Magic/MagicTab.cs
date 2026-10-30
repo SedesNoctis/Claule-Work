@@ -128,7 +128,9 @@ namespace Avir.Magic
             Widgets.CheckboxLabeled(vt, "Let the excess out (above the white mark)", ref v);
             core.vent = v;
             // below: six blocks - the path, the Arcana coming in, the core, the casting, what steadies, what happened
-            Rect area = new Rect(r.x, vt.yMax + 8f, r.width, r.yMax - vt.yMax - 8f);
+            Rect card = new Rect(r.x, vt.yMax + 8f, r.width, r.yMax - vt.yMax - 8f);
+            if (RitualArt.HasCard) RitualArt.CardAt(card); else Widgets.DrawBoxSolid(card, new Color(0.93f, 0.85f, 0.7f, 0.85f));
+            Rect area = card.ContractedBy(12f);
             Rect view = new Rect(0f, 0f, area.width - 16f, mageH > 0f ? mageH : 900f);
             RitualScroll.Begin(area, ref mageScroll, view);
             float y = 0f, w = view.width;
@@ -348,6 +350,10 @@ namespace Avir.Magic
         /// <summary>The left column given to a rune pressed on the right: what it is, and what it does with each element.</summary>
         private void DrawRuneCard(Rect r, RuneDef rn)
         {
+            Rect back = new Rect(r.x, r.y, r.width, r.height - 48f);
+            if (RitualArt.HasCard) RitualArt.CardAt(back); else Widgets.DrawBoxSolid(back, new Color(0.93f, 0.85f, 0.7f, 0.85f));
+            Rect full = r;
+            r = new Rect(r.x + 14f, r.y + 14f, r.width - 28f, r.height - 28f);
             SpellGlyph.Draw(new Rect(r.x, r.y, 64f, 64f), rn);
             GUI.color = Ink; Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(r.x + 76f, r.y + 4f, r.width - 76f, 34f), rn.LabelCap);
@@ -373,7 +379,7 @@ namespace Avir.Magic
                 Widgets.Label(new Rect(r.x + 32f, y, r.width - 32f, lh), line);
                 y += Mathf.Max(28f, lh + 4f);
             }
-            if (RitualUI.Button(new Rect(r.x, r.yMax - 40f, r.width, 38f), "Back to " + pawn.LabelShort)) runeShown = null;
+            if (RitualUI.Button(new Rect(full.x, full.yMax - 40f, full.width, 38f), "Back to " + pawn.LabelShort)) runeShown = null;
         }
 
         private void DrawRunes(Rect r)

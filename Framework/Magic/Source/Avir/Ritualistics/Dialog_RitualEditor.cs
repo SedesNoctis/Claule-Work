@@ -208,6 +208,16 @@ namespace Avir.Ritualistics
         private void Write(RuneDef rune)
         {
             RitualRing rr = s.rings[ring];
+            // a chosen place: a rune there is replaced; an empty one is filled, and the next empty place is chosen
+            if (pickRing == ring && pickRune >= 0)
+            {
+                if (pickRune < rr.runes.Count) { rr.runes[pickRune] = rune; Arlia.Fresh = false; SoundDefOf.Tick_High.PlayOneShotOnCamera(); return; }
+                rr.runes.Add(rune);
+                if (rr.runes.Count < rr.Slots) pickRune = rr.runes.Count; else pickRing = pickRune = -1;
+                Arlia.Fresh = false;
+                SoundDefOf.Tick_High.PlayOneShotOnCamera();
+                return;
+            }
             if (rr.runes.Count >= rr.Slots)
             {
                 if (rr.Slots >= MaxSlots) { Messages.Message("Section " + (ring + 1) + " is full.", MessageTypeDefOf.RejectInput, false); Arlia.Say("full"); return; }
@@ -273,7 +283,7 @@ namespace Avir.Ritualistics
             RitualOrnament.DrawUI(c, R, core, n, i => s.rings[i].Slots, i => s.rings[i].runes.Count, new Color(InkSoft.r, InkSoft.g, InkSoft.b, 0.85f));
 
             // the card of a chosen rune sits over the circle: clicks there are not the circle's
-            Rect cardLocal = pickRing >= 0 ? new Rect(RitualPick.LastCard.x - area.x, RitualPick.LastCard.y - area.y, RitualPick.LastCard.width, RitualPick.LastCard.height) : Rect.zero;
+            Rect cardLocal = pickRing >= 0 && pickRing < s.rings.Count && pickRune < s.rings[pickRing].runes.Count ? new Rect(RitualPick.LastCard.x - area.x, RitualPick.LastCard.y - area.y, RitualPick.LastCard.width, RitualPick.LastCard.height) : Rect.zero;
             bool glyphClicked = pickRing >= 0 && Mouse.IsOver(cardLocal);
             for (int i = 0; i < n; i++)
             {
@@ -281,8 +291,20 @@ namespace Avir.Ritualistics
                 int per = s.rings[i].Slots;
                 float inner = core + (R - core) * i / n, outer = core + (R - core) * (i + 1) / n;
                 float mid = (inner + outer) / 2f, size = RitualOrnament.GlyphSize(inner, outer, per, 90f);
-                for (int k = runes.Count; k < per; k++)   // Arlia's red ink round every empty place
+                for (int k = runes.Count; k < per; k++)   // Arlia's red ink round every empty place - and each can be chosen
+                {
+                    Rect eg = RitualOrnament.GlyphRect(c, mid, RitualOrnament.SlotAngle(i, k, per), size * RitualOrnament.RuneInFrame);
+                    bool epicked = pickRing == i && pickRune == k;
+                    if (epicked) RitualPick.Mark(eg);
+                    else if (Mouse.IsOver(eg)) { GUI.color = new Color(Gold.r, Gold.g, Gold.b, 0.3f); GUI.DrawTexture(eg.ExpandedBy(eg.width * 0.3f), RitualTex.Disc); GUI.color = Color.white; }
                     Arlia.Circle(RitualOrnament.GlyphRect(c, mid, RitualOrnament.SlotAngle(i, k, per), size * 1.15f));
+                    if (Mouse.IsOver(eg)) TooltipHandler.TipRegion(eg, "An empty place - click to choose it, then click a rune on the left to write it here.");
+                    if (!glyphClicked && Widgets.ButtonInvisible(eg) && !view.dragged)
+                    {
+                        ring = i; pickRing = i; pickRune = k; glyphClicked = true;
+                        SoundDefOf.Tick_High.PlayOneShotOnCamera();
+                    }
+                }
                 for (int k = 0; k < runes.Count; k++)
                 {
                     Rect g = RitualOrnament.GlyphRect(c, mid, RitualOrnament.SlotAngle(i, k, per), size * RitualOrnament.RuneInFrame);
@@ -318,8 +340,8 @@ namespace Avir.Ritualistics
             GUI.EndGroup();
             view.DrawHint(area, InkSoft);
             // the chosen rune: what it is, and a button to rub it out (Delete does the same)
-            if (pickRing >= 0 && (pickRing >= s.rings.Count || pickRune >= s.rings[pickRing].runes.Count)) pickRing = pickRune = -1;
-            if (pickRing >= 0)
+            if (pickRing >= 0 && (pickRing >= s.rings.Count || pickRune >= s.rings[pickRing].Slots)) pickRing = pickRune = -1;
+            if (pickRing >= 0 && pickRune < s.rings[pickRing].runes.Count)
             {
                 RuneDef pr = s.rings[pickRing].runes[pickRune];
                 if (Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Delete || Event.current.keyCode == KeyCode.Backspace) && GUIUtility.keyboardControl == 0)

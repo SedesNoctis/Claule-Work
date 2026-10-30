@@ -12,6 +12,9 @@ namespace Avir.Ritualistics
     public class SpellCircle : IExposable
     {
         public RuneDef element;
+        /// <summary>The outer rim that binds the whole spell: it holds the circles round the heart where the mage
+        /// stands, and no runes of its own.</summary>
+        public bool binding;
         public List<RitualRing> sections = new List<RitualRing>();
         public List<SpellCircle> inner = new List<SpellCircle>();
 
@@ -20,11 +23,13 @@ namespace Avir.Ritualistics
         public const int MaxGreat = 5, MaxSmall = 25;
 
         public int GreatCount => All().Count(c => c.Great);
-        public int SmallCount => All().Count(c => !c.Great);
+        public int SmallCount => All().Count(c => !c.binding && !c.Great);
+        /// <summary>The circles that work - all but the binding rim.</summary>
+        public IEnumerable<SpellCircle> Working => All().Where(c => !c.binding);
 
         public static bool GreatElement(RuneDef e) => e != null && (e.kind == RuneKind.Life || e.kind == RuneKind.Light || e.kind == RuneKind.Time
                                                                   || e.kind == RuneKind.Space || e.kind == RuneKind.Darkness);
-        public bool Great => GreatElement(element) || inner.Count > 0;
+        public bool Great => !binding && (GreatElement(element) || inner.Count > 0);
         public int MaxSections => Great ? MaxSectionsGreat : MaxSectionsSmall;
 
         public IEnumerable<RuneDef> OwnRunes => sections.SelectMany(r => r.runes).Where(r => r != null);
@@ -39,7 +44,7 @@ namespace Avir.Ritualistics
 
         public SpellCircle Copy()
         {
-            var c = new SpellCircle { element = element };
+            var c = new SpellCircle { element = element, binding = binding };
             foreach (RitualRing r in sections) c.sections.Add(r.Copy());
             foreach (SpellCircle i in inner) c.inner.Add(i.Copy());
             return c;
@@ -57,6 +62,7 @@ namespace Avir.Ritualistics
         public void ExposeData()
         {
             Scribe_Defs.Look(ref element, "element");
+            Scribe_Values.Look(ref binding, "binding");
             List<string> packed = null;
             if (Scribe.mode == LoadSaveMode.Saving)
                 packed = sections.Select(r => r.Slots + "|" + string.Join(",", r.runes.Where(x => x != null).Select(x => x.defName))).ToList();
@@ -78,6 +84,22 @@ namespace Avir.Ritualistics
             Scribe_Collections.Look(ref inner, "inner", LookMode.Deep);
             if (inner == null) inner = new List<SpellCircle>();
             if (sections == null) sections = new List<RitualRing>();
+        }
+
+        /// <summary>The spell inside its binding rim (spells kept before the rim are put into one).</summary>
+        public static SpellCircle Bound(SpellCircle root)
+        {
+            if (root == null || root.binding) return root;
+            var b = new SpellCircle { binding = true };
+            b.inner.Add(root);
+            return b;
+        }
+
+        /// <summary>The circle that holds this one (null: the binding itself, or not found).</summary>
+        public SpellCircle ParentOf(SpellCircle c)
+        {
+            foreach (SpellCircle k in All()) if (k.inner.Contains(c)) return k;
+            return null;
         }
 
         /// <summary>A spell written the old way (rings) as one circle: the first element is its centre.</summary>

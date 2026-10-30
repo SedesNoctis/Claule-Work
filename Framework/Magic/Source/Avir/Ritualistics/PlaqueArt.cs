@@ -110,7 +110,8 @@ namespace Avir.Ritualistics
             Look();
             if (card == null) return;
             Color keep = GUI.color;
-            GUI.color = Color.white;
+            // warmed to the parchment, so a card sits on the page instead of shining white out of it
+            GUI.color = new Color(0.94f, 0.85f, 0.68f);
             Nine(r, card, card.width * 0.25f, 28f);
             GUI.color = keep;
         }

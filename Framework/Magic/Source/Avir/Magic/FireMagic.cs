@@ -32,7 +32,7 @@ namespace Avir.Magic
             IntVec3 at = target.Cell;
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
-            float radius = 1.5f + 1.5f * r.breadth;
+            float radius = PointRadius(r);
             if (r.barrier > 0) Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power);
             if (forms.Count == 0)
             {
@@ -50,7 +50,7 @@ namespace Avir.Magic
                         Apply(caster, map, verbs, Beam(caster.Position, at, map, r.breadth), at, power, r, false);
                         break;
                     case RuneKind.Shape:
-                        Apply(caster, map, verbs, Wall(caster.Position, at, map, 5 + 2 * r.breadth), at, power, r, false);
+                        Apply(caster, map, verbs, WallTo.IsValid ? WallLine(at, WallTo, map, WallMax(r)) : Wall(caster.Position, at, map, 5 + 2 * r.breadth), at, power, r, false);
                         break;
                     case RuneKind.Step:
                         var path = GenSight.BresenhamCellsBetween(caster.Position, at).Where(c => c.InBounds(map) && c != caster.Position).ToList();
@@ -82,6 +82,26 @@ namespace Avir.Magic
         }
 
         // ---------------------------------------------------------------- where
+        /// <summary>Where a wall ordered with two clicks ends (Invalid: across the target, as before).</summary>
+        public static IntVec3 WallTo = IntVec3.Invalid;
+
+        /// <summary>The radius of a spell striking a point: round enough to read as a ball of fire.</summary>
+        public static float PointRadius(RitualReading r) => 2.4f + 1.5f * r.breadth;
+
+        public static int WallMax(RitualReading r) => 7 + 3 * r.breadth;
+
+        /// <summary>A wall from one chosen cell to the other - straight or slanting - no longer than it may be.</summary>
+        public static List<IntVec3> WallLine(IntVec3 from, IntVec3 to, Map map, int max)
+        {
+            var cells = new List<IntVec3>();
+            foreach (IntVec3 c in GenSight.BresenhamCellsBetween(from, to))
+            {
+                if (cells.Count >= max) break;
+                if (c.InBounds(map)) cells.Add(c);
+            }
+            return cells;
+        }
+
         public static List<IntVec3> Point(IntVec3 at, Map map, float radius) =>
             GenRadial.RadialCellsAround(at, radius, true).Where(c => c.InBounds(map)).ToList();
 
@@ -122,6 +142,12 @@ namespace Avir.Magic
                 {
                     case RuneKind.Release:
                         Burn(caster, map, cells, 8f * power);
+                        // a ball bursts round: a flash and a ring of flame at the point
+                        if (!aroundSelf && cells.Count > 6)
+                        {
+                            FleckMaker.Static(at.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, Mathf.Sqrt(cells.Count) * 1.6f);
+                            foreach (IntVec3 c in cells) FleckMaker.ThrowFireGlow(c.ToVector3Shifted(), map, 1.1f);
+                        }
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) FireUtility.TryStartFireIn(c, map, 0.3f + 0.2f * power, caster);
                         if (r.amplify > 0)
                             GenExplosion.DoExplosion(aroundSelf ? at : cells[cells.Count - 1], map, 1.9f + r.amplify, DamageDefOf.Flame, caster, Mathf.RoundToInt(12f * power), -1f,

@@ -57,7 +57,7 @@ namespace Avir.Magic
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             RuneDef form = forms.FirstOrDefault();
-            float radius = 1.5f + 1.5f * r.breadth;
+            float radius = FireMagic.PointRadius(r);
             string what = string.Join(", then ", verbs.Select(Verb));
             switch (form?.kind)
             {
@@ -70,7 +70,7 @@ namespace Avir.Magic
                     if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A ward of flame on friends at the target." : "Fire with nothing to do: add a verb (release, hold, drain, lift, growth, purge) or a form."; break; }
                     string where = form?.kind == RuneKind.Aura ? "all around the mage (radius " + (radius + 1.5f).ToString("0.#") + ")"
                         : form?.kind == RuneKind.Beam ? "along a line to the target - a wall stops it"
-                        : form?.kind == RuneKind.Shape ? "as a wall " + (5 + 2 * r.breadth) + " cells long across the target"
+                        : form?.kind == RuneKind.Shape ? "as a wall up to " + FireMagic.WallMax(r) + " cells long - its two ends chosen with two clicks"
                         : "at the chosen point (radius " + radius.ToString("0.#") + ")";
                     e.main = Cap(what) + " - " + where + ".";
                     break;
