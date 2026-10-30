@@ -50,6 +50,7 @@ namespace Avir.Magic
         public static bool Quench(IntVec3 c, Map map, Pawn caster)
         {
             if (map == null || !c.InBounds(map)) return false;
+            if (map.GetComponent<MapComponent_WardsDrawn>()?.Quench(c, caster) == true) return true;
             foreach (Pawn p in c.GetThingList(map).OfType<Pawn>())
             {
                 // the caster's own side is flown over, as any shot is; a foe's ward stops it

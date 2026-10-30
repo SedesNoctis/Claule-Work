@@ -181,6 +181,7 @@ namespace Avir.Magic
                 p.GetAttachment(ThingDefOf.Fire)?.Destroy();
                 FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 1.5f);
             }
+            MapComponent_WardsDrawn.Raise(map, at, radius, DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Water"), caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
         }
 
         /// <summary>Wounds of friends washed and bound: bleeding stops; a cleaner tending than fire's.</summary>
@@ -304,6 +305,30 @@ namespace Avir.Magic
     {
         public MapComponent_WardsDrawn(Map map) : base(map) { }
 
+        /// <summary>A dome a ward spell raised over its ground: as wide as the spell reached, shimmering while it lasts.</summary>
+        public class Dome { public IntVec3 at; public float radius; public RuneDef el; public int until; public Faction owner; public int seed; }
+        public readonly List<Dome> domes = new List<Dome>();
+        private static readonly MaterialPropertyBlock block = new MaterialPropertyBlock();
+
+        public static void Raise(Map map, IntVec3 at, float radius, RuneDef el, Pawn caster, int ticks)
+        {
+            var c = map?.GetComponent<MapComponent_WardsDrawn>();
+            if (c == null) return;
+            c.domes.Add(new Dome { at = at, radius = radius + 0.5f, el = el, until = Find.TickManager.TicksGame + ticks, owner = caster?.Faction, seed = Rand.Int });
+        }
+
+        /// <summary>A foe's spell flying into a dome puts it out - the dome goes, as a ward does.</summary>
+        public bool Quench(IntVec3 c, Pawn caster)
+        {
+            int now = Find.TickManager.TicksGame;
+            Dome d = domes.FirstOrDefault(x => x.until > now && caster != null && x.owner != null && caster.Faction != null && x.owner.HostileTo(caster.Faction) && (c - x.at).LengthHorizontal <= x.radius);
+            if (d == null) return false;
+            domes.Remove(d);
+            FleckMaker.ThrowLightningGlow(c.ToVector3Shifted(), map, 1.6f);
+            MoteMaker.ThrowText(c.ToVector3Shifted(), map, "Dome spent", 3f);
+            return true;
+        }
+
         private static readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
 
         private static Material Mat(RuneDef el)
@@ -312,7 +337,7 @@ namespace Avir.Magic
             if (mats.TryGetValue(key, out Material m)) return m;
             string own = el != null ? "Things/Mote/Avir/Magic/Dome_" + el.kind : null;
             Color col = el != null ? new Color(el.color.r, el.color.g, el.color.b, 0.35f) : new Color(0.9f, 0.85f, 1f, 0.35f);
-            m = own != null && ContentFinder<Texture2D>.Get(own, false) != null ? MaterialPool.MatFrom(own, ShaderDatabase.Transparent, new Color(1f, 1f, 1f, 0.6f))
+            m = own != null && ContentFinder<Texture2D>.Get(own, false) != null ? MaterialPool.MatFrom(own, ShaderDatabase.Transparent, new Color(1f, 1f, 1f, 0.75f))
                 : MaterialPool.MatFrom(FlowTex.Dome ?? RitualTex.Ring, ShaderDatabase.Transparent, col);
             mats[key] = m;
             return m;
@@ -321,6 +346,22 @@ namespace Avir.Magic
         public override void MapComponentUpdate()
         {
             if (!AvirMagic.On) return;
+            // the domes: their size the spell's reach, a slow shimmer and breath
+            int now = Find.TickManager.TicksGame;
+            domes.RemoveAll(x => x.until <= now);
+            foreach (Dome d in domes)
+            {
+                float t = Time.realtimeSinceStartup;
+                float breath = 1f + 0.02f * Mathf.Sin(t * 1.7f + d.seed);
+                float a = 0.55f + 0.2f * Mathf.Sin(t * 3.1f + d.seed * 0.37f) + 0.08f * Mathf.Sin(t * 7.3f + d.seed);
+                if (d.until - now < 300) a *= (d.until - now) / 300f;   // fading in its last seconds
+                Vector3 pos = d.at.ToVector3Shifted(); pos.y = AltitudeLayer.MoteOverhead.AltitudeFor();
+                float s = d.radius * 2f * breath;
+                Material m = Mat(d.el);
+                Color keep = m.color;
+                block.SetColor(ShaderPropertyIDs.Color, new Color(keep.r, keep.g, keep.b, Mathf.Clamp01(a)));
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis(t * 4f % 360f, Vector3.up), new Vector3(s, 1f, s)), m, 0, null, 0, block);
+            }
             RuneDef fire = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Fire"), water = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Water");
             foreach (Pawn p in map.mapPawns.AllPawnsSpawned)
             {

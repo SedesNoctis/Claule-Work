@@ -250,6 +250,7 @@ namespace Avir.Magic
                 if (p.GetAttachment(ThingDefOf.Fire) is Fire f) f.Destroy();
                 FleckMaker.ThrowFireGlow(p.DrawPos, map, 1f);
             }
+            MapComponent_WardsDrawn.Raise(map, at, radius, DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Fire"), caster, Mathf.RoundToInt(GenDate.TicksPerHour * 6f * power));
         }
 
         private static void Cauterize(Pawn caster, IntVec3 at, Map map, float radius, float power, List<RuneDef> verbs)

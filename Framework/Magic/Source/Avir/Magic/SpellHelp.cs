@@ -59,7 +59,7 @@ namespace Avir.Magic
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             RuneDef form = forms.FirstOrDefault();
             float radius = FireMagic.PointRadius(r);
-            string what = string.Join(", then ", verbs.Select(Verb));
+            string what = Verbs(verbs, Verb);
             switch (form?.kind)
             {
                 case RuneKind.Restore: e.main = "Cauterizes: bleeding wounds of friends at the target are seared shut, as if tended."; break;
@@ -77,6 +77,7 @@ namespace Avir.Magic
                     break;
             }
             if (forms.Count > 1) e.Add("Several forms", "Each form works on its own: the spell happens once for each.");
+            Repeats(e, verbs);
             if (r.barrier > 0) e.Add("Ward of flame", "Friends at the target (the mage, if cast around them) get a ward: fire and burns do not pass it, and flames on the body go out.");
             if (r.amplify > 0 && verbs.Any(v => v.kind == RuneKind.Release)) e.Add("Explosion", "Amplified release bursts: a flame explosion of radius " + (1.9f + r.amplify).ToString("0.#") + ".");
             else if (r.amplify > 0) e.Add("Stronger", "Amplification: +" + (30 * r.amplify) + "% power.");
@@ -86,7 +87,7 @@ namespace Avir.Magic
             if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Stores heat", "The heat taken is kept by the mage: their next fire spell is stronger by it.");
             if (form?.kind == RuneKind.Restore && verbs.Any(v => v.kind == RuneKind.Purge)) e.Add("Burns infection", "Infection and parasites are burnt back.");
             if (form?.kind == RuneKind.Restore && verbs.Any(v => v.kind == RuneKind.Growth)) e.Add("Better cautery", "The seared wounds hold better.");
-            if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader line.");
+            if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader line - and each one makes the cast 8% longer.");
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
             e.Add("Price: raging flame", "If the hold slips, the fire around the mage breaks out of control for a while - fire keeps starting at their feet.");
             return e;
@@ -99,7 +100,7 @@ namespace Avir.Magic
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             RuneDef form = forms.FirstOrDefault();
             float radius = FireMagic.PointRadius(r);
-            string what = string.Join(", then ", verbs.Select(WaterVerb));
+            string what = Verbs(verbs, WaterVerb);
             switch (form?.kind)
             {
                 case RuneKind.Restore: e.main = "Washes the wounds of friends at the target and binds them - the bleeding stops."; break;
@@ -114,10 +115,11 @@ namespace Avir.Magic
                     e.main = Cap(what) + " - " + where + ".";
                     break;
             }
+            Repeats(e, verbs);
             if (r.barrier > 0) e.Add("Ward of water", "Friends there get a skin of water: fire and burns bite far less, and flames on them go out.");
             if (verbs.Any(v => v.kind == RuneKind.Release) && r.amplify > 0) e.Add("Further back", "Amplified, the burst throws foes further.");
             if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the water", "The water drawn out stays with the mage: their next water spell is stronger.");
-            if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader jet.");
+            if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader jet - and each one makes the cast 8% longer.");
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
             e.Add("Price: chilled", "If the hold slips, the water soaks the mage instead - slower, and the cold bites hard for a few hours.");
             return e;
@@ -149,6 +151,22 @@ namespace Avir.Magic
                 case RuneKind.Purge: return "puts fire out and burns away infection";
                 default: return v.label;
             }
+        }
+
+        /// <summary>The verbs in words, each said once: a verb written several times is named once, with how many.</summary>
+        private static string Verbs(List<RuneDef> verbs, System.Func<RuneDef, string> say)
+        {
+            var parts = new List<string>();
+            foreach (var g in verbs.GroupBy(v => v.kind))
+                parts.Add(say(g.First()) + (g.Count() > 1 ? " (x" + g.Count() + ")" : ""));
+            return string.Join(", then ", parts);
+        }
+
+        /// <summary>A plaque for each verb written more than once: it strikes again, each time.</summary>
+        private static void Repeats(SpellEffect e, List<RuneDef> verbs)
+        {
+            foreach (var g in verbs.GroupBy(v => v.kind).Where(g => g.Count() > 1))
+                e.Add(g.First().LabelCap + " x" + g.Count(), "Written " + g.Count() + " times, it happens " + g.Count() + " times in a row - each time as strong as the first.");
         }
 
         private static string Cap(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s.Substring(1);

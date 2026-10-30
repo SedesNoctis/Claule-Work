@@ -33,7 +33,8 @@ namespace Avir.Magic
         public static int CastTicks(bool sorcerer, SpellCircle root)
         {
             int n = root.Working.Count();
-            return Mathf.RoundToInt((sorcerer ? 60f : 150f) * (1f + 0.25f * (n - 1)) * (1f + 0.05f * Reach(root)));
+            int breadth = root.Working.Sum(c => c.OwnRunes.Count(r => r.kind == RuneKind.Breadth));
+            return Mathf.RoundToInt((sorcerer ? 60f : 150f) * (1f + 0.25f * (n - 1)) * (1f + 0.05f * Reach(root)) * (1f + 0.08f * breadth));
         }
 
         /// <summary>What it asks of composure: the hardest circle, and a little more for every other one.</summary>
