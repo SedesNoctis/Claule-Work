@@ -23,7 +23,7 @@ namespace Avir.Magic
         private const int Gap = 20;          // between two circles that end at once: the eye sees the order
         private const int Patience = 900;    // the longest a circle waits for the one before it
 
-        private class Chain
+        private class Chain : IExposable
         {
             public Pawn caster;
             public SpellCircle root;
@@ -38,9 +38,39 @@ namespace Avir.Magic
             public List<Pawn> waitFor;
             public int giveUp;
             public bool endByMage;
+
+            public void ExposeData()
+            {
+                Scribe_References.Look(ref caster, "caster");
+                Scribe_Deep.Look(ref root, "root");
+                Scribe_Values.Look(ref next, "next");
+                Scribe_Values.Look(ref power, "power", 1f);
+                Scribe_Values.Look(ref storm, "storm");
+                Scribe_Values.Look(ref wallTo, "wallTo", IntVec3.Invalid);
+                Scribe_TargetInfo.Look(ref target, "target");
+                Scribe_Values.Look(ref at, "at");
+                Scribe_Values.Look(ref waitCaster, "waitCaster");
+                Scribe_Collections.Look(ref waitFor, "waitFor", LookMode.Reference);
+                Scribe_Values.Look(ref giveUp, "giveUp");
+                Scribe_Values.Look(ref endByMage, "endByMage");
+                if (Scribe.mode == LoadSaveMode.PostLoadInit && root != null) links = Order(root);
+            }
         }
 
-        private readonly List<Chain> chains = new List<Chain>();
+        private List<Chain> chains = new List<Chain>();
+
+        /// <summary>A chain broken off by a save goes on after the load, from the circle it had reached.</summary>
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Collections.Look(ref chains, "chains", LookMode.Deep);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                if (chains == null) chains = new List<Chain>();
+                chains.RemoveAll(c => c == null || c.root == null || c.links == null);
+                foreach (Chain c in chains) c.waitFor?.RemoveAll(p => p == null);
+            }
+        }
 
         public MapComponent_SpellChain(Map map) : base(map) { }
 
@@ -121,6 +151,23 @@ namespace Avir.Magic
         {
             if (c.caster == null || c.caster.Dead || !c.caster.Spawned) return;
             WeaveSpell.AfterCircles(c.caster, c.root, c.target, c.power, c.caster.Map);
+        }
+
+        /// <summary>While a chain runs, everyone sees where its next circle will strike - time to raise a ward or run.</summary>
+        public override void MapComponentUpdate()
+        {
+            if (chains.Count == 0 || Find.CurrentMap != map) return;
+            foreach (Chain c in chains)
+            {
+                if (c.next >= c.links.Count || c.caster == null || c.caster.Dead) continue;
+                IntVec3 mageAt = c.caster.Spawned ? c.caster.Position : c.target.Cell;
+                IntVec3 at = c.waitCaster || c.endByMage ? mageAt : c.target.Cell;
+                if (!at.InBounds(map)) continue;
+                float widest = 0f;
+                Color col = c.links[c.next].element?.color ?? Color.white;
+                var cells = SpellPreview.LinkCells(c.caster, c.links[c.next].AsSchema(), at, mageAt, map, col, ref widest);
+                if (cells.Count > 0) GenDraw.DrawFieldEdges(cells.Where(x => x.InBounds(map)).Distinct().ToList(), col);
+            }
         }
 
         public override void MapComponentTick()

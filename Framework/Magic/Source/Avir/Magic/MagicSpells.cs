@@ -455,36 +455,54 @@ namespace Avir.Magic
             IntVec3 at = t.Cell;
             var cells = new HashSet<IntVec3>();
             float widest = 0f;
-            IEnumerable<RitualSchema> parts = s.weave != null ? WeaveSpell.Small(s.weave).Where(c => c.element != null).Select(c => c.AsSchema()) : new[] { s };
+            // the circles in the order they act, each where the one before it ended: after a step the mage is at the
+            // target; after a pull or an aura the next one strikes by the mage
+            List<RitualSchema> parts = s.weave != null ? MapComponent_SpellChain.Order(s.weave).Select(c => c.AsSchema()).ToList() : new List<RitualSchema> { s };
+            IntVec3 strike = at, mageAt = mage.Position;
             foreach (RitualSchema one in parts)
             {
+                cells.UnionWith(LinkCells(mage, one, strike, mageAt, map, col, ref widest));
                 RitualReading r = RitualEvaluator.Read(one);
-                float radius = FireMagic.PointRadius(r);
-                var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
-                if (forms.Count == 0) { cells.UnionWith(FireMagic.Point(at, map, radius)); widest = Mathf.Max(widest, radius); continue; }
-                foreach (RuneDef f in forms)
-                    switch (f.kind)
-                    {
-                        case RuneKind.Aura: cells.UnionWith(FireMagic.Point(mage.Position, map, radius + 1.5f)); break;
-                        case RuneKind.Beam: cells.UnionWith(FireMagic.Beam(mage.Position, at, map, r.breadth)); break;
-                        case RuneKind.Shape:
-                            cells.UnionWith(WallStart.IsValid ? FireMagic.WallLine(WallStart, at, map, FireMagic.WallMax(r)) : new List<IntVec3> { at });
-                            break;
-                        case RuneKind.Step: cells.UnionWith(GenSight.BresenhamCellsBetween(mage.Position, at).Where(c => c.InBounds(map))); break;
-                        case RuneKind.Enchant: cells.Add(at); break;
-                        case RuneKind.Summon: cells.Add(at); widest = Mathf.Max(widest, 7f); break;
-                        case RuneKind.Sense:
-                            float sr = 25f + 10f * r.reach;
-                            if (sr < GenRadial.MaxRadialPatternRadius) GenDraw.DrawRadiusRing(mage.Position, sr, col);
-                            break;
-                        default: cells.UnionWith(FireMagic.Point(at, map, radius)); widest = Mathf.Max(widest, radius); break;
-                    }
+                bool step = r.verbs.Any(v => v.kind == RuneKind.Step), pulls = SpellMods.Pulls(one);
+                if (step && !pulls) { mageAt = strike; }
+                if (pulls || r.verbs.Any(v => v.kind == RuneKind.Aura)) strike = mageAt;
             }
             // steam and a great circle of life reach round the point
             if (s.weave != null && (WeaveSpell.Steam(s.weave) || WeaveSpell.Wraps(s.weave, RuneKind.Life)))
                 widest = Mathf.Max(widest, 2f + 1.5f * s.weave.All().Sum(c => c.OwnRunes.Count(x => x.kind == RuneKind.Breadth)) + 1f);
             if (cells.Count > 0) GenDraw.DrawFieldEdges(cells.ToList(), new Color(col.r, col.g, col.b, 1f));
             if (widest > 0f && widest < GenRadial.MaxRadialPatternRadius) GenDraw.DrawRadiusRing(at, widest, col);
+        }
+
+        /// <summary>The cells one circle strikes, from where it strikes and where the mage then stands.</summary>
+        public static List<IntVec3> LinkCells(Pawn mage, RitualSchema one, IntVec3 at, IntVec3 mageAt, Map map, Color col, ref float widest)
+        {
+            var cells = new List<IntVec3>();
+            RitualReading r = RitualEvaluator.Read(one);
+            float radius = FireMagic.PointRadius(r);
+            var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            if (forms.Count == 0) { cells.AddRange(FireMagic.Point(at, map, radius)); widest = Mathf.Max(widest, radius); return cells; }
+            foreach (RuneDef f in forms)
+                switch (f.kind)
+                {
+                    case RuneKind.Aura: cells.AddRange(FireMagic.Point(mageAt, map, radius + 1.5f)); break;
+                    case RuneKind.Beam: cells.AddRange(FireMagic.Beam(mageAt, at, map, r.breadth)); break;
+                    case RuneKind.Shape:
+                        cells.AddRange(WallStart.IsValid ? FireMagic.WallLine(WallStart, at, map, FireMagic.WallMax(r)) : new List<IntVec3> { at });
+                        break;
+                    case RuneKind.Step:
+                        if (SpellMods.Pulls(one)) cells.AddRange(FireMagic.Point(at, map, radius));
+                        else cells.AddRange(GenSight.BresenhamCellsBetween(mageAt, at).Where(c => c.InBounds(map)));
+                        break;
+                    case RuneKind.Enchant: cells.Add(at); break;
+                    case RuneKind.Summon: cells.Add(at); widest = Mathf.Max(widest, 7f); break;
+                    case RuneKind.Sense:
+                        float sr = 25f + 10f * r.reach;
+                        if (sr < GenRadial.MaxRadialPatternRadius) GenDraw.DrawRadiusRing(mageAt, sr, col);
+                        break;
+                    default: cells.AddRange(FireMagic.Point(at, map, radius)); widest = Mathf.Max(widest, radius); break;
+                }
+            return cells;
         }
     }
 }

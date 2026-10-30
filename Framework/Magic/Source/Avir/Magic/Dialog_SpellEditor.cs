@@ -485,6 +485,11 @@ namespace Avir.Magic
         }
 
         private const float Core = 34f, Band = 40f, GreatBand = 46f, Inside = 0.90f, Heart = 46f;
+        /// <summary>A great circle wears the Linarian ring outside its rim, in its own colour: so much further out it reaches.</summary>
+        private const float Halo = 1.70f, HaloOuter = 1.57f;
+        private static float Outer(Node k) => k.c.Great ? k.R * HaloOuter : k.R;
+        private static Texture2D linarian;
+        private static Texture2D Linarian => Tex(ref linarian, "UI/Avir/Herald/PathRing");
 
         private static Node Measure(SpellCircle c)
         {
@@ -502,7 +507,7 @@ namespace Avir.Magic
             if (c.binding)
             {
                 // the circles stand round the heart, as far out as the largest of them needs - none touching another
-                float rmax = m > 0 ? n.kids.Max(k => k.R) * 1.06f : Core * 2f;
+                float rmax = m > 0 ? n.kids.Max(k => Outer(k)) * 1.06f : Core * 2f;
                 float d = Heart + 34f + rmax;
                 if (m > 1) d = Mathf.Max(d, rmax / Mathf.Sin(Mathf.PI / m) + 8f);
                 for (int i = 0; i < m; i++)
@@ -591,7 +596,7 @@ namespace Avir.Magic
             var ord = MapComponent_SpellChain.Order(s.weave);
             orderOf.Clear();
             if (ord.Count > 1) for (int k = 0; k < ord.Count; k++) orderOf[ord[k]] = k + 1;
-            float fit = Mathf.Min(area.width, area.height) * 0.47f / (root.R * 1.06f);
+            float fit = Mathf.Min(area.width, area.height) * 0.47f / (Outer(root) * 1.06f);
             // a circle asked to be brought close: zoomed until it fills the view, moved to its centre
             if (focus != null)
             {
@@ -602,7 +607,7 @@ namespace Avir.Magic
                 }
                 focus = null;
             }
-            view.Handle(area, area.center, root.R * 1.06f * fit);
+            view.Handle(area, area.center, Outer(root) * 1.06f * fit);
             scale = fit * view.zoom;
 
             GUI.BeginGroup(area);
@@ -668,10 +673,21 @@ namespace Avir.Magic
             {
                 // the binding: a plain rim round everything, the heart in the middle where the mage stands,
                 // threads from every circle to the heart and from each to the next
+                DrawAt(c, R * 1.14f, Linarian, new Color(col.r, col.g, col.b, 0.55f));
                 DrawAt(c, R / 0.94f, RitualTex.Rim, new Color(col.r, col.g, col.b, 0.95f));
                 if (n.c == sel) Chosen(c, R);
                 int m = n.kids.Count;
                 float hr = Heart * scale;
+                // the orbits round the heart: the Linarian ring where the circles stand, and a smaller one within, beaded
+                float orbit = m > 0 ? n.at[0].magnitude * scale : hr * 3f;
+                DrawAt(c, orbit, Linarian, new Color(col.r, col.g, col.b, 0.47f));
+                DrawAt(c, orbit * 0.55f, Linarian, new Color(col.r, col.g, col.b, 0.35f));
+                GUI.color = new Color(0.86f, 0.82f, 1f, 0.6f);
+                for (int b = 0; b < 24; b++)
+                {
+                    float a = b * 15f * Mathf.Deg2Rad, rr = orbit * 0.55f * 0.83f;
+                    GUI.DrawTexture(new Rect(c.x + Mathf.Cos(a) * rr - 2f, c.y + Mathf.Sin(a) * rr - 2f, 4f, 4f), BaseContent.WhiteTex);
+                }
                 Color th = new Color(0.92f, 0.86f, 1f, 0.55f);
                 for (int i = 0; i < m; i++)
                 {
@@ -682,12 +698,16 @@ namespace Avir.Magic
                 }
                 Texture2D star = Tex(ref heart, "UI/Avir/Herald/Star_Lit");
                 Rect hRect = new Rect(c.x - hr, c.y - hr, hr * 2f, hr * 2f);
-                if (star != null) { GUI.color = Color.white; GUI.DrawTexture(hRect, star, ScaleMode.ScaleToFit); }
+                // the heart as a medallion: a golden Linarian ring, a rim, the star within
+                DrawAt(c, hr * 1.35f, Linarian, new Color(1f, 0.84f, 0.55f, 0.95f));
+                DrawAt(c, hr * 0.95f, RitualTex.Rim, new Color(1f, 0.84f, 0.55f, 0.9f));
+                if (star != null) { GUI.color = Color.white; GUI.DrawTexture(new Rect(c.x - hr * 0.7f, c.y - hr * 0.7f, hr * 1.4f, hr * 1.4f), star, ScaleMode.ScaleToFit); }
                 else DrawAt(c, hr * 0.6f, Ring(ref disc, 0f), new Color(1f, 0.85f, 0.5f, 0.9f));
                 if (Mouse.IsOver(hRect)) TooltipHandler.TipRegion(hRect, "The heart of the spell: here the mage stands. Every circle is bound to it by a thread.");
                 for (int i = 0; i < m; i++) DrawNode(n.kids[i], c + n.at[i] * scale);
                 return;
             }
+            if (n.c.Great) DrawAt(c, R * Halo, Linarian, new Color(col.r, col.g, col.b, 0.9f));
             DrawAt(c, R * 1.02f, disc ?? Ring(ref disc, 0f), new Color(col.r, col.g, col.b, 0.06f));
             DrawAt(c, R / 0.94f, RitualTex.Rim, col);
             if (n.c == sel) Chosen(c, R);
