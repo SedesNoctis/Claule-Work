@@ -10,13 +10,36 @@ namespace Avir.Magic
     public class SpellEffect
     {
         public string main;
+        public string details;   // Arcana, range, cast, hold - for the mage writing it, if known
         public List<KeyValuePair<string, string>> extras = new List<KeyValuePair<string, string>>();   // plaque, its tooltip
         public void Add(string chip, string tip) => extras.Add(new KeyValuePair<string, string>(chip, tip));
     }
 
     public static class SpellText
     {
+        /// <summary>The mage whose book the editor was opened from (null - from elsewhere).</summary>
+        public static Pawn Caster;
+
+        public static string Details(RitualSchema s)
+        {
+            string sec(int t) => (t / 60f).ToString("0.#") + " s";
+            string d = "Arcana " + Spells.Cost(s).ToString("0.#") + " · range " + Spells.Range(s).ToString("0") + " cells";
+            Hediff_ArcaneCore c = Caster != null ? Mages.Core(Caster) : null;
+            if (c != null)
+                d += "\nCast - " + Caster.LabelShortCap + ", " + (c.Sorcerer ? "sorcerer" : "mage") + ": " + sec(Spells.CastTicks(c, s))
+                   + " · hold " + Spells.HoldChance(Caster, s).ToStringPercent();
+            else d += "\nCast: sorcerer " + sec(Spells.CastTicks(true, s)) + " · mage " + sec(Spells.CastTicks(false, s));
+            return d;
+        }
+
         public static SpellEffect Explain(RitualSchema s)
+        {
+            SpellEffect e0 = ExplainCore(s);
+            e0.details = Details(s);
+            return e0;
+        }
+
+        private static SpellEffect ExplainCore(RitualSchema s)
         {
             RitualReading r = RitualEvaluator.Read(s);
             RuneDef el = r.elements.FirstOrDefault();
@@ -90,6 +113,7 @@ namespace Avir.Magic
         {
             Text.Font = GameFont.Small;
             float h = 30f + Text.CalcHeight(e.main, w - 28f) + 8f;
+            if (!e.details.NullOrEmpty()) { Text.Font = GameFont.Tiny; h += Text.CalcHeight(e.details, w - 28f) + 4f; Text.Font = GameFont.Small; }
             if (e.extras.Count > 0) h += Rows(e, w - 28f) * 26f + 6f;
             return h + 10f;
         }
@@ -121,6 +145,13 @@ namespace Avir.Magic
             float th = Text.CalcHeight(e.main, inner.width);
             Widgets.Label(new Rect(inner.x, inner.y + 20f, inner.width, th), e.main);
             float x = inner.x, y = inner.y + 26f + th;
+            if (!e.details.NullOrEmpty())
+            {
+                Text.Font = GameFont.Tiny; GUI.color = new Color(0.4f, 0.28f, 0.16f, 1f);
+                float dh = Text.CalcHeight(e.details, inner.width);
+                Widgets.Label(new Rect(inner.x, y, inner.width, dh), e.details);
+                y += dh + 4f; Text.Font = GameFont.Small;
+            }
             Text.Font = GameFont.Tiny;
             foreach (var c in e.extras)
             {

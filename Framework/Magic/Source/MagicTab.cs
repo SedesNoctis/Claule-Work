@@ -178,7 +178,7 @@ namespace Avir.Magic
                     Messages.Message(ex.name + " is written into the book. Open it with Edit to see how it is made.", MessageTypeDefOf.NeutralEvent, false);
                 })).ToList()));
             if (Widgets.ButtonText(new Rect(r.xMax - 124f, top - 2f, 124f, 28f), "New spell..."))
-                Find.WindowStack.Add(new Dialog_RitualEditor(new RitualSchema { name = "New spell", size = RitualCircleSize.Small }, sp => b.spells.Add(sp)));
+                SpellText.Caster = pawn; Find.WindowStack.Add(new Dialog_RitualEditor(new RitualSchema { name = "New spell", size = RitualCircleSize.Small }, sp => b.spells.Add(sp)));
             Rect area = new Rect(r.x, top + 32f, r.width, r.yMax - top - 32f);
             Rect view = new Rect(0f, 0f, area.width - 16f, Mathf.Max(1, b.spells.Count) * 64f);
             RitualScroll.Begin(area, ref spellScroll, view);
@@ -206,7 +206,7 @@ namespace Avir.Magic
                 if (Widgets.ButtonText(new Rect(row.xMax - 112f, row.y + 14f, 54f, 30f), "Edit"))
                 {
                     RitualSchema old = s;
-                    Find.WindowStack.Add(new Dialog_RitualEditor(s, sp =>
+                    SpellText.Caster = pawn; Find.WindowStack.Add(new Dialog_RitualEditor(s, sp =>
                     {
                         int at = b.spells.IndexOf(old);
                         if (at >= 0) b.spells[at] = sp; else b.spells.Add(sp);
