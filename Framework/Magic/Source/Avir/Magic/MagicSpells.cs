@@ -111,6 +111,7 @@ namespace Avir.Magic
                 core.Note("Lost the hold on " + s.name + ".");
                 if (s.weave != null) WeaveSpell.Slip(caster, s.weave);
                 else if (FireMagic.Is(r.elements.FirstOrDefault())) FireMagic.Raging(caster);
+                else if (WaterMagic.Is(r.elements.FirstOrDefault())) WaterMagic.Chilled(caster);
                 return;
             }
             GameComponent_AvirComposure.Performed(caster, cost, risk, comp, GameComponent_AvirComposure.KeyOf(s));
@@ -141,6 +142,7 @@ namespace Avir.Magic
             RuneDef el = r.elements.FirstOrDefault();
             if (s.weave != null) { WeaveSpell.Resolve(caster, s, target, power); return; }
             if (FireMagic.Is(el)) { FireMagic.Cast(caster, s, r, target, power); return; }
+            if (WaterMagic.Is(el)) { WaterMagic.Cast(caster, s, r, target, power); return; }
             IntVec3 at = target.Cell;
             float radius = 1.5f + 1.5f * r.breadth;
             foreach (RuneDef v in r.verbs)

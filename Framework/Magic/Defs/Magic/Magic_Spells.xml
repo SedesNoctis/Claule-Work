@@ -229,4 +229,160 @@
       <speed>110</speed>
     </projectile>
   </ThingDef>
+  <!-- WATER -->
+  <HediffDef>
+    <defName>Avir_Soaked</defName>
+    <label>soaked</label>
+    <description>Soaked through by a mage's water: slower, and hard to set alight.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.45, 0.65, 1)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Moving</capacity><offset>-0.2</offset></li></capMods>
+        <damageFactors><li><damageDef>Flame</damageDef><factor>0.5</factor></li></damageFactors>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_Parched</defName>
+    <label>parched</label>
+    <description>Water drawn out of the body by a mage: weak, slow and dizzy until it comes back.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.8, 0.7, 0.45)</defaultLabelColor>
+    <isBad>true</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay"><severityPerDay>-2</severityPerDay></li>
+    </comps>
+    <stages>
+      <li>
+        <capMods>
+          <li><capacity>Moving</capacity><offset>-0.15</offset></li>
+          <li><capacity>Consciousness</capacity><offset>-0.1</offset></li>
+        </capMods>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_StoredWater</defName>
+    <label>drawn water</label>
+    <description>Water drawn out and kept. The mage's next water spell is stronger by it; kept too long, it slowly seeps away.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.45, 0.65, 1)</defaultLabelColor>
+    <isBad>false</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay"><severityPerDay>-0.5</severityPerDay></li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_WaterWard</defName>
+    <label>ward of water</label>
+    <description>A skin of water held round the body: fire and burns bite far less, and flames on it go out.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.45, 0.65, 1)</defaultLabelColor>
+    <isBad>false</isBad>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <damageFactors>
+          <li><damageDef>Flame</damageDef><factor>0.3</factor></li>
+          <li><damageDef>Burn</damageDef><factor>0.3</factor></li>
+        </damageFactors>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_WaterEnchant</defName>
+    <label>weapon of water</label>
+    <description>The weapon is wrapped in water: blows soak the foe and knock them back a step.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.45, 0.65, 1)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>15000~15000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_Chilled</defName>
+    <label>chilled to the bone</label>
+    <description>The mage lost hold of their water and it soaked them through: slower, and the cold bites hard, for a few hours.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.5, 0.6, 0.9)</defaultLabelColor>
+    <isBad>true</isBad>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Moving</capacity><offset>-0.2</offset></li></capMods>
+        <statOffsets><ComfyTemperatureMin>12</ComfyTemperatureMin></statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+  <ThingDef>
+    <defName>Avir_HeldWater</defName>
+    <label>held water</label>
+    <description>Water held in its place by a mage: foes in it are soaked and slowed, and fire will not take here.</description>
+    <thingClass>Avir.Magic.HeldWater</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Filth</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>false</selectable>
+    <drawerType>RealtimeOnly</drawerType>
+    <graphicData>
+      <texPath>Things/Projectile/Magic/Ball_Water</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <color>(1, 1, 1, 0.45)</color>
+      <drawSize>(1.1, 1.1)</drawSize>
+    </graphicData>
+  </ThingDef>
+  <ThingDef>
+    <defName>Avir_WaterSpirit</defName>
+    <label>water spirit</label>
+    <description>A small spirit of water called by a mage. It throws water at their foes and puts out the fires near it, until it runs dry.</description>
+    <thingClass>Avir.Magic.WaterSpirit</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>true</selectable>
+    <drawerType>RealtimeOnly</drawerType>
+    <graphicData>
+      <texPath>Things/Projectile/Magic/Ball_Water</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(0.9, 0.9)</drawSize>
+    </graphicData>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>4</glowRadius>
+        <glowColor>(90,150,255,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
 </Defs>

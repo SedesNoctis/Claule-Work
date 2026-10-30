@@ -9,8 +9,9 @@ namespace Avir.Ritualistics
     /// <summary>
     /// The mage's path: infusion beside an element (the preset leaves the element's place empty for the player to write).
     /// It pours into the mage chosen until the path is theirs - the element - and of its spells as many as the ritual
-    /// earned: all of them at its best. Small and great elements on a medium circle; darkness - the distortion of
-    /// paths - only on a large one.
+    /// earned: all of them at its best. A small element (fire, water, earth, air) is taken on a small circle, a great
+    /// one on a medium circle; a larger circle than needed makes the path stronger - more of its spells. (The
+    /// distortion of paths will come on the large circle, with the last research of ritualism.)
     /// </summary>
     public partial class CompRitualCircle
     {
@@ -19,9 +20,15 @@ namespace Avir.Ritualistics
         public static string PathCircle(RitualReading r, RitualCircleSize size)
         {
             if (r.elements.Distinct().Count() > 1) return "one element only - a path is one";
-            if (r.elements[0].kind == RuneKind.Darkness && size != RitualCircleSize.Large) return "the path of darkness - distortion - needs a large circle";
-            if (size == RitualCircleSize.Small) return "a path needs a medium circle";
+            if (Avir.Ritualistics.SpellCircle.GreatElement(r.elements[0]) && size == RitualCircleSize.Small) return "a great element needs a medium circle";
             return null;
+        }
+
+        /// <summary>How much more a larger circle than the element needs gives: one step up, a quarter more; two, half.</summary>
+        public static float PathSizeFactor(RuneDef el, RitualCircleSize size)
+        {
+            int need = Avir.Ritualistics.SpellCircle.GreatElement(el) ? 1 : 0;
+            return 0.8f + 0.25f * Mathf.Max(0, (int)size - need);
         }
 
         private void PathMenu(Pawn p, IntVec3 at)
@@ -47,7 +54,7 @@ namespace Avir.Ritualistics
             RuneDef el = r.elements[0];
             if (who == null || who.Dead || Avir.Magic.MagePath.CannotTake(who) != null) { End("the mage is gone, or already has a path."); return true; }
             if (!Pours(who, delta, Avir.Magic.MagePath.Need, el.color)) return false;
-            float share = Mathf.Clamp01(drawQuality * r.Efficiency * (1f + 0.3f * r.amplify) * (Size == RitualCircleSize.Large ? 1.25f : 1f));
+            float share = Mathf.Clamp01(drawQuality * r.Efficiency * (1f + 0.3f * r.amplify) * PathSizeFactor(el, Size));
             int n = Avir.Magic.MagePath.Grant(who, el, share);
             ResetAwakening();
             FleckMaker.ThrowLightningGlow(who.DrawPos, parent.Map, 2f);

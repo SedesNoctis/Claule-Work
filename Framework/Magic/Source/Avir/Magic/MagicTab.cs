@@ -146,43 +146,42 @@ namespace Avir.Magic
             {
                 SpellGlyph.Draw(new Rect(0f, y, 40f, 40f), core.path);
                 int own = core.Book.spells.Count(sp => Spells.Element(sp) == core.path);
-                Line(new Rect(48f, y, w - 48f, 44f), core.path.LabelCap + " - the mage's element. Spells of it in the book: " + own + ".", Ink);
+                Line(new Rect(48f, y, w - 48f, 44f), core.path.LabelCap + ". " + (own == 0 ? "No spells of it in the book yet." : own == 1 ? "One spell of it in the book." : own + " spells of it in the book."), Ink);
                 y += 48f;
             }
-            else y += Line(new Rect(0f, y, w, 60f), "No path yet. The path ritual will give the mage an element - and the first spells of it.", InkSoft);
+            else y += Line(new Rect(0f, y, w, 60f), "No path yet. A path ritual decides it.", InkSoft);
 
             // 2. the Arcana coming in, an hour
-            Heading(ref y, w, "Arcana coming in, an hour");
+            Heading(ref y, w, "Arcana, an hour");
             float med = core.Capacity * 0.25f * (1f + 0.5f * MapComponent_ExternalFlow.TierIndex(ext?.Total ?? 0f));
-            y += Row(y, w, "Meditation", "+" + med.ToString("0") + (sanct != null ? " (x3 here: " + (med * 3f).ToString("0") + ")" : ""), true);
+            y += Row(y, w, "Meditating", "+" + (sanct != null ? (med * 3f).ToString("0") + " by the sanctuary" : med.ToString("0")), true);
             int seepTier = MapComponent_ExternalFlow.TierIndex(ext?.Total ?? 0f);
-            y += Row(y, w, "The stream (" + tierName + ")", seepTier > 0 ? "+" + (core.Capacity * 0.02f * seepTier).ToString("0.#") : "none while calm", seepTier > 0);
-            y += Row(y, w, "Sanctuary", sanct != null ? sanct.element.LabelCap + ", " + sanct.Fill.ToStringPercent() + " stored" : "none near", sanct != null);
-            y += Row(y, w, "Filling ritual", "fills the core first, in its reach", true);
+            y += Row(y, w, "The stream", seepTier > 0 ? "+" + (core.Capacity * 0.02f * seepTier).ToString("0.#") + ", " + tierName : "quiet", seepTier > 0);
+            y += Row(y, w, "Sanctuary", sanct != null ? sanct.element.LabelCap + ", " + sanct.Fill.ToStringPercent() + " full" : "none near", sanct != null);
 
             // 3. the core
-            Heading(ref y, w, "The core");
-            y += Row(y, w, "Level " + core.level, "holds " + Mathf.FloorToInt(core.Capacity), true);
-            y += Bar(y, w, "Composure", core.Composure, new Color(0.35f, 0.55f, 0.85f), "Composure " + core.Composure.ToStringPercent() + ": the safe band is " + lo.ToStringPercent() + " - " + hi.ToStringPercent() + ". Wider with composure and with what steadies the mage.");
+            Heading(ref y, w, "Core");
+            y += Row(y, w, "Level " + core.level, Mathf.FloorToInt(core.Capacity) + " Arcana", true);
+            y += Bar(y, w, "Composure", core.Composure, new Color(0.35f, 0.55f, 0.85f), "Steadier hands, a wider safe band. Now " + lo.ToStringPercent() + " to " + hi.ToStringPercent() + ".");
             Hediff g = pawn.health.hediffSet.GetFirstHediffOfDef(MagicDefOf.Avir_ArcaneGreatness);
-            y += Bar(y, w, "Greatness", g?.Severity ?? 0f, new Color(0.9f, 0.62f, 0.15f), "Greatness swells above the band and with the stream's casts" + (g != null ? " (" + g.LabelCap + ")" : "") + ". It holds work beneath the mage; held long, the Arcana breaks out.");
+            y += Bar(y, w, "Greatness", g?.Severity ?? 0f, new Color(0.9f, 0.62f, 0.15f), "Grows when the Arcana runs high, and with spells cast in a strong stream. Too much of it, and the Arcana bursts out.");
             Hediff h = pawn.health.hediffSet.GetFirstHediffOfDef(MagicDefOf.Avir_ArcaneHollow);
-            y += Bar(y, w, "Hollow", h?.Severity ?? 0f, new Color(0.45f, 0.42f, 0.5f), "Below the band the mage grows hollow - never ordinary again.");
+            y += Bar(y, w, "Hollow", h?.Severity ?? 0f, new Color(0.45f, 0.42f, 0.5f), "Grows when the Arcana runs low. It never quite leaves.");
 
             // 4. the casting
             Heading(ref y, w, "Casting");
-            y += Row(y, w, sorc ? "Sorcerer: quick" : "Mage: slow", "a small circle in " + ((sorc ? 60f : 150f) / 60f).ToString("0.#") + " s", true);
+            y += Row(y, w, "Speed", sorc ? "quick - a sorcerer" : "slow - a mage", true);
             RitualSchema probe = SpellExamples.Fire().FirstOrDefault();
-            if (probe != null) y += Row(y, w, "Hold, a simple spell", Spells.HoldChance(pawn, probe).ToStringPercent(), true);
-            y += Row(y, w, "The stream's strength", tier > 0 ? "+" + (15 * tier) + "% power, greatness +" + (0.02f * tier).ToStringPercent() + " a cast" : "none while calm", tier > 0);
+            if (probe != null) y += Row(y, w, "Holds a simple spell", Spells.HoldChance(pawn, probe).ToStringPercent(), true);
+            y += Row(y, w, "The stream", tier > 0 ? "+" + (15 * tier) + "% power" : "no help", tier > 0);
 
             // 5. what steadies
-            Heading(ref y, w, "What steadies the mage");
+            Heading(ref y, w, "What steadies");
             bool horned = MagicConductors.Horned(pawn);
-            y += Row(y, w, "Horns", horned ? "composure +" + MagicConductors.HornComposure.ToStringPercent() + ", core x0.7" : "none", horned);
+            y += Row(y, w, "Horns", horned ? "yes" : "none", horned);
             int arts = MagicConductors.Artifacts(pawn);
-            y += Row(y, w, "Artifacts worn", arts > 0 ? arts + ": band +" + Mathf.Min(0.1f, 0.05f * arts).ToStringPercent() + ", core x" + Mathf.Pow(0.85f, arts).ToString("0.00") : "none", arts > 0);
-            y += Row(y, w, "Core in all", "x" + MagicConductors.CapacityFactor(pawn).ToString("0.00") + " of its size", true);
+            y += Row(y, w, "Artifacts worn", arts > 0 ? arts.ToString() : "none", arts > 0);
+            y += Row(y, w, "Core size", MagicConductors.CapacityFactor(pawn).ToStringPercent(), true);
 
             // 6. what happened lately
             Heading(ref y, w, "Lately");
@@ -284,8 +283,8 @@ namespace Avir.Magic
             // for testing until the mage's path gives spells: every ready spell of fire at once (dev mode only)
             if (RitualUI.Button(new Rect(r.xMax - 340f, top - 4f, 182f, 32f), "Kept spells..."))
                 Find.WindowStack.Add(new Dialog_SpellLibrary(pawn));
-            if (Prefs.DevMode && RitualUI.Button(new Rect(r.xMax - 524f, top - 4f, 176f, 32f), "Dev: fire spells"))
-                foreach (RitualSchema ex in SpellExamples.Fire()) if (!b.spells.Any(x => x.name == ex.name)) b.spells.Add(ex);
+            if (Prefs.DevMode && RitualUI.Button(new Rect(r.xMax - 524f, top - 4f, 176f, 32f), "Dev: all spells"))
+                foreach (RitualSchema ex in SpellExamples.Fire().Concat(SpellExamples.Water())) if (!b.spells.Any(x => x.name == ex.name)) b.spells.Add(ex);
             if (RitualUI.Button(new Rect(r.xMax - 150f, top - 4f, 150f, 32f), "New spell..."))
                 Find.WindowStack.Add(new Dialog_SpellEditor(new RitualSchema { name = "New spell" }, pawn, sp => b.spells.Add(sp)));
             Rect area = new Rect(r.x, top + 32f, r.width, r.yMax - top - 32f);
@@ -376,9 +375,9 @@ namespace Avir.Magic
             {
                 RuneDef e = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + el);
                 if (e != null) SpellGlyph.Draw(new Rect(r.x, y, 24f, 24f), e);
-                bool made = el == "Fire";
+                bool made = el == "Fire" || el == "Water";
                 GUI.color = made ? Ink : InkSoft;
-                string line = el + " - " + (made ? Dialog_SpellEditor.FireLine(rn) : "not made yet");
+                string line = el + " - " + (el == "Fire" ? Dialog_SpellEditor.FireLine(rn) : el == "Water" ? Dialog_SpellEditor.WaterLine(rn) : "not made yet");
                 float lh = Text.CalcHeight(line, r.width - 32f);
                 Widgets.Label(new Rect(r.x + 32f, y, r.width - 32f, lh), line);
                 y += Mathf.Max(28f, lh + 4f);

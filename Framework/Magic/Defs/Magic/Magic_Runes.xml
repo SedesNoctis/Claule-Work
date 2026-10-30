@@ -19,7 +19,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Water</defName>
     <label>water</label>
-    <description>Water, with cold and ice as its branch. It wets, presses, cools and quenches. Its spells are not made yet. Price: not decided yet.</description>
+    <description>Water. It pushes, soaks, slows and puts fires out: a burst that throws foes back, standing water that holds them, water drawn out of a body, a geyser, a curtain, a jet. Price - chilled to the bone: if the hold slips, the water soaks the mage instead.</description>
     <role>Element</role>
     <kind>Water</kind>
     <glyph>Water</glyph>

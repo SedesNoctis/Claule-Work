@@ -29,7 +29,7 @@ namespace Avir.Magic
         // the rune chosen on the circles: its circle, its section (-1: the centre element) and place
         private SpellCircle pickC;
         private int pickSec = -1, pickK = -1;
-        private float lastWrite;
+        private float lastWrite, lastFilled = -9f;
         private SpellCircle focus;
         private Vector2 outlineScroll;
         private int tab;                        // 0 all, 1 elements, 2 verbs, 3 forms, 4 modifiers and flow
@@ -176,8 +176,14 @@ namespace Avir.Magic
                 ArtInk.Label(new Rect(row.x + 48f, row.y + 23f, row.width - 50f, 22f), Role(rune) + (Dialog_RitualCodex.Pinned(rune) ? " · pinned" : ""));
                 if (Dialog_RitualCodex.Pinned(rune)) { GUI.color = new Color(Gold.r, Gold.g, Gold.b, 0.9f); Widgets.DrawBox(row, 1); }
                 Text.Font = GameFont.Small;
-                // one click writes into the chosen place (the second click of a double one writes nothing more)
-                if (Widgets.ButtonInvisible(row) && Time.realtimeSinceStartup - lastWrite > 0.35f) { Write(rune); lastWrite = Time.realtimeSinceStartup; }
+                // one click fills the chosen or the next empty place; a double click adds a place when there is none
+                if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && Event.current.clickCount == 2 && Mouse.IsOver(row))
+                {
+                    // the first click of the double one may have filled a place already: then nothing more
+                    if (Time.realtimeSinceStartup - lastFilled > 0.5f) Write(rune, true);
+                    lastWrite = Time.realtimeSinceStartup; Event.current.Use();
+                }
+                else if (Widgets.ButtonInvisible(row) && Time.realtimeSinceStartup - lastWrite > 0.35f) { if (Write(rune, false)) lastFilled = Time.realtimeSinceStartup; lastWrite = Time.realtimeSinceStartup; }
                 y += 48f;
             }
             Widgets.EndScrollView();
@@ -282,12 +288,41 @@ namespace Avir.Magic
                 RuneDef e = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + el);
                 GUI.color = e?.color ?? Color.white;
                 if (e != null) Glyph(new Rect(c.x, y, 20f, 20f), e);
-                bool made = el == "Fire";
+                bool made = el == "Fire" || el == "Water";
                 GUI.color = made ? Ink : InkSoft;
-                ArtInk.Label(new Rect(c.x + 26f, y, c.width - 26f, 22f), el + " - " + (made ? FireLine(rune) : "not made yet"));
+                ArtInk.Label(new Rect(c.x + 26f, y, c.width - 26f, 22f), el + " - " + (el == "Fire" ? FireLine(rune) : el == "Water" ? WaterLine(rune) : "not made yet"));
                 y += 22f;
             }
             Text.Font = GameFont.Small;
+        }
+
+        /// <summary>What a rune does with water, in a few words.</summary>
+        internal static string WaterLine(RuneDef r)
+        {
+            switch (r.kind)
+            {
+                case RuneKind.Water: return "the circle flows";
+                case RuneKind.Release: return "a burst that knocks foes back";
+                case RuneKind.Hold: return "standing water: slows, keeps fire off";
+                case RuneKind.Drain: return "draws water out of foes, keeps it";
+                case RuneKind.Lift: return "a geyser that throws foes up";
+                case RuneKind.Growth: return "the water spreads, plants drink";
+                case RuneKind.Purge: return "washes fire, filth and poison away";
+                case RuneKind.Aura: return "all round the mage";
+                case RuneKind.Beam: return "a jet to the target";
+                case RuneKind.Shape: return "a curtain of water";
+                case RuneKind.Step: return "the mage rides a wave";
+                case RuneKind.Restore: return "wounds washed and bound";
+                case RuneKind.Enchant: return "blows that knock back";
+                case RuneKind.Summon: return "a water spirit";
+                case RuneKind.Sense: return "feels whatever moves";
+                case RuneKind.Barrier: return "a ward: fire bites far less";
+                case RuneKind.Amplify: return "stronger; bursts throw further";
+                case RuneKind.Breadth: return "wider";
+                case RuneKind.Reach: return "further (+5% cast)";
+                case RuneKind.Anchor: return "the water stands longer";
+                default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
+            }
         }
 
         /// <summary>What a rune does with fire, in a few words.</summary>
@@ -311,11 +346,12 @@ namespace Avir.Magic
                 case RuneKind.Summon: return "a fire wisp";
                 case RuneKind.Sense: return "warm bodies through walls";
                 case RuneKind.Barrier: return "a ward fire cannot pass";
+                case RuneKind.Water: return "steam, where the two meet";
                 case RuneKind.Amplify: return "stronger; with release - explosion";
                 case RuneKind.Breadth: return "wider";
                 case RuneKind.Reach: return "further (+5% cast)";
                 case RuneKind.Anchor: return "purged ground lasts longer";
-                default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "-";
+                default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
             }
         }
 
@@ -334,19 +370,19 @@ namespace Avir.Magic
 
         /// <summary>An element into the chosen circle's centre (a great circle's seal); anything else into the chosen
         /// place, or else at the end of the chosen section (a full one grows a place).</summary>
-        private void Write(RuneDef rune)
+        private bool Write(RuneDef rune, bool grow)
         {
             shown = rune;
             if (rune.role == RuneRole.Element)
             {
                 string no = ElementRefused(rune);
-                if (no != null) { Messages.Message(no, MessageTypeDefOf.RejectInput, false); return; }
+                if (no != null) { Messages.Message(no, MessageTypeDefOf.RejectInput, false); return false; }
                 sel.element = rune;
                 section = -1;
                 SoundDefOf.Tick_High.PlayOneShotOnCamera();
-                return;
+                return true;
             }
-            if (sel.binding) { Messages.Message("The binding rim holds no runes - choose a circle round the heart.", MessageTypeDefOf.RejectInput, false); return; }
+            if (sel.binding) { Messages.Message("The binding rim holds no runes - choose a circle round the heart.", MessageTypeDefOf.RejectInput, false); return false; }
             if (sel.sections.Count == 0) sel.sections.Add(new RitualRing { slots = 1 });
             bool place = pickC == sel && pickSec >= 0 && pickSec < sel.sections.Count && pickK >= 0;
             int i = place ? pickSec : section < 0 ? 0 : Mathf.Min(section, sel.sections.Count - 1);
@@ -356,7 +392,8 @@ namespace Avir.Magic
             {
                 if (ring.runes.Count >= ring.Slots)
                 {
-                    if (ring.Slots >= SpellCircle.MaxSlots) { Messages.Message("Section " + (i + 1) + " is full.", MessageTypeDefOf.RejectInput, false); return; }
+                    if (!grow) { Messages.Message("No empty place in section " + (i + 1) + " - double-click the rune to add a place.", MessageTypeDefOf.RejectInput, false); return false; }
+                    if (ring.Slots >= SpellCircle.MaxSlots) { Messages.Message("Section " + (i + 1) + " is full.", MessageTypeDefOf.RejectInput, false); return false; }
                     ring.slots = ring.Slots + 1;
                 }
                 ring.runes.Add(rune);
@@ -365,6 +402,7 @@ namespace Avir.Magic
             }
             section = i;
             SoundDefOf.Tick_High.PlayOneShotOnCamera();
+            return true;
         }
 
         // ================================================================== middle: the circles
@@ -671,7 +709,7 @@ namespace Avir.Magic
                 if (Mouse.IsOver(box))
                 {
                     DrawAt(p, r * 0.9f, Ring(ref disc, 0f), new Color(1f, 0.85f, 0.4f, 0.22f));
-                    TooltipHandler.TipRegion(box, (emptyTip ?? "An empty place.") + "\n\nClick to choose it, then click a rune on the left to write it here.");
+                    TooltipHandler.TipRegion(box, (emptyTip ?? "An empty place.") + "\n\nClick to choose it, then click a rune on the left to write it here." + (hit.section >= 0 ? " Double-click to take the place away." : ""));
                 }
             }
             plates.Add(new KeyValuePair<Rect, Hit>(box, hit));
@@ -681,6 +719,22 @@ namespace Avir.Magic
         private void HandleClicks(Rect local)
         {
             Event e = Event.current;
+            // a double click on an empty place takes the place away
+            if (e.type == EventType.MouseDown && e.button == 0 && e.clickCount == 2 && Mouse.IsOver(local))
+                for (int i = plates.Count - 1; i >= 0; i--)
+                {
+                    if (!plates[i].Key.Contains(e.mousePosition)) continue;
+                    Hit h = plates[i].Value;
+                    if (h.section >= 0 && h.rune < 0 && h.ring != null && h.ring.Slots > 1)
+                    {
+                        h.ring.slots = h.ring.Slots - 1;
+                        ClearPick(); lastWrite = Time.realtimeSinceStartup;
+                        SoundDefOf.Tick_Low.PlayOneShotOnCamera();
+                        e.Use();
+                        return;
+                    }
+                    break;
+                }
             // a double click brings the circle under the mouse close
             if (e.type == EventType.MouseDown && e.button == 0 && e.clickCount == 2 && Mouse.IsOver(local))
             {
@@ -717,6 +771,8 @@ namespace Avir.Magic
                 e.Use();
                 return;
             }
+            // the empty sky: the whole spell again
+            if (s.weave.inner.Count > 1) { sel = s.weave; section = -1; e.Use(); }
         }
 
         // ================================================================== under the circles
@@ -828,9 +884,13 @@ namespace Avir.Magic
             GUI.color = Ink; Text.Font = GameFont.Medium;
             ArtInk.Label(new Rect(r.x, r.y, r.width, 32f), "Codex");
             Text.Font = GameFont.Small;
-            SpellEffect fx = SpellText.Explain(s);
+            // a circle of several chosen: what that circle does alone; the binding (or a click on the sky) - the whole spell
+            bool whole = sel.binding || s.weave.Working.Count() <= 1 || !s.weave.All().Contains(sel);
+            RitualSchema shownSpell = whole ? s : new RitualSchema { name = s.name, weave = SpellCircle.Bound(sel.Copy()) };
+            SpellEffect fx = SpellText.Explain(shownSpell);
+            if (!whole) fx.details = (fx.details ?? "") + "\nThe whole spell: choose the outer rim (or click the sky).";
             float ph = EffectPlaque.Height(fx, r.width);
-            EffectPlaque.Draw(new Rect(r.x, r.y + 40f, r.width, ph), fx, Spells.ColorOf(s));
+            EffectPlaque.Draw(new Rect(r.x, r.y + 40f, r.width, ph), fx, Spells.ColorOf(shownSpell), whole ? "THE MAIN EFFECT" : "THIS CIRCLE ALONE");
             float y = r.y + 40f + ph + 10f;
             float oh = Mathf.Max(64f, Mathf.Min(r.yMax - 60f - y - 120f, 40f + 26f * OutlineRows().Count));
             DrawOutline(new Rect(r.x, y, r.width, oh)); y += oh + 10f;

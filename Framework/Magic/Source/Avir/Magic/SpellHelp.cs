@@ -47,6 +47,7 @@ namespace Avir.Magic
             RuneDef el = r.elements.FirstOrDefault();
             var e = new SpellEffect();
             if (el == null) { e.main = "No element yet: write one (fire, for now) - it is what the spell is made of."; return e; }
+            if (WaterMagic.Is(el)) return Water(r);
             if (!FireMagic.Is(el)) { e.main = el.LabelCap + " is not made yet - for now it only strikes a plain pulse at the point."; return e; }
             return Fire(r);
         }
@@ -89,6 +90,51 @@ namespace Avir.Magic
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
             e.Add("Price: raging flame", "If the hold slips, the fire around the mage breaks out of control for a while - fire keeps starting at their feet.");
             return e;
+        }
+
+        private static SpellEffect Water(RitualReading r)
+        {
+            var e = new SpellEffect();
+            var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
+            var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            RuneDef form = forms.FirstOrDefault();
+            float radius = FireMagic.PointRadius(r);
+            string what = string.Join(", then ", verbs.Select(WaterVerb));
+            switch (form?.kind)
+            {
+                case RuneKind.Restore: e.main = "Washes the wounds of friends at the target and binds them - the bleeding stops."; break;
+                case RuneKind.Enchant: e.main = "Wraps a friend's weapon in water (the mage's, if no friend stands there): blows soak the foe and knock them back."; break;
+                case RuneKind.Summon: e.main = "Calls a water spirit: it knocks foes back with water and puts out the fires near it."; break;
+                case RuneKind.Sense: e.main = "The mage feels everything that moves within " + (20 + 10 * r.reach) + " cells, through walls, for a while."; break;
+                case RuneKind.Step: e.main = "The mage rides a wave to the target, throwing aside whoever stands in the way" + (verbs.Count > 0 ? "; along the way the water " + what : "") + "."; break;
+                case RuneKind.Shape: e.main = "A curtain of standing water, up to " + FireMagic.WallMax(r) + " cells - its two ends chosen with two clicks" + (verbs.Count > 0 ? "; and it " + what : "") + "."; break;
+                default:
+                    if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A ward of water on friends at the target." : "Water with nothing to do: add a verb or a form."; break; }
+                    string where = form?.kind == RuneKind.Aura ? "all around the mage" : form?.kind == RuneKind.Beam ? "in a jet to the target" : "at the point, " + radius.ToString("0.#") + " cells round";
+                    e.main = Cap(what) + " - " + where + ".";
+                    break;
+            }
+            if (r.barrier > 0) e.Add("Ward of water", "Friends there get a skin of water: fire and burns bite far less, and flames on them go out.");
+            if (verbs.Any(v => v.kind == RuneKind.Release) && r.amplify > 0) e.Add("Further back", "Amplified, the burst throws foes further.");
+            if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the water", "The water drawn out stays with the mage: their next water spell is stronger.");
+            if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader jet.");
+            if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
+            e.Add("Price: chilled", "If the hold slips, the water soaks the mage instead - slower, and the cold bites hard for a few hours.");
+            return e;
+        }
+
+        private static string WaterVerb(RuneDef v)
+        {
+            switch (v.kind)
+            {
+                case RuneKind.Release: return "bursts, knocking foes back and soaking them";
+                case RuneKind.Hold: return "lies there as standing water that slows foes and keeps fire away";
+                case RuneKind.Drain: return "draws the water out of foes and leaves them weak";
+                case RuneKind.Lift: return "rises as a geyser that throws foes up";
+                case RuneKind.Growth: return "spreads, and the plants drink";
+                case RuneKind.Purge: return "washes away fire, filth and poison";
+                default: return v.label;
+            }
         }
 
         private static string Verb(RuneDef v)
@@ -151,7 +197,7 @@ namespace Avir.Magic
             return rows;
         }
 
-        public static void Draw(Rect r, SpellEffect e, Color col)
+        public static void Draw(Rect r, SpellEffect e, Color col, string title = "THE MAIN EFFECT")
         {
             Color keep = GUI.color;
             if (RitualArt.HasCard) RitualArt.CardAt(r);
@@ -159,7 +205,7 @@ namespace Avir.Magic
             Rect inner = r.ContractedBy(14f);
             GUI.color = new Color(col.r * 0.7f, col.g * 0.5f, col.b * 0.4f, 1f);
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(inner.x, inner.y - 4f, inner.width, 24f), "THE MAIN EFFECT");
+            Widgets.Label(new Rect(inner.x, inner.y - 4f, inner.width, 24f), title);
             GUI.color = new Color(0.22f, 0.14f, 0.08f, 1f);
             float th = Text.CalcHeight(e.main, inner.width);
             Widgets.Label(new Rect(inner.x, inner.y + 20f, inner.width, th), e.main);
@@ -210,6 +256,22 @@ namespace Avir.Magic
             s.rings.Clear();
             return s;
         }
+
+        public static List<RitualSchema> Water() => new List<RitualSchema>
+        {
+            Make("Tidal burst", new[] { "Water", "Release" }, new[] { "Breadth" }),
+            Make("Water jet", new[] { "Water", "Release" }, new[] { "Beam" }),
+            Make("Water curtain", new[] { "Water", "Hold" }, new[] { "Shape" }),
+            Make("Standing water", new[] { "Water", "Hold" }, new[] { "Breadth" }),
+            Make("Draw the water", new[] { "Water", "Drain" }),
+            Make("Geyser", new[] { "Water", "Lift" }),
+            Make("Cleansing rain", new[] { "Water", "Purge" }, new[] { "Aura" }),
+            Make("Ride the wave", new[] { "Water", "Release" }, new[] { "Step" }),
+            Make("Washing", new[] { "Water" }, new[] { "Restore" }),
+            Make("Weapon of water", new[] { "Water" }, new[] { "Enchant" }),
+            Make("Water spirit", new[] { "Water" }, new[] { "Summon" }),
+            Make("Ward of water", new[] { "Water", "Barrier" }),
+        };
 
         public static List<RitualSchema> Fire() => new List<RitualSchema>
         {

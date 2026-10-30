@@ -577,6 +577,40 @@ namespace Avir.Magic
         [DebugAction(Cat, "Make mage (born)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Born(Pawn p) { if (Ready()) Mages.Gift(p, Mages.Born); }
 
+        [DebugAction(Cat, "Arcana full", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void Full(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) c.arcana = c.Capacity; }
+
+        [DebugAction(Cat, "Arcana empty", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void Empty(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) c.arcana = 0f; }
+
+        [DebugAction(Cat, "Spells ready again (cooldowns off)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void Ready(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) for (int i = 0; i < 5; i++) c.Book.cooldown[i] = 0; }
+
+        [DebugAction(Cat, "Greatness and hollow away", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void Calm(Pawn p)
+        {
+            foreach (HediffDef d in new[] { MagicDefOf.Avir_ArcaneGreatness, MagicDefOf.Avir_ArcaneHollow })
+            { Hediff h = p.health.hediffSet.GetFirstHediffOfDef(d); if (h != null) p.health.RemoveHediff(h); }
+            Hediff_ArcaneCore c = Mages.Core(p); if (c != null) c.outsideTicks = 0;
+        }
+
+        [DebugAction(Cat, "Set path...", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void SetPath(Pawn p)
+        {
+            Hediff_ArcaneCore c = Mages.Core(p);
+            if (c == null) return;
+            var opts = DefDatabase<RuneDef>.AllDefsListForReading.Where(r => r.role == RuneRole.Element && r.magic)
+                .Select(r => new FloatMenuOption(r.LabelCap + " (with all its spells)", () => { c.path = null; MagePath.Grant(p, r, 1f); })).ToList();
+            opts.Add(new FloatMenuOption("No path", () => c.path = null));
+            Find.WindowStack.Add(new FloatMenu(opts));
+        }
+
+        [DebugAction(Cat, "Make a stranger's spell (into the book)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void StrangerSpell(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) c.Book.spells.Add(SpellGen.Make(c.path ?? MagePath.Made.FirstOrDefault(), p)); }
+
+        [DebugAction(Cat, "Open hand places (all 5)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void OpenHand(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) c.Book.open = 5; }
+
         [DebugAction(Cat, "Arcana +25%", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Plus(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); c?.Add(c.Capacity * 0.25f); }
 

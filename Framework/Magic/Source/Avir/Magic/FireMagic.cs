@@ -206,7 +206,7 @@ namespace Avir.Magic
             }
         }
 
-        private static float Extinguish(IntVec3 c, Map map)
+        internal static float Extinguish(IntVec3 c, Map map)
         {
             float took = 0f;
             foreach (Thing t in c.GetThingList(map).ToList())
@@ -285,7 +285,7 @@ namespace Avir.Magic
             FleckMaker.ThrowFireGlow(at.ToVector3Shifted(), map, 2f);
         }
 
-        private static void Sense(Pawn caster, Map map, float radius, float power)
+        internal static void Sense(Pawn caster, Map map, float radius, float power)
         {
             var found = map.mapPawns.AllPawnsSpawned.Where(p => p != caster && !p.Dead && p.Position.DistanceTo(caster.Position) <= radius && p.RaceProps.IsFlesh).ToList();
             map.GetComponent<MapComponent_FireMagic>()?.AddSense(found, Mathf.RoundToInt(1800f * power));

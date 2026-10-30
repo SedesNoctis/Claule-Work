@@ -66,9 +66,9 @@ namespace Avir.Magic
             foreach (var g in smalls.GroupBy(c => c.element))
             {
                 if (g.Key == null) continue;
-                if (!FireMagic.Is(g.Key)) { parts.Add(g.Key.LabelCap + " (not made yet)"); continue; }
+                if (!FireMagic.Is(g.Key) && !WaterMagic.Is(g.Key)) { parts.Add(g.Key.LabelCap + " (not made yet)"); continue; }
                 SpellEffect one = SpellText.ExplainSchema(g.First().AsSchema());
-                parts.Add((g.Count() > 1 ? g.Count() + " circles of fire: " : "") + one.main.TrimEnd('.'));
+                parts.Add((g.Count() > 1 ? g.Count() + " circles of " + g.Key.label + ": " : "") + one.main.TrimEnd('.'));
                 foreach (var x in one.extras) if (!e.extras.Any(y => y.Key == x.Key)) e.extras.Add(x);
             }
             foreach (SpellCircle g in greats)
@@ -102,6 +102,7 @@ namespace Avir.Magic
                 RitualSchema one = c.AsSchema();
                 RitualReading r = RitualEvaluator.Read(one);
                 if (FireMagic.Is(c.element)) FireMagic.Cast(caster, one, r, target, p);
+                else if (WaterMagic.Is(c.element)) WaterMagic.Cast(caster, one, r, target, p);
             }
             float radius = 2f + 1.5f * root.Working.Sum(c => c.OwnRunes.Count(x => x.kind == RuneKind.Breadth));
             if (Steam(root))
@@ -132,6 +133,7 @@ namespace Avir.Magic
         public static void Slip(Pawn caster, SpellCircle root)
         {
             if (Small(root).Any(c => FireMagic.Is(c.element))) FireMagic.Raging(caster);
+            if (Small(root).Any(c => WaterMagic.Is(c.element))) WaterMagic.Chilled(caster);
         }
     }
 }

@@ -365,12 +365,11 @@
   <Avir.Ritualistics.RitualPresetDef>
     <defName>Avir_Ritual_MagePath</defName>
     <label>the mage's path</label>
-    <description>Gives a mage their path: the element that will be theirs, and the first spells of it - as many as the ritual earns, all of them at its best. One place is left empty: write the element there. Small and great elements on a medium circle; darkness - the distortion of paths - only on a large one. The mage stands in the circle (or performs it).</description>
-    <size>Medium</size>
+    <description>Gives a mage their path: the element that becomes theirs, and its first spells - more of them the better the ritual goes. The place beside infusion is left empty: write the element there. Fire, water, earth or air need only a small circle; a great element needs a medium one. A bigger circle gives more. The mage stands in the circle, or performs it.</description>
+    <size>Small</size>
     <uiOrder>27</uiOrder>
     <rings>
-      <li><runes><li>Avir_Rune_Infuse</li></runes></li>
-      <li><slots>1</slots></li>
+      <li><runes><li>Avir_Rune_Infuse</li></runes><slots>2</slots></li>
       <li><runes><li>Avir_Rune_Closing</li></runes></li>
     </rings>
   </Avir.Ritualistics.RitualPresetDef>

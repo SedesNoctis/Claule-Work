@@ -198,34 +198,44 @@ namespace Avir.Ritualistics
                 Text.Font = GameFont.Small;
                 TooltipHandler.TipRegion(row, rune.LabelCap + "\n\n" + RitualText.Desc(rune) + (rune.implemented ? "" : "\n\nIts effect is not made yet.")
                     + "\n\nInstability " + rune.instability.ToString("+0.00;-0.00") + (rune.actWeight > 0f ? ", weight of the deed " + rune.actWeight.ToString("0") : ""));
-                if (!full && Widgets.ButtonInvisible(row)) Write(rune);
+                // one click fills an empty place; a double click adds a place when there is none
+                if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && Event.current.clickCount == 2 && Mouse.IsOver(row))
+                {
+                    if (Time.realtimeSinceStartup - lastFilled > 0.5f) Write(rune, true);
+                    lastDouble = Time.realtimeSinceStartup; Event.current.Use();
+                }
+                else if (Widgets.ButtonInvisible(row) && Time.realtimeSinceStartup - lastDouble > 0.3f) { if (Write(rune, false)) lastFilled = Time.realtimeSinceStartup; }
                 y += isPinned ? rh + 4f : 50f;
             }
             Widgets.EndScrollView();
         }
 
         /// <summary>Into the chosen section; a full section grows a slot while the circle allows.</summary>
-        private void Write(RuneDef rune)
+        private float lastDouble, lastFilled = -9f;
+
+        private bool Write(RuneDef rune, bool grow)
         {
             RitualRing rr = s.rings[ring];
             // a chosen place: a rune there is replaced; an empty one is filled, and the next empty place is chosen
             if (pickRing == ring && pickRune >= 0)
             {
-                if (pickRune < rr.runes.Count) { rr.runes[pickRune] = rune; Arlia.Fresh = false; SoundDefOf.Tick_High.PlayOneShotOnCamera(); return; }
+                if (pickRune < rr.runes.Count) { rr.runes[pickRune] = rune; Arlia.Fresh = false; SoundDefOf.Tick_High.PlayOneShotOnCamera(); return true; }
                 rr.runes.Add(rune);
                 if (rr.runes.Count < rr.Slots) pickRune = rr.runes.Count; else pickRing = pickRune = -1;
                 Arlia.Fresh = false;
                 SoundDefOf.Tick_High.PlayOneShotOnCamera();
-                return;
+                return true;
             }
             if (rr.runes.Count >= rr.Slots)
             {
-                if (rr.Slots >= MaxSlots) { Messages.Message("Section " + (ring + 1) + " is full.", MessageTypeDefOf.RejectInput, false); Arlia.Say("full"); return; }
+                if (!grow) { Messages.Message("No empty place in section " + (ring + 1) + " - double-click the rune to add a place.", MessageTypeDefOf.RejectInput, false); return false; }
+                if (rr.Slots >= MaxSlots) { Messages.Message("Section " + (ring + 1) + " is full.", MessageTypeDefOf.RejectInput, false); Arlia.Say("full"); return false; }
                 rr.slots = rr.Slots + 1;
             }
             rr.runes.Add(rune);
             Arlia.Fresh = false;
             SoundDefOf.Tick_High.PlayOneShotOnCamera();
+            return true;
         }
 
         // ---------------------------------------------------------------- the circle
@@ -298,8 +308,16 @@ namespace Avir.Ritualistics
                     if (epicked) RitualPick.Mark(eg);
                     else if (Mouse.IsOver(eg)) { GUI.color = new Color(Gold.r, Gold.g, Gold.b, 0.3f); GUI.DrawTexture(eg.ExpandedBy(eg.width * 0.3f), RitualTex.Disc); GUI.color = Color.white; }
                     Arlia.Circle(RitualOrnament.GlyphRect(c, mid, RitualOrnament.SlotAngle(i, k, per), size * 1.15f));
-                    if (Mouse.IsOver(eg)) TooltipHandler.TipRegion(eg, "An empty place - click to choose it, then click a rune on the left to write it here.");
-                    if (!glyphClicked && Widgets.ButtonInvisible(eg) && !view.dragged)
+                    if (Mouse.IsOver(eg)) TooltipHandler.TipRegion(eg, "An empty place - click to choose it, then click a rune on the left to write it here. Double-click to take the place away.");
+                    if (!glyphClicked && Event.current.type == EventType.MouseDown && Event.current.button == 0 && Event.current.clickCount == 2 && Mouse.IsOver(eg) && s.rings[i].Slots > 1)
+                    {
+                        s.rings[i].slots = s.rings[i].Slots - 1;
+                        pickRing = pickRune = -1; glyphClicked = true; lastDouble = Time.realtimeSinceStartup;
+                        SoundDefOf.Tick_Low.PlayOneShotOnCamera();
+                        Event.current.Use();
+                        break;
+                    }
+                    if (!glyphClicked && Widgets.ButtonInvisible(eg) && !view.dragged && Time.realtimeSinceStartup - lastDouble > 0.3f)
                     {
                         ring = i; pickRing = i; pickRune = k; glyphClicked = true;
                         SoundDefOf.Tick_High.PlayOneShotOnCamera();

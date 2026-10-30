@@ -160,7 +160,7 @@ namespace Avir.Ritualistics
                         break;
                     case RuneKind.Infuse when elements.Count > 0:
                         sb.AppendLine(step + "Gives the mage chosen the path of " + elements[0].label + ": the element becomes theirs, and of its spells as many as the ritual earns - all of them at its best. "
-                                      + (elements[0].kind == RuneKind.Darkness ? "Darkness - the distortion of paths - needs a large circle." : "Needs a medium circle or larger."));
+                                      + (SpellCircle.GreatElement(elements[0]) ? "A great element needs a medium circle; a large one gives more." : "A small circle is enough; a medium or a large one gives more."));
                         break;
                     case RuneKind.Infuse:
                         sb.AppendLine(step + "Infuses the artifact laid in the circle: the ritual's energy turns into its experience (about one for one). "
