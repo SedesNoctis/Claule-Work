@@ -16,6 +16,11 @@ namespace Avir.Ritualistics
         public List<SpellCircle> inner = new List<SpellCircle>();
 
         public const int MaxInner = 5, MaxWraps = 5, MaxSectionsSmall = 4, MaxSectionsGreat = 3, MaxSlots = 6;
+        /// <summary>The whole spell at most: five great circles and twenty-five small ones, however they are nested.</summary>
+        public const int MaxGreat = 5, MaxSmall = 25;
+
+        public int GreatCount => All().Count(c => c.Great);
+        public int SmallCount => All().Count(c => !c.Great);
 
         public static bool GreatElement(RuneDef e) => e != null && (e.kind == RuneKind.Life || e.kind == RuneKind.Light || e.kind == RuneKind.Time
                                                                   || e.kind == RuneKind.Space || e.kind == RuneKind.Darkness);

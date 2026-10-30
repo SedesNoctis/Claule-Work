@@ -52,17 +52,27 @@ namespace Avir.Magic
         private readonly Pawn pawn;
         private Vector2 scroll;
 
+        private bool sheetMax;
+        private Rect sheetNormal;
+
         public Dialog_Magic(Pawn p)
         {
             pawn = p;
             doWindowBackground = false;
             doCloseX = true;
             absorbInputAroundWindow = true;
-            closeOnClickedOutside = true;
+            closeOnClickedOutside = false;
+            forcePause = true;
         }
 
         protected override float Margin => 0f;
         public override Vector2 InitialSize => new Vector2(Mathf.Min(1150f, Verse.UI.screenWidth - 60f), Mathf.Min(760f, Verse.UI.screenHeight - 60f));
+
+        public override void PostOpen()
+        {
+            base.PostOpen();
+            SheetWindow.StartMaximized(this, ref sheetMax, ref sheetNormal, true);
+        }
 
         private static Color Ink => FlowStyle.Ink;
         private static Color InkSoft => FlowStyle.InkSoft;
@@ -72,6 +82,7 @@ namespace Avir.Magic
             Hediff_ArcaneCore core = Mages.Core(pawn);
             FlowStyle.Begin(pawn.MapHeld);
             Rect inner = ParchmentFrame.Draw(box).ContractedBy(8f);
+            SheetWindow.MaximizeButton(this, new Rect(box.xMax - 100f, box.y + 28f, 24f, 24f), ref sheetMax, ref sheetNormal, true);
             float lw = inner.width * 0.36f, rw = inner.width * 0.28f;
             Rect left = new Rect(inner.x, inner.y, lw, inner.height);
             Rect right = new Rect(inner.xMax - rw, inner.y, rw, inner.height);
@@ -170,14 +181,11 @@ namespace Avir.Magic
             // the book of the mage
             float top = r.y + 52f + w + 20f;
             GUI.color = Ink;
-            Widgets.Label(new Rect(r.x, top, r.width - 260f, 26f), "The book (" + b.spells.Count + ")");
-            if (Widgets.ButtonText(new Rect(r.xMax - 254f, top - 2f, 124f, 28f), "Examples..."))
-                Find.WindowStack.Add(new FloatMenu(SpellExamples.Fire().Select(ex => new FloatMenuOption(ex.name + " - " + SpellText.Explain(ex).main.Truncate(320f), () =>
-                {
-                    b.spells.Add(ex);
-                    Messages.Message(ex.name + " is written into the book. Open it with Edit to see how it is made.", MessageTypeDefOf.NeutralEvent, false);
-                })).ToList()));
-            if (Widgets.ButtonText(new Rect(r.xMax - 124f, top - 2f, 124f, 28f), "New spell..."))
+            Widgets.Label(new Rect(r.x, top, r.width - 160f, 26f), "The book (" + b.spells.Count + ")");
+            // for testing until the mage's path gives spells: every ready spell of fire at once (dev mode only)
+            if (Prefs.DevMode && RitualUI.Button(new Rect(r.xMax - 330f, top - 4f, 172f, 32f), "Dev: fire spells"))
+                foreach (RitualSchema ex in SpellExamples.Fire()) if (!b.spells.Any(x => x.name == ex.name)) b.spells.Add(ex);
+            if (RitualUI.Button(new Rect(r.xMax - 150f, top - 4f, 150f, 32f), "New spell..."))
                 Find.WindowStack.Add(new Dialog_SpellEditor(new RitualSchema { name = "New spell" }, pawn, sp => b.spells.Add(sp)));
             Rect area = new Rect(r.x, top + 32f, r.width, r.yMax - top - 32f);
             Rect view = new Rect(0f, 0f, area.width - 16f, Mathf.Max(1, b.spells.Count) * 64f);
@@ -192,13 +200,13 @@ namespace Avir.Magic
                 GUI.color = Spells.ColorOf(s);
                 if (icon != null) GUI.DrawTexture(new Rect(row.x + 2f, row.y + 6f, 48f, 48f), icon.Glow, ScaleMode.ScaleToFit);
                 GUI.color = Ink;
-                Widgets.Label(new Rect(row.x + 56f, row.y + 4f, row.width - 250f, 24f), s.name);
+                Widgets.Label(new Rect(row.x + 56f, row.y + 4f, row.width - 260f, 24f), s.name);
                 Text.Font = GameFont.Tiny; GUI.color = InkSoft;
-                Widgets.Label(new Rect(row.x + 56f, row.y + 26f, row.width - 250f, 34f), Spells.Describe(s));
+                Widgets.Label(new Rect(row.x + 56f, row.y + 26f, row.width - 260f, 34f), Spells.Describe(s));
                 Text.Font = GameFont.Small;
                 bool dbl = Event.current.type == EventType.MouseDown && Event.current.button == 0 && Event.current.clickCount == 2 && Mouse.IsOver(new Rect(row.x, row.y, row.width - 190f, row.height));
                 if (dbl && b.ready.Contains(s)) { for (int i = 0; i < 5; i++) if (b.ready[i] == s) b.ready[i] = null; Event.current.Use(); }
-                else if (Widgets.ButtonText(new Rect(row.xMax - 186f, row.y + 14f, 70f, 30f), "To hand") || dbl)
+                else if (RitualUI.Button(new Rect(row.xMax - 196f, row.y + 14f, 80f, 32f), "To hand") || dbl)
                 {
                     if (dbl) Event.current.Use();
                     int free = -1;
@@ -206,7 +214,7 @@ namespace Avir.Magic
                     if (free < 0) Messages.Message("Every place at hand is taken - clear one first.", MessageTypeDefOf.RejectInput, false);
                     else b.ready[free] = s;
                 }
-                if (Widgets.ButtonText(new Rect(row.xMax - 112f, row.y + 14f, 54f, 30f), "Edit"))
+                if (RitualUI.Button(new Rect(row.xMax - 114f, row.y + 14f, 56f, 32f), "Edit"))
                 {
                     RitualSchema old = s;
                     Find.WindowStack.Add(new Dialog_SpellEditor(s, pawn, sp =>
@@ -216,7 +224,7 @@ namespace Avir.Magic
                         for (int i = 0; i < 5; i++) if (b.ready[i] == old) b.ready[i] = sp;
                     }));
                 }
-                if (Widgets.ButtonText(new Rect(row.xMax - 54f, row.y + 14f, 54f, 30f), "Erase"))
+                if (RitualUI.Button(new Rect(row.xMax - 56f, row.y + 14f, 56f, 32f), "Erase"))
                 {
                     b.spells.Remove(s);
                     for (int i = 0; i < 5; i++) if (b.ready[i] == s) b.ready[i] = null;
@@ -238,8 +246,14 @@ namespace Avir.Magic
             float y = 0f;
             foreach (RuneDef rn in runes)
             {
-                GUI.color = rn.role == RuneRole.Element ? rn.color : Color.white;
-                GUI.DrawTexture(new Rect(0f, y + 2f, 40f, 40f), FlowStyle.Pick(rn.Ink, rn.Glow), ScaleMode.ScaleToFit);
+                if (rn.role == RuneRole.Element)
+                {
+                    GUI.color = new Color(0.10f, 0.07f, 0.12f, 0.88f);
+                    GUI.DrawTexture(new Rect(0f, y + 2f, 40f, 40f), RitualTex.Disc, ScaleMode.StretchToFill);
+                    GUI.color = Color.Lerp(rn.color, Color.white, 0.15f);
+                    GUI.DrawTexture(new Rect(5f, y + 7f, 30f, 30f), rn.Glow, ScaleMode.ScaleToFit);
+                }
+                else { GUI.color = Color.white; GUI.DrawTexture(new Rect(0f, y + 2f, 40f, 40f), FlowStyle.Pick(rn.Ink, rn.Glow), ScaleMode.ScaleToFit); }
                 GUI.color = Ink;
                 Widgets.Label(new Rect(48f, y + 2f, view.width - 50f, 22f), rn.LabelCap);
                 Text.Font = GameFont.Tiny; GUI.color = InkSoft;

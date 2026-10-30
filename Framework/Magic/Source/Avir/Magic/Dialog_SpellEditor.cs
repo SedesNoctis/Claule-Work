@@ -25,7 +25,10 @@ namespace Avir.Magic
         private readonly Pawn mage;
         private SpellCircle sel;
         private int section;                    // -1: the centre
-        private RuneDef shown;
+        private RuneDef shown, hovered;
+        private float lastWrite;
+        private SpellCircle focus;
+        private Vector2 outlineScroll;
         private int tab;                        // 0 all, 1 elements, 2 verbs, 3 forms, 4 modifiers and flow
         private Vector2 leftScroll;
         private readonly RitualView view = new RitualView();
@@ -44,6 +47,7 @@ namespace Avir.Magic
             }
             sel = s.weave;
             section = -1;
+            view.max = 80f;
             doWindowBackground = false;
             doCloseX = true;
             absorbInputAroundWindow = true;
@@ -122,7 +126,7 @@ namespace Avir.Magic
             GUI.color = Ink; Text.Font = GameFont.Medium;
             ArtInk.Label(new Rect(r.x, r.y, r.width, 32f), "Runes");
             Text.Font = GameFont.Tiny; GUI.color = InkSoft;
-            ArtInk.Label(new Rect(r.x, r.y + 32f, r.width, 30f), "Click a rune to read it; double-click to write it. An element goes to the chosen circle's centre, the rest into its chosen section.");
+            ArtInk.Label(new Rect(r.x, r.y + 32f, r.width, 30f), "Choose a circle or a section, then click a rune to write it there. Point at a rune to read it.");
             Text.Font = GameFont.Tiny;
             float tx = r.x;
             for (int i = 0; i < Tabs.Length; i++)
@@ -132,26 +136,27 @@ namespace Avir.Magic
                 tx += w + 4f;
             }
             Text.Font = GameFont.Small;
-            const float cardH = 230f, encH = 34f;
+            const float cardH = 290f, encH = 34f;
             Rect list = new Rect(r.x, r.y + 94f, r.width, r.height - 94f - cardH - encH - 12f);
             List<RuneDef> runes = Shown();
             Rect view = new Rect(0f, 0f, list.width - 16f, runes.Count * 48f);
             RitualScroll.Begin(list, ref leftScroll, view);
             float y = 0f;
+            hovered = null;
             foreach (RuneDef rune in runes)
             {
                 Rect row = new Rect(0f, y, view.width, 46f);
+                if (Mouse.IsOver(row)) hovered = rune;
                 if (shown == rune && !RitualArt.Selected(row)) Widgets.DrawBoxSolid(row, new Color(Gold.r, Gold.g, Gold.b, 0.18f));
                 else if (Mouse.IsOver(row)) Widgets.DrawBoxSolid(row, new Color(1f, 0.9f, 0.6f, 0.14f));
-                GUI.color = rune.role == RuneRole.Element ? rune.color : Color.white;
-                GUI.DrawTexture(new Rect(row.x + 2f, row.y + 3f, 40f, 40f), rune.role == RuneRole.Element ? rune.Glow : FlowStyle.Pick(rune.Ink, rune.Glow), ScaleMode.ScaleToFit);
+                Glyph(new Rect(row.x + 2f, row.y + 3f, 40f, 40f), rune);
                 GUI.color = Ink;
                 ArtInk.Label(new Rect(row.x + 48f, row.y + 3f, row.width - 50f, 22f), rune.LabelCap);
                 Text.Font = GameFont.Tiny; GUI.color = InkSoft;
                 ArtInk.Label(new Rect(row.x + 48f, row.y + 24f, row.width - 50f, 20f), Role(rune));
                 Text.Font = GameFont.Small;
-                if (DoubleClicked(row)) { Write(rune); Event.current.Use(); }
-                else if (Widgets.ButtonInvisible(row)) shown = rune;
+                // one click writes into the chosen place (the second click of a double one writes nothing more)
+                if (Widgets.ButtonInvisible(row) && Time.realtimeSinceStartup - lastWrite > 0.35f) { Write(rune); lastWrite = Time.realtimeSinceStartup; }
                 y += 48f;
             }
             Widgets.EndScrollView();
@@ -176,38 +181,37 @@ namespace Avir.Magic
         {
             if (RitualArt.HasCard) RitualArt.CardAt(r); else Widgets.DrawBoxSolid(r, new Color(0.95f, 0.88f, 0.7f, 0.9f));
             Rect c = r.ContractedBy(14f);
-            RuneDef rune = shown;
+            RuneDef rune = hovered ?? shown;
             if (rune == null)
             {
                 GUI.color = InkSoft; Text.Font = GameFont.Small;
-                ArtInk.Label(c, "Click a rune on the list to read what it does - and what it does with each element.");
+                ArtInk.Label(c, "Point at a rune on the list to read what it does - and what it does with each element.");
                 return;
             }
-            GUI.color = rune.role == RuneRole.Element ? rune.color : Ink;
-            GUI.DrawTexture(new Rect(c.x, c.y, 40f, 40f), rune.role == RuneRole.Element ? rune.Glow : FlowStyle.Pick(rune.Ink, rune.Glow), ScaleMode.ScaleToFit);
+            Glyph(new Rect(c.x, c.y, 40f, 40f), rune);
             GUI.color = Ink; Text.Font = GameFont.Medium;
             ArtInk.Label(new Rect(c.x + 48f, c.y - 2f, c.width - 48f, 30f), rune.LabelCap);
-            Text.Font = GameFont.Tiny; GUI.color = InkSoft;
-            ArtInk.Label(new Rect(c.x + 48f, c.y + 26f, c.width - 48f, 18f), Role(rune));
+            Text.Font = GameFont.Small; GUI.color = InkSoft;
+            ArtInk.Label(new Rect(c.x + 48f, c.y + 26f, c.width - 48f, 22f), Role(rune));
             string text = RitualText.Desc(rune);
-            float y = c.y + 48f;
-            float th = Mathf.Min(70f, Text.CalcHeight(text, c.width));
+            float y = c.y + 50f;
+            float th = Mathf.Min(96f, Text.CalcHeight(text, c.width));
             GUI.color = Ink;
             ArtInk.Label(new Rect(c.x, y, c.width, th), text);
             y += th + 6f;
             GUI.color = new Color(0.66f, 0.27f, 0.1f);
-            ArtInk.Label(new Rect(c.x, y, c.width, 18f), "WITH EACH ELEMENT");
-            y += 18f;
+            ArtInk.Label(new Rect(c.x, y, c.width, 22f), "WITH EACH ELEMENT");
+            y += 22f;
             foreach (string el in new[] { "Fire", "Water", "Earth", "Air" })
             {
-                if (y > c.yMax - 14f) break;
+                if (y > c.yMax - 18f) break;
                 RuneDef e = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + el);
                 GUI.color = e?.color ?? Color.white;
-                if (e != null) GUI.DrawTexture(new Rect(c.x, y, 16f, 16f), e.Glow, ScaleMode.ScaleToFit);
+                if (e != null) Glyph(new Rect(c.x, y, 20f, 20f), e);
                 bool made = el == "Fire";
                 GUI.color = made ? Ink : InkSoft;
-                ArtInk.Label(new Rect(c.x + 22f, y, c.width - 22f, 18f), el + " - " + (made ? FireLine(rune) : "not made yet"));
-                y += 18f;
+                ArtInk.Label(new Rect(c.x + 26f, y, c.width - 26f, 22f), el + " - " + (made ? FireLine(rune) : "not made yet"));
+                y += 22f;
             }
             Text.Font = GameFont.Small;
         }
@@ -250,6 +254,11 @@ namespace Avir.Magic
                 if (sel.inner.Count > 0 && !SpellCircle.GreatElement(rune))
                 {
                     Messages.Message("A small element cannot wrap circles - only Life, Light, Time, Space or Darkness can.", MessageTypeDefOf.RejectInput, false);
+                    return;
+                }
+                if (SpellCircle.GreatElement(rune) && !sel.Great && s.weave.GreatCount >= SpellCircle.MaxGreat)
+                {
+                    Messages.Message("A spell holds at most " + SpellCircle.MaxGreat + " great circles.", MessageTypeDefOf.RejectInput, false);
                     return;
                 }
                 sel.element = rune;
@@ -352,11 +361,22 @@ namespace Avir.Magic
             s.name = Widgets.TextField(nameR.ContractedBy(2f), s.name, 48);
             GUI.color = Color.white;
 
-            const float controls = 116f;
+            const float controls = 156f;
             Rect area = new Rect(r.x, r.y + 38f, r.width, r.height - 38f - controls - 8f);
             Node root = Measure(s.weave);
             float fit = Mathf.Min(area.width, area.height) * 0.47f / (root.R * 1.16f);
-            view.Handle(area, area.center, root.R * 1.16f * fit);
+            // a circle asked to be brought close: zoomed until it fills the view, moved to its centre
+            if (focus != null)
+            {
+                if (Locate(root, focus, Vector2.zero, out Vector2 off, out Node hit))
+                {
+                    view.zoom = Mathf.Clamp(Mathf.Min(area.width, area.height) * 0.46f / (hit.R * 1.12f * fit), RitualView.Min, view.max);
+                    view.pan = view.zoom <= 1.001f && hit == root ? Vector2.zero : -off * fit * view.zoom;
+                }
+                focus = null;
+            }
+            Rect outlineR = new Rect(area.x + 8f, area.y + 28f, Mathf.Min(250f, area.width * 0.3f), Mathf.Min(area.height * 0.6f, 24f + 22f * s.weave.All().Count()));
+            if (!Mouse.IsOver(outlineR)) view.Handle(area, area.center, root.R * 1.16f * fit);
             scale = fit * view.zoom;
 
             GUI.BeginGroup(area);
@@ -368,14 +388,67 @@ namespace Avir.Magic
             plates.Clear(); placed.Clear();
             DrawAt(c, root.R * 1.14f * scale, Tex(ref frame, "UI/Avir/Herald/PathRing"), new Color(ColorOf(root.c).r, ColorOf(root.c).g, ColorOf(root.c).b, 0.4f));
             DrawNode(root, c);
-            HandleClicks(local);
+            Rect outlineLocal = new Rect(outlineR.x - area.x, outlineR.y - area.y, outlineR.width, outlineR.height);
+            DrawOutline(outlineLocal);
+            if (!Mouse.IsOver(outlineLocal)) HandleClicks(local);
             GUI.color = new Color(0.94f, 0.9f, 0.82f, 0.85f); Text.Font = GameFont.Tiny;
-            Widgets.Label(new Rect(10f, local.height - 22f, local.width - 20f, 20f), "wheel - zoom · drag - move · click a circle or section to choose it · click a rune in the circle to rub it out");
+            Widgets.Label(new Rect(10f, local.height - 22f, local.width - 20f, 20f), "wheel - zoom · drag - move · click a circle or a section to choose it · double-click a circle to bring it close · click a rune of the chosen section to rub it out");
             Widgets.Label(new Rect(10f, 6f, local.width - 20f, 20f), Chosen());
             Text.Font = GameFont.Small;
             GUI.EndGroup();
             GUI.color = new Color(Gold.r, Gold.g, Gold.b, 0.7f); Widgets.DrawBox(area, 2); GUI.color = Color.white;
             DrawControls(new Rect(r.x, area.yMax + 8f, r.width, controls));
+        }
+
+        /// <summary>Where a circle stands from the spell's centre (unscaled), and its measure.</summary>
+        private static bool Locate(Node n, SpellCircle target, Vector2 at, out Vector2 off, out Node hit)
+        {
+            if (n.c == target) { off = at; hit = n; return true; }
+            for (int i = 0; i < n.kids.Count; i++)
+                if (Locate(n.kids[i], target, at + n.at[i], out off, out hit)) return true;
+            off = Vector2.zero; hit = null;
+            return false;
+        }
+
+        private static string NameOf(SpellCircle c) =>
+            (c.Great ? "Great: " : "") + (c.element != null ? c.element.LabelCap.ToString() : "empty circle") + (c.inner.Count > 0 ? " (" + c.inner.Count + " inside)" : "");
+
+        /// <summary>Every circle of the spell as a list: click to choose it, double-click to bring it close.</summary>
+        private void DrawOutline(Rect r)
+        {
+            var rows = new List<KeyValuePair<SpellCircle, int>>();
+            void Walk(SpellCircle c, int depth) { rows.Add(new KeyValuePair<SpellCircle, int>(c, depth)); foreach (SpellCircle k in c.inner) Walk(k, depth + 1); }
+            Walk(s.weave, 0);
+            Widgets.DrawBoxSolid(r, new Color(0.05f, 0.04f, 0.10f, 0.72f));
+            GUI.color = new Color(Gold.r, Gold.g, Gold.b, 0.6f); Widgets.DrawBox(r, 1);
+            Text.Font = GameFont.Tiny; GUI.color = new Color(0.95f, 0.88f, 0.7f);
+            Widgets.Label(new Rect(r.x + 6f, r.y + 3f, r.width - 12f, 20f), "Circles: " + s.weave.GreatCount + "/" + SpellCircle.MaxGreat + " great · " + s.weave.SmallCount + "/" + SpellCircle.MaxSmall + " small");
+            Rect list = new Rect(r.x, r.y + 22f, r.width, r.height - 24f);
+            Rect inner = new Rect(0f, 0f, list.width - 16f, rows.Count * 22f);
+            Widgets.BeginScrollView(list, ref outlineScroll, inner);
+            float y = 0f;
+            foreach (var kv in rows)
+            {
+                SpellCircle c = kv.Key;
+                Rect row = new Rect(0f, y, inner.width, 22f);
+                if (c == sel) Widgets.DrawBoxSolid(row, new Color(Gold.r, Gold.g, Gold.b, 0.35f));
+                else if (Mouse.IsOver(row)) Widgets.DrawBoxSolid(row, new Color(1f, 1f, 1f, 0.12f));
+                Rect g = new Rect(row.x + 4f + 14f * kv.Value, row.y + 2f, 18f, 18f);
+                if (c.element != null) { GUI.color = Light(c.element.color, 0.2f); GUI.DrawTexture(g, c.element.Glow, ScaleMode.ScaleToFit); }
+                else { GUI.color = new Color(1f, 1f, 1f, 0.5f); GUI.DrawTexture(g, Ring(ref dashed, 0.88f, true)); }
+                GUI.color = c == sel ? Color.white : new Color(0.92f, 0.86f, 0.74f);
+                Widgets.Label(new Rect(g.xMax + 4f, row.y + 3f, row.width - g.xMax - 4f, 20f), NameOf(c));
+                if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && Mouse.IsOver(row))
+                {
+                    if (Event.current.clickCount == 2) focus = c;
+                    sel = c; section = -1;
+                    SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
+                    Event.current.Use();
+                }
+                y += 22f;
+            }
+            Widgets.EndScrollView();
+            Text.Font = GameFont.Small; GUI.color = Color.white;
         }
 
         private string Chosen()
@@ -454,7 +527,7 @@ namespace Avir.Magic
                 DrawAt(p, r, Ring(ref outline, 0.86f), Light(col, 0.35f));
                 GUI.color = rune.role == RuneRole.Element ? Light(rune.color, 0.25f) : Light(col, 0.3f);
                 GUI.DrawTexture(box.ContractedBy(r * 0.22f), rune.Glow, ScaleMode.ScaleToFit);
-                if (Mouse.IsOver(box)) { DrawAt(p, r, Ring(ref disc, 0f), new Color(0.8f, 0.2f, 0.15f, 0.35f)); TooltipHandler.TipRegion(box, rune.LabelCap + "\n\nClick to rub it out."); }
+                if (Mouse.IsOver(box)) { DrawAt(p, r, Ring(ref disc, 0f), new Color(0.8f, 0.2f, 0.15f, 0.35f)); TooltipHandler.TipRegion(box, rune.LabelCap + "\n\nClick to choose its section; click again to rub it out."); }
             }
             else DrawAt(p, r * 0.92f, Ring(ref dashed, 0.88f, true), Light(col, 0.4f));
             plates.Add(new KeyValuePair<Rect, Hit>(box, hit));
@@ -464,6 +537,12 @@ namespace Avir.Magic
         private void HandleClicks(Rect local)
         {
             Event e = Event.current;
+            // a double click brings the circle under the mouse close
+            if (e.type == EventType.MouseDown && e.button == 0 && e.clickCount == 2 && Mouse.IsOver(local))
+            {
+                for (int i = placed.Count - 1; i >= 0; i--)
+                    if ((e.mousePosition - placed[i].Value).magnitude / scale <= placed[i].Key.R) { focus = placed[i].Key.c; sel = focus; e.Use(); return; }
+            }
             if (e.type != EventType.MouseUp || e.button != 0 || view.dragged || !Mouse.IsOver(local)) return;
             Vector2 m = e.mousePosition;
             SpellCircle prevSel = sel; int prevSection = section;
@@ -474,7 +553,7 @@ namespace Avir.Magic
                 Hit h = plates[i].Value;
                 sel = h.c; section = h.section;
                 if (h.section < 0 && h.c.element != null && sel == h.c && prevSel == h.c && prevSection < 0) { h.c.element = null; SoundDefOf.Tick_Low.PlayOneShotOnCamera(); }
-                else if (h.ring != null && h.rune >= 0) { h.ring.runes.RemoveAt(h.rune); SoundDefOf.Tick_Low.PlayOneShotOnCamera(); }
+                else if (h.ring != null && h.rune >= 0 && prevSel == h.c && prevSection == h.section) { h.ring.runes.RemoveAt(h.rune); SoundDefOf.Tick_Low.PlayOneShotOnCamera(); }
                 else SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
                 e.Use();
                 return;
@@ -509,13 +588,17 @@ namespace Avir.Magic
         {
             float half = (r.width - 12f) / 2f, y = r.y;
             int wraps = Wraps();
+            int greats = s.weave.GreatCount, smalls = s.weave.SmallCount;
+            bool roomGreat = greats < SpellCircle.MaxGreat;
             Stepper(new Rect(r.x, y, half, 30f), "Great circles round it", wraps, SpellCircle.MaxWraps, 0,
                 () => { if (s.weave.inner.Count == 1) { s.weave = s.weave.inner[0]; sel = s.weave; section = -1; } },
-                () => { var g = new SpellCircle { sections = { new RitualRing { slots = 3 } } }; g.inner.Add(s.weave); s.weave = g; sel = g; section = -1; });
-            bool canHold = sel.element == null || SpellCircle.GreatElement(sel.element);
-            Stepper(new Rect(r.x + half + 12f, y, half, 30f), "Circles inside", sel.inner.Count, canHold ? SpellCircle.MaxInner : sel.inner.Count, 0,
+                () => { var g = new SpellCircle { sections = { new RitualRing { slots = 3 } } }; g.inner.Add(s.weave); s.weave = g; sel = g; section = -1; }, roomGreat);
+            // a circle may take one more inside while the whole spell has room: a small one more, and a great one more if this one becomes great
+            bool canHold = (sel.element == null || SpellCircle.GreatElement(sel.element)) && smalls < SpellCircle.MaxSmall + (sel.Great ? 0 : 1)
+                           && (sel.Great || roomGreat) && sel.inner.Count < SpellCircle.MaxInner;
+            Stepper(new Rect(r.x + half + 12f, y, half, 30f), "Circles inside", sel.inner.Count, SpellCircle.MaxInner, 0,
                 () => { sel.inner.RemoveAt(sel.inner.Count - 1); },
-                () => { var k = NewCircle(); sel.inner.Add(k); });
+                () => { var k = NewCircle(); sel.inner.Add(k); }, canHold);
             if (!s.weave.All().Contains(sel)) { sel = s.weave; section = -1; }
             y += 36f;
             string name = sel.element != null ? sel.element.label : "circle";
@@ -530,22 +613,34 @@ namespace Avir.Magic
                     () => cur.slots = cur.Slots + 1);
             }
             else { GUI.color = InkSoft; Text.Anchor = TextAnchor.MiddleCenter; ArtInk.Label(new Rect(r.x + half + 12f, y, half, 30f), "choose a section for its slots"); Text.Anchor = TextAnchor.UpperLeft; }
-            y += 40f;
+            y += 36f;
+            // where a clicked rune goes: the centre (its element) or one of the sections
+            Text.Font = GameFont.Tiny;
+            GUI.color = Ink; Text.Anchor = TextAnchor.MiddleLeft;
+            ArtInk.Label(new Rect(r.x, y, 90f, 30f), "Write into:");
+            Text.Anchor = TextAnchor.UpperLeft;
+            float cx = r.x + 92f;
+            if (Button(new Rect(cx, y, 70f, 30f), "Centre", true, section < 0)) section = -1;
+            cx += 74f;
+            for (int i = 0; i < sel.sections.Count; i++)
+            {
+                if (Button(new Rect(cx, y, 84f, 30f), "Section " + (i + 1), true, section == i)) section = i;
+                cx += 88f;
+            }
+            Text.Font = GameFont.Small;
+            y += 38f;
             float w = (r.width - 16f) / 3f;
             if (Button(new Rect(r.x, y, w, 34f), "Rub out all", true)) { s.weave = NewCircle(); sel = s.weave; section = -1; }
-            if (Button(new Rect(r.x + w + 8f, y, w, 34f), "Examples...", true))
-                Find.WindowStack.Add(new FloatMenu(SpellExamples.Fire().Select(ex => new FloatMenuOption(ex.name, () =>
-                {
-                    s.name = ex.name; s.weave = ex.weave.Copy(); sel = s.weave; section = -1;
-                })).ToList()));
+            if (Button(new Rect(r.x + w + 8f, y, w, 34f), "Bring the chosen circle close", true)) focus = sel;
             if (Button(new Rect(r.x + 2f * (w + 8f), y, w, 34f), "Reset the view", view.Changed)) view.Reset();
         }
 
-        private static void Stepper(Rect r, string label, int value, int max, int min, System.Action less, System.Action more)
+        private static void Stepper(Rect r, string label, int value, int max, int min, System.Action less, System.Action more, bool room = true)
         {
             Rect minus = new Rect(r.x, r.y, 30f, r.height), plus = new Rect(r.xMax - 30f, r.y, 30f, r.height);
             if (Button(minus, "-", value > min)) less();
-            if (Button(plus, "+", value < max)) more();
+            if (Button(plus, "+", value < max && room)) more();
+            if (value < max && !room) TooltipHandler.TipRegion(plus, "The spell is full: at most " + SpellCircle.MaxGreat + " great and " + SpellCircle.MaxSmall + " small circles in all.");
             GUI.color = Ink; Text.Anchor = TextAnchor.MiddleCenter;
             ArtInk.Label(new Rect(minus.xMax, r.y, r.width - 60f, r.height), label + ": " + value + " of " + max);
             Text.Anchor = TextAnchor.UpperLeft;
@@ -609,6 +704,20 @@ namespace Avir.Magic
         }
 
         // ================================================================== helpers
+
+        /// <summary>A rune's glyph; an element's on a dark disc, so pale ones (light, time, life) read on the parchment.</summary>
+        private static void Glyph(Rect g, RuneDef rune)
+        {
+            if (rune.role == RuneRole.Element)
+            {
+                GUI.color = new Color(0.10f, 0.07f, 0.12f, 0.88f);
+                GUI.DrawTexture(g, RitualTex.Disc, ScaleMode.StretchToFill);
+                GUI.color = Light(rune.color, 0.15f);
+                GUI.DrawTexture(g.ContractedBy(g.width * 0.12f), rune.Glow, ScaleMode.ScaleToFit);
+            }
+            else { GUI.color = Color.white; GUI.DrawTexture(g, FlowStyle.Pick(rune.Ink, rune.Glow), ScaleMode.ScaleToFit); }
+            GUI.color = Color.white;
+        }
 
         private static bool DoubleClicked(Rect r) =>
             Event.current.type == EventType.MouseDown && Event.current.button == 0 && Event.current.clickCount == 2 && Mouse.IsOver(r);
