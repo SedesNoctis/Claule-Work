@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- ===== the gift: the trait keeps the memory of the core ===== -->
+  <TraitDef>
+    <defName>Avir_ArcaneGift</defName>
+    <commonality>0</commonality>
+    <degreeDatas>
+      <li>
+        <label>mage</label>
+        <description>[PAWN_nameDef] was not born with magic - [PAWN_pronoun] took it in, through rituals or long years near living magic. Such mages learn their runes from books and keep them there; they hold more, and cast slower. An arcane core sits in [PAWN_possessive] brain, and the gift remembers it: should the core be lost, it grows back.</description>
+        <degree>1</degree>
+      </li>
+      <li>
+        <label>sorcerer</label>
+        <description>[PAWN_nameDef] was born with magic. Some runes of [PAWN_possessive] own path come to [PAWN_objective] without study, and [PAWN_pronoun] casts quickly - best within that path. An arcane core sits in [PAWN_possessive] brain, and the gift remembers it: should the core be lost, it grows back.</description>
+        <degree>2</degree>
+      </li>
+    </degreeDatas>
+  </TraitDef>
+
+  <!-- ===== the core: where the Arcana is held ===== -->
+  <HediffDef>
+    <defName>Avir_ArcaneCore</defName>
+    <label>arcane core</label>
+    <description>The seat of a mage's magic in the brain. It holds the Arcana; the stronger the core, the more it holds. Held well, the Arcana sits between two edges: too much, and it presses outwards and swells the mage's sense of greatness; too little, and the mage grows hollow and weak - though never quite ordinary again.</description>
+    <hediffClass>Avir.Magic.Hediff_ArcaneCore</hediffClass>
+    <defaultLabelColor>(0.62, 0.48, 0.95)</defaultLabelColor>
+    <isBad>false</isBad>
+    <makesSickThought>false</makesSickThought>
+    <everCurableByItem>false</everCurableByItem>
+    <keepOnBodyPartRestoration>true</keepOnBodyPartRestoration>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_ArcaneGreatness</defName>
+    <label>greatness</label>
+    <description>Arcana held past what the mage can bear presses outwards - and inwards, into the mind: a growing certainty of being more than everyone else. It fades while the Arcana sits within its edges. The greater it grows, the more work the mage holds beneath them: first cleaning, then hauling and the fields, at last all plain labour and mining.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.95, 0.78, 0.35)</defaultLabelColor>
+    <isBad>true</isBad>
+    <initialSeverity>0.05</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <stages>
+      <li>
+        <label>a sense of it</label>
+        <minSeverity>0</minSeverity>
+        <disabledWorkTags><li>Cleaning</li></disabledWorkTags>
+      </li>
+      <li>
+        <label>swelling</label>
+        <minSeverity>0.35</minSeverity>
+        <socialFightChanceFactor>1.5</socialFightChanceFactor>
+        <disabledWorkTags><li>Cleaning</li><li>Hauling</li><li>PlantWork</li></disabledWorkTags>
+      </li>
+      <li>
+        <label>blinded by own power</label>
+        <minSeverity>0.7</minSeverity>
+        <socialFightChanceFactor>2.5</socialFightChanceFactor>
+        <disabledWorkTags><li>Cleaning</li><li>Hauling</li><li>PlantWork</li><li>ManualDumb</li><li>Mining</li></disabledWorkTags>
+        <capMods>
+          <li><capacity>Talking</capacity><offset>-0.1</offset></li>
+        </capMods>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_ArcaneHollow</defName>
+    <label>arcane hollowness</label>
+    <description>Too little Arcana for the core that holds it: the mage feels emptied, slow of mind and body. It passes once the Arcana is filled back within its edges.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.55, 0.55, 0.7)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <stages>
+      <li>
+        <label>slight</label>
+        <minSeverity>0</minSeverity>
+        <capMods><li><capacity>Consciousness</capacity><offset>-0.05</offset></li></capMods>
+      </li>
+      <li>
+        <label>hollow</label>
+        <minSeverity>0.4</minSeverity>
+        <capMods>
+          <li><capacity>Consciousness</capacity><offset>-0.12</offset></li>
+          <li><capacity>Moving</capacity><offset>-0.05</offset></li>
+        </capMods>
+      </li>
+      <li>
+        <label>emptied</label>
+        <minSeverity>0.8</minSeverity>
+        <capMods>
+          <li><capacity>Consciousness</capacity><offset>-0.2</offset></li>
+          <li><capacity>Moving</capacity><offset>-0.1</offset></li>
+        </capMods>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <ThoughtDef>
+    <defName>Avir_ThoughtGreatness</defName>
+    <workerClass>Avir.Magic.ThoughtWorker_Greatness</workerClass>
+    <stages>
+      <li><label>a sense of greatness</label><description>There is more to me than to them. I can feel it.</description><baseMoodEffect>3</baseMoodEffect></li>
+      <li><label>swelling greatness</label><description>They are so small. Why do they not see it?</description><baseMoodEffect>6</baseMoodEffect></li>
+      <li><label>blinded by my own power</label><description>Everything bends to me. Everything should.</description><baseMoodEffect>10</baseMoodEffect></li>
+    </stages>
+  </ThoughtDef>
+
+  <ThoughtDef>
+    <defName>Avir_ThoughtHollow</defName>
+    <workerClass>Avir.Magic.ThoughtWorker_Hollow</workerClass>
+    <stages>
+      <li><label>arcana running low</label><description>Something is missing. I need to fill it.</description><baseMoodEffect>-3</baseMoodEffect></li>
+      <li><label>hollow</label><description>I am empty. Ordinary. I cannot bear it.</description><baseMoodEffect>-8</baseMoodEffect></li>
+      <li><label>emptied of arcana</label><description>Nothing left. I need it back - now.</description><baseMoodEffect>-14</baseMoodEffect></li>
+    </stages>
+  </ThoughtDef>
+
+  <!-- ===== breakdowns ===== -->
+  <MentalStateDef>
+    <defName>Avir_ArcaneOverflow</defName>
+    <stateClass>Avir.Magic.MentalState_ArcaneOverflow</stateClass>
+    <label>arcane overflow</label>
+    <category>Misc</category>
+    <baseInspectLine>Arcane overflow: pouring it out</baseInspectLine>
+    <beginLetterLabel>arcane overflow</beginLetterLabel>
+    <beginLetter>{0} holds more Arcana than [PAWN_pronoun] can bear. It pours out of [PAWN_objective] in pulses - anything near may be burnt - until it is down within its edges.</beginLetter>
+    <beginLetterDef>NegativeEvent</beginLetterDef>
+    <recoveryMessage>{0} has poured out enough Arcana and is calm again.</recoveryMessage>
+    <minTicksBeforeRecovery>99999999</minTicksBeforeRecovery>
+    <unspawnedNotInCaravanCanDo>false</unspawnedNotInCaravanCanDo>
+  </MentalStateDef>
+
+  <MentalStateDef>
+    <defName>Avir_ArcaneInflux</defName>
+    <stateClass>Avir.Magic.MentalState_ArcaneInflux</stateClass>
+    <label>arcane influx</label>
+    <category>Misc</category>
+    <baseInspectLine>Arcane influx: lost in own radiance</baseInspectLine>
+    <beginLetterLabel>arcane influx</beginLetterLabel>
+    <beginLetter>Too weak a hold on too much Arcana: it has turned inwards, into [PAWN_possessive] mind. {0} stands rapt in [PAWN_possessive] own power, and [PAWN_possessive] greatness swells, until the Arcana sinks back within its edges.</beginLetter>
+    <beginLetterDef>NegativeEvent</beginLetterDef>
+    <recoveryMessage>{0} has come back to [PAWN_objective]self.</recoveryMessage>
+    <minTicksBeforeRecovery>99999999</minTicksBeforeRecovery>
+    <unspawnedNotInCaravanCanDo>false</unspawnedNotInCaravanCanDo>
+  </MentalStateDef>
+
+</Defs>
