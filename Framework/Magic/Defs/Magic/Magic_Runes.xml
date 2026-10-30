@@ -4,7 +4,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Fire</defName>
     <label>fire</label>
-    <description>The element of fire. What the ritual or spell does, it does as fire: burning, heat, ash. Pure, it is fire as it is; in Avir hands, distorted, it mends what it touches.</description>
+    <description>Fire. It burns, heats and spreads: sets things alight, holds a fire that never spreads, takes the heat out of flames and keeps it, raises walls of flame, sears wounds shut, wards a friend against burning. Price - raging flame: if the mage loses the hold, fire keeps breaking out at their feet for a while.</description>
     <role>Element</role>
     <kind>Fire</kind>
     <glyph>Fire</glyph>
@@ -19,7 +19,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Water</defName>
     <label>water</label>
-    <description>The element of water, with cold and ice as its own branch (cryomancy). What is done, is done as water: wetting, pressing, cooling, quenching.</description>
+    <description>Water, with cold and ice as its branch. It wets, presses, cools and quenches. Its spells are not made yet. Price: not decided yet.</description>
     <role>Element</role>
     <kind>Water</kind>
     <glyph>Water</glyph>
@@ -34,7 +34,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Earth</defName>
     <label>earth</label>
-    <description>The element of earth: stone, soil, weight. What is done, is done as earth: binding, shielding, shaping the ground. With water, it mixes without distortion.</description>
+    <description>Earth: stone, soil, weight. It binds, shields and shapes the ground. Its spells are not made yet. Price: not decided yet.</description>
     <role>Element</role>
     <kind>Earth</kind>
     <glyph>Earth</glyph>
@@ -49,7 +49,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Air</defName>
     <label>air</label>
-    <description>The element of air: wind, breath, pressure. What is done, is done as air: pushing, carrying, choking, lifting.</description>
+    <description>Air: wind, breath, pressure. It pushes, carries, chokes and lifts. Its spells are not made yet. Price: not decided yet.</description>
     <role>Element</role>
     <kind>Air</kind>
     <glyph>Air</glyph>
@@ -64,7 +64,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Light</defName>
     <label>light</label>
-    <description>The element of light: radiance, purity, sight. What is done, is done as light: burning the wrong, revealing, blinding. With darkness - infinity.</description>
+    <description>Light: radiance and sight. A great element - its circle holds others. It burns the wrong, reveals and blinds. Its spells are not made yet. Price: not decided yet.</description>
     <role>Element</role>
     <kind>Light</kind>
     <glyph>Light</glyph>
@@ -79,7 +79,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Time</defName>
     <label>time</label>
-    <description>The element of time: ageing, slowing, foresight - the school of prediction and reckoning. With darkness - timelessness, where time runs wrong.</description>
+    <description>Time: ageing, slowing, foresight. A great element - its circle holds others. Its spells are not made yet. Price: not decided yet.</description>
     <role>Element</role>
     <kind>Time</kind>
     <glyph>Time</glyph>
@@ -94,7 +94,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Life</defName>
     <label>life</label>
-    <description>The element of life: moving the energy of one living thing into another - drained grass to mend a wound, a drained foe to a skeleton. Blood is its branch. With darkness - necromancy.</description>
+    <description>Life: moving the strength of one living thing into another - grass drained to mend a wound. Blood is its branch. A great element - its circle holds others: round other circles, it heals the friends the spell touches. Price: not decided yet.</description>
     <role>Element</role>
     <kind>Life</kind>
     <glyph>Life</glyph>
@@ -109,7 +109,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Darkness</defName>
     <label>darkness</label>
-    <description>The mark of the Labyrinthian, its pure energy: the touch on every living mind - illusion. Woven with another element, it distorts it; what comes of it depends on what it is woven with.</description>
+    <description>Darkness: interpretation - the touch on every living mind. Woven with another element, it distorts it; what comes of it depends on what it is woven with. A great element - its circle holds others. Its spells are not made yet. Price: not decided yet.</description>
     <role>Element</role>
     <kind>Darkness</kind>
     <glyph>Darkness</glyph>
@@ -124,7 +124,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Space</defName>
     <label>space</label>
-    <description>Space, the minor school of telekinesis: the room between the caster and the thing - its mass, its distance, the threads that catch it. It comes easily to those who fly.</description>
+    <description>Space: the room between the caster and the thing - its mass, its distance, the threads that catch it (telekinesis). A great element - its circle holds others. Its spells are not made yet. Price: not decided yet.</description>
     <role>Element</role>
     <kind>Space</kind>
     <glyph>Space</glyph>

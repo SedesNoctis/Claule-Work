@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- The Avir research tab: artifactorics and ritualistics, apart from the main tree (like Anomaly). -->
+  <ResearchTabDef>
+    <defName>Avir_Arts</defName>
+    <label>Stream arts</label>
+    <generalTitle>Artifactorics and stream ritualism</generalTitle>
+    <generalDescription>Artifactorics - the artifacts, their hearts and the buildings that hold them - and stream ritualism, the circles of runes that move the energies of the world. Not the Avir's alone: anyone who studies the stream can learn them. Researched at an ordinary research bench.</generalDescription>
+  </ResearchTabDef>
+
+  <!-- RITUALISTICS slice 1: research, the circles, the ritualism work, composure, hediffs.
+       Code: Source/Avir/Ritualistics. Concept: Ритуалистика-концепт.md. -->
+
+  <!-- ===== research: each step opens runes (RuneDef.research) ===== -->
+  <ResearchProjectDef>
+    <defName>Avir_Ritualism_Basic</defName>
+    <label>stream ritualism I: chalk and runes</label>
+    <description>Chalk circles and the first runes: filling, purging, safety, closing, anchor, breadth. Rituals of charging and cleansing.</description>
+    <baseCost>1000</baseCost>
+    <techLevel>Medieval</techLevel>
+    <tab>Avir_Arts</tab>
+    <prerequisites><li>Avir_BasicArtifactorics</li></prerequisites>
+    <researchViewX>1.5</researchViewX>
+    <researchViewY>2</researchViewY>
+  </ResearchProjectDef>
+
+  <ResearchProjectDef>
+    <defName>Avir_Ritualism_Standard</defName>
+    <label>stream ritualism II: memory and field</label>
+    <description>Transfer, holding, focus and amplification, reach, drawing out, lifting, growth: rituals of memory and of the field.</description>
+    <baseCost>1750</baseCost>
+    <techLevel>Medieval</techLevel>
+    <tab>Avir_Arts</tab>
+    <prerequisites><li>Avir_Ritualism_Basic</li><li>Avir_StandardArtifactorics</li></prerequisites>
+    <researchViewX>3</researchViewX>
+    <researchViewY>2</researchViewY>
+  </ResearchProjectDef>
+
+  <ResearchProjectDef>
+    <defName>Avir_Ritualism_Avir</defName>
+    <label>stream ritualism III: the great runes</label>
+    <description>The great runes: reforging, transmutation, release, barrier, thread.</description>
+    <baseCost>3500</baseCost>
+    <techLevel>Industrial</techLevel>
+    <tab>Avir_Arts</tab>
+    <prerequisites><li>Avir_Ritualism_Standard</li><li>Avir_AvirArtifactorics</li></prerequisites>
+    <researchViewX>4.5</researchViewX>
+    <researchViewY>2</researchViewY>
+  </ResearchProjectDef>
+
+  <!-- ===== the circles ===== -->
+
+  <ThingDef Name="Avir_RitualCircleBase" ParentName="BuildingBase" Abstract="True">
+    <thingClass>Building</thingClass>
+    <graphicData>
+      <texPath>Things/Building/Ritualistics/CircleBlank</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+    </graphicData>
+    <uiIconPath>UI/Ritualistics/Runes/Minor/Glow/Minor_Core</uiIconPath>
+    <altitudeLayer>FloorEmplacement</altitudeLayer>
+    <passability>Standable</passability>
+    <drawerType>RealtimeOnly</drawerType>
+    <useHitPoints>false</useHitPoints>
+    <tickerType>Rare</tickerType>
+    <rotatable>false</rotatable>
+    <clearBuildingArea>false</clearBuildingArea>
+    <building>
+      <isEdifice>false</isEdifice>
+      <ai_chillDestination>false</ai_chillDestination>
+      <!-- nothing attacks a drawing on the floor; an engraving is taken apart only by chiselling (CompRitualCircle) -->
+      <isTargetable>false</isTargetable>
+    </building>
+    <statBases>
+      <WorkToBuild>400</WorkToBuild>
+      <Beauty>2</Beauty>
+    </statBases>
+    <designationCategory>Avir_Arcana</designationCategory>
+    <researchPrerequisites><li>Avir_Ritualism_Basic</li></researchPrerequisites>
+    <placeWorkers><li>Avir.Ritualistics.PlaceWorker_RitualCircle</li></placeWorkers>
+  </ThingDef>
+
+  <ThingDef ParentName="Avir_RitualCircleBase">
+    <defName>Avir_RitualCircleSmall</defName>
+    <label>small ritual circle</label>
+    <description>A small circle of two rings in chalk. Enough for a single ritualist and a modest working. Rain under an open sky will take it away.</description>
+    <size>(3,3)</size>
+    <comps><li Class="Avir.Ritualistics.CompProperties_RitualCircle"><size>Small</size></li></comps>
+  </ThingDef>
+
+  <ThingDef ParentName="Avir_RitualCircleBase">
+    <defName>Avir_RitualCircleMedium</defName>
+    <label>medium ritual circle</label>
+    <description>A circle of three rings, wide enough for the workings of memory and holding - and for the Trap, which is not spoken of lightly.</description>
+    <size>(5,5)</size>
+    <comps><li Class="Avir.Ritualistics.CompProperties_RitualCircle"><size>Medium</size></li></comps>
+  </ThingDef>
+
+  <ThingDef ParentName="Avir_RitualCircleBase">
+    <defName>Avir_RitualCircleLarge</defName>
+    <label>large ritual circle</label>
+    <description>A great circle of four rings - drawn rarely, and only to change something for good.</description>
+    <size>(7,7)</size>
+    <researchPrerequisites><li>Avir_Ritualism_Standard</li></researchPrerequisites>
+    <comps><li Class="Avir.Ritualistics.CompProperties_RitualCircle"><size>Large</size></li></comps>
+  </ThingDef>
+
+  <!-- ===== the work ===== -->
+  <WorkTypeDef>
+    <defName>Avir_Ritualism</defName>
+    <labelShort>ritualism</labelShort>
+    <pawnLabel>Ritualist</pawnLabel>
+    <gerundLabel>drawing rituals</gerundLabel>
+    <description>Draw rituals into their circles. An artist alone cannot set them out, an intellectual alone cannot draw them well: both skills set the quality.</description>
+    <verb>Draw</verb>
+    <naturalPriority>560</naturalPriority>
+    <relevantSkills>
+      <li>Intellectual</li>
+      <li>Artistic</li>
+    </relevantSkills>
+    <workTags>
+      <li>Intellectual</li>
+      <li>Artistic</li>
+    </workTags>
+  </WorkTypeDef>
+
+  <WorkGiverDef>
+    <defName>Avir_DrawRitual</defName>
+    <label>draw rituals</label>
+    <giverClass>Avir.Ritualistics.WorkGiver_DrawRitual</giverClass>
+    <workType>Avir_Ritualism</workType>
+    <verb>draw</verb>
+    <gerund>drawing</gerund>
+    <priorityInType>50</priorityInType>
+    <requiredCapacities><li>Manipulation</li><li>Sight</li></requiredCapacities>
+  </WorkGiverDef>
+
+  <JobDef>
+    <defName>Avir_DrawRitual</defName>
+    <driverClass>Avir.Ritualistics.JobDriver_DrawRitual</driverClass>
+    <reportString>drawing a ritual into TargetA.</reportString>
+  </JobDef>
+
+  <!-- Removing a drawing: chalk is cleaned away by anyone, an engraving levelled by a constructor. -->
+  <WorkGiverDef>
+    <defName>Avir_EraseRitualChalk</defName>
+    <label>wipe away ritual chalk</label>
+    <giverClass>Avir.Ritualistics.WorkGiver_EraseRitualChalk</giverClass>
+    <workType>Cleaning</workType>
+    <verb>wipe</verb>
+    <gerund>wiping away</gerund>
+    <priorityInType>60</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+
+  <WorkGiverDef>
+    <defName>Avir_LevelEngraving</defName>
+    <label>level ritual engravings</label>
+    <giverClass>Avir.Ritualistics.WorkGiver_LevelEngraving</giverClass>
+    <workType>Construction</workType>
+    <verb>level</verb>
+    <gerund>levelling</gerund>
+    <priorityInType>40</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+
+  <WorkGiverDef>
+    <defName>Avir_FillRitualComponents</defName>
+    <label>lay ritual components</label>
+    <giverClass>Avir.Ritualistics.WorkGiver_FillRitualComponents</giverClass>
+    <workType>Hauling</workType>
+    <verb>lay</verb>
+    <gerund>laying</gerund>
+    <priorityInType>45</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+
+  <JobDef>
+    <defName>Avir_ClearRitualCircle</defName>
+    <driverClass>Avir.Ritualistics.JobDriver_ClearRitualCircle</driverClass>
+    <reportString>clearing the ritual circle TargetA.</reportString>
+  </JobDef>
+
+  <JobDef>
+    <defName>Avir_PerformRitual</defName>
+    <driverClass>Avir.Ritualistics.JobDriver_PerformRitual</driverClass>
+    <reportString>performing a ritual.</reportString>
+    <casualInterruptible>false</casualInterruptible>
+  </JobDef>
+
+  <!-- performed on its own, when the player allows it on the circle (Source/Avir/Ritualistics/RitualAuto.cs) -->
+  <WorkGiverDef>
+    <defName>Avir_AutoRitual</defName>
+    <label>perform rituals allowed to run on their own</label>
+    <giverClass>Avir.Ritualistics.WorkGiver_AutoRitual</giverClass>
+    <workType>Avir_Ritualism</workType>
+    <verb>perform</verb>
+    <gerund>performing</gerund>
+    <priorityInType>40</priorityInType>
+  </WorkGiverDef>
+
+  <JobDef>
+    <defName>Avir_PerformRitualAuto</defName>
+    <driverClass>Avir.Ritualistics.JobDriver_PerformRitualAuto</driverClass>
+    <reportString>performing a ritual.</reportString>
+    <casualInterruptible>false</casualInterruptible>
+  </JobDef>
+
+  <!-- ===== composure ===== -->
+  <StatDef>
+    <defName>Avir_Composure</defName>
+    <label>composure</label>
+    <description>How well a pawn holds the energies of a ritual. An unstable ritual against poor composure collapses - it burns the performer, at worst it blasts. Nerves (iron will, steadfastness) and a good mood raise it; a bad mood or a mental break bring it down. Above all it is practice: it grows with every ritual worked, slower and slower, without end - and each ritual worked tires it until sleep or meditation.</description>
+    <category>PawnMisc</category>
+    <defaultBaseValue>0.25</defaultBaseValue>
+    <minValue>0</minValue>
+    <toStringStyle>PercentZero</toStringStyle>
+    <showOnAnimals>false</showOnAnimals>
+    <showOnMechanoids>false</showOnMechanoids>
+    <displayPriorityInCategory>3100</displayPriorityInCategory>
+    <parts>
+      <li Class="Avir.Ritualistics.StatPart_Composure"/>
+    </parts>
+  </StatDef>
+
+  <!-- ===== hediffs ===== -->
+  <HediffDef>
+    <defName>Avir_RitualBacklash</defName>
+    <label>ritual backlash</label>
+    <defaultLabelColor>(0.85, 0.35, 0.60)</defaultLabelColor>
+    <description>The stream of a collapsing ritual burnt through this body: pain and a clouded mind, fading over days.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <initialSeverity>0.3</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay">
+        <severityPerDay>-0.25</severityPerDay>
+      </li>
+    </comps>
+    <stages>
+      <li><label>minor</label><painOffset>0.1</painOffset><capMods><li><capacity>Consciousness</capacity><offset>-0.05</offset></li></capMods></li>
+      <li><minSeverity>0.4</minSeverity><label>serious</label><painOffset>0.25</painOffset><capMods><li><capacity>Consciousness</capacity><offset>-0.15</offset></li></capMods></li>
+      <li><minSeverity>0.75</minSeverity><label>searing</label><painOffset>0.45</painOffset><capMods><li><capacity>Consciousness</capacity><offset>-0.3</offset></li></capMods></li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_RitualHeld</defName>
+    <label>held by a ritual</label>
+    <description>Caught in a ritual Trap: the cage of safety runes throws every attempt to leave back to its centre.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85, 0.45, 1)</defaultLabelColor>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_StormMantle</defName>
+    <label>storm mantle</label>
+    <description>The storm of an Eye ritual sealed into a living body. First it fills every artifact they wear; the rest wraps them in a dome of the gathered energy six cells wide. Every blow, shot and blast at them or at any friend under the dome is taken by it first; a foe who steps under the dome is struck by lightning again and again, and foes in sight beyond it are struck more slowly. It does not stop its bearer from shooting. It slowly bleeds away, in about a day, and each bolt and each blocked hit spends it.</description>
+    <hediffClass>Avir.Ritualistics.Hediff_StormMantle</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.75, 0.6, 1)</defaultLabelColor>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_StrengthDrained</defName>
+    <label>drained</label>
+    <description>A ritual drew every bit of strength out of this body. It cannot stand until it recovers, in about half a day.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <initialSeverity>1</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <defaultLabelColor>(0.55, 0.50, 0.65)</defaultLabelColor>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay"><severityPerDay>-2</severityPerDay></li>
+    </comps>
+    <stages>
+      <li><capMods><li><capacity>Consciousness</capacity><setMax>0.1</setMax></li></capMods></li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_StreamSaturation</defName>
+    <label>stream saturation</label>
+    <description>How much of the stream this one carries. A ritual that draws on them empties it; one that closes its energy in may leave them brimming. Brimming, they are psychically keener but steady a circle less well. Emptied, they are dull and have nothing left to give. Either way it settles back within half a day.</description>
+    <hediffClass>Avir.Ritualistics.Hediff_StreamSaturation</hediffClass>
+    <isBad>false</isBad>
+    <initialSeverity>1</initialSeverity>
+    <defaultLabelColor>(0.78, 0.55, 1.0)</defaultLabelColor>
+    <everCurableByItem>false</everCurableByItem>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_FlowPressure</defName>
+    <label>stream pressure</label>
+    <description>The map's external stream is so high it presses on a sensitive mind: headaches, a ringing, trouble thinking. It eases when the stream calms; a storm charm or shelter keeps it off.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <initialSeverity>0.1</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <defaultLabelColor>(0.70, 0.40, 0.85)</defaultLabelColor>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay"><severityPerDay>-0.6</severityPerDay></li>
+    </comps>
+    <stages>
+      <li><label>light</label><painOffset>0.05</painOffset><capMods><li><capacity>Consciousness</capacity><offset>-0.05</offset></li></capMods></li>
+      <li><minSeverity>0.4</minSeverity><label>heavy</label><painOffset>0.12</painOffset><capMods><li><capacity>Consciousness</capacity><offset>-0.12</offset></li></capMods></li>
+      <li><minSeverity>0.75</minSeverity><label>crushing</label><painOffset>0.25</painOffset><capMods><li><capacity>Consciousness</capacity><offset>-0.25</offset></li></capMods></li>
+    </stages>
+  </HediffDef>
+</Defs>

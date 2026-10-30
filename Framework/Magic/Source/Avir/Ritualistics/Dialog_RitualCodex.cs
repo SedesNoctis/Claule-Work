@@ -54,7 +54,7 @@ namespace Avir.Ritualistics
             { "Time", "Time. Ask nicely and it bends. Ask rudely and it ages you." },
             { "Life", "Life. Take from one, give to another. Someone always pays - make sure it isn't you." },
             { "Darkness", "Darkness. Every reading at once. Weave it into anything and see what it becomes - carefully." },
-            { "Space", "Space. Weigh it, catch it, pull. If you can fly, you already half know it." },
+            { "Space", "Space. Weigh it, catch it, pull. Start with a pebble, not a person." },
             { "Aura", "An aura. You, but louder - all around you." },
             { "Enchant", "Lay the element on a blade, a body, a friend. Not on yourself first, please." },
             { "Step", "A step. Getting from here to there without the boring part in between." },

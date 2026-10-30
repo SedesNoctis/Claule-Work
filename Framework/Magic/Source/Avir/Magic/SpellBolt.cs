@@ -50,6 +50,22 @@ namespace Avir.Magic
         public float power = 1f;
         public Color tint = Color.white;
         private bool Beam => def.defName == "Avir_SpellBeam";
+        private Material mat;
+
+        /// <summary>Its element's own art (Things/Projectile/Magic/Ball_Fire, Beam_Water...) when it is drawn; until then
+        /// the plain glow, in the element's colour.</summary>
+        public override Material DrawMat
+        {
+            get
+            {
+                if (mat != null) return mat;
+                RuneDef el = spell != null ? Spells.Element(spell) : null;
+                string own = el != null ? "Things/Projectile/Magic/" + (Beam ? "Beam_" : "Ball_") + el.kind : null;
+                if (own != null && ContentFinder<Texture2D>.Get(own, false) != null) mat = MaterialPool.MatFrom(own, ShaderDatabase.MoteGlow, Color.white);
+                else mat = MaterialPool.MatFrom(def.graphicData.texPath, ShaderDatabase.MoteGlow, el != null ? Color.Lerp(el.color, Color.white, 0.2f) : tint);
+                return mat;
+            }
+        }
 
         public override void ExposeData()
         {

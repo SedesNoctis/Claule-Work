@@ -377,6 +377,14 @@ namespace Avir.Magic
             var n = new Node { c = c };
             foreach (SpellCircle k in c.inner) n.kids.Add(Measure(k));
             int m = n.kids.Count;
+            if (c.binding && m == 1)
+            {
+                // a single circle is the spell itself - the mage stands in its centre; no rim, no heart round it
+                n.at.Add(Vector2.zero);
+                n.core = n.kids[0].R;
+                n.R = n.kids[0].R;
+                return n;
+            }
             if (c.binding)
             {
                 // the circles stand round the heart, as far out as the largest of them needs - none touching another
@@ -535,9 +543,10 @@ namespace Avir.Magic
 
         private void DrawNode(Node n, Vector2 c)
         {
-            placed.Add(new KeyValuePair<Node, Vector2>(n, c));
+            if (!(n.c.binding && n.kids.Count == 1)) placed.Add(new KeyValuePair<Node, Vector2>(n, c));
             Color col = ColorOf(n.c);
             float R = n.R * scale;
+            if (n.c.binding && n.kids.Count == 1) { DrawNode(n.kids[0], c); return; }
             if (n.c.binding)
             {
                 // the binding: a plain rim round everything, the heart in the middle where the mage stands,
@@ -816,8 +825,8 @@ namespace Avir.Magic
             float ph = EffectPlaque.Height(fx, r.width);
             EffectPlaque.Draw(new Rect(r.x, r.y + 40f, r.width, ph), fx, Spells.ColorOf(s));
             float y = r.y + 40f + ph + 10f;
-            float oh = Mathf.Min(r.yMax - 60f - y - 120f, 34f + 26f * OutlineRows().Count);
-            if (oh > 60f) { DrawOutline(new Rect(r.x, y, r.width, oh)); y += oh + 10f; }
+            float oh = Mathf.Max(64f, Mathf.Min(r.yMax - 60f - y - 120f, 40f + 26f * OutlineRows().Count));
+            DrawOutline(new Rect(r.x, y, r.width, oh)); y += oh + 10f;
             string line = ArlieLine();
             if (Arlia.On && !line.NullOrEmpty())
             {
@@ -840,9 +849,10 @@ namespace Avir.Magic
             void Walk(SpellCircle c, int depth)
             {
                 rows.Add(new KeyValuePair<SpellCircle, int>(c, depth));
-                if (!folded.Contains(c)) foreach (SpellCircle k in c.inner) Walk(k, depth + 1);
+                if (c.binding || !folded.Contains(c)) foreach (SpellCircle k in c.inner) Walk(k, depth + 1);
             }
-            Walk(s.weave, 0);
+            // one circle alone is the whole spell: the binding and the heart are not shown
+            if (s.weave.binding && s.weave.inner.Count == 1) Walk(s.weave.inner[0], 0); else Walk(s.weave, 0);
             return rows;
         }
 
@@ -866,7 +876,7 @@ namespace Avir.Magic
                 if (sc == sel) Widgets.DrawBoxSolid(row, new Color(Gold.r, Gold.g, Gold.b, 0.35f));
                 else if (Mouse.IsOver(row)) Widgets.DrawBoxSolid(row, new Color(1f, 0.9f, 0.6f, 0.18f));
                 float x = 4f + 18f * kv.Value;
-                if (sc.inner.Count > 0)
+                if (sc.inner.Count > 0 && !sc.binding)
                 {
                     Rect fold = new Rect(x, row.y + 4f, 18f, 18f);
                     GUI.color = Ink; Text.Anchor = TextAnchor.MiddleCenter;
