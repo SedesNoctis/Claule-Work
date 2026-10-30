@@ -107,7 +107,7 @@ namespace Avir.Ritualistics
         public enum Shape { None, Diamond, Shield, Circle }
         public Shape shape = Shape.Circle;
         public RuneDef main, second;
-        public Color plate = new Color(0.12f, 0.08f, 0.14f), rim = new Color(0.95f, 0.86f, 0.6f), glyph = Color.white, glyph2 = new Color(0.95f, 0.86f, 0.6f);
+        public Color plate = Color.white, rim = Color.white, glyph = new Color(0.12f, 0.08f, 0.14f), glyph2 = new Color(0.12f, 0.08f, 0.14f);
 
         public SpellIcon Copy() => new SpellIcon { shape = shape, main = main, second = second, plate = plate, rim = rim, glyph = glyph, glyph2 = glyph2 };
 
@@ -118,7 +118,7 @@ namespace Avir.Ritualistics
             Scribe_Defs.Look(ref second, "second");
             Scribe_Values.Look(ref plate, "plate");
             Scribe_Values.Look(ref rim, "rim");
-            Scribe_Values.Look(ref glyph, "glyph", Color.white);
+            Scribe_Values.Look(ref glyph, "glyph");
             Scribe_Values.Look(ref glyph2, "glyph2");
         }
     }

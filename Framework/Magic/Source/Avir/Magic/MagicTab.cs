@@ -3,6 +3,7 @@ using System.Linq;
 using RimWorld;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 using Avir.Artifactorics;
 using Avir.Ritualistics;
 
@@ -89,7 +90,7 @@ namespace Avir.Magic
             Rect mid = new Rect(left.xMax + 16f, inner.y, inner.width - lw - rw - 32f, inner.height);
             RitualArt.Panel(left.ExpandedBy(6f)); RitualArt.Panel(mid.ExpandedBy(6f)); RitualArt.Panel(right.ExpandedBy(6f));
             if (RitualArt.HasPanel) { left = left.ContractedBy(10f); mid = mid.ContractedBy(10f); right = right.ContractedBy(10f); }
-            DrawMage(left, core);
+            if (runeShown != null) DrawRuneCard(left, runeShown); else DrawMage(left, core);
             DrawSpells(mid);
             DrawRunes(right);
             GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft; Text.Font = GameFont.Small;
@@ -141,7 +142,7 @@ namespace Avir.Magic
             Heading(ref y, w, "Path");
             if (core.path != null)
             {
-                SpellGlyph.Draw(new Rect(0f, y, 40f, 40f), core.path.Glow, core.path.color);
+                SpellGlyph.Draw(new Rect(0f, y, 40f, 40f), core.path);
                 int own = core.Book.spells.Count(sp => Spells.Element(sp) == core.path);
                 Line(new Rect(48f, y, w - 48f, 44f), core.path.LabelCap + " - the mage's element. Spells of it in the book: " + own + ".", Ink);
                 y += 48f;
@@ -342,6 +343,39 @@ namespace Avir.Magic
             Widgets.EndScrollView();
         }
 
+        private RuneDef runeShown;
+
+        /// <summary>The left column given to a rune pressed on the right: what it is, and what it does with each element.</summary>
+        private void DrawRuneCard(Rect r, RuneDef rn)
+        {
+            SpellGlyph.Draw(new Rect(r.x, r.y, 64f, 64f), rn);
+            GUI.color = Ink; Text.Font = GameFont.Medium;
+            Widgets.Label(new Rect(r.x + 76f, r.y + 4f, r.width - 76f, 34f), rn.LabelCap);
+            Text.Font = GameFont.Small; GUI.color = InkSoft;
+            Widgets.Label(new Rect(r.x + 76f, r.y + 38f, r.width - 76f, 24f), rn.role == RuneRole.Element ? (SpellCircle.GreatElement(rn) ? "great element - wraps other circles" : "small element") : rn.role.ToString().ToLower());
+            float y = r.y + 76f;
+            GUI.color = Ink;
+            string desc = RitualText.Desc(rn);
+            float h = Text.CalcHeight(desc, r.width);
+            Widgets.Label(new Rect(r.x, y, r.width, h), desc);
+            y += h + 14f;
+            GUI.color = SpellGlyph.Ink(new Color(0.9f, 0.6f, 0.2f));
+            Widgets.Label(new Rect(r.x, y, r.width, 24f), "WITH EACH ELEMENT");
+            y += 28f;
+            foreach (string el in new[] { "Fire", "Water", "Earth", "Air" })
+            {
+                RuneDef e = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + el);
+                if (e != null) SpellGlyph.Draw(new Rect(r.x, y, 24f, 24f), e);
+                bool made = el == "Fire";
+                GUI.color = made ? Ink : InkSoft;
+                string line = el + " - " + (made ? Dialog_SpellEditor.FireLine(rn) : "not made yet");
+                float lh = Text.CalcHeight(line, r.width - 32f);
+                Widgets.Label(new Rect(r.x + 32f, y, r.width - 32f, lh), line);
+                y += Mathf.Max(28f, lh + 4f);
+            }
+            if (RitualUI.Button(new Rect(r.x, r.yMax - 40f, r.width, 38f), "Back to " + pawn.LabelShort)) runeShown = null;
+        }
+
         private void DrawRunes(Rect r)
         {
             GUI.color = Ink; Text.Font = GameFont.Medium;
@@ -354,20 +388,17 @@ namespace Avir.Magic
             float y = 0f;
             foreach (RuneDef rn in runes)
             {
-                if (rn.role == RuneRole.Element)
-                {
-                    GUI.color = new Color(0.10f, 0.07f, 0.12f, 0.88f);
-                    GUI.DrawTexture(new Rect(0f, y + 2f, 40f, 40f), RitualTex.Disc, ScaleMode.StretchToFill);
-                    GUI.color = Color.Lerp(rn.color, Color.white, 0.15f);
-                    GUI.DrawTexture(new Rect(5f, y + 7f, 30f, 30f), rn.Glow, ScaleMode.ScaleToFit);
-                }
-                else { GUI.color = Color.white; GUI.DrawTexture(new Rect(0f, y + 2f, 40f, 40f), FlowStyle.Pick(rn.Ink, rn.Glow), ScaleMode.ScaleToFit); }
+                Rect row = new Rect(0f, y, view.width, 44f);
+                if (rn == runeShown) { if (!RitualArt.Selected(row)) Widgets.DrawBoxSolid(row, new Color(FlowStyle.Gold.r, FlowStyle.Gold.g, FlowStyle.Gold.b, 0.25f)); }
+                else if (Mouse.IsOver(row)) Widgets.DrawBoxSolid(row, new Color(1f, 0.9f, 0.6f, 0.14f));
+                SpellGlyph.Draw(new Rect(0f, y + 2f, 40f, 40f), rn);
                 GUI.color = Ink;
                 Widgets.Label(new Rect(48f, y + 2f, view.width - 50f, 22f), rn.LabelCap);
                 GUI.color = InkSoft;
-                Widgets.Label(new Rect(48f, y + 22f, view.width - 50f, 20f), (rn.role == RuneRole.Element ? "element" : "form") + " - not learned yet");
+                Widgets.Label(new Rect(48f, y + 22f, view.width - 50f, 22f), rn.role == RuneRole.Element ? (SpellCircle.GreatElement(rn) ? "great element" : "small element") : rn.role == RuneRole.Form ? "form" : rn.role.ToString().ToLower());
                 Text.Font = GameFont.Small;
-                TooltipHandler.TipRegion(new Rect(0f, y, view.width, 44f), rn.LabelCap + "\n\n" + rn.description);
+                // pressed: its description takes the left column; pressed again, the mage comes back
+                if (Widgets.ButtonInvisible(row)) { runeShown = runeShown == rn ? null : rn; SoundDefOf.Tick_Tiny.PlayOneShotOnCamera(); }
                 y += 46f;
             }
             Widgets.EndScrollView();

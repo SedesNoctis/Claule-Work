@@ -26,6 +26,9 @@ namespace Avir.Magic
         private SpellCircle sel;
         private int section;                    // -1: the centre
         private RuneDef shown, hovered;
+        // the rune chosen on the circles: its circle, its section (-1: the centre element) and place
+        private SpellCircle pickC;
+        private int pickSec = -1, pickK = -1;
         private float lastWrite;
         private SpellCircle focus;
         private Vector2 outlineScroll;
@@ -84,6 +87,8 @@ namespace Avir.Magic
             Rect mid = new Rect(left.xMax + 16f, inner.y, inner.width - lw - rw - 32f, inner.height);
             RitualArt.Panel(left.ExpandedBy(6f)); RitualArt.Panel(right.ExpandedBy(6f));
             if (RitualArt.HasPanel) { left = left.ContractedBy(8f); right = right.ContractedBy(8f); }
+            if (Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Delete || Event.current.keyCode == KeyCode.Backspace)
+                && GUIUtility.keyboardControl == 0 && Picked() != null) { RubPicked(); Event.current.Use(); }
             DrawLeft(left);
             DrawMiddle(mid);
             DrawRight(right);
@@ -165,7 +170,13 @@ namespace Avir.Magic
                 y += 48f;
             }
             Widgets.EndScrollView();
-            DrawCard(new Rect(r.x, list.yMax + 6f, r.width, cardH));
+            Rect cardR = new Rect(r.x, list.yMax + 6f, r.width, cardH);
+            RuneDef picked = Picked();
+            if (hovered == null && picked != null)
+            {
+                if (RitualPick.Card(new Rect(cardR.x, cardR.y, cardR.width, 0f), picked, PickedWhere())) RubPicked();
+            }
+            else DrawCard(cardR);
             if (Button(new Rect(r.x, r.yMax - encH, r.width, encH), "Encyclopedia of runes...", true))
                 Find.WindowStack.Add(new Dialog_RitualCodex(Find.CurrentMap));
         }
@@ -262,7 +273,7 @@ namespace Avir.Magic
         }
 
         /// <summary>What a rune does with fire, in a few words.</summary>
-        private static string FireLine(RuneDef r)
+        internal static string FireLine(RuneDef r)
         {
             switch (r.kind)
             {
@@ -515,7 +526,14 @@ namespace Avir.Magic
             DrawAt(c, R * 1.02f, disc ?? Ring(ref disc, 0f), new Color(col.r, col.g, col.b, 0.06f));
             Texture2D rim = RitualTex.Rim;
             DrawAt(c, R / 0.94f, rim, col);
-            if (n.c == sel) DrawAt(c, R * 1.09f, Ring(ref thick, 0.96f), new Color(Gold.r, Gold.g, Gold.b, 0.95f));
+            if (n.c == sel)
+            {
+                // the chosen circle: a soft gold wash, a firm gold rim, and a halo that breathes
+                float pulse = 0.55f + 0.35f * Mathf.Sin(Time.realtimeSinceStartup * 4f);
+                DrawAt(c, R * 1.02f, Ring(ref disc, 0f), new Color(Gold.r, Gold.g, Gold.b, 0.10f));
+                DrawAt(c, R * 1.09f, Ring(ref thick, 0.96f), new Color(Gold.r, Gold.g, Gold.b, 1f));
+                DrawAt(c, R * 1.14f, Ring(ref thick, 0.96f), new Color(1f, 0.8f, 0.3f, pulse));
+            }
             // inside: the wrapped circles, or the centre plate
             if (n.kids.Count > 0)
             {
@@ -534,8 +552,10 @@ namespace Avir.Magic
                 DrawAt(c, rin, Ring(ref thin, 0.985f), new Color(Light(col, 0.2f).r, Light(col, 0.2f).g, Light(col, 0.2f).b, n.c == sel && i == section ? 1f : 0.75f));
                 if (n.c == sel && i == section)
                 {
-                    DrawAt(c, rin, Ring(ref thick, 0.96f), new Color(Gold.r, Gold.g, Gold.b, 0.9f));
-                    DrawAt(c, rout, Ring(ref thick, 0.96f), new Color(Gold.r, Gold.g, Gold.b, 0.9f));
+                    // the chosen section: its band washed in gold between two firm rims
+                    DrawAt(c, rout, BandTex(rout <= 0f ? 0f : rin / rout), new Color(Gold.r, Gold.g, Gold.b, 0.22f));
+                    DrawAt(c, rin, Ring(ref thick, 0.96f), new Color(Gold.r, Gold.g, Gold.b, 1f));
+                    DrawAt(c, rout, Ring(ref thick, 0.96f), new Color(Gold.r, Gold.g, Gold.b, 1f));
                 }
                 RitualRing ring = n.c.sections[i];
                 int per = ring.Slots;
@@ -571,13 +591,14 @@ namespace Avir.Magic
         private void Plate(Vector2 p, float r, Color col, RuneDef rune, Hit hit)
         {
             Rect box = new Rect(p.x - r, p.y - r, r * 2f, r * 2f);
+            if (rune != null && hit.c == pickC && hit.section == pickSec && (hit.section < 0 || hit.rune == pickK)) RitualPick.Mark(box);
             if (rune != null)
             {
                 DrawAt(p, r, Ring(ref disc, 0f), Dark(col));
                 DrawAt(p, r, Ring(ref outline, 0.86f), Light(col, 0.35f));
                 GUI.color = rune.role == RuneRole.Element ? Light(rune.color, 0.25f) : Light(col, 0.3f);
                 GUI.DrawTexture(box.ContractedBy(r * 0.22f), rune.Glow, ScaleMode.ScaleToFit);
-                if (Mouse.IsOver(box)) { DrawAt(p, r, Ring(ref disc, 0f), new Color(0.8f, 0.2f, 0.15f, 0.35f)); TooltipHandler.TipRegion(box, rune.LabelCap + "\n\nClick to choose its section; click again to rub it out."); }
+                if (Mouse.IsOver(box)) { DrawAt(p, r, Ring(ref disc, 0f), new Color(0.8f, 0.2f, 0.15f, 0.35f)); TooltipHandler.TipRegion(box, rune.LabelCap + "\n\nClick to choose it; click it again (or press Delete) to rub it out."); }
             }
             else DrawAt(p, r * 0.92f, Ring(ref dashed, 0.88f, true), Light(col, 0.4f));
             plates.Add(new KeyValuePair<Rect, Hit>(box, hit));
@@ -595,19 +616,21 @@ namespace Avir.Magic
             }
             if (e.type != EventType.MouseUp || e.button != 0 || view.dragged || !Mouse.IsOver(local)) return;
             Vector2 m = e.mousePosition;
-            SpellCircle prevSel = sel; int prevSection = section;
-            // a rune plate first (the innermost drawn last)
+            // a rune plate first (the innermost drawn last): one click chooses it, a second rubs it out
             for (int i = plates.Count - 1; i >= 0; i--)
             {
                 if (!plates[i].Key.Contains(m)) continue;
                 Hit h = plates[i].Value;
                 sel = h.c; section = h.section;
-                if (h.section < 0 && h.c.element != null && sel == h.c && prevSel == h.c && prevSection < 0) { h.c.element = null; SoundDefOf.Tick_Low.PlayOneShotOnCamera(); }
-                else if (h.ring != null && h.rune >= 0 && prevSel == h.c && prevSection == h.section) { h.ring.runes.RemoveAt(h.rune); SoundDefOf.Tick_Low.PlayOneShotOnCamera(); }
-                else SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
+                bool hasRune = h.section < 0 ? h.c.element != null : h.ring != null && h.rune >= 0;
+                bool already = hasRune && pickC == h.c && pickSec == h.section && (h.section < 0 || pickK == h.rune);
+                if (already) RubPicked();
+                else if (hasRune) { pickC = h.c; pickSec = h.section; pickK = h.rune; SoundDefOf.Tick_High.PlayOneShotOnCamera(); }
+                else { ClearPick(); SoundDefOf.Tick_Tiny.PlayOneShotOnCamera(); }
                 e.Use();
                 return;
             }
+            ClearPick();
             // else the innermost circle under the mouse, and which of its sections
             for (int i = placed.Count - 1; i >= 0; i--)
             {
@@ -754,18 +777,41 @@ namespace Avir.Magic
 
         // ================================================================== helpers
 
-        /// <summary>A rune's glyph; an element's on a dark disc, so pale ones (light, time, life) read on the parchment.</summary>
-        private static void Glyph(Rect g, RuneDef rune)
+        private static void Glyph(Rect g, RuneDef rune) => SpellGlyph.Draw(g, rune);
+
+        private void ClearPick() { pickC = null; pickSec = -1; pickK = -1; }
+
+        /// <summary>The rune chosen on the circles, if it is still there.</summary>
+        private RuneDef Picked()
         {
-            if (rune.role == RuneRole.Element)
-            {
-                GUI.color = new Color(0.10f, 0.07f, 0.12f, 0.88f);
-                GUI.DrawTexture(g, RitualTex.Disc, ScaleMode.StretchToFill);
-                GUI.color = Light(rune.color, 0.15f);
-                GUI.DrawTexture(g.ContractedBy(g.width * 0.12f), rune.Glow, ScaleMode.ScaleToFit);
-            }
-            else { GUI.color = Color.white; GUI.DrawTexture(g, FlowStyle.Pick(rune.Ink, rune.Glow), ScaleMode.ScaleToFit); }
-            GUI.color = Color.white;
+            if (pickC == null || !s.weave.All().Contains(pickC)) return null;
+            if (pickSec < 0) return pickC.element;
+            if (pickSec >= pickC.sections.Count || pickK < 0 || pickK >= pickC.sections[pickSec].runes.Count) return null;
+            return pickC.sections[pickSec].runes[pickK];
+        }
+
+        private string PickedWhere() => (pickC?.element != null ? "Circle of " + pickC.element.label : "An empty circle") + " · " + (pickSec < 0 ? "its centre" : "section " + (pickSec + 1) + ", place " + (pickK + 1));
+
+        private void RubPicked()
+        {
+            if (Picked() == null) { ClearPick(); return; }
+            if (pickSec < 0) pickC.element = null;
+            else pickC.sections[pickSec].runes.RemoveAt(pickK);
+            ClearPick();
+            SoundDefOf.Tick_Low.PlayOneShotOnCamera();
+        }
+
+        private static readonly Dictionary<int, Texture2D> bands = new Dictionary<int, Texture2D>();
+
+        /// <summary>A flat ring whose hole is this share of its radius (cached by twentieths).</summary>
+        private static Texture2D BandTex(float hole)
+        {
+            int key = Mathf.Clamp(Mathf.RoundToInt(hole * 40f), 0, 39);
+            if (bands.TryGetValue(key, out Texture2D t)) return t;
+            t = null;
+            t = Ring(ref t, key / 40f);
+            bands[key] = t;
+            return t;
         }
 
         private static bool DoubleClicked(Rect r) =>

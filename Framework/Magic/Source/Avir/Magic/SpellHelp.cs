@@ -108,17 +108,16 @@ namespace Avir.Magic
         private static string Cap(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s.Substring(1);
     }
 
-    /// <summary>A coloured glyph on a dark disc: pale fire, light, life or time would vanish on the parchment without it.</summary>
+    /// <summary>A rune on the parchment: in plain ink like every other rune there (pale fire, light, life or time would
+    /// vanish if drawn in their own colours); where the page is lit by the stream, its glowing form.</summary>
     public static class SpellGlyph
     {
-        public static void Draw(Rect r, Texture2D glyph, Color col)
+        public static void Draw(Rect r, RuneDef rune)
         {
-            if (glyph == null) return;
+            if (rune == null) return;
             Color keep = GUI.color;
-            GUI.color = new Color(0.10f, 0.07f, 0.12f, 0.88f);
-            GUI.DrawTexture(r, RitualTex.Disc, ScaleMode.StretchToFill);
-            GUI.color = Color.Lerp(col, Color.white, 0.15f);
-            GUI.DrawTexture(r.ContractedBy(r.width * 0.14f), glyph, ScaleMode.ScaleToFit);
+            GUI.color = Color.white;
+            GUI.DrawTexture(r, FlowStyle.Pick(rune.Ink, rune.Glow), ScaleMode.ScaleToFit);
             GUI.color = keep;
         }
 

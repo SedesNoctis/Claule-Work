@@ -68,12 +68,14 @@ namespace Avir.Magic
             return t;
         }
 
+        private static bool Dark(Color c) => 0.3f * c.r + 0.59f * c.g + 0.11f * c.b < 0.35f;
+
         public static RuneDef DefaultGlyph(RitualSchema s) => s == null ? null : Spells.Element(s) ?? RitualEvaluator.Read(s).verbs.FirstOrDefault();
 
         /// <summary>The spell's sign: the one the player made, else its element on a dark disc.</summary>
         public static void Draw(Rect r, RitualSchema s)
         {
-            if (s?.icon == null) { RuneDef g = DefaultGlyph(s); if (g != null) SpellGlyph.Draw(r, g.Glow, s != null ? Spells.ColorOf(s) : Color.white); return; }
+            if (s?.icon == null) { SpellGlyph.Draw(r.ContractedBy(r.width * 0.06f), DefaultGlyph(s)); return; }
             Draw(r, s.icon, DefaultGlyph(s));
         }
 
@@ -91,14 +93,15 @@ namespace Avir.Magic
                 float k = ic.shape == SpellIcon.Shape.None ? 0.06f : ic.shape == SpellIcon.Shape.Shield ? 0.27f : 0.24f;
                 Rect g = r.ContractedBy(r.width * k);
                 if (ic.shape == SpellIcon.Shape.Shield) g.y -= r.height * 0.04f;
-                GUI.color = ic.glyph; GUI.DrawTexture(g, main.Glow, ScaleMode.ScaleToFit);
+                GUI.color = ic.glyph; GUI.DrawTexture(g, Dark(ic.glyph) ? main.Ink : main.Glow, ScaleMode.ScaleToFit);
             }
             if (ic.second != null)
             {
                 float w = r.width * 0.36f;
                 Rect c = new Rect(r.xMax - w, r.yMax - w, w, w);
-                GUI.color = new Color(0.08f, 0.06f, 0.10f, 0.9f); GUI.DrawTexture(c, RitualTex.Disc, ScaleMode.StretchToFill);
-                GUI.color = ic.glyph2; GUI.DrawTexture(c.ContractedBy(w * 0.14f), ic.second.Glow, ScaleMode.ScaleToFit);
+                GUI.color = Dark(ic.glyph2) ? new Color(0.95f, 0.9f, 0.82f, 0.95f) : new Color(0.08f, 0.06f, 0.10f, 0.9f);
+                GUI.DrawTexture(c, RitualTex.Disc, ScaleMode.StretchToFill);
+                GUI.color = ic.glyph2; GUI.DrawTexture(c.ContractedBy(w * 0.14f), Dark(ic.glyph2) ? ic.second.Ink : ic.second.Glow, ScaleMode.ScaleToFit);
             }
             GUI.color = keep;
         }
@@ -126,7 +129,7 @@ namespace Avir.Magic
         {
             this.s = s;
             this.done = done;
-            ic = s.icon?.Copy() ?? new SpellIcon { main = SpellIconArt.DefaultGlyph(s), glyph = s.weave != null || Spells.Element(s) != null ? Color.Lerp(Spells.ColorOf(s), Color.white, 0.15f) : Color.white };
+            ic = s.icon?.Copy() ?? new SpellIcon { main = SpellIconArt.DefaultGlyph(s) };
             doWindowBackground = false;
             doCloseX = true;
             absorbInputAroundWindow = true;

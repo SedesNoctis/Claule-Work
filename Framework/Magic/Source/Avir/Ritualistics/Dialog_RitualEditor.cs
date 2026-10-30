@@ -23,6 +23,8 @@ namespace Avir.Ritualistics
         private readonly System.Action onSaved;
         private readonly RitualSchema s;
         private int ring;
+        /// <summary>The rune chosen on the circle (its section and place; -1: none) - shown, and rubbed out on a second click or Delete.</summary>
+        private int pickRing = -1, pickRune = -1;
         private Vector2 leftScroll, rightScroll;
 
         /// <summary>Writing a spell: the same editor, and a button that keeps the drawing as the mage's spell.</summary>
@@ -270,7 +272,9 @@ namespace Avir.Ritualistics
             Ring(c, sOut); Ring(c, sIn);
             RitualOrnament.DrawUI(c, R, core, n, i => s.rings[i].Slots, i => s.rings[i].runes.Count, new Color(InkSoft.r, InkSoft.g, InkSoft.b, 0.85f));
 
-            bool glyphClicked = false;
+            // the card of a chosen rune sits over the circle: clicks there are not the circle's
+            Rect cardLocal = pickRing >= 0 ? new Rect(RitualPick.LastCard.x - area.x, RitualPick.LastCard.y - area.y, RitualPick.LastCard.width, RitualPick.LastCard.height) : Rect.zero;
+            bool glyphClicked = pickRing >= 0 && Mouse.IsOver(cardLocal);
             for (int i = 0; i < n; i++)
             {
                 List<RuneDef> runes = s.rings[i].runes;
@@ -282,17 +286,19 @@ namespace Avir.Ritualistics
                 for (int k = 0; k < runes.Count; k++)
                 {
                     Rect g = RitualOrnament.GlyphRect(c, mid, RitualOrnament.SlotAngle(i, k, per), size * RitualOrnament.RuneInFrame);
-                    bool over = Mouse.IsOver(g);
-                    GUI.color = over ? new Color(0.6f, 0.15f, 0.1f) : Color.white;
+                    bool over = Mouse.IsOver(g), picked = pickRing == i && pickRune == k;
+                    if (picked) RitualPick.Mark(g);
+                    else if (over) { GUI.color = new Color(Gold.r, Gold.g, Gold.b, 0.3f); GUI.DrawTexture(g.ExpandedBy(g.width * 0.3f), RitualTex.Disc); }
+                    GUI.color = picked && over ? new Color(0.6f, 0.15f, 0.1f) : Color.white;
                     { Color keepC = GUI.color; FlowStyle.Backing(g.ExpandedBy(g.width * 0.35f)); GUI.color = keepC; }
                     GUI.DrawTexture(g, FlowStyle.Pick(runes[k].Ink, runes[k].Glow), ScaleMode.ScaleToFit);
-                    if (over) TooltipHandler.TipRegion(g, runes[k].LabelCap + " - click to rub it out");
+                    if (over) TooltipHandler.TipRegion(g, runes[k].LabelCap + (picked ? " - click again (or Delete) to rub it out" : " - click to choose it"));
                     if (!glyphClicked && Widgets.ButtonInvisible(g) && !view.dragged)
                     {
-                        runes.RemoveAt(k);
                         ring = i;
                         glyphClicked = true;
-                        SoundDefOf.Tick_Low.PlayOneShotOnCamera();
+                        if (picked) { runes.RemoveAt(k); pickRing = pickRune = -1; SoundDefOf.Tick_Low.PlayOneShotOnCamera(); }
+                        else { pickRing = i; pickRune = k; SoundDefOf.Tick_High.PlayOneShotOnCamera(); }
                         break;
                     }
                 }
@@ -302,6 +308,7 @@ namespace Avir.Ritualistics
                 float dist = (Event.current.mousePosition - c).magnitude;
                 if (dist <= R)
                 {
+                    pickRing = pickRune = -1;
                     ring = Mathf.Clamp(dist < core ? 0 : Mathf.FloorToInt((dist - core) / ((R - core) / n)), 0, n - 1);
                     SoundDefOf.Tick_High.PlayOneShotOnCamera();
                     Event.current.Use();
@@ -310,6 +317,16 @@ namespace Avir.Ritualistics
             DrawComponents(c, R);
             GUI.EndGroup();
             view.DrawHint(area, InkSoft);
+            // the chosen rune: what it is, and a button to rub it out (Delete does the same)
+            if (pickRing >= 0 && (pickRing >= s.rings.Count || pickRune >= s.rings[pickRing].runes.Count)) pickRing = pickRune = -1;
+            if (pickRing >= 0)
+            {
+                RuneDef pr = s.rings[pickRing].runes[pickRune];
+                if (Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Delete || Event.current.keyCode == KeyCode.Backspace) && GUIUtility.keyboardControl == 0)
+                { s.rings[pickRing].runes.RemoveAt(pickRune); pickRing = pickRune = -1; SoundDefOf.Tick_Low.PlayOneShotOnCamera(); Event.current.Use(); }
+                else if (RitualPick.Card(new Rect(area.x + 8f, area.y + 8f, Mathf.Min(320f, area.width - 16f), 0f), pr, "Section " + (pickRing + 1) + ", place " + (pickRune + 1)))
+                { s.rings[pickRing].runes.RemoveAt(pickRune); pickRing = pickRune = -1; SoundDefOf.Tick_Low.PlayOneShotOnCamera(); }
+            }
 
             // sections and slots
             float y = area.yMax + 6f, half = (r.width - 12f) / 2f;
