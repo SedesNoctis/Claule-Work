@@ -551,7 +551,7 @@
     <defName>Avir_Breathless</defName>
     <label>breathless</label>
     <description>The air round them was stilled or pulled away. Hard to breathe, hard to move.</description>
-    <hediffClass>HediffWithComps</hediffClass>
+    <hediffClass>Avir.Magic.Hediff_Gasping</hediffClass>
     <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
     <isBad>true</isBad>
     <maxSeverity>1</maxSeverity>
@@ -730,6 +730,51 @@
       <flightDurationMin>0.5</flightDurationMin>
       <flightSpeed>14</flightSpeed>
       <heightFactor>1.2</heightFactor>
+    </pawnFlyer>
+  </ThingDef>
+  <HediffDef>
+    <defName>Avir_Rooted</defName>
+    <label>rooted</label>
+    <description>The ground holds their feet: they cannot take a single step, though their hands are free to shoot and strike.</description>
+    <hediffClass>Avir.Magic.Hediff_Rooted</hediffClass>
+    <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>480~480</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+  </HediffDef>
+  <ThingDef>
+    <defName>Avir_SpellThrow</defName>
+    <label>thrown</label>
+    <thingClass>Avir.Magic.SpellHurl</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Skyfaller</altitudeLayer>
+    <drawerType>RealtimeOnly</drawerType>
+    <useHitPoints>false</useHitPoints>
+    <pawnFlyer>
+      <flightDurationMin>0.25</flightDurationMin>
+      <flightSpeed>12</flightSpeed>
+      <heightFactor>0.35</heightFactor>
+    </pawnFlyer>
+  </ThingDef>
+  <ThingDef>
+    <defName>Avir_SpellLift</defName>
+    <label>thrown up</label>
+    <thingClass>Avir.Magic.SpellHurl</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Skyfaller</altitudeLayer>
+    <drawerType>RealtimeOnly</drawerType>
+    <useHitPoints>false</useHitPoints>
+    <pawnFlyer>
+      <flightDurationMin>1.6</flightDurationMin>
+      <flightSpeed>1</flightSpeed>
+      <heightFactor>2.5</heightFactor>
     </pawnFlyer>
   </ThingDef>
 </Defs>

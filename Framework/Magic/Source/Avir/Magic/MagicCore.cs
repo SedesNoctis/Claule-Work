@@ -608,6 +608,21 @@ namespace Avir.Magic
         [DebugAction(Cat, "Make a stranger's spell (into the book)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void StrangerSpell(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) c.Book.spells.Add(SpellGen.Make(c.path ?? MagePath.Made.FirstOrDefault(), p)); }
 
+        [DebugAction(Cat, "Throw it back (3 cells, from the north)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevThrow(Pawn p) => SpellHurl.Throw(p, p.Position + IntVec3.North * 3, 3, p.Map);
+
+        [DebugAction(Cat, "Knock it down (3 s)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevFell(Pawn p) => SpellHurl.Fell(p, p.Position + IntVec3.North, 1, p.Map, null, 1f, 180);
+
+        [DebugAction(Cat, "Throw it up (fall, power 1)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevLift(Pawn p) => SpellHurl.Lift(p, null, 1f);
+
+        [DebugAction(Cat, "Throw it up (fall, power 3)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevLiftHard(Pawn p) => SpellHurl.Lift(p, null, 3f);
+
+        [DebugAction(Cat, "Root it (8 s)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevRoot(Pawn p) => MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, 480);
+
         [DebugAction(Cat, "Open hand places (all 5)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void OpenHand(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) c.Book.open = 5; }
 

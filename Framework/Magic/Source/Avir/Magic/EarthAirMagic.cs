@@ -41,7 +41,7 @@ namespace Avir.Magic
                         // a fissure runs along the line: the ground cracks under whoever stands on it
                         var line = FireMagic.Beam(caster.Position, at, map, r.breadth);
                         foreach (IntVec3 c in line) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.4f, MagicFx.EarthDust);
-                        foreach (Pawn p in MagicFx.PawnsIn(line, map)) if (MagicFx.Foe(p, caster)) MagicFx.Stun(p, Mathf.RoundToInt(70f * power), caster);
+                        foreach (Pawn p in MagicFx.PawnsIn(line, map)) if (MagicFx.Foe(p, caster)) MagicFx.Fell(p, p.Position, 0, map, caster, power, Mathf.RoundToInt(80f * power));
                         Apply(caster, map, verbs, line, caster.Position, power, r);
                         break;
                     case RuneKind.Shape:
@@ -85,7 +85,7 @@ namespace Avir.Magic
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
                             p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (10f + 3f * r.amplify) * power, 0f, -1f, caster));
-                            MagicFx.Stun(p, Mathf.RoundToInt(90f * power), caster);
+                            if (!p.Dead) MagicFx.Fell(p, from, 1, map, caster, power, Mathf.RoundToInt(90f * power));
                         }
                         foreach (IntVec3 c in cells) { if (Rand.Chance(0.5f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.8f, MagicFx.EarthDust); if (Rand.Chance(0.25f)) MagicFx.Rubble(c, map); }
                         break;
@@ -94,7 +94,7 @@ namespace Avir.Magic
                         foreach (Pawn p in MagicFx.PawnsIn(cells, map))
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
-                            MagicFx.Stun(p, Mathf.RoundToInt(240f * power), caster);
+                            if (!MagicFx.Rooted(p)) MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, Mathf.RoundToInt(480f * power));
                             MagicFx.Give(p, EarthAirDefOf.Avir_Heavy, Mathf.RoundToInt(GenDate.TicksPerHour * power));
                         }
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.3f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.2f, MagicFx.EarthDust);
@@ -116,7 +116,7 @@ namespace Avir.Magic
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
                             p.TakeDamage(new DamageInfo(DamageDefOf.Stab, (8f + 2f * r.amplify) * power, 0.2f, -1f, caster));
-                            MagicFx.Stun(p, Mathf.RoundToInt(60f * power), caster);
+                            if (!p.Dead) MagicFx.Lift(p, caster, power * 0.7f);
                         }
                         foreach (IntVec3 c in cells) { if (Rand.Chance(0.4f)) MagicFx.Rubble(c, map); FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1f, MagicFx.EarthDust); }
                         break;
@@ -263,7 +263,7 @@ namespace Avir.Magic
                         {
                             if (!MagicFx.Foe(p, caster) || !p.RaceProps.IsFlesh) continue;
                             MagicFx.Give(p, EarthAirDefOf.Avir_Breathless, Mathf.RoundToInt(GenDate.TicksPerHour * power));
-                            MagicFx.Stun(p, 60, caster);
+                            MagicFx.Fell(p, p.Position, 0, map, caster, power, 70);
                             took += 0.3f;
                         }
                         foreach (IntVec3 c in cells) FireMagic.Extinguish(c, map);
@@ -274,8 +274,7 @@ namespace Avir.Magic
                         foreach (Pawn p in MagicFx.PawnsIn(cells, map))
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
-                            MagicFx.Stun(p, Mathf.RoundToInt(150f * power), caster);
-                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 6f * power, 0f, -1f, caster));
+                            MagicFx.Lift(p, caster, power * 1.3f);
                         }
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 2f, MagicFx.AirDust);
                         break;
@@ -327,11 +326,13 @@ namespace Avir.Magic
             p.stances?.stunner?.StunFor(ticks, by);
         }
 
-        public static void Push(Pawn p, IntVec3 from, int dist, Map map)
-        {
-            if (Rooted(p)) return;
-            WaterMagic.Push(p, from, dist, map);
-        }
+        public static void Push(Pawn p, IntVec3 from, int dist, Map map) => SpellHurl.Throw(p, from, dist, map);
+
+        /// <summary>Knocked off their feet: thrown a little from a point and left lying.</summary>
+        public static void Fell(Pawn p, IntVec3 from, int dist, Map map, Pawn by, float power, int ticks) => SpellHurl.Fell(p, from, dist, map, by, power, ticks);
+
+        /// <summary>Thrown up into the air, to fall.</summary>
+        public static void Lift(Pawn p, Pawn by, float power) => SpellHurl.Lift(p, by, power);
 
         public static void Give(Pawn p, HediffDef def, int ticks)
         {
@@ -458,7 +459,7 @@ namespace Avir.Magic
     [DefOf]
     public static class EarthAirDefOf
     {
-        public static HediffDef Avir_StoneSkin, Avir_HeavyGround, Avir_Heavy, Avir_StoredStone, Avir_EarthWard, Avir_EarthEnchant, Avir_Petrified;
+        public static HediffDef Avir_Rooted, Avir_StoneSkin, Avir_HeavyGround, Avir_Heavy, Avir_StoredStone, Avir_EarthWard, Avir_EarthEnchant, Avir_Petrified;
         public static HediffDef Avir_Breathless, Avir_Buffeted, Avir_StoredAir, Avir_AirWard, Avir_AirEnchant, Avir_Winded;
         public static ThingDef Avir_EarthWall, Avir_AirWall;
         static EarthAirDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(EarthAirDefOf)); }

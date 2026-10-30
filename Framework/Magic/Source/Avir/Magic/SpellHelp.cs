@@ -161,6 +161,7 @@ namespace Avir.Magic
             if (form?.kind == RuneKind.Shape && (r.anchor > 0 || verbs.Any(v => v.kind == RuneKind.Hold))) e.Add("Stands longer", "Holding and anchors keep the stone up longer.");
             if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader crack - and each one makes the cast 8% longer.");
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
+            if (verbs.Any(v => v.kind == RuneKind.Lift)) e.Add("Bodies thrown", "Whoever is thrown up hangs out of reach of any blow or shot, then falls: the legs take it first, bones may crack, a bad fall kills. Under a roof they strike the ceiling too. Big beasts are too heavy to lift - they are knocked down instead.");
             e.Add("Price: stone-bound", "If the hold slips, the stone takes the mage instead: they stand stunned for a moment and their limbs are stiff for a couple of hours.");
             return e;
         }
@@ -169,10 +170,10 @@ namespace Avir.Magic
         {
             switch (v.kind)
             {
-                case RuneKind.Release: return "shakes, striking foes and knocking them off their feet";
-                case RuneKind.Hold: return "grips the feet of foes and holds them fast";
+                case RuneKind.Release: return "shakes, striking foes and throwing them to the ground";
+                case RuneKind.Hold: return "grips the feet of foes: they cannot take a step, though their hands are still free";
                 case RuneKind.Drain: return "pours weight into foes' limbs and keeps some for the mage";
-                case RuneKind.Lift: return "bursts up in stone spikes";
+                case RuneKind.Lift: return "bursts up in stone spikes that toss foes into the air";
                 case RuneKind.Growth: return "grows rich, and the plants grow faster";
                 case RuneKind.Purge: return "smothers fires and swallows filth";
                 default: return v.label;
@@ -215,6 +216,7 @@ namespace Avir.Magic
             if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the breath", "The breath taken stays with the mage: their next air spell is stronger.");
             if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area, a broader line, more jumps of lightning - and each one makes the cast 8% longer.");
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
+            if (verbs.Any(v => v.kind == RuneKind.Lift)) e.Add("The fall", "Whoever is thrown up hangs out of reach of any blow or shot, then falls: the legs take it first, bones may crack, a bad fall kills. Under a roof they strike the ceiling too.");
             e.Add("Price: winded", "If the hold slips, the wind tears the breath out of the mage: a moment stunned, and an hour short of breath.");
             return e;
         }
@@ -226,7 +228,7 @@ namespace Avir.Magic
                 case RuneKind.Release: return "blows in a gust that throws foes back";
                 case RuneKind.Hold: return "stands still and thin: foes can hardly breathe, fires starve";
                 case RuneKind.Drain: return "is pulled out of foes' lungs and kept by the mage";
-                case RuneKind.Lift: return "rises in an updraft that throws foes up and drops them";
+                case RuneKind.Lift: return "rises in an updraft that throws foes high - the fall breaks bones";
                 case RuneKind.Growth: return "spreads wide, pushing foes further round";
                 case RuneKind.Purge: return "clears: small flames blown out, poison breathed away";
                 default: return v.label;
@@ -240,7 +242,7 @@ namespace Avir.Magic
                 case RuneKind.Release: return "bursts, striking foes, throwing them back and soaking them";
                 case RuneKind.Hold: return "lies there as standing water that slows foes and keeps fire away";
                 case RuneKind.Drain: return "draws the water out of foes and leaves them weak";
-                case RuneKind.Lift: return "rises as a geyser that throws foes up";
+                case RuneKind.Lift: return "rises as a geyser that throws foes up - and they fall hard";
                 case RuneKind.Growth: return "spreads, and the plants drink";
                 case RuneKind.Purge: return "washes away fire, filth and poison";
                 default: return v.label;

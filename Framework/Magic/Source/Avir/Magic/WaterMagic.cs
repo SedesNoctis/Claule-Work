@@ -96,9 +96,8 @@ namespace Avir.Magic
                             if (p == caster || !p.HostileTo(caster)) continue;
                             p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (9f + 3f * r.amplify) * power, 0f, -1f, caster));
                             Soak(p, power);
-                            Push(p, from, 3 + r.amplify, map);
-                            p.stances?.stunner?.StunFor(Mathf.RoundToInt(60f * power), caster);
                             FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 2.2f);
+                            SpellHurl.Fell(p, from, 3 + r.amplify, map, caster, power, Mathf.RoundToInt(60f * power));
                         }
                         foreach (IntVec3 c in cells) { if (Rand.Chance(0.5f)) FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.6f); if (Rand.Chance(0.35f)) Puddle(c, map); }
                         break;
@@ -126,9 +125,8 @@ namespace Avir.Magic
                         foreach (Pawn p in PawnsIn(cells, map))
                         {
                             if (p == caster || !p.HostileTo(caster)) continue;
-                            p.stances?.stunner?.StunFor(Mathf.RoundToInt(120f * power), caster);
-                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 4f * power, 0f, -1f, caster));
                             Soak(p, power);
+                            SpellHurl.Lift(p, caster, power);
                         }
                         foreach (IntVec3 c in cells) FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 2.4f);
                         break;
@@ -205,22 +203,7 @@ namespace Avir.Magic
         }
 
         /// <summary>Thrown away from a point, as far as the ground lets them.</summary>
-        public static void Push(Pawn p, IntVec3 from, int dist, Map map)
-        {
-            if (p.Dead || !p.Spawned) return;
-            Vector3 d = (p.Position - from).ToVector3();
-            if (d.sqrMagnitude < 0.01f) d = Rand.InsideUnitCircleVec3;
-            d.Normalize();
-            IntVec3 cur = p.Position;
-            for (int i = 1; i <= dist; i++)
-            {
-                IntVec3 n = (p.Position.ToVector3Shifted() + d * i).ToIntVec3();
-                if (!n.InBounds(map) || !n.Standable(map) || n.GetFirstPawn(map) != null) break;
-                cur = n;
-            }
-            if (cur != p.Position) { p.Position = cur; p.Notify_Teleported(true, false); }
-            p.stances?.stunner?.StunFor(60, null);
-        }
+        public static void Push(Pawn p, IntVec3 from, int dist, Map map) => SpellHurl.Throw(p, from, dist, map);
 
         private static void Ward(Pawn caster, IntVec3 at, Map map, float radius, float power)
         {

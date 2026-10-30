@@ -43,8 +43,7 @@ namespace Avir.Magic
             foreach (Pawn q in GenRadial.RadialDistinctThingsAround(at, map, radius, true).OfType<Pawn>().ToList())
             {
                 if (!MagicFx.Foe(q, mage)) continue;
-                MagicFx.Push(q, at, push, map);
-                MagicFx.Stun(q, Mathf.RoundToInt(120f * power), mage);
+                MagicFx.Fell(q, at, push, map, mage, power, Mathf.RoundToInt(120f * power));
             }
         }
 

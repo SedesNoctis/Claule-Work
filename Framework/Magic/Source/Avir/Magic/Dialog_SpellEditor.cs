@@ -304,7 +304,7 @@ namespace Avir.Magic
             {
                 case RuneKind.Earth: return "the circle is stone";
                 case RuneKind.Release: return "a tremor: blunt blows, foes fall";
-                case RuneKind.Hold: return "foes rooted to the spot";
+                case RuneKind.Hold: return "rooted: no step, hands still free";
                 case RuneKind.Drain: return "weight into foes, kept by the mage";
                 case RuneKind.Lift: return "stone spikes from below";
                 case RuneKind.Growth: return "rich soil, plants grow";
@@ -335,7 +335,7 @@ namespace Avir.Magic
                 case RuneKind.Release: return "a gust that throws foes back";
                 case RuneKind.Hold: return "still air: no breath, fires starve";
                 case RuneKind.Drain: return "breath pulled out, kept by the mage";
-                case RuneKind.Lift: return "an updraft: up, and down hard";
+                case RuneKind.Lift: return "an updraft: up, and a fall that breaks";
                 case RuneKind.Growth: return "the wind spreads wider";
                 case RuneKind.Purge: return "clean air: small fires, poison gone";
                 case RuneKind.Aura: return "a whirlwind round the mage";
