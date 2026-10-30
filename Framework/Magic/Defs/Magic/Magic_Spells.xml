@@ -385,4 +385,35 @@
       </li>
     </comps>
   </ThingDef>
+  <HediffDef>
+    <defName>Avir_InMist</defName>
+    <label>in the mist</label>
+    <description>Inside a water mage's tide: slowed, and it is hard to see through the mist to shoot.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.7, 0.8, 1)</defaultLabelColor>
+    <isBad>true</isBad>
+    <comps>
+      <li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>90~90</disappearsAfterTicks></li>
+    </comps>
+    <stages>
+      <li>
+        <statOffsets><ShootingAccuracyPawn>-0.3</ShootingAccuracyPawn></statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+  <ThingDef>
+    <defName>Avir_SpellDash</defName>
+    <label>carried by magic</label>
+    <thingClass>Avir.Magic.SpellDash</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Skyfaller</altitudeLayer>
+    <drawerType>RealtimeOnly</drawerType>
+    <useHitPoints>false</useHitPoints>
+    <pawnFlyer>
+      <flightDurationMin>0.3</flightDurationMin>
+      <flightSpeed>16</flightSpeed>
+      <heightFactor>0.15</heightFactor>
+    </pawnFlyer>
+  </ThingDef>
 </Defs>

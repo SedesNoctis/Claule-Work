@@ -39,25 +39,35 @@ namespace Avir.Magic
             {
                 switch (f.kind)
                 {
-                    case RuneKind.Aura: Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, radius + 1.5f), caster.Position, power, r); break;
-                    case RuneKind.Beam: Apply(caster, map, verbs, FireMagic.Beam(caster.Position, at, map, r.breadth), caster.Position, power, r); break;
+                    case RuneKind.Aura:
+                        // the tide: a field of mist round the mage for a while; its verbs work at once, then again and again
+                        Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, radius + 1.5f), caster.Position, power, r);
+                        MapComponent_Tides.Raise(caster, radius + 1.5f, power, verbs);
+                        break;
+                    case RuneKind.Beam:
+                        var line = FireMagic.Beam(caster.Position, at, map, r.breadth);
+                        Apply(caster, map, verbs, line, caster.Position, power, r);
+                        Chain(caster, line.Count > 0 ? line.Last() : at, map, 1 + r.breadth, power);
+                        break;
                     case RuneKind.Shape:
+                        // the ground itself turns to shallow water for a while: a moat that slows everyone and takes no fire
                         var wall = FireMagic.WallTo.IsValid ? FireMagic.WallLine(at, FireMagic.WallTo, map, FireMagic.WallMax(r)) : FireMagic.Wall(caster.Position, at, map, 5 + 2 * r.breadth);
-                        foreach (IntVec3 c in wall) HeldWater.Place(c, map, caster, power);
-                        Apply(caster, map, verbs, wall, at, power, r);
+                        int life = Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power * (1 + r.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0)));
+                        foreach (IntVec3 c in wall) { map.GetComponent<MapComponent_RaisedWater>()?.Raise(c, life); FireMagic.Extinguish(c, map); FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.4f); }
+                        Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, r);
                         break;
                     case RuneKind.Step:
                         var path = GenSight.BresenhamCellsBetween(caster.Position, at).Where(c => c.InBounds(map) && c != caster.Position).ToList();
                         // the wave carries the mage; whoever stands in the way is thrown aside
                         foreach (IntVec3 c in path) foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList()) if (p != caster && p.HostileTo(caster)) Push(p, c + (c - caster.Position).RotatedBy(Rot4.East), 2, map);
-                        if (at.Standable(map)) { caster.Position = at; caster.Notify_Teleported(true, false); }
+                        SpellDash.Carry(caster, at, RuneKind.Water);
                         foreach (IntVec3 c in path) { FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.2f); FireMagic.Extinguish(c, map); }
                         if (verbs.Count > 0) Apply(caster, map, verbs, path, at, power, r);
                         break;
                     case RuneKind.Restore: Wash(caster, at, map, Mathf.Max(0.9f, radius - 1f), power); break;
                     case RuneKind.Enchant: Enchant(caster, at, map, power); break;
                     case RuneKind.Summon: Spirit(caster, at, map, power, r.amplify); break;
-                    case RuneKind.Sense: FireMagic.Sense(caster, map, 20f + 10f * r.reach, power); break;
+                    case RuneKind.Sense: FireMagic.Sense(caster, map, 25f + 10f * r.reach, power); break;
                     default: if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); break;
                 }
             }
@@ -66,7 +76,7 @@ namespace Avir.Magic
         private static IEnumerable<Pawn> PawnsIn(List<IntVec3> cells, Map map) =>
             cells.SelectMany(c => c.GetThingList(map).OfType<Pawn>()).Where(p => !p.Dead).Distinct().ToList();
 
-        private static void Apply(Pawn caster, Map map, List<RuneDef> verbs, List<IntVec3> cells, IntVec3 from, float power, RitualReading r)
+        internal static void Apply(Pawn caster, Map map, List<RuneDef> verbs, List<IntVec3> cells, IntVec3 from, float power, RitualReading r)
         {
             if (cells.Count == 0) return;
             foreach (RuneDef v in verbs)
@@ -82,10 +92,10 @@ namespace Avir.Magic
                             Soak(p, power);
                             Push(p, from, 2 + r.amplify, map);
                         }
-                        foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.6f);
+                        foreach (IntVec3 c in cells) { if (Rand.Chance(0.5f)) FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.6f); if (Rand.Chance(0.35f)) Puddle(c, map); }
                         break;
                     case RuneKind.Hold:
-                        foreach (IntVec3 c in cells) HeldWater.Place(c, map, caster, power);
+                        foreach (IntVec3 c in cells) { HeldWater.Place(c, map, caster, power); if (Rand.Chance(0.5f)) Puddle(c, map); }
                         break;
                     case RuneKind.Drain:
                         float took = 0f;
@@ -139,6 +149,40 @@ namespace Avir.Magic
                 }
             }
             foreach (IntVec3 c in cells) if (Rand.Chance(0.2f)) FleckMaker.Static(c, map, FleckDefOf.WaterRipple, 1.2f);
+        }
+
+        /// <summary>Water left on the ground: the game's own puddle.</summary>
+        public static void Puddle(IntVec3 c, Map map)
+        {
+            if (ThingDefOf.Filth_Water != null && c.InBounds(map) && c.Standable(map)) FilthMaker.TryMakeFilth(c, map, ThingDefOf.Filth_Water);
+        }
+
+        /// <summary>Water flows on: from where the jet ends to the next foe within four cells, and on again.</summary>
+        private static void Chain(Pawn caster, IntVec3 from, Map map, int jumps, float power)
+        {
+            var hit = new HashSet<Pawn>();
+            Vector3 prev = from.ToVector3Shifted();
+            IntVec3 cur = from;
+            for (int i = 0; i < jumps; i++)
+            {
+                Pawn next = GenRadial.RadialDistinctThingsAround(cur, map, 4.5f, true).OfType<Pawn>()
+                    .Where(p => !p.Dead && p != caster && p.HostileTo(caster) && !hit.Contains(p) && GenSight.LineOfSight(cur, p.Position, map))
+                    .OrderBy(p => p.Position.DistanceToSquared(cur)).FirstOrDefault();
+                if (next == null) break;
+                hit.Add(next);
+                FleckMaker.ConnectingLine(prev, next.DrawPos, FleckDefOf.LineEMP, map);
+                next.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 4f * power, 0f, -1f, caster));
+                Soak(next, power);
+                FleckMaker.Static(next.Position, map, FleckDefOf.WaterSplash, 1.4f);
+                prev = next.DrawPos; cur = next.Position;
+            }
+        }
+
+        /// <summary>The tide's verbs, again, round the mage.</summary>
+        public static void ApplyAround(Pawn mage, List<RuneDef> verbs, float radius, float power)
+        {
+            Map map = mage.Map;
+            Apply(mage, map, verbs, FireMagic.Point(mage.Position, map, radius), mage.Position, power * 0.5f, new RitualReading());
         }
 
         /// <summary>Soaked: slower, and hard to set alight, for a while.</summary>
@@ -269,6 +313,10 @@ namespace Avir.Magic
     /// <summary>A water spirit: it throws water at the mage's foes, knocking them back, and puts out fires near friends.</summary>
     public class WaterSpirit : ThingWithComps
     {
+        private static readonly HashSet<WaterSpirit> all = new HashSet<WaterSpirit>();
+        public static WaterSpirit Guarding(Pawn p) => all.FirstOrDefault(s => s.Spawned && s.owner == p && s.Position.DistanceTo(p.Position) <= 3f);
+        public override void SpawnSetup(Map map, bool respawningAfterLoad) { base.SpawnSetup(map, respawningAfterLoad); all.Add(this); }
+        public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish) { all.Remove(this); base.DeSpawn(mode); }
         public Pawn owner;
         public float power = 1f;
         public int left = 1800;
@@ -285,6 +333,12 @@ namespace Avir.Magic
         {
             base.Tick();
             if (--left <= 0) { FleckMaker.Static(Position, Map, FleckDefOf.WaterSplash, 1.5f); Destroy(); return; }
+            // it keeps by its mage
+            if (this.IsHashIntervalTick(30) && owner != null && owner.Spawned && owner.Map == Map && Position.DistanceTo(owner.Position) > 2f)
+            {
+                IntVec3 near = GenAdj.CellsAdjacent8Way(owner).Where(c => c.InBounds(Map) && c.Standable(Map)).RandomElementWithFallback(owner.Position);
+                Position = near;
+            }
             if (!this.IsHashIntervalTick(90)) return;
             foreach (IntVec3 c in GenRadial.RadialCellsAround(Position, 4f, true)) if (c.InBounds(Map)) FireMagic.Extinguish(c, Map);
             Pawn foe = Map.mapPawns.AllPawnsSpawned
@@ -330,6 +384,8 @@ namespace Avir.Magic
         }
 
         private static readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
+        private static Material glowMat;
+        private static Material GlowMat => glowMat ?? (glowMat = MaterialPool.MatFrom(Avir.Linarian.SongArt.Glow, ShaderDatabase.MoteGlow, Color.white));
 
         private static Material Mat(RuneDef el)
         {
@@ -366,12 +422,28 @@ namespace Avir.Magic
             foreach (Pawn p in map.mapPawns.AllPawnsSpawned)
             {
                 if (p.health?.hediffSet == null) continue;
+                // a mage not of the colony shows a soft glow beneath: gold - a sorcerer, blue - a mage
+                if (p.Faction != Faction.OfPlayer && Mages.IsMage(p) && !p.Dead)
+                {
+                    Hediff_ArcaneCore core = Mages.Core(p);
+                    bool sorc = core != null && core.Sorcerer;
+                    Color gc = sorc ? Hediff_ArcaneCore.SorcererColor : Hediff_ArcaneCore.MageColor;
+                    Vector3 gp = p.DrawPos; gp.y = AltitudeLayer.Pawn.AltitudeFor() - 0.01f;
+                    block.SetColor(ShaderPropertyIDs.Color, new Color(gc.r, gc.g, gc.b, 0.28f + 0.1f * Mathf.Sin(Time.realtimeSinceStartup * 2f + p.thingIDNumber)));
+                    Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(gp, Quaternion.identity, new Vector3(1.5f, 1f, 1.5f)), GlowMat, 0, null, 0, block);
+                }
                 RuneDef el = null;
                 bool any = false;
                 foreach (Hediff h in p.health.hediffSet.hediffs)
                 {
                     if (h.def == FireDefOf.Avir_FireWard) { el = fire; any = true; break; }
-                    if (h.def == WaterDefOf.Avir_WaterWard) { el = water; any = true; break; }
+                    if (h.def == WaterDefOf.Avir_WaterWard)
+                {
+                    el = water; any = true;
+                    if (Find.TickManager.TicksGame % 60 == 0 && !Find.TickManager.Paused)
+                        foreach (IntVec3 c in GenRadial.RadialCellsAround(p.Position, 3f, true)) if (c.InBounds(map)) FireMagic.Extinguish(c, map);
+                    break;
+                }
                     if (h.def == MagicSpellDefOf.Avir_ArcaneWard) { el = WardElement.Get(p); any = true; break; }
                 }
                 if (!any) continue;
@@ -382,7 +454,7 @@ namespace Avir.Magic
         }
     }
 
-    /// <summary>The weapon of water: melee blows knock the foe back a step.</summary>
+    /// <summary>The weapon of water: blows soak the foe; each blow on a soaked one parches them further.</summary>
     [HarmonyPatch(typeof(Verb_MeleeAttackDamage), "ApplyMeleeDamageToTarget")]
     public static class Patch_WaterEnchantMelee
     {
@@ -391,7 +463,14 @@ namespace Avir.Magic
             if (!AvirMagic.On || WaterDefOf.Avir_WaterEnchant == null) return;
             Pawn p = __instance.CasterPawn;
             if (p?.health?.hediffSet?.GetFirstHediffOfDef(WaterDefOf.Avir_WaterEnchant) == null) return;
-            if (target.Thing is Pawn foe && !foe.Dead && Rand.Chance(0.6f)) { WaterMagic.Soak(foe, 0.6f); WaterMagic.Push(foe, p.Position, 1, foe.Map); }
+            if (!(target.Thing is Pawn foe) || foe.Dead || !foe.RaceProps.IsFlesh) return;
+            // a soaked foe is parched further with every blow: the weakness gathers
+            if (foe.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Soaked) != null)
+            {
+                Hediff h = foe.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Parched) ?? foe.health.AddHediff(WaterDefOf.Avir_Parched);
+                h.Severity = Mathf.Min(1f, h.Severity + 0.12f);
+            }
+            WaterMagic.Soak(foe, 0.6f);
         }
     }
 
@@ -406,6 +485,7 @@ namespace Avir.Magic
         public static HediffDef Avir_Chilled;
         public static ThingDef Avir_HeldWater;
         public static ThingDef Avir_WaterSpirit;
+        public static HediffDef Avir_InMist;
         static WaterDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(WaterDefOf)); }
     }
 }

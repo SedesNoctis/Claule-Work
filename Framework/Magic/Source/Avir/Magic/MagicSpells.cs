@@ -56,6 +56,9 @@ namespace Avir.Magic
 
         public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s) => CastTicks(c.Sorcerer, s);
 
+        /// <summary>A far target takes longer: +2% for every cell past twelve - a mage across the map is seen coming.</summary>
+        public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s, float distance) => Mathf.RoundToInt(CastTicks(c, s) * (1f + 0.02f * Mathf.Max(0f, distance - 12f)));
+
         /// <summary>Sorcerer quick, mage slow; a larger circle longer; each reach rune a little longer (+5%).</summary>
         public static int CastTicks(bool sorcerer, RitualSchema s) => s.weave != null ? WeaveSpell.CastTicks(sorcerer, s.weave) : Mathf.RoundToInt((sorcerer ? 60f : 150f) * (1f + 0.25f * (int)s.size) * (1f + 0.05f * RitualEvaluator.Read(s).reach));
 
@@ -266,12 +269,14 @@ namespace Avir.Magic
         public static readonly Dictionary<Job, IntVec3> WallEnds = new Dictionary<Job, IntVec3>();
         public IntVec3 wallEnd = IntVec3.Invalid;
         private int started;
+        private int duration = 60;
 
         public override void ExposeData()
         {
             base.ExposeData();
             Scribe_Deep.Look(ref spell, "spell");
             Scribe_Values.Look(ref slot, "slot", -1);
+            Scribe_Values.Look(ref duration, "duration", 60);
             Scribe_Values.Look(ref wallEnd, "wallEnd", IntVec3.Invalid);
         }
 
@@ -283,7 +288,8 @@ namespace Avir.Magic
             if (WallEnds.TryGetValue(job, out IntVec3 we)) { wallEnd = we; WallEnds.Remove(job); }
             Hediff_ArcaneCore core = Mages.Core(pawn);
             this.FailOn(() => core == null || spell == null);
-            Toil cast = Toils_General.Wait(core != null && spell != null ? Spells.CastTicks(core, spell) : 60);
+            duration = core != null && spell != null ? Spells.CastTicks(core, spell, pawn.Position.DistanceTo(job.targetA.Cell)) : 60;
+            Toil cast = Toils_General.Wait(duration);
             cast.initAction = () => { started = Find.TickManager.TicksGame; Casting.Add(this); pawn.rotationTracker.FaceTarget(job.targetA); };
             cast.AddFinishAction(() => Casting.Remove(this));
             cast.WithProgressBarToilDelay(TargetIndex.None);
@@ -297,7 +303,7 @@ namespace Avir.Magic
             });
         }
 
-        public float Progress => spell == null ? 0f : Mathf.Clamp01((Find.TickManager.TicksGame - started) / (float)Mathf.Max(1, Spells.CastTicks(Mages.Core(pawn), spell)));
+        public float Progress => spell == null ? 0f : Mathf.Clamp01((Find.TickManager.TicksGame - started) / (float)Mathf.Max(1, duration));
     }
 
     /// <summary>Draws the circles of the spells being cast, under their casters.</summary>
@@ -312,6 +318,14 @@ namespace Avir.Magic
             {
                 if (d.pawn?.Map != map || d.spell == null) continue;
                 SpellSigil.Draw(d.pawn.DrawPos, d.spell, 0.4f + 0.6f * d.Progress, 1.6f + 0.6f * (int)d.spell.size);
+                // where it will strike, outlined in its colour for everyone - enemy casts too
+                if (d.job?.targetA.IsValid == true && d.job.targetA.Cell != d.pawn.Position)
+                {
+                    IntVec3 keep = SpellPreview.WallStart;
+                    if (d.wallEnd.IsValid) SpellPreview.WallStart = d.job.targetA.Cell;
+                    SpellPreview.Draw(d.pawn, d.spell, d.wallEnd.IsValid ? new LocalTargetInfo(d.wallEnd) : d.job.targetA, false);
+                    SpellPreview.WallStart = keep;
+                }
             }
         }
     }
@@ -425,13 +439,13 @@ namespace Avir.Magic
         /// <summary>The first click of a wall, while the second is being chosen.</summary>
         public static IntVec3 WallStart = IntVec3.Invalid;
 
-        public static void Draw(Pawn mage, RitualSchema s, LocalTargetInfo t)
+        public static void Draw(Pawn mage, RitualSchema s, LocalTargetInfo t, bool ring = true)
         {
             if (mage?.Map == null || s == null) return;
             Map map = mage.Map;
             float range = Spells.Range(s);
             bool inReach = t.IsValid && t.Cell.InBounds(map) && t.Cell.DistanceTo(mage.Position) <= range;
-            if (range < GenRadial.MaxRadialPatternRadius) GenDraw.DrawRadiusRing(mage.Position, range, inReach || !t.IsValid ? Color.white : Color.red);
+            if (ring && range < GenRadial.MaxRadialPatternRadius) GenDraw.DrawRadiusRing(mage.Position, range, inReach || !t.IsValid ? Color.white : Color.red);
             if (!t.IsValid || !t.Cell.InBounds(map)) return;
             Color col = Spells.ColorOf(s);
             IntVec3 at = t.Cell;

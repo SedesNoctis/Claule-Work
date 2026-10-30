@@ -104,19 +104,21 @@ namespace Avir.Magic
             switch (form?.kind)
             {
                 case RuneKind.Restore: e.main = "Washes the wounds of friends at the target and binds them - the bleeding stops."; break;
-                case RuneKind.Enchant: e.main = "Wraps a friend's weapon in water (the mage's, if no friend stands there): blows soak the foe and knock them back."; break;
-                case RuneKind.Summon: e.main = "Calls a water spirit: it knocks foes back with water and puts out the fires near it."; break;
-                case RuneKind.Sense: e.main = "The mage feels everything that moves within " + (20 + 10 * r.reach) + " cells, through walls, for a while."; break;
+                case RuneKind.Enchant: e.main = "Wraps a friend's weapon in water (the mage's, if no friend stands there): blows soak the foe, and every blow on a soaked one weakens them further."; break;
+                case RuneKind.Summon: e.main = "Calls a water spirit that keeps by the mage: it soaks and shoves foes, puts out fires near it, and catches one shot meant for the mage - then it is gone."; break;
+                case RuneKind.Sense: e.main = "There is water in every living thing: the mage feels them all within " + (25 + 10 * r.reach) + " cells, through walls - the unseen too, a ripple where they stand."; break;
                 case RuneKind.Step: e.main = "The mage rides a wave to the target, throwing aside whoever stands in the way" + (verbs.Count > 0 ? "; along the way the water " + what : "") + "."; break;
-                case RuneKind.Shape: e.main = "A curtain of standing water, up to " + FireMagic.WallMax(r) + " cells - its two ends chosen with two clicks" + (verbs.Count > 0 ? "; and it " + what : "") + "."; break;
+                case RuneKind.Shape: e.main = "The ground between two chosen points (up to " + FireMagic.WallMax(r) + " cells) turns to shallow water for a few hours: a moat - slow to cross, and fire will not burn there."; break;
                 default:
                     if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A ward of water on friends at the target." : "Water with nothing to do: add a verb or a form."; break; }
-                    string where = form?.kind == RuneKind.Aura ? "all around the mage" : form?.kind == RuneKind.Beam ? "in a jet to the target" : "at the point, " + radius.ToString("0.#") + " cells round";
+                    string where = form?.kind == RuneKind.Aura ? "all round the mage - and a mist stays round them for a while: foes in it are slowed and shoot poorly, fire does not start, and this happens again every few seconds"
+                                 : form?.kind == RuneKind.Beam ? "in a jet to the target - and the water flows on to " + (1 + r.breadth) + " more foe(s) nearby"
+                                 : "at the point, " + radius.ToString("0.#") + " cells round";
                     e.main = Cap(what) + " - " + where + ".";
                     break;
             }
             Repeats(e, verbs);
-            if (r.barrier > 0) e.Add("Ward of water", "Friends there get a skin of water: fire and burns bite far less, and flames on them go out.");
+            if (r.barrier > 0) e.Add("Ward of water", "Friends there get a ward of water: magic and fire bite less, and every fire within three cells of them goes out.");
             if (verbs.Any(v => v.kind == RuneKind.Release) && r.amplify > 0) e.Add("Further back", "Amplified, the burst throws foes further.");
             if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the water", "The water drawn out stays with the mage: their next water spell is stronger.");
             if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader jet - and each one makes the cast 8% longer.");

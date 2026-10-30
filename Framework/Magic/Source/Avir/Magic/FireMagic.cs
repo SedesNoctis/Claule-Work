@@ -54,12 +54,8 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Step:
                         var path = GenSight.BresenhamCellsBetween(caster.Position, at).Where(c => c.InBounds(map) && c != caster.Position).ToList();
-                        if (at.Standable(map))
-                        {
-                            FleckMaker.ThrowFireGlow(caster.DrawPos, map, 1.5f);
-                            caster.Position = at; caster.Notify_Teleported(true, false);
-                            FleckMaker.ThrowFireGlow(caster.DrawPos, map, 1.5f);
-                        }
+                        // the flame carries the mage there - seen all the way
+                        SpellDash.Carry(caster, at, RuneKind.Fire);
                         Apply(caster, map, verbs.Count > 0 ? verbs : new List<RuneDef> { RuneDefOfFire.Hold }, path, at, power, r, false);
                         break;
                     case RuneKind.Restore:
