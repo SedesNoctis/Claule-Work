@@ -492,8 +492,9 @@ namespace Avir.Ritualistics
                 {
                     if (mp.Faction != parent.Faction && mp.Faction != Faction.OfPlayer) continue;
                     Avir.Magic.Hediff_ArcaneCore mc = Avir.Magic.Mages.Core(mp);
-                    if (mc == null || mc.Fill >= 0.999f) continue;
-                    float mg = Mathf.Min(bank, mc.Capacity - mc.arcana);
+                    if (mc == null) continue;
+                    // no ceiling to a core: a ritual pours in up to one reserve's worth for each mage
+                    float mg = Mathf.Min(bank, mc.Capacity);
                     mc.Add(mg);
                     bank -= mg; spentTotal += mg;
                     if (bank <= 0.0001f) return false;

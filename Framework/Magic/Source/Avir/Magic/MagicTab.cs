@@ -108,7 +108,7 @@ namespace Avir.Magic
             if (core == null) { GUI.color = InkSoft; Widgets.Label(new Rect(r.x, r.y + 64f, r.width, 60f), "No arcane core - the gift will grow it back."); return; }
             // the Arcana, large
             Rect bar = new Rect(r.x, r.y + 70f, r.width, 34f);
-            Widgets.FillableBar(bar, core.Fill, SolidColorMaterials.NewSolidColorTexture(sorc ? new Color(0.93f, 0.68f, 0.12f) : new Color(0.16f, 0.32f, 0.92f)),
+            Widgets.FillableBar(bar, Mathf.Clamp01(core.Fill), SolidColorMaterials.NewSolidColorTexture(sorc ? new Color(0.93f, 0.68f, 0.12f) : new Color(0.16f, 0.32f, 0.92f)),
                 SolidColorMaterials.NewSolidColorTexture(new Color(0.12f, 0.1f, 0.08f, 0.6f)), false);
             core.Band(out float lo, out float hi);
             Color mk = sorc ? new Color(0.05f, 0.04f, 0.03f) : new Color(1f, 0.84f, 0.35f);

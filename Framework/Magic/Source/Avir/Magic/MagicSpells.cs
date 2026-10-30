@@ -70,6 +70,7 @@ namespace Avir.Magic
         {
             float risk = s.weave != null ? WeaveSpell.Risk(s.weave) : RitualEvaluator.Read(s).Risk(1f, 1f, 0f);
             float comp = GameComponent_AvirComposure.For(p, s, null);
+            if (Mages.Core(p)?.Sorcerer == true) comp *= 1.3f;
             return risk > comp ? Mathf.Clamp01(1f - (risk - comp) * 0.4f) : 1f;
         }
         public static int Cooldown(RitualSchema s) => Mathf.RoundToInt(GenDate.TicksPerHour * 0.25f * (1f + (int)s.size));
@@ -104,6 +105,7 @@ namespace Avir.Magic
             // the hold: composure against the spell's instability
             float risk = s.weave != null ? WeaveSpell.Risk(s.weave) : r.Risk(1f, 1f, 0f);
             float comp = GameComponent_AvirComposure.For(caster, s, null);
+            if (core.Sorcerer) comp *= 1.3f;   // a sorcerer's composure goes into the hold of a spell
             if (risk > comp && Rand.Chance((risk - comp) * 0.4f))
             {
                 caster.TakeDamage(new DamageInfo(DamageDefOf.Burn, 4f + 10f * (risk - comp), 0f, -1f, caster));

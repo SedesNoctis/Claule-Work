@@ -126,7 +126,9 @@ namespace Avir.Magic
 
         public bool Sorcerer => pawn.story?.traits?.GetTrait(MagicDefOf.Avir_ArcaneGift)?.Degree == Mages.Born;
 
-        public float Capacity => 100f * level * MagicConductors.CapacityFactor(pawn);
+        /// <summary>The core's calm reserve - not a ceiling: Arcana can be held past it, and then greatness grows.
+        /// A sorcerer's reserve is half again as deep.</summary>
+        public float Capacity => 100f * level * MagicConductors.CapacityFactor(pawn) * (Sorcerer ? 1.5f : 1f);
         public float Fill => Capacity <= 0f ? 0f : arcana / Capacity;
 
         public float Composure => pawn.GetStatValue(RitualDefOf.Avir_Composure);
@@ -134,12 +136,19 @@ namespace Avir.Magic
         /// <summary>The band, as shares of the capacity: wider with composure and with what steadies the mage.</summary>
         public void Band(out float lo, out float hi)
         {
-            float c = Mathf.Clamp01(Composure), w = MagicConductors.BandWidening(pawn);
-            lo = Mathf.Max(0.06f, 0.25f - 0.15f * c - w);
-            hi = Mathf.Min(0.96f, 0.65f + 0.25f * c + w);
+            float c = Mathf.Max(0f, Composure), w = MagicConductors.BandWidening(pawn);
+            lo = Mathf.Max(0.06f, 0.25f - 0.15f * Mathf.Clamp01(c) - w);
+            // a mage's composure keeps thoughts of their own greatness further and further off - past the reserve, but never
+            // all the way; a sorcerer's hardly does (their composure goes into holding spells instead)
+            hi = Sorcerer ? 0.65f + 0.1f * Mathf.Clamp01(c) + w : 0.65f + 0.6f * (1f - Mathf.Exp(-1.3f * c)) + w;
         }
 
-        public void Add(float amount) => arcana = Mathf.Clamp(arcana + amount, 0f, Capacity);
+        /// <summary>How readily greatness swells past the band: a sorcerer always gives way to it; a mage less and less
+        /// the steadier they are - never not at all.</summary>
+        public float Pride => Sorcerer ? 1.25f - 0.15f * Mathf.Clamp01(Composure) : 0.15f + 1.35f * Mathf.Exp(-1.5f * Mathf.Max(0f, Composure));
+
+        /// <summary>No ceiling: Arcana may be held past the reserve (only never below nothing).</summary>
+        public void Add(float amount) => arcana = Mathf.Max(0f, arcana + amount);
 
         public override string LabelInBrackets => "level " + level + " · Arcana " + Mathf.FloorToInt(arcana) + " / " + Mathf.FloorToInt(Capacity);
 
@@ -177,14 +186,14 @@ namespace Avir.Magic
                 if (n > 0) Messages.Message(pawn.LabelShortCap + "'s spells (" + n + ") are written into the colony's book.", pawn, MessageTypeDefOf.PositiveEvent, false);
             }
             float hours = dt / (float)GenDate.TicksPerHour;
-            arcana = Mathf.Min(arcana, Capacity);
             // the map's stream seeps into a mage a little on its own
             Map m = pawn.MapHeld;
             if (m != null)
             {
                 MapComponent_ExternalFlow ext = MapComponent_ExternalFlow.Of(m);
                 int tier = ext == null ? 0 : MapComponent_ExternalFlow.TierIndex(ext.Total);
-                if (tier > 0) Add(Capacity * 0.02f * tier * hours);
+                // only up to the reserve: past it Arcana is taken in on purpose, never by itself
+                if (tier > 0 && arcana < Capacity) Add(Mathf.Min(Capacity - arcana, Capacity * 0.02f * tier * hours));
             }
             if (vent) MagicVent.Vent(this, hours);
             Band(out float lo, out float hi);
@@ -194,9 +203,9 @@ namespace Avir.Magic
             if (f > hi)
             {
                 // too much: greatness swells, the faster the poorer the hold
-                float over = (f - hi) / Mathf.Max(0.01f, 1f - hi);
+                float over = (f - hi) / Mathf.Max(0.05f, hi);
                 if (great == null) great = pawn.health.AddHediff(MagicDefOf.Avir_ArcaneGreatness);
-                great.Severity = Mathf.Min(1f, great.Severity + 0.06f * hours * (0.5f + over) * (1.5f - Mathf.Clamp01(Composure)));
+                great.Severity = Mathf.Min(1f, great.Severity + 0.06f * hours * (0.5f + over) * Pride);
                 outsideTicks += dt;
             }
             else if (great != null)
@@ -290,7 +299,7 @@ namespace Avir.Magic
             if (Widgets.ButtonInvisible(tog)) core.vent = !core.vent;
             TooltipHandler.TipRegion(tog, core.vent ? "Letting the excess out on its own - above the white mark. Click to hold it all." : "Holding it all. Click to let the excess out on its own.");
             Rect bar = new Rect(inner.x, inner.y + 28f, inner.width, inner.height - 28f);
-            Widgets.FillableBar(bar, core.Fill, sorc ? SorcFill : MageFill, Empty, false);
+            Widgets.FillableBar(bar, Mathf.Clamp01(core.Fill), sorc ? SorcFill : MageFill, Empty, false);
             core.Band(out float lo, out float hi);
             Texture2D mark = sorc ? Black : Gold;
             GUI.DrawTexture(new Rect(bar.x + bar.width * lo - 1f, bar.y, 2f, bar.height), mark);
@@ -336,7 +345,7 @@ namespace Avir.Magic
             float x0 = X(sorc ? 0.127f : 0.130f), x1 = X(sorc ? 0.873f : 0.870f);
             Rect slot = sorc ? new Rect(x0, r.y + r.height * 0.568f, x1 - x0, r.height * 0.212f)
                              : new Rect(x0, r.y + r.height * 0.590f, x1 - x0, r.height * 0.225f);
-            Widgets.FillableBar(slot, core.Fill, sorc ? SorcFill : MageFill, Empty, false);
+            Widgets.FillableBar(slot, Mathf.Clamp01(core.Fill), sorc ? SorcFill : MageFill, Empty, false);
             core.Band(out float lo, out float hi);
             Texture2D mark = sorc ? Black : Gold;
             GUI.DrawTexture(new Rect(slot.x + slot.width * lo - 1f, slot.y, 2f, slot.height), mark);
@@ -677,6 +686,8 @@ namespace Avir.Magic
             int tier = 0;
             if (p.MapHeld != null) { var ext = Avir.Ritualistics.MapComponent_ExternalFlow.Of(p.MapHeld); tier = ext == null ? 0 : Avir.Ritualistics.MapComponent_ExternalFlow.TierIndex(ext.Total); }
             float add = c.Capacity * 0.25f * (1f + 0.5f * tier) * ticks / (float)RimWorld.GenDate.TicksPerHour;
+            // past the reserve the core takes it in slowly
+            if (c.arcana >= c.Capacity) add *= 0.5f;
             // beside a lit sanctuary: three times as fast, drawn from its store
             CompSanctuary s = CompSanctuary.Near(p);
             if (s != null) add += s.Draw(add * 2f);
