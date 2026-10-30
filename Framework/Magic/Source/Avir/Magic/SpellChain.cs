@@ -104,9 +104,11 @@ namespace Avir.Magic
                 caster = caster, root = root, links = Order(root), power = power, target = target,
                 storm = WeaveSpell.Storm(root), wallTo = FireMagic.WallTo
             };
+            // the map is taken before the first circle: a step may carry the mage off it (under the ground, in the air)
+            Map map = caster.Map;
             // the first circle at once - a spell of one circle is over in this very moment
             Run(c);
-            if (c.next < c.links.Count || Waiting(c)) caster.Map?.GetComponent<MapComponent_SpellChain>()?.chains.Add(c);
+            if (c.next < c.links.Count || Waiting(c)) map?.GetComponent<MapComponent_SpellChain>()?.chains.Add(c);
             else Finish(c);
         }
 
