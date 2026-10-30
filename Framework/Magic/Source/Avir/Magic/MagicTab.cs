@@ -88,7 +88,7 @@ namespace Avir.Magic
             float tx = inner.x;
             foreach (int pg in new[] { 0, 1 })
             {
-                string label = pg == 0 ? "Spells" : "Path of the mage";
+                string label = pg == 0 ? "Spells" : core != null && core.Sorcerer ? "Path of the sorcerer" : "Path of the mage";
                 float w = Text.CalcSize(label).x + 40f;
                 Rect tr = new Rect(tx, inner.y, w, 30f);
                 if (RitualUI.Button(tr, label, true, page == pg)) page = pg;

@@ -63,12 +63,15 @@ namespace Avir.Magic
         public static int CastTicks(bool sorcerer, RitualSchema s) => s.weave != null ? WeaveSpell.CastTicks(sorcerer, s.weave) : Mathf.RoundToInt((sorcerer ? 60f : 150f) * (1f + 0.25f * (int)s.size) * (1f + 0.05f * RitualEvaluator.Read(s).reach));
 
         /// <summary>The map's stream, by tier (0 calm ... 4 cataclysm), if it is set to strengthen mages.</summary>
+        /// <summary>The stream that strengthens a spell makes it wilder too: every stage of it is harder to hold.</summary>
+        public static float FlowUnrest(Map m) => 0.06f * FlowTier(m);
+
         public static int FlowTier(Map m) => AvirMod.Settings.flowStrengthensMages && m != null ? MapComponent_ExternalFlow.TierIndex(MapComponent_ExternalFlow.Of(m)?.Total ?? 0f) : 0;
 
         /// <summary>Chance the mage keeps hold of this spell.</summary>
         public static float HoldChance(Pawn p, RitualSchema s)
         {
-            float risk = s.weave != null ? WeaveSpell.Risk(s.weave) : RitualEvaluator.Read(s).Risk(1f, 1f, 0f);
+            float risk = (s.weave != null ? WeaveSpell.Risk(s.weave) : RitualEvaluator.Read(s).Risk(1f, 1f, 0f)) + FlowUnrest(p.MapHeld);
             float comp = GameComponent_AvirComposure.For(p, s, null);
             if (Mages.Core(p)?.Sorcerer == true) comp *= 1.3f;
             return risk > comp ? Mathf.Clamp01(1f - (risk - comp) * 0.4f) : 1f;
@@ -103,7 +106,7 @@ namespace Avir.Magic
             if (core.arcana < cost) { Messages.Message(caster.LabelShortCap + " has not enough Arcana for " + s.name + ".", caster, MessageTypeDefOf.RejectInput, false); return; }
             core.Add(-cost);
             // the hold: composure against the spell's instability
-            float risk = s.weave != null ? WeaveSpell.Risk(s.weave) : r.Risk(1f, 1f, 0f);
+            float risk = (s.weave != null ? WeaveSpell.Risk(s.weave) : r.Risk(1f, 1f, 0f)) + FlowUnrest(map);
             float comp = GameComponent_AvirComposure.For(caster, s, null);
             if (core.Sorcerer) comp *= 1.3f;   // a sorcerer's composure goes into the hold of a spell
             if (risk > comp && Rand.Chance((risk - comp) * 0.4f))
