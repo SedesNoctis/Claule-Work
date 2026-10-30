@@ -149,7 +149,7 @@ namespace Avir.Magic
                             FleckMaker.Static(at.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, Mathf.Sqrt(cells.Count) * 1.6f);
                             foreach (IntVec3 c in cells) FleckMaker.ThrowFireGlow(c.ToVector3Shifted(), map, 1.1f);
                         }
-                        foreach (IntVec3 c in cells) if (Rand.Chance(0.5f) && !MagicFx.ByMage(c, caster)) FireUtility.TryStartFireIn(c, map, 0.3f + 0.2f * power, caster);
+                        foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) FireUtility.TryStartFireIn(c, map, 0.3f + 0.2f * power, caster);
                         if (rv.amplify > 0)
                             GenExplosion.DoExplosion(aroundSelf ? at : cells[cells.Count - 1], map, 1.9f + rv.amplify, DamageDefOf.Flame, caster, Mathf.RoundToInt(12f * power), -1f,
                                 null, null, null, null, null, 0f, 1, null, null, 255, false, null, 0f, 1, 0.5f, false, null, new List<Thing> { caster });
@@ -177,7 +177,7 @@ namespace Avir.Magic
                         foreach (IntVec3 c in near)
                         {
                             foreach (Fire f in c.GetThingList(map).OfType<Fire>().ToList()) f.fireSize = Mathf.Min(Fire.MaxFireSize, f.fireSize + 0.5f);
-                            if (Rand.Chance(0.8f) && !MagicFx.ByMage(c, caster)) FireUtility.TryStartFireIn(c, map, 0.4f + 0.2f * power, caster);
+                            if (Rand.Chance(0.8f)) FireUtility.TryStartFireIn(c, map, 0.4f + 0.2f * power, caster);
                         }
                         break;
                     case RuneKind.Purge:

@@ -131,7 +131,7 @@ namespace Avir.Magic
                 else if (EarthMagic.Is(circle.element)) EarthMagic.Cast(caster, one, r, c.target, p);
                 else if (AirMagic.Is(circle.element)) AirMagic.Cast(caster, one, r, c.target, p);
             }
-            finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; MagicFx.Unburn(caster); }
+            finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; }
             // where this circle ends, the next one strikes
             bool step = r.verbs.Any(v => v.kind == RuneKind.Step);
             bool aura = r.verbs.Any(v => v.kind == RuneKind.Aura);
@@ -178,7 +178,6 @@ namespace Avir.Magic
             {
                 Chain c = chains[i];
                 if (c.caster == null || c.caster.Dead) { chains.RemoveAt(i); continue; }
-                if (now % 10 == 0) MagicFx.Unburn(c.caster);
                 if (Waiting(c))
                 {
                     bool done = now >= c.giveUp

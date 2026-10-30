@@ -58,7 +58,7 @@ namespace Avir.Magic
                     // the flash where the path begins; at the mage's end it is only light
                     FleckMaker.Static(from.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 3f);
                     p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 8f * power, 0f, -1f, mage));
-                    foreach (IntVec3 c in GenRadial.RadialCellsAround(from, 1.5f, true)) if (c.InBounds(map) && Rand.Chance(0.5f) && !MagicFx.ByMage(c, mage)) FireUtility.TryStartFireIn(c, map, 0.3f, mage);
+                    foreach (IntVec3 c in GenRadial.RadialCellsAround(from, 1.5f, true)) if (c.InBounds(map) && Rand.Chance(0.5f)) FireUtility.TryStartFireIn(c, map, 0.3f, mage);
                     if (p.Dead || !p.Spawned) continue;
                 }
                 var flyer = (SpellDash)MakeFlyer(def, p, to, null, null);
