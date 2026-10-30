@@ -116,7 +116,7 @@ namespace Avir.Magic
             Rect inner = r.ContractedBy(14f);
             GUI.color = new Color(col.r * 0.7f, col.g * 0.5f, col.b * 0.4f, 1f);
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(inner.x, inner.y - 4f, inner.width, 24f), "WHAT IT DOES");
+            Widgets.Label(new Rect(inner.x, inner.y - 4f, inner.width, 24f), "THE MAIN EFFECT");
             GUI.color = new Color(0.22f, 0.14f, 0.08f, 1f);
             float th = Text.CalcHeight(e.main, inner.width);
             Widgets.Label(new Rect(inner.x, inner.y + 20f, inner.width, th), e.main);
