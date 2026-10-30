@@ -161,7 +161,9 @@ namespace Avir.Magic
         /// <summary>Water left on the ground: the game's own puddle.</summary>
         public static void Puddle(IntVec3 c, Map map)
         {
-            if (ThingDefOf.Filth_Water != null && c.InBounds(map) && c.Standable(map)) FilthMaker.TryMakeFilth(c, map, ThingDefOf.Filth_Water);
+            // a pool, not a drop: wide and deep enough to be seen
+            ThingDef pool = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_SpellPuddle") ?? ThingDefOf.Filth_Water;
+            if (pool != null && c.InBounds(map) && c.Standable(map)) FilthMaker.TryMakeFilth(c, map, pool, 3);
         }
 
         /// <summary>Water flows on: from where the jet ends to the next foe within four cells, and on again.</summary>
@@ -447,11 +449,14 @@ namespace Avir.Magic
     }
 
     /// <summary>The weapon of water: blows soak the foe; each blow on a soaked one parches them further.</summary>
-    [HarmonyPatch(typeof(Verb_MeleeAttackDamage), "ApplyMeleeDamageToTarget")]
+    // on the blow itself, whatever weapon or mod makes it: any melee hit that lands
+    [HarmonyPatch(typeof(Verb_MeleeAttack), "TryCastShot")]
     public static class Patch_WaterEnchantMelee
     {
-        public static void Postfix(Verb_MeleeAttackDamage __instance, LocalTargetInfo target)
+        public static void Postfix(Verb_MeleeAttack __instance, bool __result)
         {
+            if (!__result) return;
+            LocalTargetInfo target = __instance.CurrentTarget;
             if (!AvirMagic.On || WaterDefOf.Avir_WaterEnchant == null) return;
             Pawn p = __instance.CasterPawn;
             if (p?.health?.hediffSet?.GetFirstHediffOfDef(WaterDefOf.Avir_WaterEnchant) == null) return;

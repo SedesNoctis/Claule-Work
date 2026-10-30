@@ -199,3 +199,119 @@ namespace Avir.Magic
         }
     }
 }
+
+namespace Avir.Magic
+{
+    /// <summary>How a spell is cast once its target is chosen. Most spells are held standing: the mage stays put until
+    /// the cast is done or broken off (a gizmo, while it lasts). Air is always on the move: a spell of air alone is
+    /// cast while the mage walks - the circle travels with them.</summary>
+    public static class SpellCasting
+    {
+        /// <summary>A spell of air alone (every element in it is air).</summary>
+        public static bool OfAir(RitualSchema s)
+        {
+            if (s == null) return false;
+            var els = s.weave != null ? WeaveSpell.Small(s.weave).Where(c => c.element != null).Select(c => c.element).ToList()
+                                      : RitualEvaluator.Read(s).elements;
+            return els.Count > 0 && els.All(e => e.kind == RuneKind.Air);
+        }
+
+        public static void Order(Pawn mage, RitualSchema spell, int slot, LocalTargetInfo target, IntVec3 wallEnd)
+        {
+            if (OfAir(spell))
+            {
+                Hediff_ArcaneCore core = Mages.Core(mage);
+                if (core == null) return;
+                MapComponent_AirCasts.Begin(mage, spell.Copy(), slot, target, wallEnd, Spells.CastTicks(core, spell, mage.Position.DistanceTo(target.Cell)));
+                return;
+            }
+            Verse.AI.Job j = Verse.JobMaker.MakeJob(MagicSpellDefOf.Avir_CastSpell, target);
+            JobDriver_CastSpell.Pending[j] = new KeyValuePair<RitualSchema, int>(spell.Copy(), slot);
+            if (wallEnd.IsValid) JobDriver_CastSpell.WallEnds[j] = wallEnd;
+            if (!mage.jobs.TryTakeOrderedJob(j, Verse.AI.JobTag.Misc)) { JobDriver_CastSpell.Pending.Remove(j); JobDriver_CastSpell.WallEnds.Remove(j); }
+        }
+
+        /// <summary>Is this mage holding a cast right now (standing, or air on the move)?</summary>
+        public static bool Busy(Pawn p) => p.CurJobDef == MagicSpellDefOf.Avir_CastSpell || MapComponent_AirCasts.Of(p) != null;
+
+        /// <summary>Break off the cast: the spell is lost, and half of its Arcana with it.</summary>
+        public static void BreakOff(Pawn p)
+        {
+            RitualSchema s = (p.jobs?.curDriver as JobDriver_CastSpell)?.spell ?? MapComponent_AirCasts.Of(p)?.spell;
+            Hediff_ArcaneCore core = Mages.Core(p);
+            if (s != null && core != null) core.Add(-Spells.Cost(s) * 0.5f);
+            if (p.CurJobDef == MagicSpellDefOf.Avir_CastSpell) p.jobs.EndCurrentJob(Verse.AI.JobCondition.InterruptForced);
+            MapComponent_AirCasts.Cancel(p);
+            Messages.Message(p.LabelShortCap + " lets the spell go - half its Arcana is spent for nothing.", p, MessageTypeDefOf.SilentInput, false);
+        }
+    }
+
+    /// <summary>Spells of air, cast on the move: the mage walks, fights, does what they will - the circle goes with them
+    /// and the spell is loosed when it is ready, at the target it was aimed at.</summary>
+    public class MapComponent_AirCasts : MapComponent
+    {
+        public class Cast : IExposable
+        {
+            public Pawn mage; public RitualSchema spell; public int slot; public LocalTargetInfo target; public IntVec3 wallEnd = IntVec3.Invalid;
+            public int started, duration;
+            public float Progress => Mathf.Clamp01((Find.TickManager.TicksGame - started) / (float)Mathf.Max(1, duration));
+            public void ExposeData()
+            {
+                Scribe_References.Look(ref mage, "mage"); Scribe_Deep.Look(ref spell, "spell"); Scribe_Values.Look(ref slot, "slot");
+                Scribe_TargetInfo.Look(ref target, "target"); Scribe_Values.Look(ref wallEnd, "wallEnd", IntVec3.Invalid);
+                Scribe_Values.Look(ref started, "started"); Scribe_Values.Look(ref duration, "duration");
+            }
+        }
+
+        public List<Cast> casts = new List<Cast>();
+
+        public MapComponent_AirCasts(Map map) : base(map) { }
+
+        public static Cast Of(Pawn p) => p?.Map?.GetComponent<MapComponent_AirCasts>()?.casts.FirstOrDefault(c => c.mage == p);
+
+        public static void Begin(Pawn mage, RitualSchema spell, int slot, LocalTargetInfo target, IntVec3 wallEnd, int duration)
+        {
+            var comp = mage.Map?.GetComponent<MapComponent_AirCasts>();
+            if (comp == null) return;
+            comp.casts.RemoveAll(c => c.mage == mage);
+            comp.casts.Add(new Cast { mage = mage, spell = spell, slot = slot, target = target, wallEnd = wallEnd, started = Find.TickManager.TicksGame, duration = duration });
+        }
+
+        public static void Cancel(Pawn p) => p?.Map?.GetComponent<MapComponent_AirCasts>()?.casts.RemoveAll(c => c.mage == p);
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Collections.Look(ref casts, "casts", LookMode.Deep);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit) { if (casts == null) casts = new List<Cast>(); casts.RemoveAll(c => c?.mage == null || c.spell == null); }
+        }
+
+        public override void MapComponentTick()
+        {
+            if (casts.Count == 0) return;
+            int now = Find.TickManager.TicksGame;
+            for (int i = casts.Count - 1; i >= 0; i--)
+            {
+                Cast c = casts[i];
+                if (c.mage == null || c.mage.Dead || c.mage.Downed || !c.mage.Spawned || c.mage.Map != map || c.mage.InMentalState) { casts.RemoveAt(i); continue; }
+                if (now - c.started < c.duration) continue;
+                casts.RemoveAt(i);
+                Hediff_ArcaneCore core = Mages.Core(c.mage);
+                if (core == null) continue;
+                Spells.Resolve(c.mage, core, c.spell, c.target, c.wallEnd);
+                if (c.slot >= 0 && c.slot < 5) core.Book.cooldown[c.slot] = now + Spells.Cooldown(c.spell);
+            }
+        }
+
+        public override void MapComponentUpdate()
+        {
+            if (casts.Count == 0 || Find.CurrentMap != map) return;
+            foreach (Cast c in casts)
+            {
+                if (c.mage == null || !c.mage.Spawned) continue;
+                SpellSigil.Draw(c.mage.DrawPos, c.spell, 0.4f + 0.6f * c.Progress, 1.6f + 0.6f * (int)c.spell.size);
+                if (c.target.IsValid) SpellPreview.Draw(c.mage, c.spell, c.wallEnd.IsValid ? new LocalTargetInfo(c.wallEnd) : c.target, false);
+            }
+        }
+    }
+}

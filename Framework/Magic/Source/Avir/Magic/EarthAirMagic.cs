@@ -487,11 +487,14 @@ namespace Avir.Magic
     }
 
     /// <summary>The weapons of earth and air: earth adds a heavy blow that may stun; air throws the foe back.</summary>
-    [HarmonyPatch(typeof(Verb_MeleeAttackDamage), "ApplyMeleeDamageToTarget")]
+    // on the blow itself, whatever weapon or mod makes it: any melee hit that lands
+    [HarmonyPatch(typeof(Verb_MeleeAttack), "TryCastShot")]
     public static class Patch_EarthAirEnchantMelee
     {
-        public static void Postfix(Verb_MeleeAttackDamage __instance, LocalTargetInfo target)
+        public static void Postfix(Verb_MeleeAttack __instance, bool __result)
         {
+            if (!__result) return;
+            LocalTargetInfo target = __instance.CurrentTarget;
             if (!AvirMagic.On || EarthAirDefOf.Avir_EarthEnchant == null) return;
             Pawn p = __instance.CasterPawn;
             if (p?.health?.hediffSet == null || !(target.Thing is Pawn foe) || foe.Dead) return;

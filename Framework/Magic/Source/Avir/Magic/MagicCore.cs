@@ -237,6 +237,14 @@ namespace Avir.Magic
             foreach (Gizmo g in base.GetGizmos()) yield return g;
             if (!AvirMagic.On || pawn.Faction != Faction.OfPlayer) yield break;
             if (Find.Selector.NumSelected == 1) yield return new Gizmo_Arcana { core = this };
+            if (SpellCasting.Busy(pawn))
+                yield return new Command_Action
+                {
+                    defaultLabel = "Break off the spell",
+                    defaultDesc = "Let the spell being cast go. It is lost, and half of its Arcana with it.",
+                    icon = ContentFinder<Texture2D>.Get("UI/Designators/Cancel", false) ?? BaseContent.BadTex,
+                    action = () => SpellCasting.BreakOff(pawn)
+                };
             MageBook b = Book;
             for (int i = 0; i < b.open && i < 5; i++)
             {

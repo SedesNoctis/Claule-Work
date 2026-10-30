@@ -299,7 +299,9 @@ namespace Avir.Magic
             this.FailOn(() => core == null || spell == null);
             duration = core != null && spell != null ? Spells.CastTicks(core, spell, pawn.Position.DistanceTo(job.targetA.Cell)) : 60;
             Toil cast = Toils_General.Wait(duration);
-            cast.initAction = () => { started = Find.TickManager.TicksGame; Casting.Add(this); pawn.rotationTracker.FaceTarget(job.targetA); };
+            cast.initAction = () => { started = Find.TickManager.TicksGame; Casting.Add(this); pawn.pather?.StopDead(); pawn.rotationTracker.FaceTarget(job.targetA); };
+            // a cast is held standing: the mage does not walk until it is done (or broken off)
+            cast.tickAction = () => { if (pawn.pather != null && pawn.pather.Moving) pawn.pather.StopDead(); };
             cast.AddFinishAction(() => Casting.Remove(this));
             cast.WithProgressBarToilDelay(TargetIndex.None);
             cast.handlingFacing = true;
@@ -392,9 +394,7 @@ namespace Avir.Magic
             {
                 if (!mage.Spawned) return;
                 if (t.Cell.DistanceTo(mage.Position) > range) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
-                Job j = JobMaker.MakeJob(MagicSpellDefOf.Avir_CastSpell, t);
-                JobDriver_CastSpell.Pending[j] = new KeyValuePair<RitualSchema, int>(spell.Copy(), slot);
-                if (!mage.jobs.TryTakeOrderedJob(j, JobTag.Misc)) JobDriver_CastSpell.Pending.Remove(j);
+                SpellCasting.Order(mage, spell, slot, t, IntVec3.Invalid);
             }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, null, null, true, null,
             t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
         }
@@ -414,10 +414,7 @@ namespace Avir.Magic
                     SpellPreview.WallStart = IntVec3.Invalid;
                     if (!mage.Spawned) return;
                     if (end.Cell.DistanceTo(mage.Position) > range) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
-                    Job j = JobMaker.MakeJob(MagicSpellDefOf.Avir_CastSpell, start.Cell);
-                    JobDriver_CastSpell.Pending[j] = new KeyValuePair<RitualSchema, int>(spell.Copy(), slot);
-                    JobDriver_CastSpell.WallEnds[j] = end.Cell;
-                    if (!mage.jobs.TryTakeOrderedJob(j, JobTag.Misc)) { JobDriver_CastSpell.Pending.Remove(j); JobDriver_CastSpell.WallEnds.Remove(j); }
+                    SpellCasting.Order(mage, spell, slot, start.Cell, end.Cell);
                 }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, () => SpellPreview.WallStart = IntVec3.Invalid, null, true, null,
                 t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
             }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, null, null, true, null,

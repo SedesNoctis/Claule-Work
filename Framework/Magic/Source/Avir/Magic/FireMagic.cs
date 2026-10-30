@@ -505,11 +505,14 @@ namespace Avir.Magic
     }
 
     /// <summary>The burning weapon: melee blows add flame and may set the foe alight.</summary>
-    [HarmonyPatch(typeof(Verb_MeleeAttackDamage), "ApplyMeleeDamageToTarget")]
+    // on the blow itself, whatever weapon or mod makes it: any melee hit that lands
+    [HarmonyPatch(typeof(Verb_MeleeAttack), "TryCastShot")]
     public static class Patch_FireEnchantMelee
     {
-        public static void Postfix(Verb_MeleeAttackDamage __instance, LocalTargetInfo target)
+        public static void Postfix(Verb_MeleeAttack __instance, bool __result)
         {
+            if (!__result) return;
+            LocalTargetInfo target = __instance.CurrentTarget;
             if (!AvirMagic.On || FireDefOf.Avir_FireEnchant == null) return;
             Pawn p = __instance.CasterPawn;
             Hediff h = p?.health?.hediffSet?.GetFirstHediffOfDef(FireDefOf.Avir_FireEnchant);

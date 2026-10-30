@@ -5,7 +5,7 @@
     <driverClass>Avir.Magic.JobDriver_CastSpell</driverClass>
     <reportString>casting a spell.</reportString>
     <casualInterruptible>false</casualInterruptible>
-    <playerInterruptible>true</playerInterruptible>
+    <playerInterruptible>false</playerInterruptible>
     <suspendable>false</suspendable>
   </JobDef>
 
@@ -802,4 +802,25 @@
       </li>
     </stages>
   </HediffDef>
+  <ThingDef ParentName="BaseFilth">
+    <defName>Avir_SpellPuddle</defName>
+    <label>pool of water</label>
+    <description>Water a mage's spell left on the ground. It dries in a few hours.</description>
+    <statBases>
+      <Beauty>-5</Beauty>
+      <Cleanliness>-3</Cleanliness>
+    </statBases>
+    <graphicData>
+      <texPath>Things/Filth/PoolSoft</texPath>
+      <color>(110, 140, 190, 200)</color>
+      <drawSize>4</drawSize>
+    </graphicData>
+    <filth>
+      <disappearsInDays>0.3~0.5</disappearsInDays>
+      <cleaningWorkToReduceThickness>30</cleaningWorkToReduceThickness>
+      <canFilthAttach>false</canFilthAttach>
+      <allowsFire>false</allowsFire>
+      <cleaningSound>Interact_CleanFilth_Fluid</cleaningSound>
+    </filth>
+  </ThingDef>
 </Defs>

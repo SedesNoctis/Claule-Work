@@ -360,11 +360,14 @@ namespace Avir.Magic
     }
 
     /// <summary>Wards and those who strike them: a fire ward burns whoever hits its wearer up close.</summary>
-    [HarmonyPatch(typeof(Verb_MeleeAttackDamage), "ApplyMeleeDamageToTarget")]
+    // on the blow itself, whatever weapon or mod makes it: any melee hit that lands
+    [HarmonyPatch(typeof(Verb_MeleeAttack), "TryCastShot")]
     public static class Patch_WardStrikesBack
     {
-        public static void Postfix(Verb_MeleeAttackDamage __instance, LocalTargetInfo target)
+        public static void Postfix(Verb_MeleeAttack __instance, bool __result)
         {
+            if (!__result) return;
+            LocalTargetInfo target = __instance.CurrentTarget;
             if (!AvirMagic.On || !(target.Thing is Pawn t) || t.Dead) return;
             Pawn att = __instance.CasterPawn;
             if (att == null || att.Dead) return;
