@@ -178,7 +178,7 @@ namespace Avir.Magic
                     Messages.Message(ex.name + " is written into the book. Open it with Edit to see how it is made.", MessageTypeDefOf.NeutralEvent, false);
                 })).ToList()));
             if (Widgets.ButtonText(new Rect(r.xMax - 124f, top - 2f, 124f, 28f), "New spell..."))
-                SpellText.Caster = pawn; Find.WindowStack.Add(new Dialog_RitualEditor(new RitualSchema { name = "New spell", size = RitualCircleSize.Small }, sp => b.spells.Add(sp)));
+                Find.WindowStack.Add(new Dialog_SpellEditor(new RitualSchema { name = "New spell" }, pawn, sp => b.spells.Add(sp)));
             Rect area = new Rect(r.x, top + 32f, r.width, r.yMax - top - 32f);
             Rect view = new Rect(0f, 0f, area.width - 16f, Mathf.Max(1, b.spells.Count) * 64f);
             RitualScroll.Begin(area, ref spellScroll, view);
@@ -196,8 +196,11 @@ namespace Avir.Magic
                 Text.Font = GameFont.Tiny; GUI.color = InkSoft;
                 Widgets.Label(new Rect(row.x + 56f, row.y + 26f, row.width - 250f, 34f), Spells.Describe(s));
                 Text.Font = GameFont.Small;
-                if (Widgets.ButtonText(new Rect(row.xMax - 186f, row.y + 14f, 70f, 30f), "To hand"))
+                bool dbl = Event.current.type == EventType.MouseDown && Event.current.button == 0 && Event.current.clickCount == 2 && Mouse.IsOver(new Rect(row.x, row.y, row.width - 190f, row.height));
+                if (dbl && b.ready.Contains(s)) { for (int i = 0; i < 5; i++) if (b.ready[i] == s) b.ready[i] = null; Event.current.Use(); }
+                else if (Widgets.ButtonText(new Rect(row.xMax - 186f, row.y + 14f, 70f, 30f), "To hand") || dbl)
                 {
+                    if (dbl) Event.current.Use();
                     int free = -1;
                     for (int i = 0; i < b.open; i++) if (b.ready[i] == null) { free = i; break; }
                     if (free < 0) Messages.Message("Every place at hand is taken - clear one first.", MessageTypeDefOf.RejectInput, false);
@@ -206,7 +209,7 @@ namespace Avir.Magic
                 if (Widgets.ButtonText(new Rect(row.xMax - 112f, row.y + 14f, 54f, 30f), "Edit"))
                 {
                     RitualSchema old = s;
-                    SpellText.Caster = pawn; Find.WindowStack.Add(new Dialog_RitualEditor(s, sp =>
+                    Find.WindowStack.Add(new Dialog_SpellEditor(s, pawn, sp =>
                     {
                         int at = b.spells.IndexOf(old);
                         if (at >= 0) b.spells[at] = sp; else b.spells.Add(sp);

@@ -47,6 +47,7 @@ namespace Avir.Magic
         public static float Cost(RitualSchema s)
         {
             // in units, not tens: a small circle costs 2 + 1 a rune; medium x1.5, large x2; every element past the first +3
+            if (s.weave != null) return WeaveSpell.Cost(s.weave);
             RitualReading r = RitualEvaluator.Read(s);
             int n = s.AllRunes.Count();
             float size = s.size == RitualCircleSize.Large ? 2f : s.size == RitualCircleSize.Medium ? 1.5f : 1f;
@@ -56,7 +57,7 @@ namespace Avir.Magic
         public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s) => CastTicks(c.Sorcerer, s);
 
         /// <summary>Sorcerer quick, mage slow; a larger circle longer; each reach rune a little longer (+5%).</summary>
-        public static int CastTicks(bool sorcerer, RitualSchema s) => Mathf.RoundToInt((sorcerer ? 60f : 150f) * (1f + 0.25f * (int)s.size) * (1f + 0.05f * RitualEvaluator.Read(s).reach));
+        public static int CastTicks(bool sorcerer, RitualSchema s) => s.weave != null ? WeaveSpell.CastTicks(sorcerer, s.weave) : Mathf.RoundToInt((sorcerer ? 60f : 150f) * (1f + 0.25f * (int)s.size) * (1f + 0.05f * RitualEvaluator.Read(s).reach));
 
         /// <summary>The map's stream, by tier (0 calm ... 4 cataclysm), if it is set to strengthen mages.</summary>
         public static int FlowTier(Map m) => AvirMod.Settings.flowStrengthensMages && m != null ? MapComponent_ExternalFlow.TierIndex(MapComponent_ExternalFlow.Of(m)?.Total ?? 0f) : 0;
@@ -64,23 +65,23 @@ namespace Avir.Magic
         /// <summary>Chance the mage keeps hold of this spell.</summary>
         public static float HoldChance(Pawn p, RitualSchema s)
         {
-            float risk = RitualEvaluator.Read(s).Risk(1f, 1f, 0f);
+            float risk = s.weave != null ? WeaveSpell.Risk(s.weave) : RitualEvaluator.Read(s).Risk(1f, 1f, 0f);
             float comp = GameComponent_AvirComposure.For(p, s, null);
             return risk > comp ? Mathf.Clamp01(1f - (risk - comp) * 0.4f) : 1f;
         }
         public static int Cooldown(RitualSchema s) => Mathf.RoundToInt(GenDate.TicksPerHour * 0.25f * (1f + (int)s.size));
-        public static float Range(RitualSchema s) => 16f + 10f * RitualEvaluator.Read(s).reach;
+        public static float Range(RitualSchema s) => 16f + 10f * (s.weave != null ? WeaveSpell.Reach(s.weave) : RitualEvaluator.Read(s).reach);
         public static float Power(RitualSchema s) => RitualCircles.PowerFactor(s.size) * (1f + 0.3f * RitualEvaluator.Read(s).amplify);
-        public static RuneDef Element(RitualSchema s) => RitualEvaluator.Read(s).elements.FirstOrDefault();
+        public static RuneDef Element(RitualSchema s) => s.weave != null ? (s.weave.element ?? s.weave.All().Select(c => c.element).FirstOrDefault(e => e != null)) : RitualEvaluator.Read(s).elements.FirstOrDefault();
 
-        public static Color ColorOf(RitualSchema s) => RitualAspects.ColorOfRitual(s);
+        public static Color ColorOf(RitualSchema s) => s.weave != null ? (Element(s)?.color ?? new Color(0.9f, 0.8f, 0.6f)) : RitualAspects.ColorOfRitual(s);
 
         public static string Describe(RitualSchema s)
         {
             RitualReading r = RitualEvaluator.Read(s);
             var parts = new List<string>();
             RuneDef el = r.elements.FirstOrDefault();
-            if (FireMagic.Is(el)) return SpellText.Explain(s).main + "\nArcana " + Cost(s).ToString("0") + ", range " + Range(s).ToString("0");
+            if (s.weave != null || FireMagic.Is(el)) return SpellText.Explain(s).main + "\nArcana " + Cost(s).ToString("0") + ", range " + Range(s).ToString("0");
             foreach (RuneDef v in r.verbs) parts.Add(v.LabelCap + (Made(v.kind) ? "" : " (not made yet)"));
             return (el != null ? el.LabelCap + " - " : "") + string.Join(", ", parts) + "\nArcana " + Cost(s).ToString("0") + ", range " + Range(s).ToString("0");
         }
@@ -98,7 +99,7 @@ namespace Avir.Magic
             if (core.arcana < cost) { Messages.Message(caster.LabelShortCap + " has not enough Arcana for " + s.name + ".", caster, MessageTypeDefOf.RejectInput, false); return; }
             core.Add(-cost);
             // the hold: composure against the spell's instability
-            float risk = r.Risk(1f, 1f, 0f);
+            float risk = s.weave != null ? WeaveSpell.Risk(s.weave) : r.Risk(1f, 1f, 0f);
             float comp = GameComponent_AvirComposure.For(caster, s, null);
             if (risk > comp && Rand.Chance((risk - comp) * 0.4f))
             {
@@ -107,7 +108,8 @@ namespace Avir.Magic
                 g.Severity = Mathf.Min(1f, g.Severity + 0.08f);
                 FleckMaker.ThrowMicroSparks(caster.DrawPos, map);
                 Messages.Message(caster.LabelShortCap + " lost the hold on " + s.name + ": the Arcana burnt through.", caster, MessageTypeDefOf.NegativeEvent, false);
-                if (FireMagic.Is(r.elements.FirstOrDefault())) FireMagic.Raging(caster);
+                if (s.weave != null) WeaveSpell.Slip(caster, s.weave);
+                else if (FireMagic.Is(r.elements.FirstOrDefault())) FireMagic.Raging(caster);
                 return;
             }
             GameComponent_AvirComposure.Performed(caster, cost, risk, comp, GameComponent_AvirComposure.KeyOf(s));
@@ -121,6 +123,7 @@ namespace Avir.Magic
                 gr.Severity = Mathf.Min(1f, gr.Severity + 0.02f * tier);
             }
             RuneDef el = r.elements.FirstOrDefault();
+            if (s.weave != null) { WeaveSpell.Resolve(caster, s, target, power); return; }
             if (FireMagic.Is(el)) { FireMagic.Cast(caster, s, r, target, power); return; }
             IntVec3 at = target.Cell;
             float radius = 1.5f + 1.5f * r.breadth;

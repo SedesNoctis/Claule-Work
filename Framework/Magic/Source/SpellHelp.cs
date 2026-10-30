@@ -32,9 +32,11 @@ namespace Avir.Magic
             return d;
         }
 
+        public static SpellEffect ExplainSchema(RitualSchema s) => ExplainCore(s);
+
         public static SpellEffect Explain(RitualSchema s)
         {
-            SpellEffect e0 = ExplainCore(s);
+            SpellEffect e0 = s.weave != null ? WeaveSpell.Explain(s.weave) : ExplainCore(s);
             e0.details = Details(s);
             return e0;
         }
@@ -186,6 +188,9 @@ namespace Avir.Magic
                 rr.slots = Mathf.Max(1, rr.runes.Count);
                 s.rings.Add(rr);
             }
+            // written as one circle: its element in the centre, the rest in its sections
+            s.weave = SpellCircle.FromRings(s);
+            s.rings.Clear();
             return s;
         }
 
