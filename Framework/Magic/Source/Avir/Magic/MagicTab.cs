@@ -84,6 +84,27 @@ namespace Avir.Magic
             FlowStyle.Begin(pawn.MapHeld);
             Rect inner = ParchmentFrame.Draw(box).ContractedBy(8f);
             SheetWindow.MaximizeButton(this, new Rect(box.xMax - 100f, box.y + 28f, 24f, 24f), ref sheetMax, ref sheetNormal, true);
+            // the pages: the mage and their spells, or the path of the mage's growth
+            float tx = inner.x;
+            foreach (int pg in new[] { 0, 1 })
+            {
+                string label = pg == 0 ? "Spells" : "Path of the mage";
+                float w = Text.CalcSize(label).x + 40f;
+                Rect tr = new Rect(tx, inner.y, w, 30f);
+                if (RitualUI.Button(tr, label, true, page == pg)) page = pg;
+                tx += w + 8f;
+            }
+            inner.yMin += 38f;
+            if (page == 1)
+            {
+                Rect full = inner;
+                RitualArt.Panel(full.ExpandedBy(6f));
+                if (RitualArt.HasPanel) full = full.ContractedBy(10f);
+                DrawPath(full, core);
+                GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft; Text.Font = GameFont.Small;
+                FlowStyle.End();
+                return;
+            }
             float lw = inner.width * 0.30f, rw = inner.width * 0.24f;
             Rect left = new Rect(inner.x, inner.y, lw, inner.height);
             Rect right = new Rect(inner.xMax - rw, inner.y, rw, inner.height);
@@ -95,6 +116,18 @@ namespace Avir.Magic
             DrawRunes(right);
             GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft; Text.Font = GameFont.Small;
             FlowStyle.End();
+        }
+
+        private int page;
+
+        /// <summary>The path of the mage: how they grow - levels and what each brings. Not laid out yet: the page waits.</summary>
+        private void DrawPath(Rect r, Hediff_ArcaneCore core)
+        {
+            GUI.color = Ink; Text.Font = GameFont.Medium;
+            Widgets.Label(new Rect(r.x, r.y, r.width, 34f), "The path of " + pawn.LabelShort);
+            Text.Font = GameFont.Small; GUI.color = InkSoft;
+            Widgets.Label(new Rect(r.x, r.y + 40f, r.width, 60f), core == null ? "No arcane core." :
+                "Core level " + core.level + ". How a mage grows - and where their path leads - is still to be written here.");
         }
 
         private void DrawMage(Rect r, Hediff_ArcaneCore core)
