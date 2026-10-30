@@ -114,6 +114,8 @@ namespace Avir.Magic
         /// <summary>What happened to the mage lately, newest last: "tick|text".</summary>
         public List<string> log = new List<string>();
         public float ventedToArtifacts;
+        /// <summary>The mage's spells went into the colony's book when the mage became the colony's.</summary>
+        public bool shared;
 
         public void Note(string text)
         {
@@ -156,6 +158,7 @@ namespace Avir.Magic
             Scribe_Defs.Look(ref path, "path");
             Scribe_Collections.Look(ref log, "log", LookMode.Value);
             Scribe_Values.Look(ref ventedToArtifacts, "ventedToArtifacts");
+            Scribe_Values.Look(ref shared, "shared");
             if (log == null) log = new List<string>();
         }
 
@@ -166,6 +169,13 @@ namespace Avir.Magic
             if (acc < 250) return;
             int dt = acc; acc = 0;
             if (!AvirMagic.On || pawn.Dead) return;
+            // a mage who is the colony's now: their spells go into the colony's book
+            if (!shared && pawn.Faction == Faction.OfPlayer && !pawn.IsPrisoner)
+            {
+                shared = true;
+                int n = Book.spells.Count(s => GameComponent_SpellLibrary.Add(s));
+                if (n > 0) Messages.Message(pawn.LabelShortCap + "'s spells (" + n + ") are written into the colony's book.", pawn, MessageTypeDefOf.PositiveEvent, false);
+            }
             float hours = dt / (float)GenDate.TicksPerHour;
             arcana = Mathf.Min(arcana, Capacity);
             // the map's stream seeps into a mage a little on its own
@@ -551,6 +561,7 @@ namespace Avir.Magic
             if (__result.genes?.Xenotype?.defName?.StartsWith("Avir") == true) return;
             if (!Rand.Chance(Chance)) return;
             Mages.Gift(__result, Mages.Born, 1, Rand.Range(0.35f, 0.65f));
+            if (__result.Faction != Faction.OfPlayer) MagePath.Stranger(__result);
         }
     }
 

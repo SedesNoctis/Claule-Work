@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- RITUALS in the ritual book. Rings from the centre outward. hidden: found by drawing the pattern. -->
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_Charge</defName>
+    <label>charging</label>
+    <description>Charges the artifacts and crystal batteries lying in the circle and those worn by whoever stands in it, until all are full.</description>
+    <size>Small</size>
+    <hidden>false</hidden>
+    <uiOrder>0</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Fill</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_ChargeAll</defName>
+    <label>wide charging</label>
+    <description>Charges every artifact and battery within eight cells beyond the circle - set in buildings too - until all are full.</description>
+    <size>Medium</size>
+    <hidden>false</hidden>
+    <uiOrder>1</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Fill</li></runes></li>
+      <li><runes><li>Avir_Rune_Breadth</li><li>Avir_Rune_Breadth</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_Cleanse</defName>
+    <label>cleansing</label>
+    <description>Washes the artifacts and amulets in the circle back to how they were made: every cell undone, every point returned, the charge full.</description>
+    <size>Medium</size>
+    <hidden>false</hidden>
+    <uiOrder>2</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Purge</li></runes></li>
+      <li><runes><li>Avir_Rune_Safety</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_Transfer</defName>
+    <label>pouring</label>
+    <description>Pours all the experience of one vessel into another; the source is purged.</description>
+    <size>Medium</size>
+    <hidden>false</hidden>
+    <uiOrder>3</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Transfer</li></runes></li>
+      <li><runes><li>Avir_Rune_Purge</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li><li>Avir_Rune_Safety</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_FreeTransfer</defName>
+    <label>gentle pouring</label>
+    <description>Pours only the free experience - what stands behind no opened cell - from one vessel into another; the source keeps its development.</description>
+    <size>Medium</size>
+    <hidden>false</hidden>
+    <uiOrder>4</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Transfer</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+      <li><runes><li>Avir_Rune_Safety</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_Hold</defName>
+    <label>holding</label>
+    <description>Holds the living foes within reach of the circle while the energy streams.</description>
+    <size>Medium</size>
+    <hidden>false</hidden>
+    <uiOrder>5</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Hold</li></runes></li>
+      <li><runes><li>Avir_Rune_Anchor</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_Trap</defName>
+    <label>the Trap</label>
+    <description>The Trap: a circle of nothing but safety runes (closing runes may stand among them, and it stays a Trap). Armed, it holds any living foe that steps in - the prisoner is not drained, only held, until the chalk is washed away, it dies or it breaks out.</description>
+    <size>Medium</size>
+    <hidden>true</hidden>
+    <uiOrder>6</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Safety</li></runes></li>
+      <li><runes><li>Avir_Rune_Safety</li><li>Avir_Rune_Safety</li><li>Avir_Rune_Safety</li></runes></li>
+      <li><runes><li>Avir_Rune_Safety</li><li>Avir_Rune_Safety</li><li>Avir_Rune_Safety</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_EyeOfStorm</defName>
+    <label>the Eye of the storm</label>
+    <description>Sixteen places, two rings of focus, then safety and closing to seal it. It has no verb: it draws the map's stream in, calls a thunderstorm and throws lightning around the circle, and the closing runes lock the storm into the ritualist instead of letting it pour away. A strong ritualist who holds it to the end walks out with every worn artifact filled and a storm mantle - a dome of energy six cells wide that takes every hit meant for them or their friends under it and strikes any foe who steps in. A weak one is thrown clear by the safety runes; without them, the circle bursts.</description>
+    <size>Large</size>
+    <hidden>true</hidden>
+    <uiOrder>7</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Focus</li><li>Avir_Rune_Focus</li><li>Avir_Rune_Focus</li><li>Avir_Rune_Focus</li></runes></li>
+      <li><runes><li>Avir_Rune_Focus</li><li>Avir_Rune_Focus</li><li>Avir_Rune_Focus</li><li>Avir_Rune_Focus</li></runes></li>
+      <li><runes><li>Avir_Rune_Safety</li><li>Avir_Rune_Safety</li><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_Crystallize</defName>
+    <label>crystallizing</label>
+    <description>Ready-made for the psychic pylons: draws the charge out of every pylon within about 6.5 cells of the circle (the breadth rune widens the reach) and catches part of it as crystals of psychic energy at the centre of the circle. Best done while a pylon bleeds its charge away after a storm.</description>
+    <size>Medium</size>
+    <hidden>false</hidden>
+    <uiOrder>8</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Drain</li></runes></li>
+      <li><runes><li>Avir_Rune_Breadth</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_CrystallizeSmall</defName>
+    <label>crystallizing (small)</label>
+    <description>The small circle's way of catching a pylon's charge: it reaches only the pylons right next to the circle (within about 1.5 cells - draw it beside them). Part of the charge is caught as crystals of psychic energy at the centre.</description>
+    <size>Small</size>
+    <hidden>false</hidden>
+    <uiOrder>9</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Drain</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_SilverToGold</defName>
+    <label>silver into gold</label>
+    <description>The first transmutation every ritualist learns: silver laid in the circle turns into gold, by value. A small circle loses about a third of it.</description>
+    <size>Small</size>
+    <hidden>false</hidden>
+    <uiOrder>10</uiOrder>
+    <rings><li><runes><li>Avir_Rune_Transmute</li></runes></li><li><runes><li>Avir_Rune_Closing</li></runes></li></rings>
+    <components><li>Material:Silver</li><li>Seal:Gold</li></components>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_SteelToPlasteel</defName>
+    <label>steel into plasteel</label>
+    <description>Steel laid in the circle becomes plasteel, by value; the amplifying rune keeps more of it.</description>
+    <size>Medium</size>
+    <hidden>false</hidden>
+    <uiOrder>11</uiOrder>
+    <rings><li><runes><li>Avir_Rune_Transmute</li></runes></li><li><runes><li>Avir_Rune_Amplify</li></runes></li><li><runes><li>Avir_Rune_Closing</li></runes></li></rings>
+    <components><li>Material:Steel</li><li>Seal:Plasteel</li></components>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_GreatTransmutation</defName>
+    <label>great transmutation</label>
+    <description>A large, doubly amplified, closed and safe circle with nothing but a gold seal: no material circle is needed - it takes whatever metal or jade is laid in the circle itself, any of them, and turns it all into gold. Well drawn, it gives back more than it took: about half as much again, up to twice the value with a fine drawing.</description>
+    <size>Large</size>
+    <hidden>false</hidden>
+    <uiOrder>12</uiOrder>
+    <rings><li><runes><li>Avir_Rune_Transmute</li></runes></li><li><runes><li>Avir_Rune_Amplify</li><li>Avir_Rune_Amplify</li></runes></li><li><runes><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li></runes></li><li><runes><li>Avir_Rune_Safety</li></runes></li></rings>
+    <components><li>Seal:Gold</li></components>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_StrikeAfar</defName>
+    <label>strike from afar</label>
+    <description>Release carried by reach: the circle gathers energy for fifteen seconds, then lets it out at once at any point of the map. Amplified; the barrier spares your own people and buildings near the point. Closed, so nothing leaks.</description>
+    <size>Medium</size>
+    <uiOrder>20</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Release</li></runes></li>
+      <li><runes><li>Avir_Rune_Reach</li><li>Avir_Rune_Amplify</li></runes></li>
+      <li><runes><li>Avir_Rune_Barrier</li><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_Shove</defName>
+    <label>the shove</label>
+    <description>Lifting and release together: the blast is a telekinetic wave around the circle that throws everyone back several cells and stuns them. Safety throws the performer clear first; the barrier spares your people.</description>
+    <size>Medium</size>
+    <uiOrder>21</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Release</li><li>Avir_Rune_Lift</li></runes></li>
+      <li><runes><li>Avir_Rune_Barrier</li><li>Avir_Rune_Safety</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_Sweep</defName>
+    <label>the long sweep</label>
+    <description>Lifting, widened and anchored: for up to a day the circle carries loose things into storage and sweeps snow and filth from everything within nine cells.</description>
+    <size>Medium</size>
+    <uiOrder>22</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Lift</li></runes></li>
+      <li><runes><li>Avir_Rune_Breadth</li><li>Avir_Rune_Breadth</li></runes></li>
+      <li><runes><li>Avir_Rune_Anchor</li><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_Harvest</defName>
+    <label>the ripening</label>
+    <description>Growth, widened and anchored: plants within nine cells grow and ripen, your people and animals heal, and the soil grows richer a cell at a time.</description>
+    <size>Medium</size>
+    <uiOrder>23</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Growth</li></runes></li>
+      <li><runes><li>Avir_Rune_Breadth</li><li>Avir_Rune_Breadth</li></runes></li>
+      <li><runes><li>Avir_Rune_Anchor</li><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_ChargingStation</defName>
+    <label>charging station</label>
+    <description>Filling along threads, anchored: bind batteries and artifact buildings anywhere on the map to the circle, and it tops them up for a day while sources feed it.</description>
+    <size>Medium</size>
+    <uiOrder>24</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Fill</li></runes></li>
+      <li><runes><li>Avir_Rune_Thread</li><li>Avir_Rune_Anchor</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_Current</defName>
+    <label>psychic current</label>
+    <description>Transmutation without a seal changes the energy itself into current: bind a battery of each grid by thread, and for a day the ritual charges them. A hundred watts for an hour is one unit of energy.</description>
+    <size>Medium</size>
+    <uiOrder>25</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Transmute</li></runes></li>
+      <li><runes><li>Avir_Rune_Thread</li><li>Avir_Rune_Anchor</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_Reforge</defName>
+    <label>reforging</label>
+    <description>Reforges the artifact laid in the circle: its heart a quality step up, its heart into the metal of the seal, or its spiral reforged - every cell closes, every point returns (burnt ones too) and the artifact scoops more experience out of the map's stream. Focus and amplification scoop more; the deed itself pulls the stream.</description>
+    <size>Large</size>
+    <uiOrder>26</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Reforge</li></runes></li>
+      <li><runes><li>Avir_Rune_Amplify</li><li>Avir_Rune_Focus</li></runes></li>
+      <li><runes><li>Avir_Rune_Focus</li><li>Avir_Rune_Safety</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_Infusion</defName>
+    <label>infusion</label>
+    <description>The artifact laid in the circle drinks the ritual's energy as experience - days of use in an hour. Its spiral is not touched. One point of development a ritual at most (two in a large circle). Amplification makes each unit of energy worth more; closing keeps the stream from leaking.</description>
+    <size>Medium</size>
+    <uiOrder>26</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Infuse</li></runes></li>
+      <li><runes><li>Avir_Rune_Amplify</li><li>Avir_Rune_Focus</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_BarrierDome</defName>
+    <label>barrier dome</label>
+    <description>Barrier and anchor with no verb: a dome over the circle (or, with reach, over a chosen point) that stops shots from outside. Each hit costs the energy that holds it; without energy it fades. A barrier pulls the map's stream by itself.</description>
+    <size>Medium</size>
+    <uiOrder>27</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Barrier</li><li>Avir_Rune_Barrier</li></runes></li>
+      <li><runes><li>Avir_Rune_Anchor</li><li>Avir_Rune_Breadth</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_TrapIncomplete</defName>
+    <label>the incomplete Trap</label>
+    <description>A Trap with one focus rune among its safety runes: the prisoner is held and fed by the map's stream - no hunger, no tiredness - for as long as the map holds any. Good for keeping, or as a living conduit.</description>
+    <size>Medium</size>
+    <hidden>true</hidden>
+    <uiOrder>30</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Safety</li><li>Avir_Rune_Focus</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_TrapFeeding</defName>
+    <label>the feeding Trap</label>
+    <description>A Trap that fills its prisoner along a thread from your batteries and artifact buildings: it lasts as long as you pay.</description>
+    <size>Medium</size>
+    <hidden>true</hidden>
+    <uiOrder>31</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Safety</li><li>Avir_Rune_Fill</li></runes></li>
+      <li><runes><li>Avir_Rune_Thread</li><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_TrapMilking</defName>
+    <label>the milking Trap</label>
+    <description>A Trap that draws its prisoner's strength out along a thread into your batteries, artifact buildings or electric batteries. Without a focus rune it runs dry: the prisoner collapses and the cage opens - it can be taken. With one, it is nearly endless and pulls the stream up.</description>
+    <size>Medium</size>
+    <hidden>true</hidden>
+    <uiOrder>32</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Safety</li><li>Avir_Rune_Drain</li></runes></li>
+      <li><runes><li>Avir_Rune_Thread</li><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_TrapPulse</defName>
+    <label>the pulsing Trap</label>
+    <description>A Trap with a release rune in its cage: the prisoner becomes a turret. While foes are near, every few seconds a tenth of its strength is torn out and thrown at them as a wave of energy - burning and stunning the living, striking machines like an EMP. At nine tenths the prisoner is dropped, drained and spent, and the cage opens. Drained that hard, it barely tries to break out.</description>
+    <size>Medium</size>
+    <hidden>true</hidden>
+    <uiOrder>32</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Safety</li><li>Avir_Rune_Release</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <!-- open to every player: the plain way to kindle a spire core. Their own schemes make stronger cores. -->
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_KindleCore</defName>
+    <label>kindling of a core</label>
+    <researchPrerequisite>Avir_Spire</researchPrerequisite>
+    <description>Known only to those who have learnt how spires are raised. The plain rite that kindles a spire core: lay the dead sphere in the circle and pour energy into it until it wakes. This one makes an ordinary core. A ritualist can do better with a scheme of their own: amplifying runes make a stronger, roomier core, closing runes a more efficient one, barrier runes a better ward, breadth runes a wider reach - and a better drawing a better core.</description>
+    <size>Large</size>
+    <uiOrder>20</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Fill</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+      <li><runes><li>Avir_Rune_Safety</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_SelfDetonation</defName>
+    <label>self-detonation</label>
+    <description>A release with the performer as its conduit and nothing - neither barrier nor safety - to hold it back: it goes off in their hands, wider and harder than it would elsewhere, and burns the chalk away. An easy mistake to make.</description>
+    <size>Medium</size>
+    <hidden>true</hidden>
+    <uiOrder>33</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Release</li></runes></li>
+      <li><runes><li>Avir_Rune_Amplify</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_EndlessVortex</defName>
+    <label>the endless vortex</label>
+    <description>Filling with nothing to fill, the map's stream pouring in and nothing closing the circle: the stream spins and grows. It lifts dust and things, calls the storm and draws the strength of everyone who comes near, for as long as the drawing holds. It is a pump and a source too: the map's stream keeps rising, and whatever is threaded to the circle is filled from the vortex.</description>
+    <size>Medium</size>
+    <hidden>true</hidden>
+    <uiOrder>34</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Fill</li></runes></li>
+      <li><runes><li>Avir_Rune_Focus</li><li>Avir_Rune_Focus</li></runes></li>
+      <li><runes><li>Avir_Rune_Amplify</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_MagePath</defName>
+    <label>the mage's path</label>
+    <description>Gives a mage their path: the element that will be theirs, and the first spells of it - as many as the ritual earns, all of them at its best. One place is left empty: write the element there. Small and great elements on a medium circle; darkness - the distortion of paths - only on a large one. The mage stands in the circle (or performs it).</description>
+    <size>Medium</size>
+    <uiOrder>27</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Infuse</li></runes></li>
+      <li><slots>1</slots></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+</Defs>

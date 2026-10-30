@@ -280,9 +280,11 @@ namespace Avir.Magic
             // the book of the mage
             float top = r.y + 52f + w + 32f;
             GUI.color = Ink;
-            Widgets.Label(new Rect(r.x, top, r.width - 160f, 26f), "The book (" + b.spells.Count + ")");
+            Widgets.Label(new Rect(r.x, top, r.width - 540f, 26f), "The book (" + b.spells.Count + ")");
             // for testing until the mage's path gives spells: every ready spell of fire at once (dev mode only)
-            if (Prefs.DevMode && RitualUI.Button(new Rect(r.xMax - 330f, top - 4f, 172f, 32f), "Dev: fire spells"))
+            if (RitualUI.Button(new Rect(r.xMax - 340f, top - 4f, 182f, 32f), "Kept spells..."))
+                Find.WindowStack.Add(new Dialog_SpellLibrary(pawn));
+            if (Prefs.DevMode && RitualUI.Button(new Rect(r.xMax - 524f, top - 4f, 176f, 32f), "Dev: fire spells"))
                 foreach (RitualSchema ex in SpellExamples.Fire()) if (!b.spells.Any(x => x.name == ex.name)) b.spells.Add(ex);
             if (RitualUI.Button(new Rect(r.xMax - 150f, top - 4f, 150f, 32f), "New spell..."))
                 Find.WindowStack.Add(new Dialog_SpellEditor(new RitualSchema { name = "New spell" }, pawn, sp => b.spells.Add(sp)));
@@ -312,12 +314,12 @@ namespace Avir.Magic
                 Hediff_ArcaneCore cc = Mages.Core(pawn);
                 string stats = "Arcana " + Spells.Cost(s).ToString("0.#") + " · range " + Spells.Range(s).ToString("0") + (cc != null ? " · cast " + (Spells.CastTicks(cc, s) / 60f).ToString("0.#") + " s" : "");
                 GUI.color = Ink;
-                Widgets.Label(new Rect(body.x, body.yMax - 26f, body.width - 270f, 26f), stats);
-                TooltipHandler.TipRegion(new Rect(row.x, row.y, row.width - 270f, row.height), s.name + "\n\n" + Spells.Describe(s) + "\n\nDouble-click: " + (inHand ? "take it from the hand." : "put it in the hand."));
+                Widgets.Label(new Rect(body.x, body.yMax - 26f, body.width - 345f, 26f), stats);
+                TooltipHandler.TipRegion(new Rect(row.x, row.y, row.width - 350f, row.height), s.name + "\n\n" + Spells.Describe(s) + "\n\nDouble-click: " + (inHand ? "take it from the hand." : "put it in the hand."));
                 bool dbl = Event.current.type == EventType.MouseDown && Event.current.button == 0 && Event.current.clickCount == 2 && Mouse.IsOver(new Rect(row.x, row.y, row.width - 270f, row.height));
                 float by = body.yMax - 32f;
                 if (dbl && inHand) { for (int i = 0; i < 5; i++) if (b.ready[i] == s) b.ready[i] = null; Event.current.Use(); }
-                else if (RitualUI.Button(new Rect(body.xMax - 262f, by, 96f, 32f), "To hand", !inHand) || dbl)
+                else if (RitualUI.Button(new Rect(body.xMax - 258f, by, 92f, 32f), "To hand", !inHand) || dbl)
                 {
                     if (dbl) Event.current.Use();
                     int free = -1;
@@ -325,6 +327,8 @@ namespace Avir.Magic
                     if (free < 0) Messages.Message("Every place at hand is taken - clear one first.", MessageTypeDefOf.RejectInput, false);
                     else b.ready[free] = s;
                 }
+                if (RitualUI.Button(new Rect(body.xMax - 336f, by, 72f, 32f), "Keep")) SpellKeep.Keep(s);
+                TooltipHandler.TipRegion(new Rect(body.xMax - 336f, by, 72f, 32f), "Keep this spell - in the colony's book or in files beside the mod (mod settings, Magic).");
                 if (RitualUI.Button(new Rect(body.xMax - 162f, by, 76f, 32f), "Edit"))
                 {
                     RitualSchema old = s;

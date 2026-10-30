@@ -43,6 +43,29 @@ namespace Avir.Magic
         }
     }
 
+    /// <summary>A ward (the barrier rune: fire's ward, the arcane ward) puts out a spell that flies into the one who
+    /// wears it - and goes out itself. It does not throw the spell back.</summary>
+    public static class Ward
+    {
+        public static bool Quench(IntVec3 c, Map map, Pawn caster)
+        {
+            if (map == null || !c.InBounds(map)) return false;
+            foreach (Pawn p in c.GetThingList(map).OfType<Pawn>())
+            {
+                // the caster's own side is flown over, as any shot is; a foe's ward stops it
+                if (p == caster || p.Dead || (caster != null && !p.HostileTo(caster))) continue;
+                Hediff w = p.health.hediffSet.hediffs.FirstOrDefault(h => h.def == FireDefOf.Avir_FireWard || h.def == MagicSpellDefOf.Avir_ArcaneWard);
+                if (w == null) continue;
+                p.health.RemoveHediff(w);
+                FleckMaker.ThrowLightningGlow(p.DrawPos, map, 1.2f);
+                FleckMaker.ThrowMicroSparks(p.DrawPos, map);
+                MoteMaker.ThrowText(p.DrawPos, map, "Ward spent", 3f);
+                return true;
+            }
+            return false;
+        }
+    }
+
     public class Projectile_Spell : Projectile
     {
         public Pawn mage;
@@ -61,7 +84,7 @@ namespace Avir.Magic
                 if (mat != null) return mat;
                 RuneDef el = spell != null ? Spells.Element(spell) : null;
                 string own = el != null ? "Things/Projectile/Magic/" + (Beam ? "Beam_" : "Ball_") + el.kind : null;
-                if (own != null && ContentFinder<Texture2D>.Get(own, false) != null) mat = MaterialPool.MatFrom(own, ShaderDatabase.MoteGlow, Color.white);
+                if (own != null && ContentFinder<Texture2D>.Get(own, false) != null) mat = MaterialPool.MatFrom(own, ShaderDatabase.Transparent, Color.white);
                 else mat = MaterialPool.MatFrom(def.graphicData.texPath, ShaderDatabase.MoteGlow, el != null ? Color.Lerp(el.color, Color.white, 0.2f) : tint);
                 return mat;
             }
@@ -80,6 +103,8 @@ namespace Avir.Magic
         {
             base.TickInterval(delta);
             if (!Spawned) return;
+            // a ward in its way puts it out: the spell is spent, the ward is gone, nothing passes and nothing grows
+            if (Position != mage?.Position && Ward.Quench(Position, Map, mage)) { Destroy(); return; }
             // a trail behind it: embers for a ball, a running line of light for a beam
             if (Beam) FleckMaker.ThrowFireGlow(DrawPos, Map, 0.55f);
             else if (this.IsHashIntervalTick(2, delta)) { FleckMaker.ThrowFireGlow(DrawPos, Map, 0.9f); if (Rand.Chance(0.3f)) FleckMaker.ThrowMicroSparks(DrawPos, Map); }

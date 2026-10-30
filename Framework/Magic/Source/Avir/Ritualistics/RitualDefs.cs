@@ -258,7 +258,7 @@ namespace Avir.Ritualistics
             components = components.Select(RitualComponent.Unpack).ToList()
         };
 
-        public bool Available => (Prefs.DevMode || Schema().AllUnlocked && Researched) && (!hidden || RitualDiscoveries.Known(this) || Prefs.DevMode);
+        public bool Available => (defName != Avir.Magic.MagePath.Preset || Avir.Magic.AvirMagic.On) && (Prefs.DevMode || Schema().AllUnlocked && Researched) && (!hidden || RitualDiscoveries.Known(this) || Prefs.DevMode);
 
         public static List<RitualPresetDef> All => DefDatabase<RitualPresetDef>.AllDefsListForReading.OrderBy(p => p.uiOrder).ToList();
     }

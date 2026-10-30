@@ -79,6 +79,8 @@ namespace Avir
         /// <summary>Magic: the map's stream strengthens mages (and presses greatness on them); a mage weighs in the stream as this many pawns.</summary>
         public bool flowStrengthensMages = true;
         public float mageFlowWeight = 3f;
+        /// <summary>Where a kept spell goes: 0 the colony's book, 1 files beside the mod (every game), 2 both.</summary>
+        public int spellKeep = 0;
         /// <summary>Her introduction given (the book, the editor); the codex in plain words.</summary>
         public bool arliaIntroBook, arliaIntroEditor, codexSimple = true;
         public List<string> codexPinned = new List<string>();
@@ -132,6 +134,7 @@ namespace Avir
             Scribe_Values.Look(ref magicOn, "magicOn", false);
             Scribe_Values.Look(ref flowStrengthensMages, "flowStrengthensMages", true);
             Scribe_Values.Look(ref mageFlowWeight, "mageFlowWeight", 3f);
+            Scribe_Values.Look(ref spellKeep, "spellKeep", 0);
             Scribe_Values.Look(ref arliaIntroBook, "arliaIntroBook");
             Scribe_Values.Look(ref arliaIntroEditor, "arliaIntroEditor");
             Scribe_Values.Look(ref codexSimple, "codexSimple", true);
@@ -193,6 +196,11 @@ namespace Avir
             list.Label("A mage weighs in the stream as " + o.mageFlowWeight.ToString("0.#") + " pawns", -1f,
                 new TipSignal("How much a mage or sorcerer adds to the map's stream, counted in ordinary pawns (their psychic sensitivity times this). 1 - like anyone else."));
             o.mageFlowWeight = Mathf.Round(list.Slider(o.mageFlowWeight, 1f, 6f) * 2f) / 2f;
+            list.Gap();
+            list.Label("Where a kept spell goes:");
+            if (list.RadioButton("The colony's book (this game)", o.spellKeep == 0)) o.spellKeep = 0;
+            if (list.RadioButton("Files beside the mod (every game sees them)", o.spellKeep == 1)) o.spellKeep = 1;
+            if (list.RadioButton("Both", o.spellKeep == 2)) o.spellKeep = 2;
         }
 
         /// <summary>Everything of the Singers, on their own tab.</summary>

@@ -158,6 +158,10 @@ namespace Avir.Ritualistics
                         sb.AppendLine(step + "Reforges the artifact laid in the circle - you choose: its heart one quality step up, its heart into the metal a seal names, or its spiral reforged "
                                       + "(every cell closes and every point returns, burnt ones too, and it scoops more experience out of the map's stream - more with focus and amplification). Needs a large circle.");
                         break;
+                    case RuneKind.Infuse when elements.Count > 0:
+                        sb.AppendLine(step + "Gives the mage chosen the path of " + elements[0].label + ": the element becomes theirs, and of its spells as many as the ritual earns - all of them at its best. "
+                                      + (elements[0].kind == RuneKind.Darkness ? "Darkness - the distortion of paths - needs a large circle." : "Needs a medium circle or larger."));
+                        break;
                     case RuneKind.Infuse:
                         sb.AppendLine(step + "Infuses the artifact laid in the circle: the ritual's energy turns into its experience (about one for one). "
                                       + "Its spiral is not touched. At most one point of development a ritual (two in a large circle). Needs a medium or large circle.");

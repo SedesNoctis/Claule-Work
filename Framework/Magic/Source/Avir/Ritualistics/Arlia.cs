@@ -55,6 +55,17 @@ namespace Avir.Ritualistics
             { "unstable", new[] { "Good chances... Now, try it.", "You ever heard a whip? It slaps." } },
             { "bigger", new[] { "This needs a bigger circle. Size does matter - here, at least." } },
             { "works", new[] { "This will work. Most likely." } },
+            // the mage's path, and what she makes of each choice
+            { "pathopen", new[] { "The mage's path. One place is empty - the element that will be theirs. Choose well; they will not let you forget it." } },
+            { "pathFire", new[] { "Fire. Of course. They were always the one standing too close to the hearth." } },
+            { "pathWater", new[] { "Water. Patient, cold, quietly certain they are right. Fitting." } },
+            { "pathEarth", new[] { "Earth. Slow to start, impossible to stop. Like their arguments." } },
+            { "pathAir", new[] { "Air. Light, quick, never where you left them. I approve. Mostly." } },
+            { "pathLight", new[] { "Light. They will see everything - and tell everyone about it." } },
+            { "pathTime", new[] { "Time. They will be late to everything and blame it on the craft." } },
+            { "pathLife", new[] { "Life. Someone in this colony has to care. Apparently it is them." } },
+            { "pathDarkness", new[] { "Darkness. Every meaning at once. I would sleep with one eye open - near them." } },
+            { "pathSpace", new[] { "Space. They will move the furniture from across the room. Just to prove they can." } },
             { "hidden", new[] { "Oh, you too see how this could work, huh?" } },
             { "known", new[] { "Oh, look, you've discovered a circle!", "Impressive skills. Care to open a book now?" } },
             { "saved", new[] { "Yes, yes, keep it.", "Greedy, aren't you?" } },
@@ -285,6 +296,7 @@ namespace Avir.Ritualistics
         public static string Judge(RitualSchema s, RitualReading r, CompRitualCircle circle)
         {
             if (!s.AllRunes.Any()) return Fresh ? "fresh" : "nothing";
+            if (s.preset?.defName == Avir.Magic.MagePath.Preset && r.elements.Count == 0) return "pathopen";
             if (s.rings.Any(x => x.runes.Count < x.Slots)) return "hole";
             if (r.SelfDetonation) return "selfdet";
             float calm = r.Risk(1f, 1f, 0f);
@@ -308,6 +320,7 @@ namespace Avir.Ritualistics
             if (r.verbs.Count == 0) return "noverb";
             if (r.VortexRisk) return "vortex";
             if (calm >= 0.85f) return "unstable";
+            if (CompRitualCircle.IsPath(r)) return "path" + r.elements[0].kind;
             if (r.pattern != null) return r.pattern.hidden && !RitualDiscoveries.Known(r.pattern) ? "hidden" : "known";
             return "works";
         }
@@ -344,6 +357,7 @@ namespace Avir.Ritualistics
             { "Avir_Ritual_TrapPulse", "The prisoner becomes a turret. Waste not." },
             { "Avir_Ritual_KindleCore", "Spire business. Learn how they are raised first - then come back and wake its heart." },
             { "Avir_Ritual_SelfDetonation", "It goes off in the hands of whoever holds it. An easy mistake. An unforgettable one." },
+            { "Avir_Ritual_MagePath", "The mage's path. One place is left empty - write the element that will be theirs. Choose well: they will never let you forget it." },
             { "Avir_Ritual_EndlessVortex", "Nothing to fill and nothing to close it. It spins, and grows, and does not stop. Bring a mop." },
         };
 

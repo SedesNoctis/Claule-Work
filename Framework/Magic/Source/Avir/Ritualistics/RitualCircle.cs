@@ -176,6 +176,8 @@ namespace Avir.Ritualistics
             if (r.Has(RuneKind.Reforge) && Size != RitualCircleSize.Large) return "reforging needs a large circle";
             if (r.Has(RuneKind.Infuse) && Size == RitualCircleSize.Small) return "infusion needs a medium or large circle";
             if ((r.Has(RuneKind.Blood) || r.Has(RuneKind.Shroud)) && Size == RitualCircleSize.Small) return "an awakening needs a medium or large circle";
+            if (drawn?.preset?.defName == Avir.Magic.MagePath.Preset && r.elements.Count == 0) return "write the mage's element into the empty place";
+            if (IsPath(r)) { string pw = PathCircle(r, Size); if (pw != null) return pw; }
             if (vortex > 0f) return "an endless vortex spins in it - erase the chalk first";
             if (r.verbs.Count > 0 && r.verbs.All(v => !v.implemented)) return "its effect is not made yet";
             if (r.Has(RuneKind.Transmute) && r.Seal == null && !r.ToCurrent) return "no seal: put a seal of what to make into a component circle";
@@ -317,7 +319,7 @@ namespace Avir.Ritualistics
                     case RuneKind.Lift: done = r.Throw || DoLift(r, delta); break;
                     case RuneKind.Growth: done = DoGrowth(r, delta); break;
                     case RuneKind.Reforge: done = DoReforge(r); if (!Running) return false; break;
-                    case RuneKind.Infuse: done = DoInfuse(r, delta); break;
+                    case RuneKind.Infuse: done = IsPath(r) ? DoPath(r, delta) : DoInfuse(r, delta); if (!Running) return false; break;
                     case RuneKind.Blood: done = DoBlood(r, delta); if (!Running) return false; break;
                     case RuneKind.Shroud: done = DoShroud(r, delta); if (!Running) return false; break;
                     default: done = true; break;   // not made yet: passes

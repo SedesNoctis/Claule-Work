@@ -197,20 +197,27 @@ namespace Avir.Magic
         /// <summary>The mage's book as a list of cards: click one to open it in the editor (what is written now is replaced).</summary>
         private void DrawSpellList(Rect r)
         {
-            List<RitualSchema> book = mage != null ? Mages.Core(mage)?.Book.spells : null;
-            if (book == null || book.Count == 0)
+            // this mage's book first, then the colony's book
+            var book = new List<RitualSchema>();
+            if (mage != null && Mages.Core(mage) != null) book.AddRange(Mages.Core(mage).Book.spells);
+            int own = book.Count;
+            if (GameComponent_SpellLibrary.Get != null) book.AddRange(GameComponent_SpellLibrary.Get.spells.Where(x => !book.Any(y => y.name == x.name)));
+            if (book.Count == 0)
             {
                 GUI.color = InkSoft;
-                ArtInk.Label(r, mage == null ? "No mage: the book belongs to a mage." : "The book is empty yet.");
+                ArtInk.Label(r, "No spells yet - neither in this mage's book nor in the colony's.");
                 return;
             }
             const float h = 70f;
             Rect view = new Rect(0f, 0f, r.width - 16f, book.Count * (h + 4f));
             RitualScroll.Begin(r, ref spellScroll, view);
             float y = 0f;
-            foreach (RitualSchema sp in book.ToList())
+            for (int bi = 0; bi < book.Count; bi++)
             {
+                RitualSchema sp = book[bi];
                 Rect row = new Rect(0f, y, view.width, h);
+                if (bi == own) { GUI.color = new Color(Gold.r, Gold.g, Gold.b, 0.8f); Widgets.DrawLineHorizontal(0f, y - 2f, view.width); }
+                if (bi >= own) { GUI.color = new Color(0.66f, 0.27f, 0.1f); Text.Anchor = TextAnchor.UpperRight; ArtInk.Label(new Rect(row.x, row.y + 2f, row.width - 4f, 20f), "colony's book"); Text.Anchor = TextAnchor.UpperLeft; }
                 if (Mouse.IsOver(row)) Widgets.DrawBoxSolid(row, new Color(1f, 0.9f, 0.6f, 0.18f));
                 RuneDef icon = Spells.Element(sp);
                 SpellIconArt.Draw(new Rect(row.x + 2f, row.y + 6f, 44f, 44f), sp);
