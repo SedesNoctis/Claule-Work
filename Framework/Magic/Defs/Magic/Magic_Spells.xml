@@ -233,7 +233,7 @@
   <HediffDef>
     <defName>Avir_Soaked</defName>
     <label>soaked</label>
-    <description>Soaked through by a mage's water: slower, and hard to set alight.</description>
+    <description>Soaked through by a mage's water: slower, hard to set alight - and the cold bites through wet clothes far sooner.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.45, 0.65, 1)</defaultLabelColor>
     <isBad>true</isBad>
@@ -248,6 +248,7 @@
       <li>
         <capMods><li><capacity>Moving</capacity><offset>-0.2</offset></li></capMods>
         <damageFactors><li><damageDef>Flame</damageDef><factor>0.5</factor></li></damageFactors>
+        <statOffsets><ComfyTemperatureMin>10</ComfyTemperatureMin></statOffsets>
       </li>
     </stages>
   </HediffDef>
