@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- the sanctuary: a stone ritual circle (medium) that, bound to an element, holds its stream and lets mages draw on it -->
+  <ThingDef ParentName="Avir_RitualCircleBase">
+    <defName>Avir_Sanctuary</defName>
+    <thingClass>Avir.Magic.Building_Sanctuary</thingClass>
+    <label>sanctuary</label>
+    <description>A round platform of carved stone set into the ground, its grooves waiting for a ritual. Bound by the ritual of binding to one element - the rune at its centre names which - it holds that element's stream: the energy circles over the stone in its colour, slowly fading, and lights the ground around it. A mage who meditates beside it draws on that store, far faster than alone. Empty, it stays bound, dark and quiet, until it is filled again. A ritual is drawn on it as on any medium circle.</description>
+    <graphicData>
+      <texPath>Things/Building/Magic/Sanctuary</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>(5,5)</drawSize>
+    </graphicData>
+    <size>(5,5)</size>
+    <useHitPoints>true</useHitPoints>
+    <statBases>
+      <MaxHitPoints>600</MaxHitPoints>
+      <WorkToBuild>9000</WorkToBuild>
+      <Beauty>8</Beauty>
+      <Flammability>0</Flammability>
+    </statBases>
+    <costList>
+      <Steel>40</Steel>
+    </costList>
+    <costStuffCount>150</costStuffCount>
+    <stuffCategories><li>Stony</li></stuffCategories>
+    <researchPrerequisites><li>Avir_Ritualism_Standard</li></researchPrerequisites>
+    <placeWorkers><li>Avir.Magic.PlaceWorker_MagicOn</li></placeWorkers>
+    <comps>
+      <li Class="Avir.Ritualistics.CompProperties_RitualCircle"><size>Medium</size></li>
+      <li Class="Avir.Magic.CompProperties_Sanctuary"/>
+      <li Class="CompProperties_Glower">
+        <glowRadius>6</glowRadius>
+        <glowColor>(255,255,255,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
+
+  <Avir.Ritualistics.RitualPresetDef>
+    <defName>Avir_Ritual_SanctuaryBinding</defName>
+    <label>binding of the sanctuary</label>
+    <description>The one rite of a sanctuary: it pours energy into the stone and binds it to the element whose rune lies at its centre (choose it on the sanctuary). Filled, the stone holds that element's stream and lets it out slowly. Drawn again, it fills the sanctuary anew; with another element chosen, it binds it afresh. Like any ritual, it can be made stronger in the editor - amplifying runes pour more.</description>
+    <size>Medium</size>
+    <sanctuary>true</sanctuary>
+    <uiOrder>500</uiOrder>
+    <rings>
+      <li><runes><li>Avir_Rune_Fill</li></runes></li>
+      <li><runes><li>Avir_Rune_Anchor</li></runes></li>
+      <li><runes><li>Avir_Rune_Closing</li></runes></li>
+    </rings>
+  </Avir.Ritualistics.RitualPresetDef>
+
+</Defs>

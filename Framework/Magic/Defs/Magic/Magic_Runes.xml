@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- runes of magic: they exist only with the magic system on (mod settings) -->
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Fire</defName>
+    <label>fire</label>
+    <description>The element of fire. What the ritual or spell does, it does as fire: burning, heat, ash. Pure, it is fire as it is; in Avir hands, distorted, it mends what it touches.</description>
+    <role>Element</role>
+    <kind>Fire</kind>
+    <glyph>Fire</glyph>
+    <instability>0.05</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <magic>true</magic>
+    <color>(1.00, 0.42, 0.12)</color>
+    <uiOrder>200</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Water</defName>
+    <label>water</label>
+    <description>The element of water, with cold and ice as its own branch (cryomancy). What is done, is done as water: wetting, pressing, cooling, quenching.</description>
+    <role>Element</role>
+    <kind>Water</kind>
+    <glyph>Water</glyph>
+    <instability>0.05</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <magic>true</magic>
+    <color>(0.22, 0.52, 1.00)</color>
+    <uiOrder>201</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Earth</defName>
+    <label>earth</label>
+    <description>The element of earth: stone, soil, weight. What is done, is done as earth: binding, shielding, shaping the ground. With water, it mixes without distortion.</description>
+    <role>Element</role>
+    <kind>Earth</kind>
+    <glyph>Earth</glyph>
+    <instability>0.05</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <magic>true</magic>
+    <color>(0.62, 0.44, 0.24)</color>
+    <uiOrder>202</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Air</defName>
+    <label>air</label>
+    <description>The element of air: wind, breath, pressure. What is done, is done as air: pushing, carrying, choking, lifting.</description>
+    <role>Element</role>
+    <kind>Air</kind>
+    <glyph>Air</glyph>
+    <instability>0.05</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <magic>true</magic>
+    <color>(0.74, 0.94, 1.00)</color>
+    <uiOrder>203</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Light</defName>
+    <label>light</label>
+    <description>The element of light: radiance, purity, sight. What is done, is done as light: burning the wrong, revealing, blinding. With darkness - infinity.</description>
+    <role>Element</role>
+    <kind>Light</kind>
+    <glyph>Light</glyph>
+    <instability>0.05</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <magic>true</magic>
+    <color>(1.00, 0.84, 0.32)</color>
+    <uiOrder>204</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Time</defName>
+    <label>time</label>
+    <description>The element of time: ageing, slowing, foresight - the school of prediction and reckoning. With darkness - timelessness, where time runs wrong.</description>
+    <role>Element</role>
+    <kind>Time</kind>
+    <glyph>Time</glyph>
+    <instability>0.05</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <magic>true</magic>
+    <color>(0.88, 0.74, 0.48)</color>
+    <uiOrder>205</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Life</defName>
+    <label>life</label>
+    <description>The element of life: moving the energy of one living thing into another - drained grass to mend a wound, a drained foe to a skeleton. Blood is its branch. With darkness - necromancy.</description>
+    <role>Element</role>
+    <kind>Life</kind>
+    <glyph>Life</glyph>
+    <instability>0.05</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <magic>true</magic>
+    <color>(0.40, 0.84, 0.34)</color>
+    <uiOrder>206</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Darkness</defName>
+    <label>darkness</label>
+    <description>The mark of the Labyrinthian, its pure energy: the touch on every living mind - illusion. Woven with another element, it distorts it; what comes of it depends on what it is woven with.</description>
+    <role>Element</role>
+    <kind>Darkness</kind>
+    <glyph>Darkness</glyph>
+    <instability>0.05</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <magic>true</magic>
+    <color>(0.36, 0.12, 0.52)</color>
+    <uiOrder>207</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Space</defName>
+    <label>space</label>
+    <description>Space, the minor school of telekinesis: the room between the caster and the thing - its mass, its distance, the threads that catch it. It comes easily to those who fly.</description>
+    <role>Element</role>
+    <kind>Space</kind>
+    <glyph>Space</glyph>
+    <instability>0.05</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Basic</research>
+    <implemented>true</implemented>
+    <magic>true</magic>
+    <color>(0.62, 0.52, 1.00)</color>
+    <uiOrder>208</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Aura</defName>
+    <label>aura</label>
+    <description>A form: a field round the caster, lasting while it is held. Its element decides what it does to those inside. (Its effect is not made yet.)</description>
+    <role>Form</role>
+    <kind>Aura</kind>
+    <glyph>Aura</glyph>
+    <instability>0.15</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>false</implemented>
+    <magic>true</magic>
+    <uiOrder>209</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Enchant</defName>
+    <label>enchanting</label>
+    <description>A form: the element laid onto a weapon, a body or an ally for a while. (Its effect is not made yet.)</description>
+    <role>Form</role>
+    <kind>Enchant</kind>
+    <glyph>Enchant</glyph>
+    <instability>0.15</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>false</implemented>
+    <magic>true</magic>
+    <uiOrder>210</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Step</defName>
+    <label>step</label>
+    <description>A form: moving - the caster, or another - through or by the element. (Its effect is not made yet.)</description>
+    <role>Form</role>
+    <kind>Step</kind>
+    <glyph>Step</glyph>
+    <instability>0.15</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>false</implemented>
+    <magic>true</magic>
+    <uiOrder>211</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Restore</defName>
+    <label>restoring</label>
+    <description>A form: returning a thing or a body towards how it was - mending, cleansing, undoing. (Its effect is not made yet.)</description>
+    <role>Form</role>
+    <kind>Restore</kind>
+    <glyph>Restore</glyph>
+    <instability>0.15</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>false</implemented>
+    <magic>true</magic>
+    <uiOrder>212</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Beam</defName>
+    <label>beam</label>
+    <description>A form: a lasting channel from the caster to a line or a target, while the caster holds it. Hard, and strong. (Its effect is not made yet.)</description>
+    <role>Form</role>
+    <kind>Beam</kind>
+    <glyph>Beam</glyph>
+    <instability>0.15</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>false</implemented>
+    <magic>true</magic>
+    <uiOrder>213</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Shape</defName>
+    <label>shaping</label>
+    <description>A form: changing the ground or things - melting, raising, freezing, ageing. Hard, and far-reaching. (Its effect is not made yet.)</description>
+    <role>Form</role>
+    <kind>Shape</kind>
+    <glyph>Shape</glyph>
+    <instability>0.15</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>false</implemented>
+    <magic>true</magic>
+    <uiOrder>214</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Summon</defName>
+    <label>summoning</label>
+    <description>A form: calling forth a creature or a thing of the element. Hard. (Its effect is not made yet.)</description>
+    <role>Form</role>
+    <kind>Summon</kind>
+    <glyph>Summon</glyph>
+    <instability>0.15</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>false</implemented>
+    <magic>true</magic>
+    <uiOrder>215</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+  <Avir.Ritualistics.RuneDef>
+    <defName>Avir_Rune_Sense</defName>
+    <label>sensing</label>
+    <description>A form: seeing, finding, foreseeing - through the element. Hard, and quiet. (Its effect is not made yet.)</description>
+    <role>Form</role>
+    <kind>Sense</kind>
+    <glyph>Sense</glyph>
+    <instability>0.15</instability>
+    <actWeight>0</actWeight>
+    <research>Avir_Ritualism_Standard</research>
+    <implemented>false</implemented>
+    <magic>true</magic>
+    <uiOrder>216</uiOrder>
+  </Avir.Ritualistics.RuneDef>
+</Defs>
