@@ -121,7 +121,7 @@ namespace Avir.Magic
             SpellCircle circle = c.links[c.next++];
             Pawn caster = c.caster;
             if (caster == null || caster.Dead || !caster.Spawned) return;
-            float p = c.power * (1f + 0.25f * (WeaveSpell.Resonance(c.root, circle.element) - 1));
+            float p = c.power * (1f + 0.25f * (WeaveSpell.Resonance(c.root, circle.element) - 1)) * Combos.FocusBoost(circle, caster.Map);
             RitualSchema one = circle.AsSchema();
             RitualReading r = RitualEvaluator.Read(one);
             AirMagic.Storm = c.storm;

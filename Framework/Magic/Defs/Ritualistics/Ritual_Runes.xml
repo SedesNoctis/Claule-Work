@@ -214,7 +214,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Closing</defName>
     <label>closing</label>
-    <description>Keeps the energy inside: no leaks. Without it a part leaks out - and a ritual that never fills may become an endless vortex.</description>
+    <description>Keeps the energy inside: no leaks. Without it a part leaks out - and a ritual that never fills may become an endless vortex. In a spell it closes its circle: the element stays pure and does not meet its neighbours.</description>
     <role>Flow</role>
     <kind>Closing</kind>
     <glyph>Closing</glyph>
@@ -227,7 +227,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Focus</defName>
     <label>focus</label>
-    <description>Draws the external stream into the ritual: the more energy on the map, the more it gives - and the less predictable it is. In a spell it keeps its circle's element pure: the circle does not meet its neighbours.</description>
+    <description>Draws the external stream into the ritual: the more energy on the map, the more it gives - and the less predictable it is. In a spell it draws the stream into its circle: stronger (+20%, more under a strong stream), harder to hold.</description>
     <role>Flow</role>
     <kind>Focus</kind>
     <glyph>Focus</glyph>

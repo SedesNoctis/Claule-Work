@@ -96,8 +96,8 @@ namespace Avir.Magic
             {
                 SpellCircle a = order[i], b = order[i + 1];
                 if (map.ContainsKey(a) || map.ContainsKey(b) || !Small(a.element) || !Small(b.element)) continue;
-                // a focused circle keeps its element pure: it meets no one
-                if (Focused(a) || Focused(b)) continue;
+                // a closed circle keeps its element pure: it meets no one
+                if (Closed(a) || Closed(b)) continue;
                 if (root.ParentOf(a) != root.ParentOf(b)) continue;
                 ComboKind k = Of(a.element.kind, b.element.kind);
                 if (k == ComboKind.None) continue;
@@ -106,8 +106,16 @@ namespace Avir.Magic
             return map;
         }
 
-        /// <summary>A circle with the focus rune in it: its element stays itself, whatever stands beside it.</summary>
-        public static bool Focused(SpellCircle c) => c != null && c.OwnRunes.Any(x => x.kind == RuneKind.Focus);
+        /// <summary>A circle with the closing rune in it: its energy kept in, its element stays itself, whatever stands beside it.</summary>
+        public static bool Closed(SpellCircle c) => c != null && c.OwnRunes.Any(x => x.kind == RuneKind.Closing);
+
+        /// <summary>The focus rune draws the map's stream into its circle: +20% strength for each, and +10% more for each
+        /// tier of the stream (the stream also makes the circle harder to hold - the ritual's own price of focus).</summary>
+        public static float FocusBoost(SpellCircle c, Map map)
+        {
+            int n = c?.OwnRunes.Count(x => x.kind == RuneKind.Focus) ?? 0;
+            return n == 0 ? 1f : 1f + n * (0.2f + 0.1f * Spells.FlowTierAny(map));
+        }
 
         public static ComboKind Of(SpellCircle root, SpellCircle c) => root != null && c != null && Pairs(root).TryGetValue(c, out ComboKind k) ? k : ComboKind.None;
     }
@@ -180,7 +188,7 @@ namespace Avir.Magic
                 IntVec3 wat = SpellMods.WardOnMage || forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at;
                 foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(wat, map, Mathf.Max(0.9f, radius - 1f)), map))
                     if (!p.HostileTo(caster)) SpellWards.Lay(p, ward, power, r.amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
-                MapComponent_WardsDrawn.Raise(map, wat, Mathf.Max(0.9f, radius - 1f), null, caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power), Combos.ColorOf(k));
+                MapComponent_WardsDrawn.Raise(map, wat, Mathf.Max(0.9f, radius - 1f), null, caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power), Combos.ColorOf(k), "Dome_" + k);
             }
             // a storm is not aimed at one: it strikes the chosen target and as many foes round it (2 + Breadth more, a quarter weaker)
             if (k == ComboKind.Storm && !storming && !forms.Any(f => f.kind == RuneKind.Step || f.kind == RuneKind.Shape || f.kind == RuneKind.Aura || f.kind == RuneKind.Enchant || f.kind == RuneKind.Restore))

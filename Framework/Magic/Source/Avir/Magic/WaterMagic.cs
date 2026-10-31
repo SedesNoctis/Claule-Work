@@ -365,15 +365,16 @@ namespace Avir.Magic
         public MapComponent_WardsDrawn(Map map) : base(map) { }
 
         /// <summary>A dome a ward spell raised over its ground: as wide as the spell reached, shimmering while it lasts.</summary>
-        public class Dome { public IntVec3 at; public float radius; public RuneDef el; public int until; public Faction owner; public int seed; public Color? tint; }
+        public class Dome { public IntVec3 at; public float radius; public RuneDef el; public int until; public Faction owner; public int seed; public Color? tint; public string tex; }
         public readonly List<Dome> domes = new List<Dome>();
         private static readonly MaterialPropertyBlock block = new MaterialPropertyBlock();
 
-        public static void Raise(Map map, IntVec3 at, float radius, RuneDef el, Pawn caster, int ticks, Color? tint = null)
+        /// <param name="tex">A dome of its own (a meeting's: the element domes recoloured), under Things/Mote/Avir/Magic/.</param>
+        public static void Raise(Map map, IntVec3 at, float radius, RuneDef el, Pawn caster, int ticks, Color? tint = null, string tex = null)
         {
             var c = map?.GetComponent<MapComponent_WardsDrawn>();
             if (c == null) return;
-            c.domes.Add(new Dome { at = at, radius = radius + 0.5f, el = el, until = Find.TickManager.TicksGame + ticks, owner = caster?.Faction, seed = Rand.Int, tint = tint });
+            c.domes.Add(new Dome { at = at, radius = radius + 0.5f, el = el, until = Find.TickManager.TicksGame + ticks, owner = caster?.Faction, seed = Rand.Int, tint = tint, tex = tex });
         }
 
         /// <summary>A foe's spell flying into a dome puts it out - the dome goes, as a ward does.</summary>
@@ -393,8 +394,14 @@ namespace Avir.Magic
         private static Material GlowMat => glowMat ?? (glowMat = MaterialPool.MatFrom(Avir.Linarian.SongArt.Glow, ShaderDatabase.MoteGlow, Color.white));
 
         /// <summary>A dome of two elements met wears the colour of what they made.</summary>
-        private static Material Mat(RuneDef el, Color? tint)
+        private static Material Mat(RuneDef el, Color? tint, string tex)
         {
+            if (tex != null)
+            {
+                if (mats.TryGetValue(tex, out Material om)) return om;
+                string path = "Things/Mote/Avir/Magic/" + tex;
+                if (ContentFinder<Texture2D>.Get(path, false) != null) { om = MaterialPool.MatFrom(path, ShaderDatabase.Transparent, new Color(1f, 1f, 1f, 0.75f)); mats[tex] = om; return om; }
+            }
             if (tint == null) return Mat(el);
             Color t = tint.Value;
             string key = "tint" + t.r.ToString("0.00") + t.g.ToString("0.00") + t.b.ToString("0.00");
@@ -430,7 +437,7 @@ namespace Avir.Magic
                 if (d.until - now < 300) a *= (d.until - now) / 300f;   // fading in its last seconds
                 Vector3 pos = d.at.ToVector3Shifted(); pos.y = AltitudeLayer.MoteOverhead.AltitudeFor();
                 float s = d.radius * 2f * breath;
-                Material m = Mat(d.el, d.tint);
+                Material m = Mat(d.el, d.tint, d.tex);
                 Color keep = m.color;
                 block.SetColor(ShaderPropertyIDs.Color, new Color(keep.r, keep.g, keep.b, Mathf.Clamp01(a)));
                 Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis(t * 4f % 360f, Vector3.up), new Vector3(s, 1f, s)), m, 0, null, 0, block);

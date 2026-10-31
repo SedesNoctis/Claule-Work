@@ -73,8 +73,10 @@ namespace Avir.Magic
                             : "From earth: it lifts the rubble, chunks and shards at hand - stronger, cheaper. From air: cast on the move, momentum. A lost hold: a dust storm round the caster.";
                         e0.Add(Combos.Label(ck).CapitalizeFirst() + ": inherited", inh);
                     }
-                if (s.weave != null && s.weave.All().Any(Combos.Focused))
-                    e0.Add("Focused", "A circle with the focus rune keeps its element pure: it does not meet its neighbours, whatever they are - fire stays fire beside water. Its neighbours may still meet others.");
+                if (s.weave != null && s.weave.All().Any(Combos.Closed))
+                    e0.Add("Closed", "A circle with the closing rune keeps its energy in and its element pure: it does not meet its neighbours, whatever they are - fire stays fire beside water. Its neighbours may still meet others.");
+                bool focused = s.weave != null ? s.weave.All().Any(c => c.OwnRunes.Any(x => x.kind == RuneKind.Focus)) : RitualEvaluator.Read(s).focus > 0;
+                if (focused) e0.Add("Focus", "The focus rune draws the map's stream into its circle: +20% strength for each, and +10% more for each tier of the stream - but the stream makes it harder to hold.");
                 bool shaped = s.weave != null ? s.weave.All().Any(c => c.OwnRunes.Any(x => x.kind == RuneKind.Shape)) : RitualEvaluator.Read(s).verbs.Any(v => v.kind == RuneKind.Shape);
                 if (shaped) e0.Add("Ring", "Shaping struck at the caster - after a step, from an aura, or cast at their own feet - raises the wall as a ring round them, three cells out (+1 for each Breadth): whoever is inside is shut in with the caster. Between two chosen points it stands as a line.");
                 ComboKind? stone = EarthStone.KindOf(s);

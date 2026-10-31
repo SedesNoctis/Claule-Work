@@ -67,6 +67,9 @@ namespace Avir.Magic
         /// <summary>The stream that strengthens a spell makes it wilder too: every stage of it is harder to hold.</summary>
         public static float FlowUnrest(Map m) => 0.06f * FlowTier(m);
 
+        /// <summary>The map's stream tier whatever the setting (the focus rune draws on it by itself).</summary>
+        public static int FlowTierAny(Map m) => m == null ? 0 : MapComponent_ExternalFlow.TierIndex(MapComponent_ExternalFlow.Of(m)?.Total ?? 0f);
+
         public static int FlowTier(Map m) => AvirMod.Settings.flowStrengthensMages && m != null ? MapComponent_ExternalFlow.TierIndex(MapComponent_ExternalFlow.Of(m)?.Total ?? 0f) : 0;
 
         /// <summary>Chance the mage keeps hold of this spell.</summary>
@@ -139,6 +142,8 @@ namespace Avir.Magic
             AirMomentum.Note(caster, s);
             core.Note("Cast " + s.name + " (" + cost.ToString("0.#") + " Arcana).");
             float power = Power(s);
+            // a spell of one circle: the focus rune draws the stream into it (a woven spell does it circle by circle)
+            if (s.weave == null && r.focus > 0) power *= 1f + r.focus * (0.2f + 0.1f * FlowTierAny(map));
             int tier = FlowTier(map);
             if (tier > 0)
             {
