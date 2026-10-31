@@ -108,18 +108,25 @@ namespace Avir.Magic
             IntVec3 keep = ReturnTo;
             if (home.IsValid) ReturnTo = home;
             s = s.Copy();
+            float whole = power;
             bool shaped = SpellSculpt.Take(s);
             if (shaped) power *= SpellSculpt.Keeps;
+            // a second step cuts again: what is written outward of it acts where that step comes down - and so on
+            RitualSchema next = Split(ref s);
+            if (shaped && next != null) SpellSculpt.Mark(next);
+            Last = null;
+            bool quenched = false;
             try
             {
                 using (SpellWards.Of(k == ComboKind.None ? el?.kind : null, k, true))
                 using (shaped ? SpellSculpt.Spare() : null)
                 {
-                    if (SpellWards.Strikes(s) && SpellWards.DomeTakes(caster.Map, target.Cell, el, k, ref power)) return;
-                    SpellWards.InOrder(caster, s, k, el, target, power, part => CastPart(caster, part, k, el, target, power));
+                    if (SpellWards.Strikes(s) && SpellWards.DomeTakes(caster.Map, target.Cell, el, k, ref power)) quenched = true;
+                    else SpellWards.InOrder(caster, s, k, el, target, power, part => CastPart(caster, part, k, el, target, power));
                 }
             }
             finally { ReturnTo = keep; }
+            if (!quenched && next != null) Hang(next, k, caster, caster.Spawned ? new LocalTargetInfo(caster.Position) : target, whole);
         }
 
         /// <summary>One part of a circle (between its barriers), cast by its element or by what two elements made.</summary>

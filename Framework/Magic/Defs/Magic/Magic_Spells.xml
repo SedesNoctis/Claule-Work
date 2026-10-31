@@ -297,6 +297,22 @@
     </stages>
   </HediffDef>
   <HediffDef>
+    <defName>Avir_WardCharm</defName>
+    <label>woven ward</label>
+    <description>A ward woven into the clothes by a Barrier written with Enchanting. When the ward falls, it rises again from the weave an hour later, a little weaker, until the weaving wears out.</description>
+    <hediffClass>Avir.Magic.Hediff_WardCharm</hediffClass>
+    <defaultLabelColor>(0.75, 0.8, 1)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <initialSeverity>1</initialSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>90000~90000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
     <defName>Avir_JointGrit</defName>
     <label>grit in the joints</label>
     <description>Sand worked into the joints of bionic limbs: they catch and grind until it is shaken out.</description>

@@ -57,6 +57,11 @@ namespace Avir.Ritualistics
 
         public bool Unlocked => research == null || research.IsFinished;
 
+        /// <summary>For spells a rune may open at another step of the craft than for rituals (Магия-правила.md): Release,
+        /// dangerous in a ritual, is a caster's first blow. Unset - the same as for rituals.</summary>
+        public ResearchProjectDef spellResearch;
+        public bool UnlockedForSpells => spellResearch != null ? spellResearch.IsFinished : Unlocked;
+
         public static List<RuneDef> All => DefDatabase<RuneDef>.AllDefsListForReading.Where(r => !r.magic || Avir.Magic.AvirMagic.On).OrderBy(r => r.uiOrder).ToList();
     }
 

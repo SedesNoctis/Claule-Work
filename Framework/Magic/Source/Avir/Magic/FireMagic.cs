@@ -91,6 +91,24 @@ namespace Avir.Magic
         public static int WallMax(RitualReading r) => 7 + 3 * r.breadth;
 
         /// <summary>A wall from one chosen cell to the other - straight or slanting - no longer than it may be.</summary>
+        /// <summary>The burning ground answers a release of fire: each fire near the blow (not in it) flares into a small
+        /// burst of flame and is spent - a chain that runs as far as the fire lies. Wet cells and domes do not flare.</summary>
+        public static void Flares(Pawn caster, Map map, IntVec3 at, List<IntVec3> cells, float radius, float power)
+        {
+            if (map == null) return;
+            var inBlow = new HashSet<IntVec3>(cells);
+            var fires = GenRadial.RadialCellsAround(at, radius, true)
+                .Where(c => c.InBounds(map) && !inBlow.Contains(c) && c.GetThingList(map).Any(x => x is Fire) && !Reactions.Wet(c, map) && MapComponent_WardsDrawn.Over(map, c) == null)
+                .OrderBy(c => c.DistanceToSquared(at)).Take(8).ToList();
+            foreach (IntVec3 c in fires)
+            {
+                foreach (Fire f in c.GetThingList(map).OfType<Fire>().ToList()) f.Destroy();
+                FleckMaker.Static(c.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 2f);
+                GenExplosion.DoExplosion(c, map, 1.2f, DamageDefOf.Flame, caster, Mathf.RoundToInt(6f * power), -1f,
+                    null, null, null, null, null, 0f, 1, null, null, 255, false, null, 0f, 1, 0.3f, false, null, SpellSculpt.Ignored(caster, map, c, 1.2f));
+            }
+        }
+
         public static List<IntVec3> WallLine(IntVec3 from, IntVec3 to, Map map, int max)
         {
             var cells = new List<IntVec3>();
@@ -167,6 +185,9 @@ namespace Avir.Magic
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) FireUtility.TryStartFireIn(c, map, 0.3f + 0.2f * power, caster);
                         // and smoke rolls off it - the fire mage's own, that does not trouble them
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.3f)) FireSmoke.Puff(c, map, 0.5f + 0.3f * power);
+                        // and every fire already burning round about answers: it flares up and bursts where it burns - the
+                        // more the ground is alight, the further the blow runs (up to eight flares, for the sake of the world's pace)
+                        Flares(caster, map, at, cells, FireMagic.PointRadius(rv) + 4f, power);
                         if (rv.amplify > 0)
                             GenExplosion.DoExplosion(aroundSelf ? at : cells[cells.Count - 1], map, 1.9f + rv.amplify, DamageDefOf.Flame, caster, Mathf.RoundToInt(12f * power), -1f,
                                 null, null, null, null, null, 0f, 1, null, null, 255, false, null, 0f, 1, 0.5f, false, null, SpellSculpt.Ignored(caster, map, aroundSelf ? at : cells[cells.Count - 1], 1.9f + rv.amplify));

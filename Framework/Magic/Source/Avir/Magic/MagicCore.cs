@@ -818,6 +818,12 @@ namespace Avir.Magic
         [DebugAction(Cat, "Hold: never (0%) - toggle", allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevHoldNever() { Spells.DevHold = Spells.DevHold == -1 ? 0 : -1; Messages.Message("Spell hold: " + (Spells.DevHold == -1 ? "always slips (0%)" : "by the dice"), MessageTypeDefOf.NeutralEvent, false); }
 
+        [DebugAction(Cat, "Weave a ward into clothes (water)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevWeave(Pawn p) => Hediff_WardCharm.Weave(p, DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Water"), ComboKind.None, 1f, 0);
+
+        [DebugAction(Cat, "Release of fire here (burning ground flares)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevFlares() { Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell(); FireMagic.Flares(null, map, c, new List<IntVec3> { c }, 6.4f, 1f); }
+
         [DebugAction(Cat, "Body as magic sees it", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevBody(Pawn p)
         {

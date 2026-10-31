@@ -77,6 +77,28 @@ namespace Avir.Magic
         }
     }
 
+    /// <summary>Combat Extended's aim through smoke: the fire's own people - fire wizards and sorcerers, the gold amulet,
+    /// whoever wears a fiery ward - see through the smoke of fire as if it were not there.</summary>
+    [HarmonyPatch]
+    public static class Patch_FireSmokeAim
+    {
+        static System.Reflection.MethodBase TargetMethod()
+        {
+            System.Type t = AccessTools.TypeByName("CombatExtended.Verb_LaunchProjectileCE");
+            return t == null ? null : AccessTools.Method(t, "ShiftVecReportFor", new[] { typeof(LocalTargetInfo), typeof(IntVec3) });
+        }
+        static bool Prepare() => TargetMethod() != null;
+
+        private static System.Reflection.FieldInfo smoke;
+
+        public static void Postfix(Verb __instance, object __result)
+        {
+            if (__result == null || !AvirMagic.On || !(__instance?.caster is Pawn p) || !FireSmoke.Ignores(p)) return;
+            if (smoke == null) smoke = AccessTools.Field(__result.GetType(), "smokeDensity");
+            smoke?.SetValue(__result, 0f);
+        }
+    }
+
     /// <summary>What air and water clear away. Air: gas off the ground (smoke - CE's too - toxic gas, any cloud) and out
     /// of the body (toxic buildup, CE's smoke inhalation, any gas exposure). Water: anaesthetic and poisons.</summary>
     public static class Cleansing

@@ -167,7 +167,7 @@ namespace Avir.Ritualistics
                 GUI.DrawTexture(new Rect(row.x + 4f, row.y + 3f, 48f, 48f), FlowStyle.Pick(r.Ink, r.Glow), ScaleMode.ScaleToFit);
                 GUI.color = r.Unlocked ? Ink : FlowStyle.InkGrey;
                 Text.Anchor = TextAnchor.MiddleLeft;
-                ArtInk.Label(new Rect(row.x + 60f, row.y, row.width - 64f, row.height), r.LabelCap + (r.Unlocked ? "" : "  (not researched)") + (Pinned(r) ? "  - pinned" : ""));
+                ArtInk.Label(new Rect(row.x + 60f, row.y, row.width - 64f, row.height), r.LabelCap + (r.Unlocked ? "" : r.UnlockedForSpells ? "  (open for spells)" : "  (not researched)") + (Pinned(r) ? "  - pinned" : ""));
                 Text.Anchor = TextAnchor.UpperLeft;
                 if (Widgets.ButtonInvisible(row))
                 {

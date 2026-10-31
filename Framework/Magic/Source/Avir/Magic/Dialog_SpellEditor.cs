@@ -108,7 +108,7 @@ namespace Avir.Magic
 
         internal static bool ForSpells(RuneDef r)
         {
-            if (!(r.Unlocked || Prefs.DevMode)) return false;
+            if (!(r.UnlockedForSpells || Prefs.DevMode)) return false;
             switch (r.role)
             {
                 case RuneRole.Element: return r.magic;

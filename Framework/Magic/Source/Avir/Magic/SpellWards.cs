@@ -290,6 +290,13 @@ namespace Avir.Magic
             if (caster == null || !caster.Spawned) return;
             int ticks = Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power);
             Note(caster.LabelShort + ": Barrier of " + (k != ComboKind.None ? k.ToString() : el?.kind.ToString()) + (onCaster ? " on the caster" : " - a dome") + ", amplify " + amplify);
+            // a Barrier with Enchanting: the ward is woven into what the warded one wears - it falls and rises again
+            if (s?.rings != null && s.rings.SelectMany(g => g.runes).Any(x => x != null && x.kind == RuneKind.Enchant))
+            {
+                Pawn who = onCaster ? caster : target.Pawn ?? (target.Cell.IsValid && target.Cell.InBounds(caster.Map) ? target.Cell.GetFirstPawn(caster.Map) : null) ?? caster;
+                Hediff_WardCharm.Weave(who, el, k, power, amplify);
+                return;
+            }
             if (onCaster)
             {
                 Lay(caster, WardDef(el, k), power, amplify, ticks);
@@ -522,6 +529,86 @@ namespace Avir.Magic
             object box = __0;
             Pen.SetValue(box, pen);
             __0 = (DamageInfo)box;
+        }
+    }
+
+    /// <summary>A shield belt is a ward of no element against magic (Магия-правила.md): a blow of any spell - flame, a
+    /// tremor, a gust, not only what flies - is caught by it at the cost of its energy, as a shot would be; too strong,
+    /// the belt breaks. It keeps off blows only: what magic leaves on the body (soaked, mired, dazzled) it does not.</summary>
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.PreApplyDamage))]
+    public static class Patch_SpellBelt
+    {
+        private static readonly System.Reflection.FieldInfo energy = AccessTools.Field(typeof(CompShield), "energy");
+        private static readonly System.Reflection.MethodInfo absorbed = AccessTools.Method(typeof(CompShield), "AbsorbedDamage");
+        private static readonly System.Reflection.MethodInfo breaks = AccessTools.Method(typeof(CompShield), "Break");
+
+        [HarmonyPriority(Priority.First - 1)]
+        public static bool Prefix(Pawn __instance, ref DamageInfo __0, ref bool __1)
+        {
+            if (__1 || !AvirMagic.On || !SpellWards.AtWork || __instance.apparel == null || energy == null) return true;
+            DamageDef d = __0.Def;
+            if (d == null || d.ignoreShields || d.isRanged || d.isExplosive || __0.Amount <= 0f) return true;   // what flies or bursts, the belt takes by itself
+            foreach (Apparel a in __instance.apparel.WornApparel)
+            {
+                CompShield sh = a.TryGetComp<CompShield>();
+                if (sh == null || sh.ShieldState != ShieldState.Active) continue;
+                float e = (float)energy.GetValue(sh) - __0.Amount * sh.Props.energyLossPerDamage;
+                energy.SetValue(sh, e);
+                if (e < 0f) breaks?.Invoke(sh, null); else absorbed?.Invoke(sh, new object[] { __0 });
+                SpellWards.Note(__instance.LabelShort + "'s shield belt caught a spell's " + d.defName + " " + __0.Amount.ToString("0.#") + (e < 0f ? " - and broke" : ""));
+                __1 = true;
+                return false;
+            }
+            return true;
+        }
+    }
+
+    /// <summary>A worn ward (Магия-правила.md): a Barrier written with Enchanting weaves the ward into the clothes of the
+    /// one it is laid on. When the ward falls, it rises again from them an hour later, a little weaker than a fresh one,
+    /// for as long as the weaving lasts (a day and a half for each strength of the spell).</summary>
+    public class Hediff_WardCharm : HediffWithComps
+    {
+        public RuneDef el;
+        public ComboKind combo;
+        public float power = 1f;
+        public int amplify, nextAt;
+
+        public static void Weave(Pawn p, RuneDef el, ComboKind k, float power, int amplify)
+        {
+            HediffDef def = DefDatabase<HediffDef>.GetNamedSilentFail("Avir_WardCharm");
+            if (p == null || p.Dead || def == null) return;
+            var h = p.health.hediffSet.GetFirstHediffOfDef(def) as Hediff_WardCharm ?? (Hediff_WardCharm)p.health.AddHediff(def);
+            h.el = el; h.combo = k; h.power = power; h.amplify = amplify; h.nextAt = 0;
+            HediffComp_Disappears d = h.TryGetComp<HediffComp_Disappears>();
+            if (d != null) d.ticksToDisappear = Mathf.RoundToInt(GenDate.TicksPerDay * 1.5f * Mathf.Max(0.5f, power));
+            SpellWards.Lay(p, SpellWards.WardDef(el, k), power, amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
+            SpellWards.Note("ward woven into " + p.LabelShort + "'s clothes: " + (k != ComboKind.None ? k.ToString() : el?.kind.ToString()));
+        }
+
+        public override string LabelInBrackets => (combo != ComboKind.None ? Combos.Label(combo) : el?.label) ?? base.LabelInBrackets;
+
+        public override void TickInterval(int delta)
+        {
+            base.TickInterval(delta);
+            if (!pawn.IsHashIntervalTick(250, delta) || pawn.Dead || !AvirMagic.On) return;
+            int now = Find.TickManager.TicksGame;
+            if (SpellWards.On(pawn) != null) { nextAt = now + GenDate.TicksPerHour; return; }
+            if (now < nextAt) return;
+            HediffDef w = SpellWards.WardDef(el, combo);
+            if (w == null) return;
+            SpellWards.Lay(pawn, w, power * 0.7f, amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
+            if (pawn.Spawned) MoteMaker.ThrowText(pawn.DrawPos, pawn.Map, "Ward rises", 2.5f);
+            nextAt = now + GenDate.TicksPerHour;
+        }
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Defs.Look(ref el, "el");
+            Scribe_Values.Look(ref combo, "combo", ComboKind.None);
+            Scribe_Values.Look(ref power, "power", 1f);
+            Scribe_Values.Look(ref amplify, "amplify");
+            Scribe_Values.Look(ref nextAt, "nextAt");
         }
     }
 }
