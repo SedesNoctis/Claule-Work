@@ -435,7 +435,7 @@ namespace Avir.Magic
                 Two("Thunderhead", "Water", "Hold", "Air", "Hold"),
                 Two("Eruption", "Fire", "Release", "Earth", "Release"),
                 Two("Shimmer", "Fire", "Hold", "Air", "Hold"),
-                Two("Green carpet", "Water", "Hold", "Earth", "Hold"),
+                Two("Mire", "Water", "Hold", "Earth", "Hold"),
                 Two("Sandblast", "Earth", "Release", "Air", "Release"),
             };
         }

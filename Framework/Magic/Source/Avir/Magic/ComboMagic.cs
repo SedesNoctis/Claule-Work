@@ -18,11 +18,11 @@ namespace Avir.Magic
     //   Water + Air   = Storm  - lightning that leaps from foe to foe; the soaked take more.
     //   Fire + Earth  = Magma  - molten ground that burns whoever stands on it, and cools into stone.
     //   Fire + Air    = Haze   - the air shimmers: foes see wrong, miss, and shoot at false shapes of the mage.
-    //   Water + Earth = Moss   - a living carpet: friends on it mend and walk unheard, fire will not take it.
+    //   Water + Earth = Bog    - a mire: foes sink in it, slower and slower, until it closes over them.
     //   Earth + Air   = Dust   - a cloud that blinds, grinds, and shows the unseen.
     // A new element opens the first time it is made.
     // =====================================================================================
-    public enum ComboKind { None, Steam, Storm, Magma, Haze, Moss, Dust }
+    public enum ComboKind { None, Steam, Storm, Magma, Haze, Bog, Dust }
 
     public static class Combos
     {
@@ -33,7 +33,7 @@ namespace Avir.Magic
             if (Has(RuneKind.Water, RuneKind.Air)) return ComboKind.Storm;
             if (Has(RuneKind.Fire, RuneKind.Earth)) return ComboKind.Magma;
             if (Has(RuneKind.Fire, RuneKind.Air)) return ComboKind.Haze;
-            if (Has(RuneKind.Water, RuneKind.Earth)) return ComboKind.Moss;
+            if (Has(RuneKind.Water, RuneKind.Earth)) return ComboKind.Bog;
             if (Has(RuneKind.Earth, RuneKind.Air)) return ComboKind.Dust;
             return ComboKind.None;
         }
@@ -48,7 +48,7 @@ namespace Avir.Magic
                 case ComboKind.Storm: return "storm";
                 case ComboKind.Magma: return "magma";
                 case ComboKind.Haze: return "haze";
-                case ComboKind.Moss: return "moss";
+                case ComboKind.Bog: return "bog";
                 case ComboKind.Dust: return "dust";
                 default: return "";
             }
@@ -62,7 +62,7 @@ namespace Avir.Magic
                 case ComboKind.Storm: return new Color(0.42f, 0.55f, 0.95f);
                 case ComboKind.Magma: return new Color(1f, 0.36f, 0.08f);
                 case ComboKind.Haze: return new Color(1f, 0.78f, 0.45f);
-                case ComboKind.Moss: return new Color(0.42f, 0.62f, 0.28f);
+                case ComboKind.Bog: return new Color(0.38f, 0.47f, 0.24f);
                 case ComboKind.Dust: return new Color(0.80f, 0.69f, 0.48f);
                 default: return Color.white;
             }
@@ -159,17 +159,19 @@ namespace Avir.Magic
                         Apply(k, caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, rf);
                         break;
                     case RuneKind.Step:
-                        RuneKind trail = k == ComboKind.Magma || k == ComboKind.Haze ? RuneKind.Fire : k == ComboKind.Dust ? RuneKind.Air : RuneKind.Water;
+                        RuneKind trail = k == ComboKind.Magma || k == ComboKind.Haze ? RuneKind.Fire : k == ComboKind.Dust || k == ComboKind.Storm ? RuneKind.Air : k == ComboKind.Bog ? RuneKind.Earth : RuneKind.Water;
                         if (rf.thread > 0) { SpellDash.Pull(caster, target, trail, power, fr); break; }
-                        Step(k, caster, map, at, power);
-                        SpellDash.Carry(caster, at, trail, power);
+                        if (k == ComboKind.Haze) Decoys(caster, map, new List<IntVec3> { caster.Position }, Mathf.RoundToInt(600f * power));   // a shape left where they stood
+                        SpellDash.Travel(caster, at, k, power);
                         break;
                     case RuneKind.Restore: Restore(k, caster, map, FireMagic.Point(at, map, Mathf.Max(0.9f, fr - 1f)), power); break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, ComboDefOf.Enchant(k)); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
                     case RuneKind.Sense:
                         FireMagic.Sense(caster, map, 35f + 10f * rf.reach, power);
-                        if (k == ComboKind.Dust) Reveal(FireMagic.Point(caster.Position, map, Mathf.Min(GenRadial.MaxRadialPatternRadius - 1f, 35f + 10f * rf.reach)), map);
+                        var round = FireMagic.Point(caster.Position, map, Mathf.Min(GenRadial.MaxRadialPatternRadius - 1f, 35f + 10f * rf.reach));
+                        if (k == ComboKind.Dust) Reveal(round, map);
+                        if (k == ComboKind.Magma) Veins(round, map);
                         break;
                     default: if (verbs.Count > 0) Apply(k, caster, map, verbs, FireMagic.Point(at, map, fr), at, power, rf); break;
                 }
@@ -191,7 +193,7 @@ namespace Avir.Magic
                     case RuneKind.Hold:
                         MapComponent_ComboFields.Raise(map, k, caster, Center(cells), Spread(cells), power, Mathf.RoundToInt(1500f * power * (1 + rv.anchor)), false);
                         if (k == ComboKind.Magma) foreach (IntVec3 c in cells) if (Rand.Chance(0.6f)) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(GenDate.TicksPerHour * power * (1 + rv.anchor)), false);
-                        if (k == ComboKind.Moss) foreach (IntVec3 c in cells) MossPatch.Grow(c, map, caster, Mathf.RoundToInt(GenDate.TicksPerDay * power * (1 + rv.anchor)));
+                        if (k == ComboKind.Bog) foreach (IntVec3 c in cells) MirePatch.Spread(c, map, caster, power, Mathf.RoundToInt(GenDate.TicksPerHour * 2f * power * (1 + rv.anchor)));
                         break;
                     case RuneKind.Drain: power = Drain(k, caster, map, cells, verbs, v, power); break;
                     case RuneKind.Lift:
@@ -200,7 +202,7 @@ namespace Avir.Magic
                             if (!MagicFx.Foe(p, caster)) continue;
                             if (k == ComboKind.Steam || k == ComboKind.Magma) p.TakeDamage(new DamageInfo(k == ComboKind.Magma ? DamageDefOf.Flame : DamageDefOf.Burn, 5f * power * amp, 0f, -1f, caster));
                             if (k == ComboKind.Storm) WaterMagic.Soak(p, power);
-                            if (k == ComboKind.Moss) { MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, Mathf.RoundToInt(600f * power)); continue; }
+                            if (k == ComboKind.Bog) WaterMagic.Soak(p, power);
                             if (k == ComboKind.Dust) Grind(p, caster, power * amp);
                             if (!p.Dead) MagicFx.Lift(p, caster, power * (k == ComboKind.Storm || k == ComboKind.Dust ? 1.2f : 0.9f) * amp);
                         }
@@ -247,10 +249,10 @@ namespace Avir.Magic
                     foreach (Pawn p in foes) { p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 3f * power, 0f, -1f, caster)); MagicFx.Give(p, ComboDefOf.Avir_Dazzled, Mathf.RoundToInt(900f * power)); }
                     FleckMaker.Static(Center(cells).ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 3f);
                     break;
-                case ComboKind.Moss:
-                    // a burst of spores: the ground greens over at once and catches the feet of foes
-                    foreach (IntVec3 c in cells) if (Rand.Chance(0.7f)) MossPatch.Grow(c, map, caster, Mathf.RoundToInt(GenDate.TicksPerDay * 0.5f * power));
-                    foreach (Pawn p in foes) MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, Mathf.RoundToInt(300f * power));
+                case ComboKind.Bog:
+                    // a burst of mud: foes knocked down in it, soaked, and the ground left a mire
+                    foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) MirePatch.Spread(c, map, caster, power, Mathf.RoundToInt(GenDate.TicksPerHour * power));
+                    foreach (Pawn p in foes) { WaterMagic.Soak(p, power); MagicFx.Give(p, ComboDefOf.Avir_Mired, Mathf.RoundToInt(600f * power)); MagicFx.Fell(p, Center(cells), 1, map, caster, power, Mathf.RoundToInt(90f * power)); }
                     break;
                 case ComboKind.Dust:
                     // a blast of sand: it grinds every bare part, and the dust hangs
@@ -278,9 +280,9 @@ namespace Avir.Magic
                         // the charge drawn out of every machine there
                         if (p.RaceProps.IsMechanoid) { p.TakeDamage(new DamageInfo(DamageDefOf.EMP, 12f * power, 0f, -1f, caster)); took += 0.3f; }
                         break;
-                    case ComboKind.Moss:
+                    case ComboKind.Bog:
                     case ComboKind.Dust:
-                        // the moss and the dust drink: the body is left parched
+                        // the mire and the dust drink: the body is left parched
                         if (!p.RaceProps.IsFlesh) break;
                         Hediff h = p.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Parched) ?? p.health.AddHediff(WaterDefOf.Avir_Parched);
                         h.Severity = Mathf.Min(1f, h.Severity + 0.3f * power);
@@ -303,13 +305,13 @@ namespace Avir.Magic
             {
                 case ComboKind.Steam:
                 case ComboKind.Storm:
-                case ComboKind.Moss:
-                    // warm wet air, rain, living moss: everything green grows
+                case ComboKind.Bog:
+                    // warm wet air, rain, the wet black earth of a bog: everything green grows
                     foreach (IntVec3 c in near)
                     {
                         Plant plant = c.GetPlant(map);
-                        if (plant != null && plant.LifeStage == PlantLifeStage.Growing) plant.Growth = Mathf.Min(1f, plant.Growth + (k == ComboKind.Moss ? 0.2f : 0.12f) * power);
-                        if (k == ComboKind.Moss && Rand.Chance(0.4f)) MossPatch.Grow(c, map, caster, Mathf.RoundToInt(GenDate.TicksPerDay * power));
+                        if (plant != null && plant.LifeStage == PlantLifeStage.Growing) plant.Growth = Mathf.Min(1f, plant.Growth + (k == ComboKind.Bog ? 0.2f : 0.12f) * power);
+                        if (k == ComboKind.Bog && Rand.Chance(0.3f)) MirePatch.Spread(c, map, caster, power, Mathf.RoundToInt(GenDate.TicksPerHour * power));
                     }
                     if (k == ComboKind.Steam) GenTemperature.PushHeat(Center(cells), map, 60f * power);
                     break;
@@ -346,14 +348,25 @@ namespace Avir.Magic
 
         private static void Beam(ComboKind k, Pawn caster, Map map, List<IntVec3> line, float power, RitualReading r)
         {
+            var foes = MagicFx.PawnsIn(line, map).Where(p => MagicFx.Foe(p, caster)).ToList();
             switch (k)
             {
+                // lightning that leaps from foe to foe
                 case ComboKind.Storm: AirMagic.Chain(caster, line, map, 1 + r.breadth + r.amplify, power, true); break;
-                case ComboKind.Steam: foreach (Pawn p in MagicFx.PawnsIn(line, map)) if (MagicFx.Foe(p, caster)) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, caster)); Smoke(map, line, 0.5f); break;
-                case ComboKind.Magma: foreach (IntVec3 c in line) if (Rand.Chance(0.5f)) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(900f * power), false); break;
-                case ComboKind.Haze: foreach (Pawn p in MagicFx.PawnsIn(line, map)) if (MagicFx.Foe(p, caster)) MagicFx.Give(p, ComboDefOf.Avir_Dazzled, Mathf.RoundToInt(600f * power)); break;
-                case ComboKind.Moss: foreach (IntVec3 c in line) MossPatch.Grow(c, map, caster, Mathf.RoundToInt(GenDate.TicksPerDay * 0.5f * power)); break;
-                case ComboKind.Dust: foreach (Pawn p in MagicFx.PawnsIn(line, map)) if (MagicFx.Foe(p, caster)) { Grind(p, caster, power); MagicFx.Give(p, ComboDefOf.Avir_Dusted, Mathf.RoundToInt(600f * power)); } break;
+                // a jet of steam: scalds, and leaves a curtain along its way that nothing is seen through
+                case ComboKind.Steam: foreach (Pawn p in foes) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, caster)); Smoke(map, line, 1f); break;
+                // a stream of lava: it burns all on it and sets into a path of rubble
+                case ComboKind.Magma: foreach (IntVec3 c in line) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(600f * power), false); break;
+                // a ray of heat: all on it dazzled, the first burnt through
+                case ComboKind.Haze:
+                    foreach (Pawn p in foes) MagicFx.Give(p, ComboDefOf.Avir_Dazzled, Mathf.RoundToInt(600f * power));
+                    Pawn first = foes.OrderBy(p => p.Position.DistanceToSquared(caster.Position)).FirstOrDefault();
+                    first?.TakeDamage(new DamageInfo(DamageDefOf.Burn, 10f * power, 0.3f, -1f, caster));
+                    break;
+                // a jet of mud: knocked down, soaked, stuck
+                case ComboKind.Bog: foreach (Pawn p in foes) { WaterMagic.Soak(p, power); MagicFx.Give(p, ComboDefOf.Avir_Mired, Mathf.RoundToInt(600f * power)); MagicFx.Fell(p, caster.Position, 1, map, caster, power, 90); } break;
+                // a blast of sand along the line
+                case ComboKind.Dust: foreach (Pawn p in foes) { Grind(p, caster, power); MagicFx.Give(p, ComboDefOf.Avir_Dusted, Mathf.RoundToInt(600f * power)); } break;
             }
             Puffs(k, map, line, 0.7f);
         }
@@ -373,22 +386,11 @@ namespace Avir.Magic
                     // a row of false shapes of the mage: the foes shoot at them
                     Decoys(caster, map, wall.Where((c, i) => i % 3 == 0).ToList(), life / 4);
                     break;
-                case ComboKind.Moss: foreach (IntVec3 c in wall) { EarthWall.Raise(c, map, life); MossPatch.Grow(c, map, caster, life); } break;
+                case ComboKind.Bog:
+                    // a moat of mire, two cells wide
+                    foreach (IntVec3 c in wall.SelectMany(c => GenAdj.CellsAdjacentCardinal(c, Rot4.North, IntVec2.One).Concat(new[] { c })).Distinct()) if (Rand.Chance(0.75f)) MirePatch.Spread(c, map, caster, power, life);
+                    break;
                 case ComboKind.Dust: MapComponent_ComboFields.Raise(map, k, caster, IntVec3.Invalid, 0f, power, life / 2, false, wall); break;
-            }
-        }
-
-        private static void Step(ComboKind k, Pawn caster, Map map, IntVec3 at, float power)
-        {
-            IntVec3 from = caster.Position;
-            switch (k)
-            {
-                case ComboKind.Haze: Decoys(caster, map, new List<IntVec3> { from }, Mathf.RoundToInt(900f * power)); break;   // a shape left where they stood
-                case ComboKind.Steam: Smoke(map, FireMagic.Point(from, map, 2.5f), 0.8f); break;                                // gone in a cloud
-                case ComboKind.Dust: Smoke(map, new List<IntVec3> { from }, 0.6f); MapComponent_ComboFields.Raise(map, k, caster, at, 2.5f, power, 600, false); break;
-                case ComboKind.Magma: foreach (IntVec3 c in GenSight.BresenhamCellsBetween(from, at)) if (c != from && c != at && Rand.Chance(0.5f)) MagmaPool.Pour(c, map, caster, power, 600, false); break;
-                case ComboKind.Moss: foreach (IntVec3 c in GenSight.BresenhamCellsBetween(from, at)) MossPatch.Grow(c, map, caster, GenDate.TicksPerDay); break;
-                case ComboKind.Storm: FleckMaker.Static(from.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 3f); break;
             }
         }
 
@@ -417,9 +419,9 @@ namespace Avir.Magic
                         // warm, dry air: the wet and the cold go
                         foreach (Hediff h in p.health.hediffSet.hediffs.Where(x => x.def == HediffDefOf.Hypothermia || x.def == WaterDefOf.Avir_Soaked || x.def == WaterDefOf.Avir_Chilled).ToList()) p.health.RemoveHediff(h);
                         break;
-                    case ComboKind.Moss:
-                        // moss laid on the wounds: the best of bandages, and infection keeps away
-                        foreach (Hediff_Injury inj in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => !i.IsTended()).Take(8).ToList()) inj.Tended(Mathf.Clamp01(0.6f + 0.15f * power), 1f);
+                    case ComboKind.Bog:
+                        // a mud poultice: burns and bruises cooled and bound
+                        foreach (Hediff_Injury inj in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => !i.IsTended() && (i.def.defName == "Burn" || i.def.defName == "Bruise" || i.def.defName == "Crush" || i.def.defName == "Crack")).ToList()) inj.Tended(Mathf.Clamp01(0.5f + 0.15f * power), 1f);
                         break;
                     case ComboKind.Dust:
                         // dry dust packed into the wounds: bleeding stops
@@ -428,6 +430,47 @@ namespace Avir.Magic
                 }
                 Puffs(k, map, new List<IntVec3> { p.Position }, 1f);
             }
+        }
+
+        /// <summary>A step of a meeting: what happens on the way out, before the mage goes.</summary>
+        public static void Depart(ComboKind k, Pawn mage, IntVec3 to, float power)
+        {
+            Map map = mage.Map; IntVec3 from = mage.Position;
+            switch (k)
+            {
+                case ComboKind.Steam: Smoke(map, FireMagic.Point(from, map, 1.9f), 0.8f); break;
+                case ComboKind.Storm:
+                    // the bolt: every foe on the way is struck as the mage passes
+                    var path = GenSight.BresenhamCellsBetween(from, to).Where(c => c.InBounds(map) && c != from).ToList();
+                    foreach (Pawn p in MagicFx.PawnsIn(path, map)) if (MagicFx.Foe(p, mage)) { p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0.3f, -1f, mage)); if (!p.Dead && p.RaceProps.IsMechanoid) p.TakeDamage(new DamageInfo(DamageDefOf.EMP, 8f * power, 0f, -1f, mage)); }
+                    FleckMaker.ConnectingLine(from.ToVector3Shifted(), to.ToVector3Shifted(), FleckDefOf.LineEMP, map);
+                    FleckMaker.Static(from.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 3f);
+                    break;
+                case ComboKind.Bog:
+                    foreach (IntVec3 c in GenSight.BresenhamCellsBetween(from, to)) if (c.InBounds(map) && c != from && c != to && Rand.Chance(0.7f)) MirePatch.Spread(c, map, mage, power, Mathf.RoundToInt(GenDate.TicksPerHour * power));
+                    break;
+                case ComboKind.Haze: FleckMaker.ThrowHeatGlow(from, map, 2f); break;
+                case ComboKind.Dust: Smoke(map, new List<IntVec3> { from }, 0.6f); break;
+            }
+        }
+
+        /// <summary>A step of a meeting: where the mage comes down, out of the ground or out of the air.</summary>
+        public static void Land(ComboKind k, Pawn mage, IntVec3 at, float power)
+        {
+            Map map = mage.Map;
+            if (map == null) return;
+            var round = FireMagic.Point(at, map, 2.5f).Where(c => c != at).ToList();
+            var foes = MagicFx.PawnsIn(round, map).Where(p => MagicFx.Foe(p, mage)).ToList();
+            switch (k)
+            {
+                case ComboKind.Steam: foreach (Pawn p in foes) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, mage)); Smoke(map, round, 0.7f); break;
+                case ComboKind.Storm: foreach (Pawn p in foes) MagicFx.Fell(p, at, 1, map, mage, power, Mathf.RoundToInt(90f * power)); FleckMaker.Static(at.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 5f); break;
+                case ComboKind.Magma: foreach (IntVec3 c in FireMagic.Point(at, map, 2.9f).Where(c => c.DistanceTo(at) > 1.5f)) MagmaPool.Pour(c, map, mage, power, Mathf.RoundToInt(900f * power), false); break;
+                case ComboKind.Haze: FleckMaker.ThrowHeatGlow(at, map, 2f); break;
+                case ComboKind.Bog: foreach (IntVec3 c in round) if (Rand.Chance(0.75f)) MirePatch.Spread(c, map, mage, power, Mathf.RoundToInt(GenDate.TicksPerHour * power)); break;
+                case ComboKind.Dust: foreach (Pawn p in foes) MagicFx.Give(p, ComboDefOf.Avir_Dusted, Mathf.RoundToInt(600f * power)); MapComponent_ComboFields.Raise(map, k, mage, at, 2.5f, power, 600, false); break;
+            }
+            Puffs(k, map, round, 0.5f);
         }
 
         /// <summary>What a meeting takes from the mage when the hold slips - on top of its two elements' own prices.</summary>
@@ -440,7 +483,7 @@ namespace Avir.Magic
                 case ComboKind.Storm: if (caster.Spawned) AirMagic.Chain(caster, new List<IntVec3>(), caster.Map, 0, 0f, true); caster.TakeDamage(new DamageInfo(DamageDefOf.Burn, 7f, 0f, -1f, caster)); caster.stances?.stunner?.StunFor(150, caster); if (caster.Spawned) FleckMaker.ThrowLightningGlow(caster.DrawPos, caster.Map, 2f); break;
                 case ComboKind.Magma: if (caster.Spawned) MagmaPool.Pour(caster.Position, caster.Map, null, 1f, 300, false); break;
                 case ComboKind.Haze: MagicFx.Give(caster, ComboDefOf.Avir_Dazzled, 2500); break;
-                case ComboKind.Moss: MagicFx.Give(caster, ComboDefOf.Avir_Overgrown, 7500); break;
+                case ComboKind.Bog: MagicFx.Give(caster, EarthAirDefOf.Avir_Rooted, 600); WaterMagic.Soak(caster, 1f); MagicFx.Give(caster, ComboDefOf.Avir_Sinking, 2500); caster.health.hediffSet.GetFirstHediffOfDef(ComboDefOf.Avir_Sinking).Severity = 0.25f; break;
                 case ComboKind.Dust: MagicFx.Give(caster, EarthAirDefOf.Avir_Breathless, 2500); MagicFx.Give(caster, ComboDefOf.Avir_Dusted, 1200); break;
             }
             Messages.Message(caster.LabelShortCap + " lost hold of the " + Combos.Label(k) + ".", caster, MessageTypeDefOf.NegativeEvent, false);
@@ -452,6 +495,21 @@ namespace Avir.Magic
         internal static void Grind(Pawn p, Pawn by, float power)
         {
             for (int i = 0; i < 3 && !p.Dead; i++) p.TakeDamage(new DamageInfo(DamageDefOf.Scratch, 2f * power, 0f, -1f, by));
+        }
+
+        /// <summary>Heat felt through the rock: the veins of ore within it are shown, even inside mountains.</summary>
+        internal static void Veins(List<IntVec3> cells, Map map)
+        {
+            int n = 0;
+            foreach (IntVec3 c in cells)
+            {
+                Building b = c.GetEdifice(map);
+                if (b == null || b.def.building == null || !b.def.building.isResourceRock) continue;
+                map.fogGrid.Unfog(c);
+                FleckMaker.ThrowFireGlow(c.ToVector3Shifted(), map, 0.6f);
+                n++;
+            }
+            if (n > 0) Messages.Message("The heat in the rock shows " + n + " cells of ore.", new TargetInfo(cells[0], map), MessageTypeDefOf.PositiveEvent, false);
         }
 
         /// <summary>The unseen made seen: dust settles on them.</summary>
@@ -566,11 +624,12 @@ namespace Avir.Magic
                         case ComboKind.Dust: if (foe) MagicFx.Give(p, ComboDefOf.Avir_Dusted, 90); break;
                         case ComboKind.Storm: if (foe) WaterMagic.Soak(p, f.power * 0.5f); break;
                         case ComboKind.Magma: if (foe) p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 2f * f.power, 0f, -1f, f.caster)); break;
-                        case ComboKind.Moss: if (!foe && !p.Dead) MossPatch.Mend(p, f.power * 0.5f); break;
+                        case ComboKind.Bog: if (foe) MagicFx.Give(p, ComboDefOf.Avir_Mired, 90); break;
                     }
                 }
                 if (f.kind == ComboKind.Steam && now % 180 == 0) ComboMagic.Smoke(map, cells, 0.4f);
                 if (f.kind == ComboKind.Dust) ComboMagic.Reveal(cells, map);
+                if (f.kind == ComboKind.Steam && f.follow && now % 120 == 0 && f.caster != null && f.caster.Spawned) GasUtility.AddGas(f.caster.Position, map, GasType.BlindSmoke, 1.5f);
                 if (f.kind == ComboKind.Storm && now % 120 == 0 && f.caster != null)
                 {
                     // the storm strikes again: a bolt on one foe in it, leaping on
@@ -628,17 +687,60 @@ namespace Avir.Magic
         }
     }
 
-    /// <summary>A living carpet of moss: friends on it mend and walk softly; fire will not take it; foes slip in it.</summary>
+    /// <summary>Mire made by a mage: foes in it are gripped, slower and slower; whoever stays in it too long, or falls in
+    /// it, is drawn under and chokes. Friends of the mage wade through it.</summary>
+    public class MirePatch : ThingWithComps
+    {
+        public Pawn owner; public float power = 1f; public int left = 5000;
+
+        public static void Spread(IntVec3 c, Map map, Pawn owner, float power, int life)
+        {
+            if (!c.InBounds(map) || !c.Standable(map) || ComboDefOf.Avir_Mire == null) return;
+            if (owner != null && owner.Spawned && owner.Position == c) return;   // never under the mage's own feet
+            MirePatch old = c.GetThingList(map).OfType<MirePatch>().FirstOrDefault();
+            if (old != null) { old.left = Mathf.Max(old.left, life); return; }
+            var m = (MirePatch)ThingMaker.MakeThing(ComboDefOf.Avir_Mire);
+            m.owner = owner; m.power = power; m.left = life;
+            GenSpawn.Spawn(m, c, map);
+            FireMagic.Extinguish(c, map);
+        }
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_References.Look(ref owner, "owner"); Scribe_Values.Look(ref power, "power", 1f); Scribe_Values.Look(ref left, "left", 5000);
+        }
+
+        protected override void Tick()
+        {
+            base.Tick();
+            if (--left <= 0) { Destroy(); return; }
+            if (this.IsHashIntervalTick(90) && Rand.Chance(0.4f)) FleckMaker.Static(Position, Map, FleckDefOf.WaterRipple, 0.9f);
+            if (!this.IsHashIntervalTick(60)) return;
+            foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
+            {
+                if (p.Dead || owner == null || !MagicFx.Foe(p, owner) || MagicFx.Rooted(p)) continue;
+                MagicFx.Give(p, ComboDefOf.Avir_Mired, 150);
+                // the longer they stay, the deeper they sink; the fallen go under fast
+                Hediff h = p.health.hediffSet.GetFirstHediffOfDef(ComboDefOf.Avir_Sinking) ?? p.health.AddHediff(ComboDefOf.Avir_Sinking);
+                h.Severity = Mathf.Min(1f, h.Severity + (p.Downed ? 0.08f : 0.025f) * power);
+                FleckMaker.Static(Position, Map, FleckDefOf.WaterSplash, 0.9f);
+            }
+        }
+    }
+
+    /// <summary>A living carpet of moss (kept for moss, the focused meeting of water and earth - not cast yet): friends on it mend.</summary>
     public class MossPatch : ThingWithComps
     {
         public Pawn owner; public int left = 60000;
 
         public static void Grow(IntVec3 c, Map map, Pawn owner, int life)
         {
-            if (!c.InBounds(map) || !c.Standable(map) || ComboDefOf.Avir_Moss == null) return;
+            ThingDef mossDef = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_Moss");
+            if (!c.InBounds(map) || !c.Standable(map) || mossDef == null) return;
             MossPatch old = c.GetThingList(map).OfType<MossPatch>().FirstOrDefault();
             if (old != null) { old.left = Mathf.Max(old.left, life); return; }
-            var m = (MossPatch)ThingMaker.MakeThing(ComboDefOf.Avir_Moss);
+            var m = (MossPatch)ThingMaker.MakeThing(mossDef);
             m.owner = owner; m.left = life;
             GenSpawn.Spawn(m, c, map);
             FireMagic.Extinguish(c, map);
@@ -666,7 +768,7 @@ namespace Avir.Magic
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
             {
                 if (p.Dead) continue;
-                if (owner != null && MagicFx.Foe(p, owner)) MagicFx.Give(p, ComboDefOf.Avir_Soggy, 150);
+                if (owner != null && MagicFx.Foe(p, owner)) MagicFx.Give(p, ComboDefOf.Avir_Mired, 150);
                 else Mend(p, 0.4f);
             }
         }
@@ -686,7 +788,7 @@ namespace Avir.Magic
             if (!foe.Dead && hs.HasHediff(ComboDefOf.Avir_StormEnchant)) { foe.TakeDamage(new DamageInfo(foe.RaceProps.IsMechanoid ? DamageDefOf.EMP : DamageDefOf.Burn, 5f, 0f, -1f, p)); if (!foe.Dead && Rand.Chance(0.2f)) MagicFx.Stun(foe, 60, p); if (foe.Spawned) FleckMaker.ThrowLightningGlow(foe.DrawPos, foe.Map, 0.8f); }
             if (!foe.Dead && hs.HasHediff(ComboDefOf.Avir_MagmaEnchant)) { foe.TakeDamage(new DamageInfo(DamageDefOf.Flame, 6f, 0f, -1f, p)); if (!foe.Dead && foe.Spawned && Rand.Chance(0.3f)) FireUtility.TryAttachFire(foe, 0.3f, p); }
             if (!foe.Dead && hs.HasHediff(ComboDefOf.Avir_HazeEnchant)) MagicFx.Give(foe, ComboDefOf.Avir_Dazzled, 300);
-            if (!foe.Dead && hs.HasHediff(ComboDefOf.Avir_MossEnchant)) MagicFx.Give(foe, EarthAirDefOf.Avir_Rooted, 120);
+            if (!foe.Dead && hs.HasHediff(ComboDefOf.Avir_BogEnchant)) MagicFx.Give(foe, ComboDefOf.Avir_Mired, 300);
             if (!foe.Dead && hs.HasHediff(ComboDefOf.Avir_DustEnchant)) { ComboMagic.Grind(foe, p, 0.6f); MagicFx.Give(foe, ComboDefOf.Avir_Dusted, 300); }
             // the wards answer whoever strikes their wearer
             var th = foe.health.hediffSet;
@@ -694,6 +796,7 @@ namespace Avir.Magic
             if (th.HasHediff(ComboDefOf.Avir_StormWard)) { p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 4f, 0f, -1f, foe)); MagicFx.Stun(p, 60, foe); }
             if (!p.Dead && th.HasHediff(ComboDefOf.Avir_MagmaWard)) p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 4f, 0f, -1f, foe));
             if (!p.Dead && th.HasHediff(ComboDefOf.Avir_DustWard)) MagicFx.Give(p, ComboDefOf.Avir_Dusted, 300);
+            if (!p.Dead && th.HasHediff(ComboDefOf.Avir_BogWard)) MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, 120);
         }
     }
 
@@ -718,7 +821,7 @@ namespace Avir.Magic
             Pawn p = parent.pawn;
             if (!p.Spawned || !p.IsHashIntervalTick(240)) return;
             if (parent.def == ComboDefOf.Avir_SteamWard && p.mindState?.enemyTarget != null) GasUtility.AddGas(p.Position, p.Map, GasType.BlindSmoke, 1.2f);
-            if (parent.def == ComboDefOf.Avir_MossWard) MossPatch.Mend(p, 0.5f);
+
         }
     }
 
@@ -730,14 +833,14 @@ namespace Avir.Magic
     [DefOf]
     public static class ComboDefOf
     {
-        public static HediffDef Avir_Dazzled, Avir_Hazed, Avir_Dusted, Avir_Soggy, Avir_Overgrown;
-        public static HediffDef Avir_SteamWard, Avir_StormWard, Avir_MagmaWard, Avir_HazeWard, Avir_MossWard, Avir_DustWard;
-        public static HediffDef Avir_SteamEnchant, Avir_StormEnchant, Avir_MagmaEnchant, Avir_HazeEnchant, Avir_MossEnchant, Avir_DustEnchant;
-        public static ThingDef Avir_Magma, Avir_Moss;
+        public static HediffDef Avir_Dazzled, Avir_Hazed, Avir_Dusted, Avir_Mired, Avir_Sinking;
+        public static HediffDef Avir_SteamWard, Avir_StormWard, Avir_MagmaWard, Avir_HazeWard, Avir_BogWard, Avir_DustWard;
+        public static HediffDef Avir_SteamEnchant, Avir_StormEnchant, Avir_MagmaEnchant, Avir_HazeEnchant, Avir_BogEnchant, Avir_DustEnchant;
+        public static ThingDef Avir_Magma, Avir_Mire;
         static ComboDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(ComboDefOf)); }
 
-        public static HediffDef Ward(ComboKind k) => k == ComboKind.Steam ? Avir_SteamWard : k == ComboKind.Storm ? Avir_StormWard : k == ComboKind.Magma ? Avir_MagmaWard : k == ComboKind.Haze ? Avir_HazeWard : k == ComboKind.Moss ? Avir_MossWard : Avir_DustWard;
-        public static HediffDef Enchant(ComboKind k) => k == ComboKind.Steam ? Avir_SteamEnchant : k == ComboKind.Storm ? Avir_StormEnchant : k == ComboKind.Magma ? Avir_MagmaEnchant : k == ComboKind.Haze ? Avir_HazeEnchant : k == ComboKind.Moss ? Avir_MossEnchant : Avir_DustEnchant;
+        public static HediffDef Ward(ComboKind k) => k == ComboKind.Steam ? Avir_SteamWard : k == ComboKind.Storm ? Avir_StormWard : k == ComboKind.Magma ? Avir_MagmaWard : k == ComboKind.Haze ? Avir_HazeWard : k == ComboKind.Bog ? Avir_BogWard : Avir_DustWard;
+        public static HediffDef Enchant(ComboKind k) => k == ComboKind.Steam ? Avir_SteamEnchant : k == ComboKind.Storm ? Avir_StormEnchant : k == ComboKind.Magma ? Avir_MagmaEnchant : k == ComboKind.Haze ? Avir_HazeEnchant : k == ComboKind.Bog ? Avir_BogEnchant : Avir_DustEnchant;
     }
 }
 
@@ -754,7 +857,7 @@ namespace Avir.Magic
                 case ComboKind.Storm: return "Water and air side by side make a storm: lightning that leaps from foe to foe, worse for the soaked, and machines are struck hardest.";
                 case ComboKind.Magma: return "Fire and earth side by side make magma: molten ground that burns whoever stands on it and cools into stone.";
                 case ComboKind.Haze: return "Fire and air side by side make haze: the air shimmers, foes are dazzled and miss, and they shoot at false shapes of the mage.";
-                case ComboKind.Moss: return "Water and earth side by side make moss: a living carpet - friends on it mend and walk softly, fire will not take it, foes slip and are caught.";
+                case ComboKind.Bog: return "Water and earth side by side make a bog: a mire that grips foes, slower and slower - and whoever stays in it too long, or falls in it, is drawn under and chokes.";
                 case ComboKind.Dust: return "Earth and air side by side make dust: a cloud that blinds and grinds, and shows the unseen.";
                 default: return "";
             }
@@ -766,19 +869,32 @@ namespace Avir.Magic
             {
                 case RuneKind.Release:
                     return k == ComboKind.Steam ? "bursts scalding, and the cloud stays" : k == ComboKind.Storm ? "falls as a bolt that leaps on" : k == ComboKind.Magma ? "breaks the ground open: molten stone strikes and pools"
-                         : k == ComboKind.Haze ? "flashes with heat: foes dazzled" : k == ComboKind.Moss ? "bursts in spores: moss at once, foes caught by the feet" : "blasts sand: every bare part ground, the dust hangs";
+                         : k == ComboKind.Haze ? "flashes with heat: foes dazzled" : k == ComboKind.Bog ? "bursts in mud: foes knocked down in a mire" : "blasts sand: every bare part ground, the dust hangs";
                 case RuneKind.Hold:
-                    return k == ComboKind.Magma ? "lies as a field of magma" : k == ComboKind.Moss ? "lies as a carpet of moss" : k == ComboKind.Storm ? "hangs as a storm that keeps striking"
+                    return k == ComboKind.Magma ? "lies as a field of magma" : k == ComboKind.Bog ? "lies as a mire that draws foes under" : k == ComboKind.Storm ? "hangs as a storm that keeps striking"
                          : k == ComboKind.Steam ? "hangs as a cloud of steam" : k == ComboKind.Haze ? "hangs as a shimmer foes cannot aim through" : "hangs as a cloud of dust";
                 case RuneKind.Drain:
-                    return k == ComboKind.Storm ? "draws the charge out of machines (EMP)" : k == ComboKind.Magma ? "draws the heat out: the magma sets at once" : k == ComboKind.Moss || k == ComboKind.Dust ? "drinks the water out of foes" : "draws the heat out of fires and foes";
+                    return k == ComboKind.Storm ? "draws the charge out of machines (EMP)" : k == ComboKind.Magma ? "draws the heat out: the magma sets at once" : k == ComboKind.Bog || k == ComboKind.Dust ? "drinks the water out of foes" : "draws the heat out of fires and foes";
                 case RuneKind.Lift:
-                    return k == ComboKind.Moss ? "rises in vines that hold foes fast" : "throws foes up" + (k == ComboKind.Magma ? " on a spout of lava" : k == ComboKind.Steam ? " on a geyser of steam" : k == ComboKind.Dust ? " in a spout of sand" : k == ComboKind.Storm ? " in a whirl of rain" : " on rising heat");
+                    return "throws foes up" + (k == ComboKind.Magma ? " on a spout of lava" : k == ComboKind.Steam ? " on a geyser of steam" : k == ComboKind.Dust ? " in a spout of sand" : k == ComboKind.Storm ? " in a whirl of rain" : k == ComboKind.Bog ? " on a geyser of mud" : " on rising heat");
                 case RuneKind.Growth:
-                    return k == ComboKind.Magma ? "creeps outward" : k == ComboKind.Haze || k == ComboKind.Dust ? "spreads wide and hangs" : "makes everything green grow";
+                    return k == ComboKind.Magma ? "creeps outward" : k == ComboKind.Haze || k == ComboKind.Dust ? "spreads wide and hangs" : k == ComboKind.Bog ? "spreads its black wet earth - everything green grows" : "makes everything green grow";
                 case RuneKind.Purge:
                     return "cleans: fire, filth and poison" + (k == ComboKind.Haze || k == ComboKind.Dust ? ", and the wet dried" : "");
                 default: return "";
+            }
+        }
+
+        private static string Step(ComboKind k)
+        {
+            switch (k)
+            {
+                case ComboKind.Steam: return "The mage scatters into a cloud and drifts low to the target - nothing can reach them on the way; there the cloud bursts and scalds everyone round.";
+                case ComboKind.Storm: return "The mage rides a bolt of lightning - the fastest of all journeys, but seen: every foe on the way is struck, and where they land the thunder knocks those round off their feet.";
+                case ComboKind.Magma: return "The mage goes through the ground as lava: a glowing crack runs above; where they come up, a ring of magma round them (none under the mage).";
+                case ComboKind.Haze: return "The mage shimmers and is gone from sight for the journey; a false shape of them stays where they stood, and foes go on shooting at it.";
+                case ComboKind.Bog: return "The mage sinks into the ground as into water and comes up at the target; the ground on the way and round where they come up turns to mire.";
+                default: return "The mage spins up in a dust devil, over whatever stands between, and lands in a cloud that blinds everyone round.";
             }
         }
 
@@ -796,27 +912,35 @@ namespace Avir.Magic
                 case RuneKind.Restore:
                     e.main = k == ComboKind.Steam ? "A steam bath for friends at the target: the cold and the poison sweated out." : k == ComboKind.Storm ? "A jolt: friends there are woken from stun, daze and drugged sleep."
                            : k == ComboKind.Magma ? "Hot stones: bleeding wounds seared shut, the cold driven out." : k == ComboKind.Haze ? "Warm dry air: the wet and the cold leave friends there."
-                           : k == ComboKind.Moss ? "Moss laid on the wounds - the best of bandages." : "Dry dust packed into the wounds: bleeding stops."; break;
+                           : k == ComboKind.Bog ? "A mud poultice: burns and bruises cooled and bound." : "Dry dust packed into the wounds: bleeding stops."; break;
                 case RuneKind.Enchant:
                     e.main = "A weapon of " + Combos.Label(k) + ": " + (k == ComboKind.Steam ? "blows scald and leave a puff of cloud" : k == ComboKind.Storm ? "blows jolt (machines worse), sometimes stun"
-                           : k == ComboKind.Magma ? "blows burn and may set the foe alight" : k == ComboKind.Haze ? "blows dazzle" : k == ComboKind.Moss ? "blows root the foe for a moment" : "blows grind and blind") + "."; break;
+                           : k == ComboKind.Magma ? "blows burn and may set the foe alight" : k == ComboKind.Haze ? "blows dazzle" : k == ComboKind.Bog ? "blows clog the foe with mud - slow" : "blows grind and blind") + "."; break;
                 case RuneKind.Step:
-                    e.main = SpellMods.Pulls(s) ? "The one at the target is drawn to the mage through " + Combos.Label(k) + "." :
-                             "The mage goes to the target in " + Combos.Label(k) + (k == ComboKind.Haze ? ", leaving a false shape of themselves behind" : k == ComboKind.Steam ? ", vanishing in a cloud" : k == ComboKind.Magma ? ", molten ground left on the way" : k == ComboKind.Moss ? ", moss growing in their steps" : k == ComboKind.Dust ? ", a dust cloud where they land" : ", with a flash of lightning") + "."; break;
+                    e.main = SpellMods.Pulls(s) ? "The one at the target is drawn to the mage through " + Combos.Label(k) + "." : Step(k); break;
                 case RuneKind.Shape:
                     e.main = k == ComboKind.Magma ? "A wall of magma between two points: it burns, then sets into stone that stands for hours." : k == ComboKind.Haze ? "A row of false shapes of the mage between two points: foes shoot at them."
-                           : k == ComboKind.Moss ? "A mossy wall of stone, the ground green round it." : "A curtain of " + Combos.Label(k) + " between two points" + (k == ComboKind.Storm ? " that strikes whoever is in it" : k == ComboKind.Steam ? ": nothing is seen through it" : ": whoever is in it can hardly see") + "."; break;
-                case RuneKind.Sense: e.main = k == ComboKind.Dust ? "Dust settles on everything: the mage feels everyone round about - and the unseen are shown." : "The mage feels everyone round about, through walls."; break;
+                           : k == ComboKind.Bog ? "A moat of mire between two points, two cells wide: foes wade, and those who stay are drawn under." : k == ComboKind.Storm ? "A fence of lightning between two points: it strikes whoever is in it."
+                           : "A curtain of " + Combos.Label(k) + " between two points" + (k == ComboKind.Steam ? ": nothing is seen through it" : ": whoever is in it can hardly see") + "."; break;
+                case RuneKind.Sense:
+                    e.main = k == ComboKind.Dust ? "Dust settles on everything: the mage feels everyone round about - and the unseen are shown."
+                           : k == ComboKind.Magma ? "The heat in the rock: the mage feels everyone round about - and the veins of ore inside the rock are shown, even in mountains."
+                           : "The mage feels everyone round about, through walls."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
+                case RuneKind.Aura:
+                    string aura = k == ComboKind.Steam ? "a cloak of steam: the mage is hidden in it, no shot goes in or out" : k == ComboKind.Storm ? "a crown of storm: lightning strikes foes who come near"
+                                : k == ComboKind.Magma ? "heat: foes close to the mage burn" : k == ComboKind.Haze ? "a shimmer: foes near the mage miss" : k == ComboKind.Bog ? "the ground round the mage a mire for foes" : "a sandstorm: foes near miss, the unseen are shown";
+                    e.main = (what.Length > 0 ? name + " " + what + " round the mage; and " : "Round the mage, for a while: ") + aura + ".";
+                    break;
                 default:
-                    string where = form?.kind == RuneKind.Aura ? "round the mage - and it stays with them for a while" : form?.kind == RuneKind.Beam ? (k == ComboKind.Storm ? "as lightning leaping from foe to foe along the line" : "along a line to the target") : "at the point";
-                    e.main = what.Length > 0 ? name + " " + what + " - " + where + "." : name + " with nothing to do: give it a verb or a form.";
+                    string where = form?.kind == RuneKind.Beam ? (k == ComboKind.Storm ? "as lightning leaping from foe to foe along the line" : k == ComboKind.Magma ? "as a stream of lava along the line" : k == ComboKind.Haze ? "as a ray of heat along the line" : k == ComboKind.Bog ? "as a jet of mud along the line" : "along a line to the target") : "at the point";
+                    e.main = what.Length > 0 ? name + " " + what + " - " + where + "." : form?.kind == RuneKind.Beam ? name + " " + where + "." : name + " with nothing to do: give it a verb or a form.";
                     break;
             }
             e.Add(name + ": two elements met", Short(k));
             if (r.barrier > 0) e.Add("Ward of " + Combos.Label(k), k == ComboKind.Steam ? "A little cloud wraps the wearer when foes are near." : k == ComboKind.Storm ? "Whoever strikes the wearer is jolted and stunned."
                 : k == ComboKind.Magma ? "A crust: blows bite less, and whoever strikes the wearer is burnt." : k == ComboKind.Haze ? "Bullets often pass through a shape that is not there."
-                : k == ComboKind.Moss ? "The wearer mends slowly." : "Whoever strikes the wearer gets dust in the eyes.");
+                : k == ComboKind.Bog ? "Whoever strikes the wearer is stuck where they stand for a moment." : "Whoever strikes the wearer gets dust in the eyes.");
             return e;
         }
     }

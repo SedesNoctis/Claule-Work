@@ -48,7 +48,7 @@ namespace Avir.Magic
     public static class Ward
     {
         private static bool ComboWard(HediffDef d) => d != null && (d == ComboDefOf.Avir_SteamWard || d == ComboDefOf.Avir_StormWard || d == ComboDefOf.Avir_MagmaWard
-                                                                  || d == ComboDefOf.Avir_HazeWard || d == ComboDefOf.Avir_MossWard || d == ComboDefOf.Avir_DustWard);
+                                                                  || d == ComboDefOf.Avir_HazeWard || d == ComboDefOf.Avir_BogWard || d == ComboDefOf.Avir_DustWard);
 
         public static bool Quench(IntVec3 c, Map map, Pawn caster)
         {

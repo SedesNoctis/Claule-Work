@@ -276,6 +276,13 @@
     <initialSeverity>0.01</initialSeverity>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.8, 0.7, 0.5, 0.4)</color>
+        <interval>90</interval>
+        <scale>0.6</scale>
+        <height>0.4</height>
+      </li>
       <li Class="HediffCompProperties_SeverityPerDay"><severityPerDay>-2</severityPerDay></li>
     </comps>
     <stages>
@@ -422,6 +429,13 @@
     <defaultLabelColor>(0.7, 0.8, 1)</defaultLabelColor>
     <isBad>true</isBad>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.8, 0.88, 1, 0.35)</color>
+        <interval>60</interval>
+        <scale>0.9</scale>
+        <height>0.3</height>
+      </li>
       <li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>90~90</disappearsAfterTicks></li>
     </comps>
     <stages>
@@ -482,6 +496,13 @@
     <isBad>true</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.45, 0.35, 0.25, 0.6)</color>
+        <interval>50</interval>
+        <scale>0.7</scale>
+        <height>0</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>90~90</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -585,6 +606,13 @@
     <isBad>true</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.6, 0.6, 0.6, 0.55)</color>
+        <interval>60</interval>
+        <scale>0.8</scale>
+        <height>0.2</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>5000~5000</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -705,6 +733,13 @@
     <isBad>true</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.85, 0.92, 0.95, 0.45)</color>
+        <interval>80</interval>
+        <scale>0.5</scale>
+        <height>0.45</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>2500~2500</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -977,14 +1012,21 @@
     </stages>
   </HediffDef>
   <HediffDef>
-    <defName>Avir_Soggy</defName>
-    <label>in the moss</label>
-    <description>Wet moss underfoot: every step slips and sinks.</description>
+    <defName>Avir_Mired</defName>
+    <label>mired</label>
+    <description>Mud to the knees: every step is fought for.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.42, 0.62, 0.28)</defaultLabelColor>
     <isBad>true</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>dust</kind>
+        <color>(0.38, 0.45, 0.25, 0.6)</color>
+        <interval>45</interval>
+        <scale>0.8</scale>
+        <height>0</height>
+      </li>
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>150~150</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -999,39 +1041,11 @@
     </comps>
     <stages>
       <li>
-        <capMods><li><capacity>Moving</capacity><offset>-0.25</offset></li></capMods>
+        <capMods><li><capacity>Moving</capacity><offset>-0.4</offset></li></capMods>
       </li>
     </stages>
   </HediffDef>
-  <HediffDef>
-    <defName>Avir_Overgrown</defName>
-    <label>overgrown</label>
-    <description>The moss took the mage when they lost hold of it: it grows on them, stiff and heavy, for a few hours.</description>
-    <hediffClass>HediffWithComps</hediffClass>
-    <defaultLabelColor>(0.42, 0.62, 0.28)</defaultLabelColor>
-    <isBad>true</isBad>
-    <maxSeverity>1</maxSeverity>
-    <comps>
-      <li Class="HediffCompProperties_Disappears">
-        <disappearsAfterTicks>7500~7500</disappearsAfterTicks>
-        <showRemainingTime>true</showRemainingTime>
-      </li>
-      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
-        <kind>dust</kind>
-        <color>(0.4, 0.65, 0.3, 0.55)</color>
-        <interval>80</interval>
-        <scale>0.8</scale>
-        <height>0.3</height>
-      </li>
-    </comps>
-    <stages>
-      <li>
-        <capMods><li><capacity>Moving</capacity><offset>-0.25</offset></li></capMods>
-        <capMods><li><capacity>Manipulation</capacity><offset>-0.15</offset></li></capMods>
-      </li>
-    </stages>
-  </HediffDef>
-  <HediffDef>
+    <HediffDef>
     <defName>Avir_SteamWard</defName>
     <label>ward of steam</label>
     <description>A ward of steam: when foes are near, a little cloud wraps its wearer.</description>
@@ -1126,9 +1140,9 @@
     </comps>
   </HediffDef>
   <HediffDef>
-    <defName>Avir_MossWard</defName>
-    <label>ward of moss</label>
-    <description>A ward of moss: its wearer slowly mends.</description>
+    <defName>Avir_BogWard</defName>
+    <label>ward of bog</label>
+    <description>A ward of bog: whoever strikes its wearer is stuck where they stand for a moment.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.42, 0.62, 0.28)</defaultLabelColor>
     <isBad>false</isBad>
@@ -1259,9 +1273,9 @@
     </comps>
   </HediffDef>
   <HediffDef>
-    <defName>Avir_MossEnchant</defName>
-    <label>weapon of moss</label>
-    <description>The weapon is wrapped in moss: blows root the foe for a moment.</description>
+    <defName>Avir_BogEnchant</defName>
+    <label>weapon of bog</label>
+    <description>The weapon drips with mud: blows clog the foe and slow them.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.42, 0.62, 0.28)</defaultLabelColor>
     <isBad>false</isBad>
@@ -1343,5 +1357,82 @@
       <shaderType>Transparent</shaderType>
       <drawSize>(1.5, 1.5)</drawSize>
     </graphicData>
+  </ThingDef>
+  <HediffDef>
+    <defName>Avir_Sinking</defName>
+    <label>drawn into the mire</label>
+    <description>A mage's bog has them: the longer they stay in it, the deeper they sink - and when it closes over them, they choke. Out of the mire it slowly lets go.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.38, 0.47, 0.24)</defaultLabelColor>
+    <isBad>true</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <lethalSeverity>1</lethalSeverity>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay"><severityPerDay>-12</severityPerDay></li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>splash</kind>
+        <color>(1,1,1,1)</color>
+        <interval>50</interval>
+        <scale>0.9</scale>
+        <height>0</height>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <label>to the knees</label>
+        <capMods><li><capacity>Moving</capacity><offset>-0.2</offset></li></capMods>
+      </li>
+      <li>
+        <minSeverity>0.35</minSeverity>
+        <label>to the waist</label>
+        <capMods>
+          <li><capacity>Moving</capacity><offset>-0.5</offset></li>
+          <li><capacity>Breathing</capacity><offset>-0.2</offset></li>
+        </capMods>
+      </li>
+      <li>
+        <minSeverity>0.7</minSeverity>
+        <label>to the neck</label>
+        <lifeThreatening>true</lifeThreatening>
+        <capMods>
+          <li><capacity>Moving</capacity><offset>-0.7</offset></li>
+          <li><capacity>Breathing</capacity><offset>-0.5</offset></li>
+        </capMods>
+      </li>
+    </stages>
+  </HediffDef>
+  <ThingDef>
+    <defName>Avir_Mire</defName>
+    <label>mire</label>
+    <description>A bog made by a mage. Foes in it are gripped, slower and slower; whoever stays in it too long, or falls in it, is drawn under and chokes.</description>
+    <thingClass>Avir.Magic.MirePatch</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Filth</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>true</selectable>
+    <drawerType>RealtimeOnly</drawerType>
+    <graphicData>
+      <texPath>Things/Avir/Magic/Mire</texPath>
+      <graphicClass>Graphic_Random</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.6, 1.6)</drawSize>
+    </graphicData>
+  </ThingDef>
+  <ThingDef>
+    <defName>Avir_SpellBoltRide</defName>
+    <label>riding the lightning</label>
+    <thingClass>Avir.Magic.SpellDash</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Skyfaller</altitudeLayer>
+    <drawerType>RealtimeOnly</drawerType>
+    <useHitPoints>false</useHitPoints>
+    <pawnFlyer>
+      <flightDurationMin>0.2</flightDurationMin>
+      <flightSpeed>45</flightSpeed>
+      <heightFactor>0.3</heightFactor>
+    </pawnFlyer>
   </ThingDef>
 </Defs>

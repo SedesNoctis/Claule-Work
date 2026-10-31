@@ -20,6 +20,26 @@ namespace Avir.Magic
         /// dragged to the mage - and they were not ready for it.</summary>
         public Pawn puller;
 
+        /// <summary>A step of two elements met: carried the way that meeting goes - a cloud, a bolt, through lava or
+        /// mire under the ground, unseen in a shimmer, in a dust devil - with its own landing.</summary>
+        public ComboKind combo;
+
+        public static void Travel(Pawn p, IntVec3 dest, ComboKind k, float power)
+        {
+            Map map = p.Map;
+            if (map == null || !dest.InBounds(map) || !dest.Standable(map) || dest == p.Position) return;
+            string name = k == ComboKind.Magma || k == ComboKind.Bog ? "Avir_SpellBurrow" : k == ComboKind.Storm ? "Avir_SpellBoltRide" : k == ComboKind.Steam ? "Avir_SpellDash" : "Avir_SpellFlight";
+            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(name) ?? DefDatabase<ThingDef>.GetNamedSilentFail("Avir_SpellDash");
+            if (def == null) return;
+            ComboMagic.Depart(k, p, dest, power);
+            IntVec3 from = p.Position;
+            var flyer = (SpellDash)MakeFlyer(def, p, dest, null, null);
+            if (flyer == null) return;
+            flyer.combo = k; flyer.power = power;
+            flyer.element = k == ComboKind.Magma || k == ComboKind.Bog ? RuneKind.Earth : k == ComboKind.Steam ? RuneKind.Water : RuneKind.Air;
+            GenSpawn.Spawn(flyer, from, map);
+        }
+
         /// <summary>Who the last pull took - the chain of a spell waits until they have arrived.</summary>
         public static List<Pawn> LastPulled;
 
@@ -151,6 +171,7 @@ namespace Avir.Magic
             Scribe_Values.Look(ref element, "element", RuneKind.Fire);
             Scribe_Values.Look(ref power, "power", 1f);
             Scribe_References.Look(ref puller, "puller");
+            Scribe_Values.Look(ref combo, "combo", ComboKind.None);
             Scribe_Collections.Look(ref verbs, "verbs", LookMode.Def);
             Scribe_Values.Look(ref amplify, "amplify");
             Scribe_Values.Look(ref breadth, "breadth");
@@ -160,7 +181,7 @@ namespace Avir.Magic
 
         public override void DynamicDrawPhaseAt(DrawPhase phase, Vector3 drawLoc, bool flip = false)
         {
-            if (element == RuneKind.Earth) return; // under the ground: nothing of the mage is seen
+            if (element == RuneKind.Earth || combo == ComboKind.Haze || combo == ComboKind.Steam) return; // under the ground, in a shimmer, a cloud: nothing of the mage is seen
             if (element == RuneKind.Water && puller == null && phase == DrawPhase.Draw)
             {
                 // the wave itself, rolling ahead of the mage
@@ -182,6 +203,7 @@ namespace Avir.Magic
             base.RespawnPawn();
             if (map == null || mage == null) return;
             if (by != null) { if (!mage.Dead) Arrive(mage, by, el, pw, map); return; }
+            if (combo != ComboKind.None) { if (!mage.Dead) ComboMagic.Land(combo, mage, at, pw); return; }
             if (verbs != null && verbs.Count > 0 && !mage.Dead)
             {
                 // the circle's verbs, outward of the step: they work where the mage comes out
@@ -209,6 +231,20 @@ namespace Avir.Magic
             base.TickInterval(delta);
             if (!Spawned) return;
             Vector3 at = DrawPos;
+            if (combo != ComboKind.None)
+            {
+                // the meeting's own trail: a cloud, sparks of a bolt, a glowing crack, a shimmer, bubbles of mire, dust
+                if (this.IsHashIntervalTick(3, delta))
+                {
+                    IntVec3 c = new Vector3(at.x, 0f, at.z).ToIntVec3();
+                    if (combo == ComboKind.Magma) FleckMaker.ThrowFireGlow(new Vector3(at.x, 0f, at.z), Map, 0.9f);
+                    else if (combo == ComboKind.Bog) { if (c.InBounds(Map)) FleckMaker.Static(c, Map, FleckDefOf.WaterRipple, 1.2f); }
+                    else if (combo == ComboKind.Storm) FleckMaker.ThrowLightningGlow(at, Map, 0.9f);
+                    else if (combo == ComboKind.Haze) { if (c.InBounds(Map)) FleckMaker.ThrowHeatGlow(c, Map, 1.2f); }
+                    else FleckMaker.ThrowDustPuffThick(at, Map, 1.5f, Combos.ColorOf(combo));
+                }
+                return;
+            }
             if (element == RuneKind.Water)
             {
                 if (this.IsHashIntervalTick(2, delta)) FleckMaker.Static(at.ToIntVec3(), Map, FleckDefOf.WaterSplash, 1.4f);
