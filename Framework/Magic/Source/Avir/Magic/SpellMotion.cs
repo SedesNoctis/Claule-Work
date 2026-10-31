@@ -107,9 +107,13 @@ namespace Avir.Magic
             RuneDef el = RitualEvaluator.Read(s).elements.FirstOrDefault();
             IntVec3 keep = ReturnTo;
             if (home.IsValid) ReturnTo = home;
+            s = s.Copy();
+            bool shaped = SpellSculpt.Take(s);
+            if (shaped) power *= SpellSculpt.Keeps;
             try
             {
                 using (SpellWards.Of(k == ComboKind.None ? el?.kind : null, k, true))
+                using (shaped ? SpellSculpt.Spare() : null)
                 {
                     if (SpellWards.Strikes(s) && SpellWards.DomeTakes(caster.Map, target.Cell, el, k, ref power)) return;
                     SpellWards.InOrder(caster, s, k, el, target, power, part => CastPart(caster, part, k, el, target, power));
@@ -171,7 +175,7 @@ namespace Avir.Magic
                 if (foe && el == RuneKind.Fire)
                 {
                     // where the path begins the fire bursts for real - torn out of it, the foe takes the burns along
-                    GenExplosion.DoExplosion(from, map, 1.9f + 0.3f * power, DamageDefOf.Flame, mage, Mathf.RoundToInt(8f * power), chanceToStartFire: 0.5f);
+                    GenExplosion.DoExplosion(from, map, 1.9f + 0.3f * power, DamageDefOf.Flame, mage, Mathf.RoundToInt(8f * power), chanceToStartFire: 0.5f, ignoredThings: SpellSculpt.Ignored(mage, map, from, 1.9f + 0.3f * power, false));
                 }
                 (LastPulled ?? (LastPulled = new List<Pawn>())).Add(p);
             }

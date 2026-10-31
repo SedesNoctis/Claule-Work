@@ -119,7 +119,7 @@ namespace Avir.Magic
                 if (Rand.Chance(0.12f)) MapComponent_SpellSprites.Put(map, "Storm/Bolt_Fork", c.ToVector3Shifted(), 1.6f, 16);
                 foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList())
                 {
-                    if (p.Dead || p == caster || (caster != null && !p.HostileTo(caster))) continue;
+                    if (p.Dead || p == caster || (caster != null && !MagicFx.Foe(p, caster))) continue;
                     p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 5f * power, 0f, -1f, caster));
                     if (!p.Dead) MagicFx.Stun(p, 45, caster);
                 }

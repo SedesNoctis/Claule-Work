@@ -169,7 +169,7 @@ namespace Avir.Magic
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.3f)) FireSmoke.Puff(c, map, 0.5f + 0.3f * power);
                         if (rv.amplify > 0)
                             GenExplosion.DoExplosion(aroundSelf ? at : cells[cells.Count - 1], map, 1.9f + rv.amplify, DamageDefOf.Flame, caster, Mathf.RoundToInt(12f * power), -1f,
-                                null, null, null, null, null, 0f, 1, null, null, 255, false, null, 0f, 1, 0.5f, false, null, new List<Thing> { caster });
+                                null, null, null, null, null, 0f, 1, null, null, 255, false, null, 0f, 1, 0.5f, false, null, SpellSculpt.Ignored(caster, map, aroundSelf ? at : cells[cells.Count - 1], 1.9f + rv.amplify));
                         break;
                     case RuneKind.Hold:
                         foreach (IntVec3 c in cells) HeldFlame.Place(c, map, caster, power, false);
@@ -214,7 +214,7 @@ namespace Avir.Magic
         {
             foreach (Pawn p in PawnsIn(cells, map))
             {
-                if (p == caster || !p.HostileTo(caster)) continue;
+                if (!MagicFx.Foe(p, caster)) continue;
                 p.TakeDamage(new DamageInfo(DamageDefOf.Flame, dmg, 0f, -1f, caster));
                 if (Rand.Chance(0.3f)) p.TryAttachFire(0.4f, caster);
             }
@@ -381,7 +381,7 @@ namespace Avir.Magic
             if (this.IsHashIntervalTick(60))
             {
                 foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
-                    if (owner == null || p.HostileTo(owner))
+                    if (owner == null || MagicFx.Foe(p, owner))
                     {
                         p.TakeDamage(new DamageInfo(DamageDefOf.Flame, (tall ? 6f : 3f) * power, 0f, -1f, owner));
                         // held flame does not trap - it bites at the legs, and whoever crosses it goes slowly

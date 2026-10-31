@@ -189,13 +189,13 @@ namespace Avir.Magic
                 {
                     case RuneKind.Release: Pulse(caster, at, map, radius, power, el); break;
                     case RuneKind.Hold:
-                        foreach (Pawn q in PawnsAt(at, map, radius + 0.5f)) if (q.HostileTo(caster)) q.stances?.stunner?.StunFor(Mathf.RoundToInt(180f * power), caster);
+                        foreach (Pawn q in PawnsAt(at, map, radius + 0.5f)) if (MagicFx.Foe(q, caster)) q.stances?.stunner?.StunFor(Mathf.RoundToInt(180f * power), caster);
                         FleckMaker.Static(at, map, FleckDefOf.PsycastAreaEffect, radius + 1f);
                         break;
                     case RuneKind.Drain:
                         foreach (Pawn q in PawnsAt(at, map, radius))
                         {
-                            if (q == caster || !q.HostileTo(caster)) continue;
+                            if (!MagicFx.Foe(q, caster)) continue;
                             if (q.needs?.rest != null) q.needs.rest.CurLevel -= 0.15f * power;
                             Hediff_ArcaneCore qc = Mages.Core(q);
                             float took = qc != null ? Mathf.Min(qc.arcana, 15f * power) : 6f * power;
@@ -265,11 +265,11 @@ namespace Avir.Magic
                 case "Space": d = DamageDefOf.Blunt; break;
             }
             GenExplosion.DoExplosion(at, map, radius, d, caster, dmg, -1f, null, null, null, null, null, 0f, 1, null, null, 255,
-                false, null, 0f, 1, fire, false, null, new List<Thing> { caster });
+                false, null, 0f, 1, fire, false, null, SpellSculpt.Ignored(caster, map, at, radius));
             if (k == "Water" || k == "Air" || k == "Space" || k == "Time")
-                foreach (Pawn q in PawnsAt(at, map, radius)) if (q != caster && q.HostileTo(caster)) q.stances?.stunner?.StunFor(Mathf.RoundToInt(60f * power), caster);
+                foreach (Pawn q in PawnsAt(at, map, radius)) if (MagicFx.Foe(q, caster)) q.stances?.stunner?.StunFor(Mathf.RoundToInt(60f * power), caster);
             if (k == "Darkness")
-                foreach (Pawn q in PawnsAt(at, map, radius)) if (q != caster && q.HostileTo(caster) && q.RaceProps.Humanlike && !q.InMentalState) q.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.PanicFlee, null, true);
+                foreach (Pawn q in PawnsAt(at, map, radius)) if (MagicFx.Foe(q, caster) && q.RaceProps.Humanlike && !q.InMentalState) q.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.PanicFlee, null, true);
             if (k == "Life")
                 foreach (Pawn q in PawnsAt(at, map, radius)) if (!q.HostileTo(caster)) Heal(q, 4f * power);
         }

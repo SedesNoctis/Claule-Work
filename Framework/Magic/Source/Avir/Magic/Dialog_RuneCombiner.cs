@@ -67,6 +67,7 @@ namespace Avir.Magic
             new[] { "Fire beside water, still fire", "Fire", "Release,Closing", "", "Water", "The Closing rune keeps the circle pure: it does not meet its neighbour." },
             new[] { "Fire beside water: steam", "Fire", "Release", "", "Water", "Neighbours in the chain meet: fire and water make steam." },
             new[] { "Focused fire", "Fire", "Release,Focus", "", "", "The Focus rune draws the stream into the circle: stronger, harder to hold." },
+            new[] { "Spare your own", "Fire", "Release", "|Barrier,Barrier", "", "Two Barriers in the outermost section shape the blow: foes are struck, your people are not, and it is a quarter weaker. Without the pair the blow strikes everyone in it. Each circle needs its own." },
         };
 
         public override void DoWindowContents(Rect box)

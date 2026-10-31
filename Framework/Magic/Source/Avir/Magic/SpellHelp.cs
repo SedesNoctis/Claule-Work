@@ -70,7 +70,14 @@ namespace Avir.Magic
             float now = Time.realtimeSinceStartup;
             if (!read.TryGetValue(s, out var kv) || now - kv.Key > 0.5f)
             {
-                SpellEffect e0 = s.weave != null ? WeaveSpell.Explain(s.weave) : ExplainCore(s);
+                // two Barriers on a circle's outer edge shape its blow: read without them, and say so
+                RitualSchema rs = SpellSculpt.Stripped(s, out int nShaped, out int nPlain);
+                SpellEffect e0 = rs.weave != null ? WeaveSpell.Explain(rs.weave) : ExplainCore(rs);
+                if (nShaped > 0) e0.Add(nPlain > 0 ? "Spares its own - in part" : "Spares its own", "Two Barriers in the outermost section of a circle shape its blow round the caster's own people: it strikes foes only, "
+                    + "and is " + (1f - SpellSculpt.Keeps).ToStringPercent() + " weaker for it. Each circle needs its own pair" + (nPlain > 0 ? " - here " + nPlain + " circle(s) without it strike everyone." : ".")
+                    + " What is left on the ground (magma, mire, held fields) does not know its own.");
+                else if (s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form)))
+                    e0.Add("Strikes everyone", "Without two Barriers in the outermost section of a circle, its blow strikes whoever stands in it - friend or foe; only a ward keeps them.");
                 e0.details = Details(s);
                 if (SpellCasting.OfAir(s)) e0.Add("Momentum", "A spell of the air: cast on the move. Cast another of the air within " + AvirMod.Settings.airMomentumSeconds.ToString("0") + " seconds and it comes "
                     + AvirMod.Settings.airMomentumStep.ToStringPercent() + " quicker and cheaper - up to " + AirMomentum.MaxStage + " stages; a pause lets the wind drop.");

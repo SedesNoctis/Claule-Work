@@ -387,7 +387,9 @@ namespace Avir.Magic
             return power;
         }
 
-        public static bool Foe(Pawn p, Pawn caster) => p != caster && !p.Dead && p.HostileTo(caster);
+        /// <summary>Struck by the caster's blow: anyone but the caster - friend or foe, a ward keeps whom it keeps - unless
+        /// the blow is shaped (two Barriers on the outer edge of the circle): then only foes.</summary>
+        public static bool Foe(Pawn p, Pawn caster) => p != null && p != caster && !p.Dead && (!SpellSculpt.Active || caster == null || p.HostileTo(caster));
 
         /// <summary>Held fast in the ground by earth: cannot be thrown, drawn nor moved.</summary>
         public static bool Rooted(Pawn p) => p.health?.hediffSet?.GetFirstHediffOfDef(EarthAirDefOf.Avir_Rooted) != null;

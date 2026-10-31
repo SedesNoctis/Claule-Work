@@ -161,7 +161,7 @@ namespace Avir.Magic
         /// <summary>The foes a storm strikes besides its target: the nearest round it, within eight cells, in sight of the sky's reach.</summary>
         private static List<Pawn> StormTargets(Pawn caster, Map map, IntVec3 at, int count) =>
             GenRadial.RadialDistinctThingsAround(at, map, 8f, true).OfType<Pawn>()
-                .Where(p => !p.Dead && p.Position != at && MagicFx.Foe(p, caster))
+                .Where(p => !p.Dead && p.Position != at && p != caster && p.HostileTo(caster))   // the storm aims at foes; what it falls on, it strikes
                 .OrderBy(p => p.Position.DistanceToSquared(at)).Take(count).ToList();
 
         public static void Cast(ComboKind k, Pawn caster, RitualSchema s, RitualReading r, LocalTargetInfo target, float power)
@@ -314,7 +314,7 @@ namespace Avir.Magic
                     // in it unwarded), and then the magma runs out from where it burst
                     IntVec3 mid = Center(cells);
                     float sr = Spread(cells);
-                    GenExplosion.DoExplosion(mid, map, sr + 0.9f, DamageDefOf.Flame, caster, Mathf.RoundToInt(10f * power), chanceToStartFire: 0.5f);
+                    GenExplosion.DoExplosion(mid, map, sr + 0.9f, DamageDefOf.Flame, caster, Mathf.RoundToInt(10f * power), chanceToStartFire: 0.5f, ignoredThings: SpellSculpt.Ignored(caster, map, mid, sr + 0.9f, false));
                     foreach (Pawn p in foes) if (!p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 5f * power, 0f, -1f, caster));
                     MapComponent_SpellSprites.Put(map, "Magma/Fissure", mid.ToVector3Shifted(), sr * 2f, 240, -1f, 0f, 4f);
                     Ash(map, mid.ToVector3Shifted(), sr * 1.6f);
@@ -630,7 +630,7 @@ namespace Avir.Magic
         {
             ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_ShadowDecoy");
             if (def == null) return;
-            var foes = map.mapPawns.AllPawnsSpawned.Where(q => MagicFx.Foe(q, caster) && q.Position.InHorDistOf(caster.Position, 30f)).ToList();
+            var foes = map.mapPawns.AllPawnsSpawned.Where(q => q != caster && !q.Dead && q.HostileTo(caster) && q.Position.InHorDistOf(caster.Position, 30f)).ToList();
             foreach (IntVec3 c in at)
             {
                 if (!c.InBounds(map) || !c.Standable(map) || c.GetEdifice(map) != null) continue;

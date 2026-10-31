@@ -129,7 +129,7 @@ namespace Avir.Magic
             if (false)
             {
                 foreach (Pawn q in GenRadial.RadialDistinctThingsAround(target.Cell, map, radius, true).OfType<Pawn>().ToList())
-                    if (q.HostileTo(caster)) q.TakeDamage(new DamageInfo(DamageDefOf.Burn, 5f * power, 0f, -1f, caster));
+                    if (MagicFx.Foe(q, caster)) q.TakeDamage(new DamageInfo(DamageDefOf.Burn, 5f * power, 0f, -1f, caster));
                 for (int i = 0; i < 6; i++) FleckMaker.ThrowSmoke(target.Cell.ToVector3Shifted() + new Vector3(Rand.Range(-radius, radius), 0f, Rand.Range(-radius, radius)), map, 2f);
             }
             foreach (SpellCircle g in Greats(root))

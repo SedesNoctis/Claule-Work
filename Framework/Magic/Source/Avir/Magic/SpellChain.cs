@@ -126,8 +126,12 @@ namespace Avir.Magic
             if (caster == null || caster.Dead || !caster.Spawned) return;
             float p = c.power * (1f + 0.25f * (WeaveSpell.Resonance(c.root, circle.element) - 1)) * Combos.FocusBoost(circle, caster.Map);
             RitualSchema one = circle.AsSchema();
+            // two Barriers in the outermost section: the blow is shaped round the caster's own people (weaker for it)
+            bool shaped = SpellSculpt.Take(one);
             // outward of a step: cut off, to act where the caster comes out
             RitualSchema after = SpellDash.Split(ref one);
+            if (shaped && after != null) SpellSculpt.Mark(after);
+            float pHere = shaped ? p * SpellSculpt.Keeps : p;
             RitualReading r = RitualEvaluator.Read(one);
             SpellDash.Last = null;
             SpellDash.ReturnTo = c.origin;
@@ -136,12 +140,13 @@ namespace Avir.Magic
             SpellDash.LastPulled = null;
             ComboKind met = c.combos != null && c.combos.TryGetValue(circle, out ComboKind mk) ? mk : ComboKind.None;
             using (SpellWards.Of(circle.element?.kind, met, true))
+            using (shaped ? SpellSculpt.Spare() : null)
             try
             {
                 // a spell landing inside a dome meets it first (Магия-правила.md, part 1)
-                if (SpellWards.Strikes(one) && SpellWards.DomeTakes(caster.Map, c.target.Cell, circle.element, met, ref p)) { after = null; }
+                if (SpellWards.Strikes(one) && SpellWards.DomeTakes(caster.Map, c.target.Cell, circle.element, met, ref pHere)) { after = null; }
                 // the barriers in their turn; two elements that met work as what they made
-                else SpellWards.InOrder(caster, one, met, circle.element, c.target, p, part => SpellDash.CastPart(caster, part, met, circle.element, c.target, p));
+                else SpellWards.InOrder(caster, one, met, circle.element, c.target, pHere, part => SpellDash.CastPart(caster, part, met, circle.element, c.target, pHere));
             }
             finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; }
             SpellDash.Hang(after, met, caster, c.target, p);

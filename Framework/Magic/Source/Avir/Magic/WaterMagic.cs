@@ -67,7 +67,7 @@ namespace Avir.Magic
                         IntVec3 back = caster.Position;
                         foreach (Pawn p in PawnsIn(path, map))
                         {
-                            if (p == caster || !p.HostileTo(caster)) continue;
+                            if (!MagicFx.Foe(p, caster)) continue;
                             p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (8f + 3f * rf.breadth) * power, 0f, -1f, caster));
                             Soak(p, power);
                             Push(p, back, 2 + rf.breadth, map);
@@ -101,7 +101,7 @@ namespace Avir.Magic
                         foreach (IntVec3 c in cells) FireMagic.Extinguish(c, map);
                         foreach (Pawn p in PawnsIn(cells, map))
                         {
-                            if (p == caster || !p.HostileTo(caster)) continue;
+                            if (!MagicFx.Foe(p, caster)) continue;
                             p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (12f + 3f * rv.amplify) * power, 0f, -1f, caster));
                             Soak(p, power);
                             FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 2.2f);
@@ -123,7 +123,7 @@ namespace Avir.Magic
                         float took = 0f;
                         foreach (Pawn p in PawnsIn(cells, map))
                         {
-                            if (p == caster || !p.HostileTo(caster) || !p.RaceProps.IsFlesh) continue;
+                            if (!MagicFx.Foe(p, caster) || !p.RaceProps.IsFlesh) continue;
                             Hediff h = p.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Parched) ?? p.health.AddHediff(WaterDefOf.Avir_Parched);
                             h.Severity = Mathf.Min(1f, h.Severity + 0.35f * power);
                             took += 0.3f;
@@ -135,7 +135,7 @@ namespace Avir.Magic
                     case RuneKind.Lift:
                         foreach (Pawn p in PawnsIn(cells, map))
                         {
-                            if (p == caster || !p.HostileTo(caster)) continue;
+                            if (!MagicFx.Foe(p, caster)) continue;
                             Soak(p, power);
                             SpellHurl.Lift(p, caster, power);
                         }
@@ -189,7 +189,7 @@ namespace Avir.Magic
             for (int i = 0; i < jumps; i++)
             {
                 Pawn next = GenRadial.RadialDistinctThingsAround(cur, map, 4.5f, true).OfType<Pawn>()
-                    .Where(p => !p.Dead && p != caster && p.HostileTo(caster) && !hit.Contains(p) && GenSight.LineOfSight(cur, p.Position, map))
+                    .Where(p => MagicFx.Foe(p, caster) && !hit.Contains(p) && GenSight.LineOfSight(cur, p.Position, map))
                     .OrderBy(p => p.Position.DistanceToSquared(cur)).FirstOrDefault();
                 if (next == null) break;
                 hit.Add(next);
@@ -305,7 +305,7 @@ namespace Avir.Magic
             if (!this.IsHashIntervalTick(60)) return;
             FireMagic.Extinguish(Position, Map);
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
-                if (owner == null || p.HostileTo(owner)) WaterMagic.Soak(p, power * 0.5f);
+                if (owner == null || MagicFx.Foe(p, owner)) WaterMagic.Soak(p, power * 0.5f);
             if (this.IsHashIntervalTick(240)) FleckMaker.Static(Position, Map, FleckDefOf.WaterRipple, 1f);
         }
     }
