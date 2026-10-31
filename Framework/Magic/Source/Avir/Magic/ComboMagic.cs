@@ -843,11 +843,15 @@ namespace Avir.Magic
         {
             if (!c.InBounds(map)) return;
             if (ComboDefOf.Avir_Basalt == null || c.GetFirstPawn(map) != null || c.GetEdifice(map) != null) { EarthWall.Raise(c, map, stoneLife, of); return; }
-            Thing rock = GenSpawn.Spawn(ComboDefOf.Avir_Basalt, c, map, WipeMode.VanishOrMoveAside);
-            // as strong as the shaping that poured it: a weak cast sets brittle, crumbling stone
-            if (rock != null) rock.HitPoints = Mathf.Clamp(Mathf.RoundToInt(250f * Mathf.Max(0.3f, power)), 80, rock.MaxHitPoints);
-            // the caster's stone: a foe walled in by it breaks at it to get out
-            if (rock != null && of != null && rock.def.CanHaveFaction) rock.SetFaction(of);
+            Thing rock;
+            using (EarthWall.HomeKept(c, map))
+            {
+                rock = GenSpawn.Spawn(ComboDefOf.Avir_Basalt, c, map, WipeMode.VanishOrMoveAside);
+                // as strong as the shaping that poured it: a weak cast sets brittle, crumbling stone
+                if (rock != null) rock.HitPoints = Mathf.Clamp(Mathf.RoundToInt(250f * Mathf.Max(0.3f, power)), 80, rock.MaxHitPoints);
+                // the caster's stone: a foe walled in by it breaks at it to get out
+                if (rock != null && of != null && rock.def.CanHaveFaction) rock.SetFaction(of);
+            }
             FleckMaker.ThrowSmoke(c.ToVector3Shifted(), map, 1.2f);
         }
 

@@ -508,10 +508,36 @@ namespace Avir.Magic
             if (c.GetThingList(map).Any(t => t is Pawn)) return;
             var w = (EarthWall)ThingMaker.MakeThing(EarthAirDefOf.Avir_EarthWall);
             w.left = life;
-            GenSpawn.Spawn(w, c, map);
-            // the caster's own wall: a foe shut in by it knows whose it is, and tries to break out
-            if (of != null) w.SetFaction(of);
+            using (HomeKept(c, map))
+            {
+                GenSpawn.Spawn(w, c, map);
+                // the caster's own wall: a foe shut in by it knows whose it is, and tries to break out
+                if (of != null) w.SetFaction(of);
+            }
             FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 2f, MagicFx.EarthDust);
+        }
+
+        /// <summary>A spell's stone is not the colony's home: the home area round it stays as it was - or colonists run out
+        /// into the magma to put out the fires by a wall that is theirs.</summary>
+        public static System.IDisposable HomeKept(IntVec3 c, Map map) => new HomeScope(c, map);
+
+        private sealed class HomeScope : System.IDisposable
+        {
+            private readonly Map map;
+            private readonly List<KeyValuePair<IntVec3, bool>> was = new List<KeyValuePair<IntVec3, bool>>();
+            public HomeScope(IntVec3 c, Map m)
+            {
+                map = m;
+                Area home = m?.areaManager?.Home;
+                if (home == null) return;
+                foreach (IntVec3 x in GenRadial.RadialCellsAround(c, 3.9f, true)) if (x.InBounds(m)) was.Add(new KeyValuePair<IntVec3, bool>(x, home[x]));
+            }
+            public void Dispose()
+            {
+                Area home = map?.areaManager?.Home;
+                if (home == null) return;
+                foreach (var kv in was) if (home[kv.Key] != kv.Value) home[kv.Key] = kv.Value;
+            }
         }
 
         public override void ExposeData() { base.ExposeData(); Scribe_Values.Look(ref left, "left", 7500); }

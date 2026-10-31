@@ -847,6 +847,7 @@
       <deconstructible>false</deconstructible>
       <claimable>false</claimable>
       <isEdifice>true</isEdifice>
+      <expandHomeArea>false</expandHomeArea>
     </building>
     <rotatable>false</rotatable>
     <selectable>true</selectable>
@@ -1402,6 +1403,8 @@
     <description>Molten ground made by a caster. Whoever stands on it burns; it cools into rubble - or, poured as a wall, into stone.</description>
     <thingClass>Avir.Magic.MagmaPool</thingClass>
     <category>Ethereal</category>
+    <!-- molten ground: walkable, but pawns go round it if there is any other way -->
+    <pathCost>400</pathCost>
     <tickerType>Normal</tickerType>
     <altitudeLayer>Filth</altitudeLayer>
     <useHitPoints>false</useHitPoints>

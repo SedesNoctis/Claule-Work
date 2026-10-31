@@ -19,6 +19,7 @@
       <mineableDropChance>0.25</mineableDropChance>
       <smoothedThing>Avir_SmoothedBasalt</smoothedThing>
       <mineablePreventNaturalRockOnSurface>true</mineablePreventNaturalRockOnSurface>
+      <expandHomeArea>false</expandHomeArea>
     </building>
   </ThingDef>
 
