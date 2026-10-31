@@ -448,6 +448,7 @@ namespace Avir.Magic
         /// <summary>A barrier on the very edge of the circle: a ward on the mage, wherever the spell takes them.</summary>
         public static void WardMage(Pawn caster, float power, HediffDef ward, string rune, int amplify = 0)
         {
+            SpellWards.Note(caster?.LabelShort + " - " + rune + ": ward on the caster " + SpellMods.WardOnMage);
             if (!SpellMods.WardOnMage || ward == null || caster.Dead) return;
             SpellWards.Lay(caster, ward, power, amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
             if (caster.Spawned) MapComponent_WardsDrawn.Raise(caster.Map, caster.Position, 0.9f, DefDatabase<RuneDef>.GetNamedSilentFail(rune), caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));

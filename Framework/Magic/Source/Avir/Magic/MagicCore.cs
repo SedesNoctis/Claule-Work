@@ -798,6 +798,15 @@ namespace Avir.Magic
         [DebugAction(Cat, "Fire smoke here (CE smoke if present)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevSmoke() { Map map = Find.CurrentMap; foreach (IntVec3 c in FireMagic.Point(Verse.UI.MouseCell(), map, 2f)) FireSmoke.Puff(c, map, 1f); }
 
+        [DebugAction(Cat, "Hold: always (100%) - toggle", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevHoldAlways() { Spells.DevHold = Spells.DevHold == 1 ? 0 : 1; Messages.Message("Spell hold: " + (Spells.DevHold == 1 ? "always held (100%)" : "by the dice"), MessageTypeDefOf.NeutralEvent, false); }
+
+        [DebugAction(Cat, "Hold: never (0%) - toggle", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevHoldNever() { Spells.DevHold = Spells.DevHold == -1 ? 0 : -1; Messages.Message("Spell hold: " + (Spells.DevHold == -1 ? "always slips (0%)" : "by the dice"), MessageTypeDefOf.NeutralEvent, false); }
+
+        [DebugAction(Cat, "Ward trace to log - toggle", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevWardTrace() { SpellWards.Trace = !SpellWards.Trace; Messages.Message("Ward trace: " + (SpellWards.Trace ? "on (see the log)" : "off"), MessageTypeDefOf.NeutralEvent, false); }
+
         [DebugAction(Cat, "Magma wall here (sets into stone)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevMagmaWall() { Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell(); for (int i = -2; i <= 2; i++) MagmaPool.Pour(c + new IntVec3(i, 0, 0), map, null, 1f, 300, true, 5000); }
 

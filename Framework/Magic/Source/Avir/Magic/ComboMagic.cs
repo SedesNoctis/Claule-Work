@@ -183,6 +183,7 @@ namespace Avir.Magic
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             float radius = FireMagic.PointRadius(r);
             HediffDef ward = ComboDefOf.Ward(k);
+            SpellWards.Note(caster.LabelShort + " casts " + k + ": barrier (wide) " + r.barrier + ", on the caster " + SpellMods.WardOnMage + ", runes " + string.Join(", ", s.rings.SelectMany(g => g.runes).Where(x => x != null).Select(x => x.defName.Replace("Avir_Rune_", ""))));
             if (r.barrier > 0 || SpellMods.WardOnMage)
             {
                 IntVec3 wat = SpellMods.WardOnMage || forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at;

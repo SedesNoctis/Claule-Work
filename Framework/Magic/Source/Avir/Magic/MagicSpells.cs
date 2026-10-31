@@ -73,8 +73,12 @@ namespace Avir.Magic
         public static int FlowTier(Map m) => AvirMod.Settings.flowStrengthensMages && m != null ? MapComponent_ExternalFlow.TierIndex(MapComponent_ExternalFlow.Of(m)?.Total ?? 0f) : 0;
 
         /// <summary>Chance the mage keeps hold of this spell.</summary>
+        /// <summary>Dev mode: 1 - every spell is held, -1 - every spell slips, 0 - by the dice.</summary>
+        public static int DevHold;
+
         public static float HoldChance(Pawn p, RitualSchema s)
         {
+            if (DevHold != 0) return DevHold > 0 ? 1f : 0f;
             float risk = (s.weave != null ? WeaveSpell.Risk(s.weave) : RitualEvaluator.Read(s).Risk(1f, 1f, 0f)) + FlowUnrest(p.MapHeld);
             float comp = GameComponent_AvirComposure.For(p, s, null);
             if (Mages.Core(p)?.Sorcerer == true) comp *= 1.3f;
@@ -123,7 +127,8 @@ namespace Avir.Magic
             float risk = (s.weave != null ? WeaveSpell.Risk(s.weave) : r.Risk(1f, 1f, 0f)) + FlowUnrest(map);
             float comp = GameComponent_AvirComposure.For(caster, s, null);
             if (core.Sorcerer) comp *= 1.3f;   // a sorcerer's composure goes into the hold of a spell
-            if (risk > comp && Rand.Chance((risk - comp) * 0.4f))
+            bool lost = DevHold == 1 ? false : DevHold == -1 ? true : risk > comp && Rand.Chance((risk - comp) * 0.4f);
+            if (lost)
             {
                 // a lost hold burns the mage a little; the element's own price falls on all round. No greatness from it:
                 // greatness is Arcana held without restraint, not a spell that slipped

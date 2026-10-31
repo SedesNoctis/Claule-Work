@@ -63,6 +63,7 @@ namespace Avir.Magic
 
         public void Fall(string why)
         {
+            SpellWards.Note(def.defName + " on " + pawn.LabelShort + " fell: " + why + " (element at work " + SpellWards.element + "/" + SpellWards.combo + ", direct " + SpellWards.direct + ")");
             if (pawn.Spawned)
             {
                 FleckMaker.ThrowLightningGlow(pawn.DrawPos, pawn.Map, 1.2f);
@@ -115,8 +116,14 @@ namespace Avir.Magic
         // ------------------------------------------------------------------ laying a ward
 
         /// <summary>A ward on a body: its charge and its hold on plain blows grow with the spell's strength (amplifying).</summary>
+        /// <summary>Dev mode: every ward decision written to the log.</summary>
+        public static bool Trace;
+
+        public static void Note(string s) { if (Trace) Log.Message("[Avir ward] " + s); }
+
         public static void Lay(Pawn p, HediffDef def, float power, int amplify, int ticks)
         {
+            Note("lay " + def?.defName + " on " + p?.LabelShort + " (power " + power.ToString("0.00") + ", amplify " + amplify + ")" + (p == null || def == null ? " - nothing to lay" : p.Dead ? " - dead" : ""));
             if (p == null || def == null || p.Dead) return;
             // one ward at a time: a new one takes the place of the old
             foreach (Hediff_SpellWard old in p.health.hediffSet.hediffs.OfType<Hediff_SpellWard>().Where(h => h.def != def).ToList()) p.health.RemoveHediff(old);
@@ -172,6 +179,8 @@ namespace Avir.Magic
             if (w == null || dinfo.Def == null) return false;
             float amount = dinfo.Amount;
             if (amount <= 0f) return false;
+            Note(p.LabelShort + " hit through " + w.def.defName + " (" + w.energy.ToString("0") + "/" + w.energyMax.ToString("0") + "): " + dinfo.Def.defName + " " + amount.ToString("0.#")
+                + (AtWork ? ", magic " + element + "/" + combo + (direct ? " direct" : " ground") : ", plain"));
             if (!AtWork)
             {
                 // a plain blow: a share of it held, at the cost of charge
