@@ -73,18 +73,15 @@ namespace Avir.Magic
                 used.Add(to);
                 bool foe = MagicFx.Foe(p, mage);
                 IntVec3 from = p.Position;
-                if (foe && el == RuneKind.Fire)
-                {
-                    // the flash where the path begins; at the mage's end it is only light
-                    FleckMaker.Static(from.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 3f);
-                    p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 8f * power, 0f, -1f, mage));
-                    foreach (IntVec3 c in GenRadial.RadialCellsAround(from, 1.5f, true)) if (c.InBounds(map) && Rand.Chance(0.5f)) FireUtility.TryStartFireIn(c, map, 0.3f, mage);
-                    if (p.Dead || !p.Spawned) continue;
-                }
                 var flyer = (SpellDash)MakeFlyer(def, p, to, null, null);
                 if (flyer == null) continue;
                 flyer.element = el; flyer.power = power; flyer.puller = foe ? mage : null;
                 GenSpawn.Spawn(flyer, from, map);
+                if (foe && el == RuneKind.Fire)
+                {
+                    // where the path begins the fire bursts for real - torn out of it, the foe takes the burns along
+                    GenExplosion.DoExplosion(from, map, 1.9f + 0.3f * power, DamageDefOf.Flame, mage, Mathf.RoundToInt(8f * power), chanceToStartFire: 0.5f);
+                }
                 (LastPulled ?? (LastPulled = new List<Pawn>())).Add(p);
             }
         }
@@ -102,17 +99,21 @@ namespace Avir.Magic
         /// <summary>A foe dragged to the mage lands unready.</summary>
         private static void Arrive(Pawn p, Pawn mage, RuneKind el, float power, Map map)
         {
+            // dragged across the ground, the foe comes to their senses only after they have got up:
+            // while they lie they neither strike nor shoot
+            int down = Mathf.RoundToInt((el == RuneKind.Water ? 150f : el == RuneKind.Air ? 90f : 120f) * power);
             switch (el)
             {
                 case RuneKind.Water:
                     WaterMagic.Soak(p, power);
                     FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 2f);
                     p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 5f * power, 0f, -1f, mage));
-                    if (!p.Dead) AmuletLayDown(p, Mathf.RoundToInt(90f * power));
+                    if (!p.Dead) Down(p, mage, down);
                     break;
                 case RuneKind.Air:
                     MagicFx.Give(p, EarthAirDefOf.Avir_Dizzy, Mathf.RoundToInt(GenDate.TicksPerHour * 0.5f * power));
                     p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 4f * power, 0f, -1f, mage));
+                    if (!p.Dead) Down(p, mage, down);
                     break;
                 case RuneKind.Earth:
                     FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 2.2f, MagicFx.EarthDust);
@@ -120,11 +121,27 @@ namespace Avir.Magic
                     p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 6f * power, 0f, -1f, mage));
                     if (!p.Dead) p.stances?.stunner?.StunFor(Mathf.RoundToInt(420f * power), mage);
                     break;
+                case RuneKind.Fire:
+                    // burnt through the flash: the skin smoulders, the foe is thrown down at the mage's feet
+                    FleckMaker.ThrowFireGlow(p.DrawPos, map, 1.5f);
+                    FleckMaker.ThrowSmoke(p.DrawPos, map, 1.2f);
+                    p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 7f * power, 0f, -1f, mage));
+                    p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 3f * power, 0f, -1f, mage));
+                    if (!p.Dead) Down(p, mage, down);
+                    break;
                 default:
                     p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 4f * power, 0f, -1f, mage));
-                    if (!p.Dead) AmuletLayDown(p, 60);
+                    if (!p.Dead) Down(p, mage, down);
                     break;
             }
+        }
+
+        /// <summary>Laid on the ground and stunned for as long: the knockdown alone lets a pawn in melee strike from the floor.</summary>
+        private static void Down(Pawn p, Pawn mage, int ticks)
+        {
+            int t = Mathf.Max(60, Mathf.RoundToInt(ticks * Avir.Artifactorics.AmuletBattleTelekinesis.KnockdownFactor(p)));
+            p.stances?.stunner?.StunFor(t, mage, addBattleLog: false, showMote: false);
+            Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(p, t);
         }
 
         private static void AmuletLayDown(Pawn p, int ticks) =>

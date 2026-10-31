@@ -986,6 +986,12 @@ namespace Avir.Magic
 
         // ================================================================== right: the effect, Arlie, keep
 
+        private SpellEffect shownFx;
+        private SpellCircle shownSel;
+        private RitualSchema shownSpell;
+        private bool shownWhole;
+        private float shownAt;
+
         private void DrawRight(Rect r)
         {
             GUI.color = Ink; Text.Font = GameFont.Medium;
@@ -993,15 +999,21 @@ namespace Avir.Magic
             Text.Font = GameFont.Small;
             // a circle of several chosen: what that circle does alone; the binding (or a click on the sky) - the whole spell
             bool whole = sel.binding || s.weave.Working.Count() <= 1 || !s.weave.All().Contains(sel);
-            RitualSchema shownSpell = whole ? s : new RitualSchema { name = s.name, weave = SpellCircle.Bound(sel.Copy()) };
-            SpellEffect fx = SpellText.Explain(shownSpell);
-            // a circle whose element met its neighbour's: it works as what they made
-            if (!whole && met.TryGetValue(sel, out ComboKind selMet))
+            // what the codex reads is read anew a few times a second, not every frame: the circle alone is a new spell each time
+            if (shownFx == null || shownSel != sel || shownWhole != whole || Time.realtimeSinceStartup - shownAt > 0.3f)
             {
-                SpellEffect cfx = ComboText.Explain(selMet, sel.AsSchema());
-                cfx.details = fx.details; fx = cfx;
+                shownSpell = whole ? s : new RitualSchema { name = s.name, weave = SpellCircle.Bound(sel.Copy()) };
+                SpellEffect fx0 = SpellText.Explain(shownSpell);
+                // a circle whose element met its neighbour's: it works as what they made
+                if (!whole && met.TryGetValue(sel, out ComboKind selMet))
+                {
+                    SpellEffect cfx = ComboText.Explain(selMet, sel.AsSchema());
+                    cfx.details = fx0.details; fx0 = cfx;
+                }
+                if (!whole) fx0.details = (fx0.details ?? "") + "\nThe whole spell: choose the outer rim (or click the sky).";
+                shownFx = fx0; shownSel = sel; shownWhole = whole; shownAt = Time.realtimeSinceStartup;
             }
-            if (!whole) fx.details = (fx.details ?? "") + "\nThe whole spell: choose the outer rim (or click the sky).";
+            SpellEffect fx = shownFx;
             float ph = EffectPlaque.Height(fx, r.width);
             EffectPlaque.Draw(new Rect(r.x, r.y + 40f, r.width, ph), fx, !whole && met.TryGetValue(sel, out ComboKind tint) ? Combos.ColorOf(tint) : Spells.ColorOf(shownSpell), whole ? "THE MAIN EFFECT" : "THIS CIRCLE ALONE");
             float y = r.y + 40f + ph + 10f;

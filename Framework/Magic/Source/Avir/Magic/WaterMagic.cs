@@ -112,6 +112,7 @@ namespace Avir.Magic
                         foreach (IntVec3 c in FireMagic.Point(from, map, FireMagic.PointRadius(rv) + 3f).Where(x => !cells.Contains(x) && Reactions.Pools(x, map).Any(t => !(t is MirePatch))).ToList())
                         {
                             FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 2.4f);
+                            MapComponent_SpellSprites.Put(map, "Water/Geyser", c.ToVector3Shifted() + new Vector3(0f, 0f, 0.4f), 2.2f, 70, 0f);
                             foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList()) if (MagicFx.Foe(p, caster)) { Soak(p, power); SpellHurl.Lift(p, caster, power * 0.6f); }
                         }
                         break;
@@ -139,6 +140,8 @@ namespace Avir.Magic
                             SpellHurl.Lift(p, caster, power);
                         }
                         foreach (IntVec3 c in cells) FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 2.4f);
+                        // the geyser itself, a column bursting from under them
+                        foreach (IntVec3 c in cells.Where((x, i) => i % 4 == 0)) MapComponent_SpellSprites.Put(map, "Water/Geyser", c.ToVector3Shifted() + new Vector3(0f, 0f, 0.5f), 2.8f, 80, 0f);
                         break;
                     case RuneKind.Growth:
                         var near = cells.SelectMany(c => GenAdj.CellsAdjacent8Way(new TargetInfo(c, map))).Concat(cells).Where(c => c.InBounds(map)).Distinct().ToList();

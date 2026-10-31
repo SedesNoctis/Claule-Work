@@ -245,6 +245,7 @@ namespace Avir.Magic
                         if (!p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 5f * power, 0f, -1f, caster));
                     }
                     MapComponent_SpellSprites.Put(map, "Magma/Fissure", Center(cells).ToVector3Shifted(), Spread(cells) * 2f, 240, -1f, 0f, 4f);
+                    Ash(map, Center(cells).ToVector3Shifted(), Spread(cells) * 1.6f);
                     foreach (IntVec3 c in cells) if (Rand.Chance(0.35f)) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(900f * power), false);
                     break;
                 case ComboKind.Haze:
@@ -390,7 +391,7 @@ namespace Avir.Magic
                 case ComboKind.Steam: MapComponent_ComboFields.Raise(map, k, caster, IntVec3.Invalid, 0f, power, life / 2, false, wall); break;
                 case ComboKind.Storm: MapComponent_ComboFields.Raise(map, k, caster, IntVec3.Invalid, 0f, power, life / 2, false, wall); break;
                 case ComboKind.Magma:
-                    // a wall of molten stone: it burns, then sets hard - a wall of rock that stays for hours
+                    // a wall of molten stone: it burns, then sets into basalt - real rock, to be smoothed or mined
                     foreach (IntVec3 c in wall) MagmaPool.Pour(c, map, caster, power, 300, true, life);
                     break;
                 case ComboKind.Haze:
@@ -570,6 +571,10 @@ namespace Avir.Magic
             }
         }
 
+        /// <summary>Ash and embers drifting off molten stone, one of three drawings.</summary>
+        public static void Ash(Map map, Vector3 at, float size) =>
+            MapComponent_SpellSprites.Put(map, "Ash/Ash_" + "ABC"[Rand.Range(0, 3)], at, Mathf.Max(1.2f, size), 300, -1f, Rand.Range(-6f, 6f));
+
         internal static void Puffs(ComboKind k, Map map, List<IntVec3> cells, float share)
         {
             Color col = Combos.ColorOf(k); col.a = 0.55f;
@@ -720,8 +725,25 @@ namespace Avir.Magic
             if (!Spawned) return;
             Map m = Map; IntVec3 c = Position;
             Destroy();
+            if (Rand.Chance(0.4f)) ComboMagic.Ash(m, c.ToVector3Shifted(), 1.4f);
             FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), m, 1.5f, new Color(0.3f, 0.3f, 0.3f, 0.7f));
-            if (setsHard) EarthWall.Raise(c, m, stoneLife); else MagicFx.Rubble(c, m);
+            if (setsHard) SetIntoBasalt(c, m, stoneLife);
+            else
+            {
+                MagicFx.Rubble(c, m);
+                // now and then a lump sets whole, to be carried off and cut
+                if (!now && ComboDefOf.Avir_ChunkBasalt != null && Rand.Chance(0.12f)) GenPlace.TryPlaceThing(ThingMaker.MakeThing(ComboDefOf.Avir_ChunkBasalt), c, m, ThingPlaceMode.Near);
+            }
+        }
+
+        /// <summary>Molten stone set where it stood: real rock, basalt - smoothed into a wall, mined for chunks, cut into
+        /// blocks. Whoever still stands in it is not walled up: there it only sets as a passing earthen wall.</summary>
+        public static void SetIntoBasalt(IntVec3 c, Map map, int stoneLife)
+        {
+            if (!c.InBounds(map)) return;
+            if (ComboDefOf.Avir_Basalt == null || c.GetFirstPawn(map) != null || c.GetEdifice(map) != null) { EarthWall.Raise(c, map, stoneLife); return; }
+            GenSpawn.Spawn(ComboDefOf.Avir_Basalt, c, map, WipeMode.VanishOrMoveAside);
+            FleckMaker.ThrowSmoke(c.ToVector3Shifted(), map, 1.2f);
         }
 
         public override void ExposeData()
@@ -898,7 +920,7 @@ namespace Avir.Magic
         public static HediffDef Avir_Dazzled, Avir_Hazed, Avir_Dusted, Avir_Mired, Avir_Sinking;
         public static HediffDef Avir_SteamWard, Avir_StormWard, Avir_MagmaWard, Avir_HazeWard, Avir_BogWard, Avir_DustWard;
         public static HediffDef Avir_SteamEnchant, Avir_StormEnchant, Avir_MagmaEnchant, Avir_HazeEnchant, Avir_BogEnchant, Avir_DustEnchant;
-        public static ThingDef Avir_Magma, Avir_Mire, Avir_GasSteam, Avir_GasMarsh, Avir_Obsidian, Avir_Glass;
+        public static ThingDef Avir_Magma, Avir_Mire, Avir_GasSteam, Avir_GasMarsh, Avir_Obsidian, Avir_Glass, Avir_Basalt, Avir_ChunkBasalt;
         static ComboDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(ComboDefOf)); }
 
         public static HediffDef Ward(ComboKind k) => k == ComboKind.Steam ? Avir_SteamWard : k == ComboKind.Storm ? Avir_StormWard : k == ComboKind.Magma ? Avir_MagmaWard : k == ComboKind.Haze ? Avir_HazeWard : k == ComboKind.Bog ? Avir_BogWard : Avir_DustWard;
@@ -981,7 +1003,7 @@ namespace Avir.Magic
                 case RuneKind.Step:
                     e.main = SpellMods.Pulls(s) ? "The one at the target is drawn to the mage through " + Combos.Label(k) + "." : Step(k); break;
                 case RuneKind.Shape:
-                    e.main = k == ComboKind.Magma ? "A wall of magma between two points: it burns, then sets into stone that stands for hours." : k == ComboKind.Haze ? "A row of false shapes of the mage between two points: foes shoot at them."
+                    e.main = k == ComboKind.Magma ? "A wall of magma between two points: it burns, then sets into basalt - real rock that stays: smooth it into a wall, or mine it for chunks and cut them into blocks." : k == ComboKind.Haze ? "A row of false shapes of the mage between two points: foes shoot at them."
                            : k == ComboKind.Bog ? "A moat of mire between two points, two cells wide: foes wade, and those who stay are drawn under." : k == ComboKind.Storm ? "A fence of lightning between two points: it strikes whoever is in it."
                            : "A curtain of " + Combos.Label(k) + " between two points" + (k == ComboKind.Steam ? ": nothing is seen through it" : ": whoever is in it can hardly see") + "."; break;
                 case RuneKind.Sense:

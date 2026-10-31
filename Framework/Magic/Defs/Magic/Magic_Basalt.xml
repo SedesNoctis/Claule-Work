@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <!-- Cooled magma: a rock of its own. Vanilla rock art in the colours of set lava - smoothed, mined, cut into blocks
+       like any other stone. It never appears as a map's own rock: it is only where magma set. -->
+
+  <ThingDef ParentName="UglyRockBase" Name="Avir_BasaltBase">
+    <defName>Avir_Basalt</defName>
+    <label>basalt</label>
+    <description>Magma that cooled where it was poured: black-red stone, still faintly warm at the seams. Very hard. Can be smoothed into a wall or mined for chunks.</description>
+    <graphicData>
+      <color>(62,44,42)</color>
+    </graphicData>
+    <statBases>
+      <MaxHitPoints>1000</MaxHitPoints>
+    </statBases>
+    <building>
+      <mineableThing>Avir_ChunkBasalt</mineableThing>
+      <mineableDropChance>0.25</mineableDropChance>
+      <smoothedThing>Avir_SmoothedBasalt</smoothedThing>
+      <mineablePreventNaturalRockOnSurface>true</mineablePreventNaturalRockOnSurface>
+    </building>
+  </ThingDef>
+
+  <ThingDef ParentName="Avir_BasaltBase">
+    <defName>Avir_SmoothedBasalt</defName>
+    <label>smoothed basalt</label>
+    <description>Set magma, polished: a dark wall with a deep red glint where the light catches it.</description>
+    <uiIconPath>Things/Building/Linked/WallSmooth_MenuIcon</uiIconPath>
+    <graphicData>
+      <texPath>Things/Building/Linked/RockSmooth_Atlas</texPath>
+    </graphicData>
+    <statBases>
+      <Beauty>1</Beauty>
+      <MarketValue>7</MarketValue>
+    </statBases>
+    <building>
+      <isNaturalRock>false</isNaturalRock>
+      <canBuildNonEdificesUnder>true</canBuildNonEdificesUnder>
+      <artificialForMeditationPurposes>false</artificialForMeditationPurposes>
+      <smoothedThing />
+      <paintable>true</paintable>
+    </building>
+    <saveCompressible>false</saveCompressible>
+    <repairEffect>Repair</repairEffect>
+  </ThingDef>
+
+  <ThingDef ParentName="ChunkRockBase">
+    <defName>Avir_ChunkBasalt</defName>
+    <label>basalt chunk</label>
+    <graphicData>
+      <color>(62,44,42)</color>
+    </graphicData>
+    <statBases>
+      <Mass>27</Mass>
+    </statBases>
+    <soundDrop>ChunkRock_Drop</soundDrop>
+    <butcherProducts>
+      <Avir_BlocksBasalt>20</Avir_BlocksBasalt>
+    </butcherProducts>
+  </ThingDef>
+
+  <ThingDef ParentName="StoneBlocksBase">
+    <defName>Avir_BlocksBasalt</defName>
+    <label>basalt blocks</label>
+    <description>Blocks of set magma. Harder than granite, and a little heavier.</description>
+    <graphicData>
+      <color>(62,44,42)</color>
+    </graphicData>
+    <statBases>
+      <Mass>1.35</Mass>
+      <SharpDamageMultiplier>0.65</SharpDamageMultiplier>
+    </statBases>
+    <stuffProps>
+      <color>(62,44,42)</color>
+      <soundImpactBullet>BulletImpact_Ground</soundImpactBullet>
+      <soundMeleeHitSharp>MeleeHit_Stone</soundMeleeHitSharp>
+      <soundMeleeHitBlunt>MeleeHit_Stone</soundMeleeHitBlunt>
+      <soundImpactMelee>Pawn_Melee_Punch_HitBuilding_Stone</soundImpactMelee>
+      <stuffAdjective>basalt</stuffAdjective>
+      <statFactors>
+        <MaxHitPoints>1.8</MaxHitPoints>
+        <WorkToBuild>1.1</WorkToBuild>
+      </statFactors>
+      <canSuggestUseDefaultStuff>true</canSuggestUseDefaultStuff>
+    </stuffProps>
+  </ThingDef>
+
+  <RecipeDef ParentName="MakeStoneBlocksBase">
+    <defName>Avir_Make_StoneBlocksBasalt</defName>
+    <label>make basalt blocks</label>
+    <description>Cuts basalt chunks into usable blocks.</description>
+    <ingredients>
+      <li>
+        <filter>
+          <thingDefs>
+            <li>Avir_ChunkBasalt</li>
+          </thingDefs>
+        </filter>
+        <count>1</count>
+      </li>
+    </ingredients>
+    <fixedIngredientFilter>
+      <thingDefs>
+        <li>Avir_ChunkBasalt</li>
+      </thingDefs>
+    </fixedIngredientFilter>
+    <products>
+      <Avir_BlocksBasalt>20</Avir_BlocksBasalt>
+    </products>
+  </RecipeDef>
+
+  <TerrainDef ParentName="TileStoneBase">
+    <defName>Avir_TileBasalt</defName>
+    <label>basalt tile</label>
+    <color>(62,44,42)</color>
+    <costList>
+      <Avir_BlocksBasalt>4</Avir_BlocksBasalt>
+    </costList>
+  </TerrainDef>
+
+  <TerrainDef ParentName="FlagstoneBase">
+    <defName>Avir_FlagstoneBasalt</defName>
+    <label>basalt flagstone</label>
+    <color>(62,44,42)</color>
+    <costList>
+      <Avir_BlocksBasalt>4</Avir_BlocksBasalt>
+    </costList>
+  </TerrainDef>
+
+</Defs>

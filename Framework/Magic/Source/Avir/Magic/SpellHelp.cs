@@ -34,11 +34,24 @@ namespace Avir.Magic
 
         public static SpellEffect ExplainSchema(RitualSchema s) => ExplainCore(s);
 
+        /// <summary>The reading is heavy (the chain, what met, where each modifier sits) and lists and the codex ask
+        /// for it every frame: it is kept half a second per spell, and each caller gets its own copy to write on.</summary>
+        private static readonly Dictionary<RitualSchema, KeyValuePair<float, SpellEffect>> read = new Dictionary<RitualSchema, KeyValuePair<float, SpellEffect>>();
+
         public static SpellEffect Explain(RitualSchema s)
         {
-            SpellEffect e0 = s.weave != null ? WeaveSpell.Explain(s.weave) : ExplainCore(s);
-            e0.details = Details(s);
-            return e0;
+            float now = Time.realtimeSinceStartup;
+            if (!read.TryGetValue(s, out var kv) || now - kv.Key > 0.5f)
+            {
+                SpellEffect e0 = s.weave != null ? WeaveSpell.Explain(s.weave) : ExplainCore(s);
+                e0.details = Details(s);
+                if (read.Count > 300) read.Clear();
+                kv = new KeyValuePair<float, SpellEffect>(now, e0);
+                read[s] = kv;
+            }
+            var e = new SpellEffect { main = kv.Value.main, details = kv.Value.details };
+            e.extras.AddRange(kv.Value.extras);
+            return e;
         }
 
         private static SpellEffect ExplainCore(RitualSchema s)
