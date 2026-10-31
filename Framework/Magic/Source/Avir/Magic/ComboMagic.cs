@@ -573,7 +573,7 @@ namespace Avir.Magic
 
         /// <summary>Ash and embers drifting off molten stone, one of three drawings.</summary>
         public static void Ash(Map map, Vector3 at, float size) =>
-            MapComponent_SpellSprites.Put(map, "Ash/Ash_" + "ABC"[Rand.Range(0, 3)], at, Mathf.Max(1.2f, size), 300, -1f, Rand.Range(-6f, 6f));
+            MapComponent_SpellSprites.Put(map, "Ash/Ash_" + "ABC"[Rand.Range(0, 3)], at, Mathf.Max(1.2f, size), 300);
 
         internal static void Puffs(ComboKind k, Map map, List<IntVec3> cells, float share)
         {
@@ -720,6 +720,11 @@ namespace Avir.Magic
             GenSpawn.Spawn(m, c, map);
         }
 
+        /// <summary>A ward of magma: its wearer wades molten stone as if it were warm mud.</summary>
+        public static bool Unburnt(Pawn p) => ComboDefOf.Avir_MagmaWard != null && p.health?.hediffSet?.HasHediff(ComboDefOf.Avir_MagmaWard) == true;
+        /// <summary>A ward of fire only halves it: the heat is its own, the stone is not.</summary>
+        private static bool Scorched(Pawn p) => FireDefOf.Avir_FireWard != null && p.health?.hediffSet?.HasHediff(FireDefOf.Avir_FireWard) == true;
+
         public void Harden(bool now)
         {
             if (!Spawned) return;
@@ -761,8 +766,8 @@ namespace Avir.Magic
             if (!this.IsHashIntervalTick(60)) return;
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
             {
-                if (p.Dead) continue;
-                p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 4f * power, 0f, -1f, owner));
+                if (p.Dead || Unburnt(p)) continue;
+                p.TakeDamage(new DamageInfo(DamageDefOf.Flame, (Scorched(p) ? 2f : 4f) * power, 0f, -1f, owner));
                 if (!p.Dead && p.Spawned && Rand.Chance(0.2f)) FireUtility.TryAttachFire(p, 0.3f, owner);
             }
             foreach (Thing t in Position.GetThingList(Map).Where(t => t.def.category == ThingCategory.Item && t.FlammableNow).ToList()) FireUtility.TryAttachFire(t, 0.3f, owner);

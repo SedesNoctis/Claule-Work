@@ -139,7 +139,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Aura</defName>
     <label>aura</label>
-    <description>A form: a field round the caster, lasting while it is held. Its element decides what it does to those inside. (Its effect is not made yet.)</description>
+    <description>A form: a field round the caster, lasting while it is held. Its element decides what it does to those inside.</description>
     <role>Form</role>
     <kind>Aura</kind>
     <glyph>Aura</glyph>
@@ -153,7 +153,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Enchant</defName>
     <label>enchanting</label>
-    <description>A form: the element laid onto a weapon, a body or an ally for a while. (Its effect is not made yet.)</description>
+    <description>A form: the element laid onto a weapon, a body or an ally for a while.</description>
     <role>Form</role>
     <kind>Enchant</kind>
     <glyph>Enchant</glyph>
@@ -167,7 +167,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Step</defName>
     <label>step</label>
-    <description>A form: moving - the caster, or another - through or by the element. (Its effect is not made yet.)</description>
+    <description>A form: moving - the caster, or another - through or by the element.</description>
     <role>Form</role>
     <kind>Step</kind>
     <glyph>Step</glyph>
@@ -181,7 +181,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Restore</defName>
     <label>restoring</label>
-    <description>A form: returning a thing or a body towards how it was - mending, cleansing, undoing. (Its effect is not made yet.)</description>
+    <description>A form: returning a thing or a body towards how it was - mending, cleansing, undoing.</description>
     <role>Form</role>
     <kind>Restore</kind>
     <glyph>Restore</glyph>
@@ -195,7 +195,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Beam</defName>
     <label>beam</label>
-    <description>A form: a lasting channel from the caster to a line or a target, while the caster holds it. Hard, and strong. (Its effect is not made yet.)</description>
+    <description>A form: a lasting channel from the caster to a line or a target, while the caster holds it. Hard, and strong.</description>
     <role>Form</role>
     <kind>Beam</kind>
     <glyph>Beam</glyph>
@@ -209,7 +209,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Shape</defName>
     <label>shaping</label>
-    <description>A form: changing the ground or things - melting, raising, freezing, ageing. Hard, and far-reaching. (Its effect is not made yet.)</description>
+    <description>A form: changing the ground or things - melting, raising, freezing, ageing. Hard, and far-reaching.</description>
     <role>Form</role>
     <kind>Shape</kind>
     <glyph>Shape</glyph>
@@ -223,7 +223,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Summon</defName>
     <label>summoning</label>
-    <description>A form: calling forth a creature or a thing of the element. Hard. (Its effect is not made yet.)</description>
+    <description>A form: calling forth a creature or a thing of the element. Hard. (Spirits are not made yet.)</description>
     <role>Form</role>
     <kind>Summon</kind>
     <glyph>Summon</glyph>
@@ -237,7 +237,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Sense</defName>
     <label>sensing</label>
-    <description>A form: seeing, finding, foreseeing - through the element. Hard, and quiet. (Its effect is not made yet.)</description>
+    <description>A form: seeing, finding, foreseeing - through the element. Hard, and quiet.</description>
     <role>Form</role>
     <kind>Sense</kind>
     <glyph>Sense</glyph>

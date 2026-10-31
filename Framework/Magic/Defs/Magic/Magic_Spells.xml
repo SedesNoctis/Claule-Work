@@ -1093,7 +1093,7 @@
   <HediffDef>
     <defName>Avir_MagmaWard</defName>
     <label>ward of magma</label>
-    <description>A crust of molten stone: blows bite less, and whoever strikes its wearer is burnt.</description>
+    <description>A crust of molten stone: blows bite less, whoever strikes its wearer is burnt, and pools of magma do not burn them - they wade it like warm mud.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(1, 0.36, 0.08)</defaultLabelColor>
     <isBad>false</isBad>
