@@ -94,7 +94,7 @@ namespace Avir.Magic
                 one.extras.RemoveAll(x => x.Key == "In turn");
                 string turns = SpellText.Turns(c.AsSchema());
                 if (turns != null) e.extras.Add(new KeyValuePair<string, string>(order.Count > 1 ? "In turn (" + (k + 1) + ")" : "In turn",
-                    "Runes of one circle act one after another, as they are written from the centre outward.\n" + turns));
+                    turns));
                 foreach (var x in one.extras) if (!e.extras.Any(y => y.Key == x.Key)) e.extras.Add(x);
             }
             foreach (SpellCircle g in greats)

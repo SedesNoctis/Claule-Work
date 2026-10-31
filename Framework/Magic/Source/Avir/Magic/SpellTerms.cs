@@ -67,6 +67,13 @@ namespace Avir.Magic
                 "Price of Slipping. Every element takes its toll from a caster who loses the hold: what the spell would have done, it does to them."),
             T("Ward of (.+)", m => "Ward of " + m.Groups[1].Value.CapitalizeFirst(),
                 "Ward. The Barrier rune guards: last in a circle, after something that acts, it lays a ward on the caster; anywhere else, a dome over the place the spell strikes, guarding whoever stands inside."),
+            T("Warms friends", "Hearth Warmth", "Hearth Warmth. Held fire is a hearth as much as a weapon: those of the caster's side who stand by it bear the cold far better for a day."),
+            T("Ground that takes no fire", "Burnt Ground", "Burnt Ground. Ground purged by fire has nothing left to burn: for some hours flames that reach it die."),
+            T("Burns infection", "Cleansing Fire", "Cleansing Fire. Fire turned to mending burns back infection and what lives in a wound."),
+            T("Better cautery", "Cautery", "Cautery. Growth in a mending of fire: the seared wounds hold better."),
+            T("Stores heat|Keeps the water|Keeps the weight|Keeps the breath", "Drawn Store", "Drawn Store. What the Drawing-out rune takes from the target the caster keeps in the body for a while, and the next spell of that element draws on it - stronger."),
+            T("Stands longer", "Lasting Stone", "Lasting Stone. Holding and anchors keep shaped stone standing longer."),
+            T("Feeds fire", "Fanned Flames", "Fanned Flames. A gust feeds the fires it passes over - careful near your own walls."),
             T("The Thread", "The Thread",
                 "The Thread. The Thread rune turns a Step round: written right outward of a Step, it makes the caster's way the target's - the one at the target is drawn to the caster, as the caster would have gone to them. Anywhere else it ties nothing and does nothing."),
         };

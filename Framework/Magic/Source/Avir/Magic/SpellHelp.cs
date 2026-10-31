@@ -123,9 +123,9 @@ namespace Avir.Magic
         {
             SpellEffect e = ExplainPlain(s);
             string turns = Turns(s);
-            if (turns != null) e.extras.Insert(0, new KeyValuePair<string, string>("In turn", "Runes of one circle act one after another, as they are written from the centre outward.\n" + turns));
+            if (turns != null) e.extras.Insert(0, new KeyValuePair<string, string>("In turn", turns));
             List<string> by = SpellMods.Bindings(s);
-            if (by.Count > 0) e.extras.Insert(0, new KeyValuePair<string, string>("By their place", "A modifier works on the verb or form just inward of it; next to the element - on the whole circle.\n" + string.Join("\n", by.Select(x => "• " + x))));
+            if (by.Count > 0) e.extras.Insert(0, new KeyValuePair<string, string>("By their place", string.Join("\n", by.Select(x => "• " + x))));
             return e;
         }
 
@@ -442,13 +442,12 @@ namespace Avir.Magic
         /// <summary>The plaque chosen by a click: its entry is read in the codex beside, not in a floating note.</summary>
         public static string Selected;
 
-        /// <summary>The entry of the chosen plaque in this reading - or, with none chosen, the Thread's, if the spell has one.</summary>
+        /// <summary>The entry of the chosen plaque in this reading, if one is chosen.</summary>
         public static KeyValuePair<string, string>? Entry(SpellEffect e)
         {
             if (e == null) return null;
             SpellTerms.Apply(e);
             foreach (var c in e.extras) if (c.Key == Selected) return c;
-            foreach (var c in e.extras) if (c.Key == "The Thread") return c;
             return null;
         }
 
