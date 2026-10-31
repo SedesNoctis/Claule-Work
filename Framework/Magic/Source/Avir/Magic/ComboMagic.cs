@@ -1048,8 +1048,8 @@ namespace Avir.Magic
                 case ComboKind.Steam: return "Fire and water side by side make steam: it scalds, and its cloud hides everyone in it - no shot goes in or out.";
                 case ComboKind.Storm: return "Water and air side by side make a storm: lightning that leaps from foe to foe, worse for the soaked, and machines are struck hardest.";
                 case ComboKind.Magma: return "Fire and earth side by side make magma: molten ground that burns whoever stands on it and cools into stone.";
-                case ComboKind.Haze: return "Fire and air side by side make haze: the air shimmers, foes are dazzled and miss, and they shoot at false shapes of the caster.";
-                case ComboKind.Bog: return "Water and earth side by side make a bog: a mire that grips foes, slower and slower - and whoever stays in it too long, or falls in it, is drawn under and chokes.";
+                case ComboKind.Haze: return "Fire and air side by side make haze: the air shimmers, everyone there is dazzled and misses, and foes shoot at false shapes of the caster.";
+                case ComboKind.Bog: return "Water and earth side by side make a bog: a mire that grips everyone there, slower and slower - and whoever stays in it too long, or falls in it, is drawn under and chokes.";
                 case ComboKind.Dust: return "Earth and air side by side make dust: a cloud that blinds and grinds, and shows the unseen.";
                 default: return "";
             }
@@ -1061,14 +1061,14 @@ namespace Avir.Magic
             {
                 case RuneKind.Release:
                     return k == ComboKind.Steam ? "bursts scalding, and the cloud stays" : k == ComboKind.Storm ? "a discharge strikes all in the burst, and a bolt leaps on" : k == ComboKind.Magma ? "bursts: a blast of molten stone, then the magma runs outward"
-                         : k == ComboKind.Haze ? "flashes with heat: foes burnt and dazzled" : k == ComboKind.Bog ? "bursts in mud: foes struck and knocked down in a mire" : "blasts sand: every bare part ground, the dust hangs";
+                         : k == ComboKind.Haze ? "flashes with heat: everyone there is burnt and dazzled" : k == ComboKind.Bog ? "bursts in mud: everyone there is struck and knocked down in a mire" : "blasts sand: every bare part ground, the dust hangs";
                 case RuneKind.Hold:
-                    return k == ComboKind.Magma ? "lies as a field of magma that burns and slows whoever crosses it" : k == ComboKind.Bog ? "lies as a mire that draws foes under" : k == ComboKind.Storm ? "hangs as a storm that keeps striking"
-                         : k == ComboKind.Steam ? "hangs as a scalding cloud that slows whoever crosses it" : k == ComboKind.Haze ? "hangs as a shimmer foes cannot aim through" : "hangs as a cloud of dust";
+                    return k == ComboKind.Magma ? "lies as a field of magma that burns and slows whoever crosses it" : k == ComboKind.Bog ? "lies as a mire that draws everyone there under" : k == ComboKind.Storm ? "hangs as a storm that keeps striking"
+                         : k == ComboKind.Steam ? "hangs as a scalding cloud that slows whoever crosses it" : k == ComboKind.Haze ? "hangs as a shimmer no one can aim through" : "hangs as a cloud of dust";
                 case RuneKind.Drain:
-                    return k == ComboKind.Storm ? "draws the charge out of machines (EMP)" : k == ComboKind.Magma ? "draws the heat out: the magma sets at once" : k == ComboKind.Bog || k == ComboKind.Dust ? "drinks the water out of foes" : "draws the heat out of fires and foes";
+                    return k == ComboKind.Storm ? "draws the charge out of machines (EMP)" : k == ComboKind.Magma ? "draws the heat out: the magma sets at once" : k == ComboKind.Bog || k == ComboKind.Dust ? "drinks the water out of everyone there" : "draws the heat out of fires and everyone there";
                 case RuneKind.Lift:
-                    return "throws foes up" + (k == ComboKind.Magma ? " on a spout of lava" : k == ComboKind.Steam ? " on a geyser of steam" : k == ComboKind.Dust ? " in a spout of sand" : k == ComboKind.Storm ? " in a whirl of rain" : k == ComboKind.Bog ? " on a geyser of mud" : " on rising heat");
+                    return "throws everyone there up" + (k == ComboKind.Magma ? " on a spout of lava" : k == ComboKind.Steam ? " on a geyser of steam" : k == ComboKind.Dust ? " in a spout of sand" : k == ComboKind.Storm ? " in a whirl of rain" : k == ComboKind.Bog ? " on a geyser of mud" : " on rising heat");
                 case RuneKind.Growth:
                     return k == ComboKind.Magma ? "creeps outward, ring after ring" : k == ComboKind.Haze || k == ComboKind.Dust ? "spreads wide and hangs"
                          : k == ComboKind.Bog ? "creeps outward, ring after ring - everything green grows" : k == ComboKind.Steam ? "rolls outward, scalding, ring after ring - everything green grows"
@@ -1087,7 +1087,7 @@ namespace Avir.Magic
                 case ComboKind.Steam: return "The caster scatters into a cloud and drifts low to the target - nothing can reach them on the way; there the cloud bursts and scalds everyone round.";
                 case ComboKind.Storm: return "The caster rides a bolt of lightning - the fastest of all journeys, but seen: every foe on the way is struck, and where they land the thunder knocks those round off their feet.";
                 case ComboKind.Magma: return "The caster goes through the ground as lava: a glowing crack runs above; where they come up, a ring of magma round them (none under the caster).";
-                case ComboKind.Haze: return "The caster shimmers and is gone from sight for the journey; a false shape of them stays where they stood, and foes go on shooting at it.";
+                case ComboKind.Haze: return "The caster shimmers and is gone from sight for the journey; a false shape of them stays where they stood, and the foes go on shooting at it.";
                 case ComboKind.Bog: return "The caster sinks into the ground as into water and comes up at the target; the ground on the way and round where they come up turns to mire.";
                 default: return "The caster spins up in a dust devil, over whatever stands between, and lands in a cloud that blinds everyone round.";
             }
@@ -1115,7 +1115,7 @@ namespace Avir.Magic
                     e.main = SpellMods.Pulls(s) ? "The one at the target is drawn to the caster through " + Combos.Label(k) + "." : Step(k); break;
                 case RuneKind.Shape:
                     e.main = k == ComboKind.Magma ? "A wall of magma between two points: it burns, then sets into basalt - real rock that stays: smooth it into a wall, or mine it for chunks and cut them into blocks." : k == ComboKind.Haze ? "A row of false shapes of the caster between two points: foes shoot at them."
-                           : k == ComboKind.Bog ? "A moat of mire between two points, two cells wide: foes wade, and those who stay are drawn under." : k == ComboKind.Storm ? "A fence of lightning between two points: it strikes whoever is in it."
+                           : k == ComboKind.Bog ? "A moat of mire between two points, two cells wide: whoever crosses it wades, and those who stay are drawn under." : k == ComboKind.Storm ? "A fence of lightning between two points: it strikes whoever is in it."
                            : "A curtain of " + Combos.Label(k) + " between two points" + (k == ComboKind.Steam ? ": nothing is seen through it" : ": whoever is in it can hardly see") + "."; break;
                 case RuneKind.Sense:
                     e.main = k == ComboKind.Dust ? "Dust settles on everything: the caster feels everyone round about - and the unseen are shown."
@@ -1123,8 +1123,8 @@ namespace Avir.Magic
                            : "The caster feels everyone round about, through walls."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Aura:
-                    string aura = k == ComboKind.Steam ? "a cloak of steam: the caster is hidden in it, no shot goes in or out" : k == ComboKind.Storm ? "a crown of storm: lightning strikes foes who come near"
-                                : k == ComboKind.Magma ? "heat: foes close to the caster burn" : k == ComboKind.Haze ? "a shimmer: foes near the caster miss" : k == ComboKind.Bog ? "the ground round the caster a mire for foes" : "a sandstorm: foes near miss, the unseen are shown";
+                    string aura = k == ComboKind.Steam ? "a cloak of steam: the caster is hidden in it, no shot goes in or out" : k == ComboKind.Storm ? "a crown of storm: lightning strikes whoever come near"
+                                : k == ComboKind.Magma ? "heat: everyone close to the caster burns" : k == ComboKind.Haze ? "a shimmer: everyone near the caster misses" : k == ComboKind.Bog ? "the ground round the caster a mire for everyone there" : "a sandstorm: everyone near misses, the unseen are shown";
                     e.main = (what.Length > 0 ? name + " " + what + " round the caster; and " : "Round the caster, for a while: ") + aura + ".";
                     break;
                 default:
@@ -1135,7 +1135,7 @@ namespace Avir.Magic
             e.Add(name + ": two elements met", Short(k));
             if (r.barrier > 0) e.Add("Ward of " + Combos.Label(k), SpellWards.Note(Combos.Label(k), k == ComboKind.Magma || k == ComboKind.Steam,
                 k == ComboKind.Storm ? "being soaked" : k == ComboKind.Haze ? "being dazzled" : k == ComboKind.Bog ? "sinking and sticking" : k == ComboKind.Dust ? "dust in the eyes" : null,
-                k == ComboKind.Steam ? "A little cloud wraps the wearer when foes are near." : k == ComboKind.Storm ? "Whoever strikes the wearer is jolted and stunned."
+                k == ComboKind.Steam ? "A little cloud wraps the wearer when anyone is near." : k == ComboKind.Storm ? "Whoever strikes the wearer is jolted and stunned."
                 : k == ComboKind.Magma ? "The wearer wades magma like warm mud; whoever strikes them is burnt." : k == ComboKind.Haze ? "Bullets often pass through a shape that is not there."
                 : k == ComboKind.Bog ? "Whoever strikes the wearer is stuck where they stand for a moment." : "Whoever strikes the wearer gets dust in the eyes.", r.amplify));
             return e;

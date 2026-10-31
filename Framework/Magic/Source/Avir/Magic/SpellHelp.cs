@@ -288,10 +288,10 @@ namespace Avir.Magic
         {
             switch (v.kind)
             {
-                case RuneKind.Release: return "shakes, striking foes and throwing them to the ground";
-                case RuneKind.Hold: return "grips the feet of foes: they cannot take a step, though their hands are still free";
-                case RuneKind.Drain: return "pours weight into foes' limbs and keeps some for the caster";
-                case RuneKind.Lift: return "bursts up in stone spikes that toss foes into the air";
+                case RuneKind.Release: return "shakes, striking everyone there and throwing them to the ground";
+                case RuneKind.Hold: return "grips the feet of everyone there: they cannot take a step, though their hands are still free";
+                case RuneKind.Drain: return "pours weight into everyone's limbs and keeps some for the caster";
+                case RuneKind.Lift: return "bursts up in stone spikes that toss everyone there into the air";
                 case RuneKind.Growth: return "grows rich, and the plants grow faster";
                 case RuneKind.Purge: return "smothers fires and swallows filth";
                 default: return v.label;
@@ -312,15 +312,15 @@ namespace Avir.Magic
                 case RuneKind.Enchant: e.main = "Wraps a friend's weapon in wind (the caster's, if no friend stands there): every blow throws the foe back."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Sense: e.main = "The wind brings every sound: the caster hears everyone within " + (30 + 10 * r.reach) + " cells, through walls - the unseen too."; break;
-                case RuneKind.Step: e.main = "The wind lifts the caster high and carries them to the target over anything in the way - walls, water, foes. They land on a gust that throws close foes aside" + (verbs.Count > 0 ? "; and there, round the caster, the air " + what : "") + "."; break;
-                case RuneKind.Shape: e.main = "A wall of wind between two chosen points (up to " + FireMagic.WallMax(r) + " cells): foes who step into it are thrown back the way they came. It blows for a couple of hours."; break;
+                case RuneKind.Step: e.main = "The wind lifts the caster high and carries them to the target over anything in the way - walls, water, everyone there. They land on a gust that throws close everyone there aside" + (verbs.Count > 0 ? "; and there, round the caster, the air " + what : "") + "."; break;
+                case RuneKind.Shape: e.main = "A wall of wind between two chosen points (up to " + FireMagic.WallMax(r) + " cells): whoever steps into it is thrown back the way they came. It blows for a couple of hours."; break;
                 default:
                     if (verbs.Count == 0)
                     {
                         if (form?.kind == RuneKind.Beam) { e.main = "A chained blow: the wind strikes the first foe on the line and leaps on to " + (1 + r.breadth + r.amplify) + " more nearby, throwing each one on. With water in the spell it is a storm, and the blow becomes lightning."; break; }
                         e.main = r.barrier > 0 ? "Aimed at someone - yourself or another - a ward of air on them; aimed at the ground - a dome of air there: whoever stands inside is warded, spells landing in it are put out." : "Air with nothing to do: add a verb or a form."; break;
                     }
-                    string where = form?.kind == RuneKind.Aura ? "all round the caster - and a whirlwind stays round them for a while: foes in it are slowed and shoot poorly, and those who come close are thrown back"
+                    string where = form?.kind == RuneKind.Aura ? "all round the caster - and a whirlwind stays round them for a while: everyone in it is slowed and shoots poorly, and those who come close are thrown back"
                                  : form?.kind == RuneKind.Beam ? "along the line - and with it a chained blow that leaps from foe to foe (" + (2 + r.breadth + r.amplify) + " in all; lightning, in a storm with water)"
                                  : "at the point, " + radius.ToString("0.#") + " cells round";
                     e.main = Cap(what) + " - " + where + ".";
@@ -343,11 +343,11 @@ namespace Avir.Magic
         {
             switch (v.kind)
             {
-                case RuneKind.Release: return "blows in a gust that throws foes back";
-                case RuneKind.Hold: return "stands still and thin: foes can hardly breathe and go slowly through it, fires starve";
-                case RuneKind.Drain: return "is pulled out of foes' lungs and kept by the caster";
-                case RuneKind.Lift: return "rises in an updraft that throws foes high - the fall breaks bones";
-                case RuneKind.Growth: return "spreads wide, pushing foes further round";
+                case RuneKind.Release: return "blows in a gust that throws everyone there back";
+                case RuneKind.Hold: return "stands still and thin: everyone in it can hardly breathe and goes slowly through it, fires starve";
+                case RuneKind.Drain: return "is pulled out of everyone's lungs and kept by the caster";
+                case RuneKind.Lift: return "rises in an updraft that throws everyone there high - the fall breaks bones";
+                case RuneKind.Growth: return "spreads wide, pushing everyone there further round";
                 case RuneKind.Purge: return "clears the air: small flames blown out, every gas (smoke, toxic gas) blown away, and friends breathe out what gas they took in";
                 default: return v.label;
             }
@@ -357,10 +357,10 @@ namespace Avir.Magic
         {
             switch (v.kind)
             {
-                case RuneKind.Release: return "bursts, striking foes, throwing them back and soaking them";
-                case RuneKind.Hold: return "lies there as standing water that slows foes and keeps fire away";
-                case RuneKind.Drain: return "draws the water out of foes and leaves them weak";
-                case RuneKind.Lift: return "rises as a geyser that throws foes up - and they fall hard";
+                case RuneKind.Release: return "bursts, striking everyone there, throwing them back and soaking them";
+                case RuneKind.Hold: return "lies there as standing water that slows everyone there and keeps fire away";
+                case RuneKind.Drain: return "draws the water out of everyone there and leaves them weak";
+                case RuneKind.Lift: return "rises as a geyser that throws everyone there up - and they fall hard";
                 case RuneKind.Growth: return "spreads, and the plants drink";
                 case RuneKind.Purge: return "washes away fire and filth, and anaesthetic and poisons out of friends";
                 default: return v.label;
@@ -371,8 +371,8 @@ namespace Avir.Magic
         {
             switch (v.kind)
             {
-                case RuneKind.Release: return "sets fire and burns foes";
-                case RuneKind.Hold: return "lays held fire that never spreads: it burns foes crossing it and bites at their legs (they go slowly), and smoulders";
+                case RuneKind.Release: return "sets fire and burns everyone there";
+                case RuneKind.Hold: return "lays held fire that never spreads: it burns whoever crosses it and bites at their legs (they go slowly), and smoulders";
                 case RuneKind.Drain: return "takes the heat out of fires";
                 case RuneKind.Lift: return "raises tall flames";
                 case RuneKind.Growth: return "spreads fire further and faster";
