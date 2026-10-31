@@ -171,7 +171,9 @@ namespace Avir.Magic
                 else if (Mouse.IsOver(row)) Widgets.DrawBoxSolid(row, new Color(1f, 0.9f, 0.6f, 0.14f));
                 string refused = rune.role == RuneRole.Element ? ElementRefused(rune) : sel.binding ? "The binding rim holds no runes - choose a circle round the heart." : null;
                 if (refused != null) TooltipHandler.TipRegion(row, refused);
-                Glyph(new Rect(row.x + 2f, row.y + 3f, 40f, 40f), rune);
+                // the kind of rune at a glance: a strip of its colour - the element's own, verbs rust, forms blue, modifiers green, flow violet
+                Widgets.DrawBoxSolid(new Rect(row.x, row.y + 3f, 3f, 40f), Dialog_SpellWizard.RoleColor(rune));
+                Glyph(new Rect(row.x + 4f, row.y + 3f, 40f, 40f), rune);
                 if (refused != null) Widgets.DrawBoxSolid(new Rect(row.x + 2f, row.y + 3f, 40f, 40f), new Color(0.88f, 0.8f, 0.64f, 0.6f));   // faded: it cannot go into the chosen circle
                 GUI.color = refused != null ? FlowStyle.InkGrey : Ink;
                 ArtInk.Label(new Rect(row.x + 48f, row.y + 3f, row.width - 50f, 22f), rune.LabelCap);
@@ -960,6 +962,9 @@ namespace Avir.Magic
                     cx += 88f;
                 }
             }
+            if (Button(new Rect(r.xMax - 170f, y, 170f, 30f), "Step by step...", true))
+                Find.WindowStack.Add(new Dialog_SpellWizard(TakeCircle));
+            TooltipHandler.TipRegion(new Rect(r.xMax - 170f, y, 170f, 30f), "Write a circle page by page: the element, what it does, how it reaches, what strengthens it - with large cards and what it will do read at every click. It goes into the chosen empty circle, or beside the others.");
             y += 38f;
             float w = (r.width - 24f) / 4f;
             if (Button(new Rect(r.x, y, w, 34f), "Rub out all", true)) { s.weave = NewSpell(); sel = s.weave.inner[0]; section = -1; ClearPick(); }
@@ -1138,6 +1143,16 @@ namespace Avir.Magic
         private static void Glyph(Rect g, RuneDef rune) => SpellGlyph.Draw(g, rune);
 
         private void ClearPick() { pickC = null; pickSec = -1; pickK = -1; }
+
+        /// <summary>A circle written step by step: into the chosen circle if it is empty, else beside the others round the heart.</summary>
+        private void TakeCircle(SpellCircle c)
+        {
+            SpellCircle root = s.weave, parent = root.ParentOf(sel);
+            if (!sel.binding && !sel.Great && sel.element == null && !sel.OwnRunes.Any() && parent != null) parent.inner[parent.inner.IndexOf(sel)] = c;
+            else if (root.inner.Count < SpellCircle.MaxInner && root.SmallCount < SpellCircle.MaxSmall) root.inner.Add(c);
+            else { Messages.Message("No room round the heart for another circle - free a place first.", MessageTypeDefOf.RejectInput, false); return; }
+            sel = c; section = -1; ClearPick();
+        }
 
         /// <summary>The rune chosen on the circles, if it is still there.</summary>
         private RuneDef Picked()

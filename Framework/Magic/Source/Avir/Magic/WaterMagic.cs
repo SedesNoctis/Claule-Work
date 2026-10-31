@@ -492,21 +492,21 @@ namespace Avir.Magic
         public override void MapComponentUpdate()
         {
             if (!AvirMagic.On) return;
-            // the domes: their size the spell's reach, a slow shimmer and breath
+            // the domes: their size the spell's reach, a slow turn and breath, beneath whoever stands in them
             int now = Find.TickManager.TicksGame;
             domes.RemoveAll(x => x.until <= now);
             foreach (Dome d in domes)
             {
                 float t = Time.realtimeSinceStartup;
                 float breath = 1f + 0.02f * Mathf.Sin(t * 1.7f + d.seed);
-                float a = 0.55f + 0.2f * Mathf.Sin(t * 3.1f + d.seed * 0.37f) + 0.08f * Mathf.Sin(t * 7.3f + d.seed);
+                float a = 0.7f;   // steady: no flicker; it lies under the pawns, never over them
                 if (d.until - now < 300) a *= (d.until - now) / 300f;   // fading in its last seconds
-                Vector3 pos = d.at.ToVector3Shifted(); pos.y = AltitudeLayer.MoteOverhead.AltitudeFor();
+                Vector3 pos = d.at.ToVector3Shifted(); pos.y = AltitudeLayer.ItemImportant.AltitudeFor();
                 float s = d.radius * 2f * breath;
                 Material m = Mat(d.el, d.tint, d.tex);
                 Color keep = m.color;
                 block.SetColor(ShaderPropertyIDs.Color, new Color(keep.r, keep.g, keep.b, Mathf.Clamp01(a)));
-                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis(t * 4f % 360f, Vector3.up), new Vector3(s, 1f, s)), m, 0, null, 0, block);
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis((t * 14f + d.seed) % 360f, Vector3.up), new Vector3(s, 1f, s)), m, 0, null, 0, block);
             }
             RuneDef fire = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Fire"), water = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Water");
             foreach (Pawn p in map.mapPawns.AllPawnsSpawned)
@@ -528,9 +528,9 @@ namespace Avir.Magic
                 if (sw != null && sw.Combo != ComboKind.None)
                 {
                     // a ward of a meeting: its own dome, drawn round the wearer
-                    Vector3 wat = p.DrawPos; wat.y = AltitudeLayer.MoteOverhead.AltitudeFor();
+                    Vector3 wat = p.DrawPos; wat.y = AltitudeLayer.ItemImportant.AltitudeFor();
                     float wp = 1.6f + 0.06f * Mathf.Sin(Time.realtimeSinceStartup * 2.5f + p.thingIDNumber);
-                    Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(wat, Quaternion.identity, new Vector3(wp, 1f, wp)), Mat(null, Combos.ColorOf(sw.Combo), "Dome_" + sw.Combo), 0);
+                    Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(wat, Quaternion.AngleAxis((Time.realtimeSinceStartup * -20f + p.thingIDNumber * 37f) % 360f, Vector3.up), new Vector3(wp, 1f, wp)), Mat(null, Combos.ColorOf(sw.Combo), "Dome_" + sw.Combo), 0);
                     continue;
                 }
                 if (sw != null && sw.Parts.Length == 1 && (sw.Parts[0] == RuneKind.Earth || sw.Parts[0] == RuneKind.Air)) { el = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + sw.Parts[0]); any = true; }
@@ -548,9 +548,9 @@ namespace Avir.Magic
                     if (h.def == MagicSpellDefOf.Avir_ArcaneWard) { el = WardElement.Get(p); any = true; break; }
                 }
                 if (!any) continue;
-                Vector3 at = p.DrawPos; at.y = AltitudeLayer.MoteOverhead.AltitudeFor();
+                Vector3 at = p.DrawPos; at.y = AltitudeLayer.ItemImportant.AltitudeFor();
                 float pulse = 1.6f + 0.06f * Mathf.Sin(Time.realtimeSinceStartup * 2.5f + p.thingIDNumber);
-                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(at, Quaternion.identity, new Vector3(pulse, 1f, pulse)), Mat(el), 0);
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(at, Quaternion.AngleAxis((Time.realtimeSinceStartup * -20f + p.thingIDNumber * 37f) % 360f, Vector3.up), new Vector3(pulse, 1f, pulse)), Mat(el), 0);
             }
         }
     }
