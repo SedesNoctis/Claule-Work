@@ -161,8 +161,8 @@ namespace Avir.Magic
                         foreach (Pawn p in PawnsIn(cells, map))
                         {
                             if (p.HostileTo(caster)) continue;
-                            foreach (Hediff h in p.health.hediffSet.hediffs.Where(x => x.def == HediffDefOf.ToxicBuildup || x.def == HediffDefOf.FoodPoisoning).ToList())
-                            { h.Severity -= 0.2f * power; if (h.Severity <= 0f) p.health.RemoveHediff(h); }
+                            // water washes out anaesthetic and poisons (gas the body took in is air's to breathe out)
+                            Cleansing.WashOut(p, 0.2f * power);
                         }
                         break;
                 }

@@ -911,7 +911,7 @@
   <HediffDef>
     <defName>Avir_Dazzled</defName>
     <label>dazzled</label>
-    <description>A flash of heat and light: the eyes see a fifth of what they should, at best, until they clear.</description>
+    <description>A flash of heat and light: the eyes will not clear for a while. Magic takes sight away by a share, but never below 30%.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(1, 0.85, 0.5)</defaultLabelColor>
     <isBad>true</isBad>
@@ -931,7 +931,7 @@
     </comps>
     <stages>
       <li>
-        <capMods><li><capacity>Sight</capacity><setMax>0.2</setMax></li></capMods>
+        <capMods><li><capacity>Sight</capacity><offset>-0.5</offset></li></capMods>
         <statOffsets><ShootingAccuracyPawn>-0.3</ShootingAccuracyPawn></statOffsets>
       </li>
     </stages>

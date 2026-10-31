@@ -165,6 +165,8 @@ namespace Avir.Magic
                             foreach (IntVec3 c in cells) FleckMaker.ThrowFireGlow(c.ToVector3Shifted(), map, 1.1f);
                         }
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) FireUtility.TryStartFireIn(c, map, 0.3f + 0.2f * power, caster);
+                        // and smoke rolls off it - the fire mage's own, that does not trouble them
+                        foreach (IntVec3 c in cells) if (Rand.Chance(0.3f)) FireSmoke.Puff(c, map, 0.5f + 0.3f * power);
                         if (rv.amplify > 0)
                             GenExplosion.DoExplosion(aroundSelf ? at : cells[cells.Count - 1], map, 1.9f + rv.amplify, DamageDefOf.Flame, caster, Mathf.RoundToInt(12f * power), -1f,
                                 null, null, null, null, null, 0f, 1, null, null, 255, false, null, 0f, 1, 0.5f, false, null, new List<Thing> { caster });
@@ -520,7 +522,7 @@ namespace Avir.Magic
             if (!Pawn.Spawned || !Pawn.IsHashIntervalTick(90)) return;
             Map map = Pawn.Map;
             IntVec3 c = FireMagic.RagingCells(Pawn.Position, map).FirstOrDefault();
-            if (c.IsValid && Rand.Chance(0.6f)) FireUtility.TryStartFireIn(c, map, 0.6f, Pawn);
+            if (c.IsValid && Rand.Chance(0.6f)) { FireUtility.TryStartFireIn(c, map, 0.6f, Pawn); FireSmoke.Puff(c, map, 0.6f); }
             // the fires already burning grow and spread on their own, faster than any fire should
             foreach (Fire f in GenRadial.RadialDistinctThingsAround(Pawn.Position, map, 8f, true).OfType<Fire>().ToList())
             {

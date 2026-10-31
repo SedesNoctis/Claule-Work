@@ -312,7 +312,7 @@ namespace Avir.Magic
                 case RuneKind.Drain: return "is pulled out of foes' lungs and kept by the mage";
                 case RuneKind.Lift: return "rises in an updraft that throws foes high - the fall breaks bones";
                 case RuneKind.Growth: return "spreads wide, pushing foes further round";
-                case RuneKind.Purge: return "clears: small flames blown out, poison breathed away";
+                case RuneKind.Purge: return "clears the air: small flames blown out, every gas (smoke, toxic gas) blown away, and friends breathe out what gas they took in";
                 default: return v.label;
             }
         }
@@ -326,7 +326,7 @@ namespace Avir.Magic
                 case RuneKind.Drain: return "draws the water out of foes and leaves them weak";
                 case RuneKind.Lift: return "rises as a geyser that throws foes up - and they fall hard";
                 case RuneKind.Growth: return "spreads, and the plants drink";
-                case RuneKind.Purge: return "washes away fire, filth and poison";
+                case RuneKind.Purge: return "washes away fire and filth, and anaesthetic and poisons out of friends";
                 default: return v.label;
             }
         }

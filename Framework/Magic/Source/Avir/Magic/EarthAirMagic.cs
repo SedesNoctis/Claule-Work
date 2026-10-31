@@ -340,14 +340,10 @@ namespace Avir.Magic
                         foreach (IntVec3 c in wide) if (Rand.Chance(0.15f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.4f, MagicFx.AirDust);
                         break;
                     case RuneKind.Purge:
-                        // clean air: small flames blown out, poison breathed away
+                        // clean air: small flames blown out, every gas blown off the ground, and breathed out of friends' bodies
                         foreach (IntVec3 c in cells) foreach (Fire fire in c.GetThingList(map).OfType<Fire>().ToList()) if (fire.fireSize < 0.6f) fire.Destroy();
-                        foreach (Pawn p in MagicFx.PawnsIn(cells, map))
-                        {
-                            if (p.HostileTo(caster)) continue;
-                            Hediff tox = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.ToxicBuildup);
-                            if (tox != null) { tox.Severity -= 0.15f * power; if (tox.Severity <= 0f) p.health.RemoveHediff(tox); }
-                        }
+                        Cleansing.ClearGas(cells, map);
+                        foreach (Pawn p in MagicFx.PawnsIn(cells, map)) if (!p.HostileTo(caster)) Cleansing.AirOut(p, 0.2f * power);
                         break;
                 }
             }
@@ -425,6 +421,12 @@ namespace Avir.Magic
         {
             ThingDef d = EarthStone.Rubble ?? ThingDefOf.Filth_RubbleRock;
             if (d != null && c.InBounds(map) && c.Standable(map)) FilthMaker.TryMakeFilth(c, map, d);
+            // now and then a whole chunk of the map's own rock breaks off and stays - a geomancer's marks on the land
+            if (c.InBounds(map) && c.Standable(map) && Rand.Chance(0.04f))
+            {
+                ThingDef rock = Find.World.NaturalRockTypesIn(map.Tile).Select(r => r.building?.mineableThing).Where(x => x != null).RandomElementWithFallback();
+                if (rock != null) GenPlace.TryPlaceThing(ThingMaker.MakeThing(rock), c, map, ThingPlaceMode.Near);
+            }
         }
 
         public static void Ward(Pawn caster, IntVec3 at, Map map, float radius, float power, HediffDef ward, string rune, int amplify = 0)

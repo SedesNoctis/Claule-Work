@@ -795,6 +795,9 @@ namespace Avir.Magic
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(opts));
         }
 
+        [DebugAction(Cat, "Fire smoke here (CE smoke if present)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevSmoke() { Map map = Find.CurrentMap; foreach (IntVec3 c in FireMagic.Point(Verse.UI.MouseCell(), map, 2f)) FireSmoke.Puff(c, map, 1f); }
+
         [DebugAction(Cat, "Magma wall here (sets into stone)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevMagmaWall() { Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell(); for (int i = -2; i <= 2; i++) MagmaPool.Pour(c + new IntVec3(i, 0, 0), map, null, 1f, 300, true, 5000); }
 

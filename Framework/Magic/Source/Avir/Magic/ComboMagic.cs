@@ -412,7 +412,12 @@ namespace Avir.Magic
                 foreach (Hediff h in p.health.hediffSet.hediffs.Where(x => x.def == HediffDefOf.ToxicBuildup || x.def == HediffDefOf.FoodPoisoning || (k == ComboKind.Steam || k == ComboKind.Magma) && x.def.makesSickThought).ToList())
                 { h.Severity -= 0.2f * power; if (h.Severity <= 0f) p.health.RemoveHediff(h); }
                 if (k == ComboKind.Haze || k == ComboKind.Dust) { Hediff wet = p.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Soaked); if (wet != null) p.health.RemoveHediff(wet); }
+                // air's meetings that move the air (storm, haze) breathe gas out of friends; those with water wash poison out
+                if (k == ComboKind.Storm || k == ComboKind.Haze) Cleansing.AirOut(p, 0.2f * power);
+                if (k == ComboKind.Steam || k == ComboKind.Storm || k == ComboKind.Bog) Cleansing.WashOut(p, 0.2f * power);
             }
+            // a storm's wind and rain, haze's rising heat: the gas is gone from the ground (dust only thickens the air)
+            if (k == ComboKind.Storm || k == ComboKind.Haze) Cleansing.ClearGas(cells, map);
             Puffs(k, map, cells, 0.3f);
         }
 
@@ -1027,7 +1032,8 @@ namespace Avir.Magic
                          : k == ComboKind.Bog ? "creeps outward, ring after ring - everything green grows" : k == ComboKind.Steam ? "rolls outward, scalding, ring after ring - everything green grows"
                          : "widens, raining and striking at its edge - everything green grows";
                 case RuneKind.Purge:
-                    return "cleans: fire, filth and poison" + (k == ComboKind.Haze || k == ComboKind.Dust ? ", and the wet dried" : "");
+                    return "cleans: fire and filth" + (k == ComboKind.Storm || k == ComboKind.Haze ? ", every gas blown off the ground and out of friends" : "")
+                        + (k == ComboKind.Steam || k == ComboKind.Storm || k == ComboKind.Bog ? ", anaesthetic and poisons washed out" : "") + (k == ComboKind.Haze || k == ComboKind.Dust ? ", and the wet dried" : "");
                 default: return "";
             }
         }

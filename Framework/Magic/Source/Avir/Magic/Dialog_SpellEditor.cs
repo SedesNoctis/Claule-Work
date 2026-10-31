@@ -340,7 +340,7 @@ namespace Avir.Magic
                 case RuneKind.Drain: return "breath pulled out, kept by the mage";
                 case RuneKind.Lift: return "an updraft: up, and a fall that breaks";
                 case RuneKind.Growth: return "the wind spreads wider";
-                case RuneKind.Purge: return "clean air: small fires, poison gone";
+                case RuneKind.Purge: return "clean air: gas gone, breathed out";
                 case RuneKind.Aura: return "a whirlwind round the mage";
                 case RuneKind.Beam: return "a blow that leaps foe to foe (lightning with water)";
                 case RuneKind.Shape: return "a wall of wind that throws back";
@@ -374,7 +374,7 @@ namespace Avir.Magic
                 case RuneKind.Drain: return "draws water out of foes, keeps it";
                 case RuneKind.Lift: return "a geyser that throws foes up";
                 case RuneKind.Growth: return "the water spreads, plants drink";
-                case RuneKind.Purge: return "washes fire, filth and poison away";
+                case RuneKind.Purge: return "washes fire, filth, poison away";
                 case RuneKind.Aura: return "a tide of mist round the mage";
                 case RuneKind.Beam: return "a jet to the target";
                 case RuneKind.Shape: return "the ground turns to shallow water";
