@@ -235,6 +235,7 @@ namespace Avir.Magic
                     if (first != null) AirMagic.Chain(caster, new List<IntVec3> { first.Position }, map, 1 + r.breadth, power, true);
                     foreach (Pawn p in foes) WaterMagic.Soak(p, power);
                     FleckMaker.Static(Center(cells).ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 4f);
+                    MapComponent_SpellSprites.Put(map, "Storm/Bolt_Fork", Center(cells).ToVector3Shifted(), 3.5f, 22);
                     break;
                 case ComboKind.Magma:
                     // the ground bursts open: a blow of molten stone, and pools of it left burning
@@ -243,15 +244,19 @@ namespace Avir.Magic
                         p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 7f * power, 0f, -1f, caster));
                         if (!p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 5f * power, 0f, -1f, caster));
                     }
+                    MapComponent_SpellSprites.Put(map, "Magma/Fissure", Center(cells).ToVector3Shifted(), Spread(cells) * 2f, 240, -1f, 0f, 4f);
                     foreach (IntVec3 c in cells) if (Rand.Chance(0.35f)) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(900f * power), false);
                     break;
                 case ComboKind.Haze:
                     // a flash of heat: foes dazzled for a while, a little burnt
                     foreach (Pawn p in foes) { p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 3f * power, 0f, -1f, caster)); MagicFx.Give(p, ComboDefOf.Avir_Dazzled, Mathf.RoundToInt(900f * power)); }
+                    MapComponent_SpellSprites.Put(map, "Haze/Shimmer", Center(cells).ToVector3Shifted(), Spread(cells) * 2.2f, 90, -1f, 1.5f);
                     FleckMaker.Static(Center(cells).ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 3f);
                     break;
                 case ComboKind.Bog:
                     // a burst of mud: foes knocked down in it, soaked, and the ground left a mire
+                    MapComponent_SpellSprites.Put(map, "Bog/Splash", Center(cells).ToVector3Shifted(), Spread(cells) * 1.8f, 70);
+                    foreach (Pawn p in foes) MapComponent_SpellSprites.Put(map, "Bog/Splash", p.DrawPos, 1.4f, 50);
                     foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) MirePatch.Spread(c, map, caster, power, Mathf.RoundToInt(GenDate.TicksPerHour * power));
                     foreach (Pawn p in foes) { WaterMagic.Soak(p, power); MagicFx.Give(p, ComboDefOf.Avir_Mired, Mathf.RoundToInt(600f * power)); MagicFx.Fell(p, Center(cells), 1, map, caster, power, Mathf.RoundToInt(90f * power)); }
                     break;
@@ -259,6 +264,7 @@ namespace Avir.Magic
                     // a blast of sand: it grinds every bare part, and the dust hangs
                     foreach (Pawn p in foes) { Grind(p, caster, power); MagicFx.Give(p, ComboDefOf.Avir_Dusted, Mathf.RoundToInt(600f * power)); }
                     Reveal(cells, map);
+                    MapComponent_SpellSprites.Put(map, "Dust/Cloud", Center(cells).ToVector3Shifted(), Spread(cells) * 2.2f, 150, -1f, 0.3f);
                     break;
             }
             Puffs(k, map, cells, 0.6f);
@@ -358,7 +364,10 @@ namespace Avir.Magic
                 // a jet of steam: scalds, and leaves a curtain along its way that nothing is seen through
                 case ComboKind.Steam: foreach (Pawn p in foes) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, caster)); Smoke(map, line, 1f, true); break;
                 // a stream of lava: it burns all on it and sets into a path of rubble
-                case ComboKind.Magma: foreach (IntVec3 c in line) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(600f * power), false); break;
+                case ComboKind.Magma:
+                    if (line.Count > 1) { Vector3 a0 = line[0].ToVector3Shifted(), a1 = line[line.Count - 1].ToVector3Shifted(); Vector3 d = a1 - a0; MapComponent_SpellSprites.Put(map, "Magma/Fissure", (a0 + a1) / 2f, d.MagnitudeHorizontal() + 1f, 240, d.AngleFlat() - 90f, 0f, 4f); }
+                    foreach (IntVec3 c in line) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(600f * power), false);
+                    break;
                 // a ray of heat: all on it dazzled, the first burnt through
                 case ComboKind.Haze:
                     foreach (Pawn p in foes) MagicFx.Give(p, ComboDefOf.Avir_Dazzled, Mathf.RoundToInt(600f * power));
@@ -366,7 +375,7 @@ namespace Avir.Magic
                     first?.TakeDamage(new DamageInfo(DamageDefOf.Burn, 10f * power, 0.3f, -1f, caster));
                     break;
                 // a jet of mud: knocked down, soaked, stuck
-                case ComboKind.Bog: foreach (Pawn p in foes) { WaterMagic.Soak(p, power); MagicFx.Give(p, ComboDefOf.Avir_Mired, Mathf.RoundToInt(600f * power)); MagicFx.Fell(p, caster.Position, 1, map, caster, power, 90); } break;
+                case ComboKind.Bog: foreach (Pawn p in foes) { MapComponent_SpellSprites.Put(map, "Bog/Splash", p.DrawPos, 1.4f, 50); WaterMagic.Soak(p, power); MagicFx.Give(p, ComboDefOf.Avir_Mired, Mathf.RoundToInt(600f * power)); MagicFx.Fell(p, caster.Position, 1, map, caster, power, 90); } break;
                 // a blast of sand along the line
                 case ComboKind.Dust: foreach (Pawn p in foes) { Grind(p, caster, power); MagicFx.Give(p, ComboDefOf.Avir_Dusted, Mathf.RoundToInt(600f * power)); } break;
             }
@@ -466,11 +475,11 @@ namespace Avir.Magic
             switch (k)
             {
                 case ComboKind.Steam: foreach (Pawn p in foes) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, mage)); Smoke(map, round, 0.7f); break;
-                case ComboKind.Storm: foreach (Pawn p in foes) MagicFx.Fell(p, at, 1, map, mage, power, Mathf.RoundToInt(90f * power)); FleckMaker.Static(at.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 5f); break;
+                case ComboKind.Storm: foreach (Pawn p in foes) MagicFx.Fell(p, at, 1, map, mage, power, Mathf.RoundToInt(90f * power)); FleckMaker.Static(at.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 5f); MapComponent_SpellSprites.Put(map, "Storm/Strike", at.ToVector3Shifted(), 3f, 24); break;
                 case ComboKind.Magma: foreach (IntVec3 c in FireMagic.Point(at, map, 2.9f).Where(c => c.DistanceTo(at) > 1.5f)) MagmaPool.Pour(c, map, mage, power, Mathf.RoundToInt(900f * power), false); break;
                 case ComboKind.Haze: FleckMaker.ThrowHeatGlow(at, map, 2f); break;
-                case ComboKind.Bog: foreach (IntVec3 c in round) if (Rand.Chance(0.75f)) MirePatch.Spread(c, map, mage, power, Mathf.RoundToInt(GenDate.TicksPerHour * power)); break;
-                case ComboKind.Dust: foreach (Pawn p in foes) MagicFx.Give(p, ComboDefOf.Avir_Dusted, Mathf.RoundToInt(600f * power)); MapComponent_ComboFields.Raise(map, k, mage, at, 2.5f, power, 600, false); break;
+                case ComboKind.Bog: MapComponent_SpellSprites.Put(map, "Bog/Splash", at.ToVector3Shifted(), 3.5f, 70); foreach (IntVec3 c in round) if (Rand.Chance(0.75f)) MirePatch.Spread(c, map, mage, power, Mathf.RoundToInt(GenDate.TicksPerHour * power)); break;
+                case ComboKind.Dust: foreach (Pawn p in foes) MagicFx.Give(p, ComboDefOf.Avir_Dusted, Mathf.RoundToInt(600f * power)); MapComponent_ComboFields.Raise(map, k, mage, at, 2.5f, power, 600, false); MapComponent_SpellSprites.Put(map, "Dust/Devil", at.ToVector3Shifted(), 3.5f, 90, -1f, -6f); break;
             }
             Puffs(k, map, round, 0.5f);
         }
@@ -519,7 +528,7 @@ namespace Avir.Magic
                 deep++;
                 if (deep % 3 == 0) FleckMaker.ThrowHeatGlow(c, map, 1.2f);
             }
-            if (n > 0 || deep > 0) Messages.Message("The heat in the rock shows " + n + " cells of ore" + (deep > 0 ? ", and " + deep + " cells with ore deep below (an earth lift draws it up)" : "") + ".", new TargetInfo(cells[0], map), MessageTypeDefOf.PositiveEvent, false);
+            if (n > 0 || deep > 0) Messages.Message("The heat in the rock shows " + n + " cells of ore" + (deep > 0 ? ", and " + deep + " cells with ore deep below" : "") + ".", new TargetInfo(cells[0], map), MessageTypeDefOf.PositiveEvent, false);
         }
 
         /// <summary>The unseen made seen: dust settles on them.</summary>
@@ -552,6 +561,7 @@ namespace Avir.Magic
                 var d = (Building_ShadowDecoy)ThingMaker.MakeThing(def);
                 d.her = caster;
                 d.lure = true;
+                d.sprite = "Things/Mote/Avir/Magic/Haze/Mirage";
                 d.until = Find.TickManager.TicksGame + ticks;
                 foreach (Pawn q in foes) d.fooled.Add(q.thingIDNumber);
                 GenSpawn.Spawn(d, c, map, Rot4.South);
@@ -635,6 +645,12 @@ namespace Avir.Magic
                 var cells = f.Cells(map);
                 if (cells.Count == 0) continue;
                 if (now % 20 == 0) ComboMagic.Puffs(f.kind, map, cells, 0.08f);
+                if (now % 90 == 0)
+                {
+                    IntVec3 mid = f.follow && f.caster != null && f.caster.Spawned ? f.caster.Position : f.at.IsValid ? f.at : cells[cells.Count / 2];
+                    if (f.kind == ComboKind.Haze) MapComponent_SpellSprites.Put(map, "Haze/Shimmer", mid.ToVector3Shifted(), f.radius * 2f + 1f, 120, -1f, 0.8f);
+                    if (f.kind == ComboKind.Dust) MapComponent_SpellSprites.Put(map, "Dust/Cloud", cells.RandomElement().ToVector3Shifted(), Rand.Range(2f, 3.5f), 160, -1f, 0.2f);
+                }
                 if (now % 60 != 0) continue;
                 foreach (Pawn p in MagicFx.PawnsIn(cells, map))
                 {
@@ -666,6 +682,19 @@ namespace Avir.Magic
     public class MagmaPool : ThingWithComps
     {
         public Pawn owner; public float power = 1f; public int left = 900; public bool setsHard; public int stoneLife = 2500;
+        public int life = 900;
+        private static Graphic crust;
+
+        /// <summary>The last third of its heat: a dark crust with glowing seams, no longer a pool.</summary>
+        public override Graphic Graphic
+        {
+            get
+            {
+                if (left > life / 3) return base.Graphic;
+                if (crust == null) crust = GraphicDatabase.Get<Graphic_Random>("Things/Avir/Magic/MagmaCrust", ShaderDatabase.Transparent, new Vector2(1.6f, 1.6f), Color.white);
+                return crust;
+            }
+        }
 
         public static void Pour(IntVec3 c, Map map, Pawn owner, float power, int life, bool setsHard, int stoneLife = 2500)
         {
@@ -682,7 +711,7 @@ namespace Avir.Magic
             MagmaPool old = c.GetThingList(map).OfType<MagmaPool>().FirstOrDefault();
             if (old != null) { old.left = Mathf.Max(old.left, life); old.setsHard |= setsHard; return; }
             var m = (MagmaPool)ThingMaker.MakeThing(ComboDefOf.Avir_Magma);
-            m.owner = owner; m.power = power; m.left = life; m.setsHard = setsHard; m.stoneLife = stoneLife;
+            m.owner = owner; m.power = power; m.left = life; m.life = Mathf.Max(1, life); m.setsHard = setsHard; m.stoneLife = stoneLife;
             GenSpawn.Spawn(m, c, map);
         }
 
@@ -699,7 +728,7 @@ namespace Avir.Magic
         {
             base.ExposeData();
             Scribe_References.Look(ref owner, "owner"); Scribe_Values.Look(ref power, "power", 1f); Scribe_Values.Look(ref left, "left", 900);
-            Scribe_Values.Look(ref setsHard, "setsHard"); Scribe_Values.Look(ref stoneLife, "stoneLife", 2500);
+            Scribe_Values.Look(ref setsHard, "setsHard"); Scribe_Values.Look(ref stoneLife, "stoneLife", 2500); Scribe_Values.Look(ref life, "life", 900);
         }
 
         protected override void Tick()
@@ -746,7 +775,7 @@ namespace Avir.Magic
         {
             base.Tick();
             if (--left <= 0) { Destroy(); return; }
-            if (this.IsHashIntervalTick(90) && Rand.Chance(0.4f)) FleckMaker.Static(Position, Map, FleckDefOf.WaterRipple, 0.9f);
+            if (this.IsHashIntervalTick(90) && Rand.Chance(0.3f)) MapComponent_SpellSprites.Put(Map, "Bog/Bubbles", DrawPos + new Vector3(Rand.Range(-0.3f, 0.3f), 0f, Rand.Range(-0.3f, 0.3f)), 0.7f, 80);
             // a bog breathes: now and then a little marsh gas rises off it
             if (this.IsHashIntervalTick(600) && Rand.Chance(0.12f)) Gas_MarshGas.Release(Position, Map, 1, false);
             if (!this.IsHashIntervalTick(60)) return;

@@ -116,6 +116,7 @@ namespace Avir.Magic
             foreach (IntVec3 c in seen)
             {
                 if (Rand.Chance(0.15f)) FleckMaker.ThrowLightningGlow(c.ToVector3Shifted(), map, 0.7f);
+                if (Rand.Chance(0.12f)) MapComponent_SpellSprites.Put(map, "Storm/Bolt_Fork", c.ToVector3Shifted(), 1.6f, 16);
                 foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList())
                 {
                     if (p.Dead || p == caster || (caster != null && !p.HostileTo(caster))) continue;

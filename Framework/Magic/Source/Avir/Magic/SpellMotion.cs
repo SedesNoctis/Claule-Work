@@ -241,6 +241,7 @@ namespace Avir.Magic
                     else if (combo == ComboKind.Bog) { if (c.InBounds(Map)) FleckMaker.Static(c, Map, FleckDefOf.WaterRipple, 1.2f); }
                     else if (combo == ComboKind.Storm) FleckMaker.ThrowLightningGlow(at, Map, 0.9f);
                     else if (combo == ComboKind.Haze) { if (c.InBounds(Map)) FleckMaker.ThrowHeatGlow(c, Map, 1.2f); }
+                    else if (combo == ComboKind.Dust) MapComponent_SpellSprites.Put(Map, "Dust/Devil", new Vector3(at.x, 0f, at.z), 2.2f, 20, -1f, -8f);
                     else FleckMaker.ThrowDustPuffThick(at, Map, 1.5f, Combos.ColorOf(combo));
                 }
                 return;

@@ -123,7 +123,6 @@ namespace Avir.Magic
                             if (!p.Dead) MagicFx.Lift(p, caster, power * 0.7f);
                         }
                         foreach (IntVec3 c in cells) { if (Rand.Chance(0.4f)) MagicFx.Rubble(c, map); FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1f, MagicFx.EarthDust); }
-                        DrawUp(caster, map, cells, power);
                         break;
                     case RuneKind.Growth:
                         // the soil grows rich: plants drink it in
@@ -145,8 +144,8 @@ namespace Avir.Magic
             }
         }
 
-        /// <summary>The ground gives up what lies deep in it: the deposits a deep drill would reach come up through the
-        /// spikes, a share at a time (up to 25 for each power), without a drill.</summary>
+        /// <summary>The ground gives up what lies deep in it: the deposits a deep drill would reach come up, a share at a
+        /// time (up to 25 for each power), without a drill. Kept for the mage's work (not cast in battle).</summary>
         internal static void DrawUp(Pawn caster, Map map, List<IntVec3> cells, float power)
         {
             int budget = Mathf.RoundToInt(25f * power), got = 0;
@@ -256,7 +255,8 @@ namespace Avir.Magic
                 if (storm)
                 {
                     // the discharge: burns and a jolt; machines are struck harder, the soaked take more
-                    FleckMaker.ConnectingLine(prev, at, FleckDefOf.LineEMP, map);
+                    MapComponent_SpellSprites.Bolt(map, prev, at);
+                    MapComponent_SpellSprites.Put(map, "Storm/Strike", at, 1.8f, 20);
                     FleckMaker.ThrowLightningGlow(at, map, 1.4f);
                     float wet = cur.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Soaked) != null ? 1.5f : 1f;
                     cur.TakeDamage(new DamageInfo(DamageDefOf.Burn, 8f * power * wet, 0.3f, -1f, caster));
