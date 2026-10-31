@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Avir.Ritualistics;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace Avir.Magic
@@ -80,5 +81,15 @@ namespace Avir.Magic
             }
             return c;
         }
+    }
+
+    /// <summary>How deep a blow goes through armour does not come from piling power on (circles of one element, focus,
+    /// the stream - those make it stronger, not deeper): only from the craft of the blow itself - Amplify runes on its
+    /// own verbs (+25% each) and its circle standing inside a great circle (x1.5). Capped in the settings.</summary>
+    public static class SpellDepth
+    {
+        public static float Great = 1f;
+        public static int Amplify;
+        public static float Factor => Mathf.Min(Mathf.Max(1f, AvirMod.Settings.magicPenDepthMax), Great * (1f + 0.25f * Amplify));
     }
 }

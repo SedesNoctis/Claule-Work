@@ -127,11 +127,17 @@ namespace Avir.Magic
         {
             if (caster == null || caster.Dead) return;
             RitualReading r = RitualEvaluator.Read(part);
-            if (k != ComboKind.None) ComboMagic.Cast(k, caster, part, r, target, power);
-            else if (FireMagic.Is(el)) FireMagic.Cast(caster, part, r, target, power);
-            else if (WaterMagic.Is(el)) WaterMagic.Cast(caster, part, r, target, power);
-            else if (EarthMagic.Is(el)) EarthMagic.Cast(caster, part, r, target, power);
-            else if (AirMagic.Is(el)) AirMagic.Cast(caster, part, r, target, power);
+            int keepAmp = SpellDepth.Amplify;
+            SpellDepth.Amplify = r.amplify;
+            try
+            {
+                if (k != ComboKind.None) ComboMagic.Cast(k, caster, part, r, target, power);
+                else if (FireMagic.Is(el)) FireMagic.Cast(caster, part, r, target, power);
+                else if (WaterMagic.Is(el)) WaterMagic.Cast(caster, part, r, target, power);
+                else if (EarthMagic.Is(el)) EarthMagic.Cast(caster, part, r, target, power);
+                else if (AirMagic.Is(el)) AirMagic.Cast(caster, part, r, target, power);
+            }
+            finally { SpellDepth.Amplify = keepAmp; }
         }
 
         /// <summary>A step aimed where the caster already stands goes home instead (a second step: there and back).</summary>

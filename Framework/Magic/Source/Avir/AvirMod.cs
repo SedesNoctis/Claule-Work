@@ -87,8 +87,8 @@ namespace Avir
         // mm (sharp); without it - the game's own share of armour pierced
         public float magicPenWaterCE = 8f, magicPenEarthCE = 12f, magicPenAirCE = 5f, magicPenSharpCE = 2f;
         public float magicPenWater = 0.2f, magicPenEarth = 0.3f, magicPenAir = 0.1f, magicPenSharp = 0.1f;
-        // how far penetration grows with the blow: a blow this many times 10 goes this many times as deep, and no deeper
-        public float magicPenScaleMax = 10f;
+        // how far penetration grows with the craft of the blow (Amplify on its verb, a great circle), and no further
+        public float magicPenDepthMax = 3f;
         public float mageFlowWeight = 3f;
         /// <summary>Where a kept spell goes: 0 the colony's book, 1 files beside the mod (every game), 2 both.</summary>
         public int spellKeep = 0;
@@ -152,7 +152,7 @@ namespace Avir
             Scribe_Values.Look(ref magicPenAirCE, "magicPenAirCE", 5f); Scribe_Values.Look(ref magicPenSharpCE, "magicPenSharpCE", 2f);
             Scribe_Values.Look(ref magicPenWater, "magicPenWater", 0.2f); Scribe_Values.Look(ref magicPenEarth, "magicPenEarth", 0.3f);
             Scribe_Values.Look(ref magicPenAir, "magicPenAir", 0.1f); Scribe_Values.Look(ref magicPenSharp, "magicPenSharp", 0.1f);
-            Scribe_Values.Look(ref magicPenScaleMax, "magicPenScaleMax", 10f);
+            Scribe_Values.Look(ref magicPenDepthMax, "magicPenDepthMax", 3f);
             Scribe_Values.Look(ref mageFlowWeight, "mageFlowWeight", 3f);
             Scribe_Values.Look(ref spellKeep, "spellKeep", 0);
             Scribe_Values.Look(ref arliaIntroBook, "arliaIntroBook");
@@ -245,9 +245,9 @@ namespace Avir
                 list.Label("  air and the rest: " + o.magicPenAir.ToStringPercent()); o.magicPenAir = Mathf.Round(list.Slider(o.magicPenAir, 0f, 1f) * 20f) / 20f;
                 list.Label("  cutting blows (sand, shards): " + o.magicPenSharp.ToStringPercent()); o.magicPenSharp = Mathf.Round(list.Slider(o.magicPenSharp, 0f, 1f) * 20f) / 20f;
             }
-            list.Label("Penetration grows with the blow up to ×" + o.magicPenScaleMax.ToString("0.#"), -1f,
-                new TipSignal("A blow of 20 goes twice as deep as a blow of 10, a blow of 50 five times - no deeper than this. A spell raised high (amplified, focused, a great circle) breaks plate."));
-            o.magicPenScaleMax = Mathf.Round(list.Slider(o.magicPenScaleMax, 1f, 30f));
+            list.Label("Penetration grows with the craft of the blow up to ×" + o.magicPenDepthMax.ToString("0.0#"), -1f,
+                new TipSignal("Only Amplify runes on the striking verb (+25% each) and a great circle round it (x1.5) drive a blow deeper. Many circles of one element, focus and the stream make it stronger, not deeper."));
+            o.magicPenDepthMax = Mathf.Round(list.Slider(o.magicPenDepthMax, 1f, 6f) * 4f) / 4f;
             list.Gap();
             list.Label("Where a kept spell goes:");
             if (list.RadioButton("The colony's book (this game)", o.spellKeep == 0)) o.spellKeep = 0;
