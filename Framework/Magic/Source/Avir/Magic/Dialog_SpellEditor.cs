@@ -1024,6 +1024,28 @@ namespace Avir.Magic
             float y = r.y + 40f + ph + 10f;
             float oh = Mathf.Max(64f, Mathf.Min(r.yMax - 60f - y - 120f, 40f + 26f * OutlineRows().Count));
             DrawOutline(new Rect(r.x, y, r.width, oh)); y += oh + 10f;
+            // the chosen plaque, read as the almanac has it (with none chosen: what the Thread does here)
+            var entry = EffectPlaque.Entry(fx);
+            if (entry.HasValue)
+            {
+                float room = r.yMax - 50f - y;
+                Text.Font = GameFont.Small;
+                float eh = Mathf.Min(room, 34f + Text.CalcHeight(entry.Value.Value, r.width - 20f));
+                if (eh > 60f)
+                {
+                    Rect er = new Rect(r.x, y, r.width, eh);
+                    Widgets.DrawBoxSolid(er, new Color(0.95f, 0.88f, 0.7f, 0.55f));
+                    GUI.color = new Color(0.55f, 0.25f, 0.1f); Text.Font = GameFont.Small;
+                    ArtInk.Label(new Rect(er.x + 10f, er.y + 6f, er.width - 20f, 24f), entry.Value.Key.ToUpperInvariant());
+                    GUI.color = Ink;
+                    Rect body = new Rect(er.x + 10f, er.y + 30f, er.width - 20f, er.height - 34f);
+                    float bh = Text.CalcHeight(entry.Value.Value, body.width - 16f);
+                    Widgets.BeginScrollView(body, ref entryScroll, new Rect(0f, 0f, body.width - 16f, bh));
+                    Widgets.Label(new Rect(0f, 0f, body.width - 16f, bh), entry.Value.Value);
+                    Widgets.EndScrollView();
+                    y += eh + 10f;
+                }
+            }
             string line = ArlieLine();
             if (Arlia.On && !line.NullOrEmpty())
             {
@@ -1038,6 +1060,7 @@ namespace Avir.Magic
             }
         }
 
+        private Vector2 entryScroll;
         private readonly HashSet<SpellCircle> folded = new HashSet<SpellCircle>();
 
         private List<KeyValuePair<SpellCircle, int>> OutlineRows()

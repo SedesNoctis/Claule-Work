@@ -20,7 +20,7 @@ namespace Avir.Magic
         private SpellEffect fx;
         private Vector2 runeScroll, textScroll;
 
-        public override Vector2 InitialSize => new Vector2(Mathf.Min(1180f, Verse.UI.screenWidth - 60f), Mathf.Min(760f, Verse.UI.screenHeight - 60f));
+        public override Vector2 InitialSize => new Vector2(Mathf.Min(1400f, Verse.UI.screenWidth - 60f), Mathf.Min(780f, Verse.UI.screenHeight - 60f));
         protected override float Margin => 0f;
 
         public Dialog_RuneCombiner()
@@ -79,8 +79,12 @@ namespace Avir.Magic
             Text.Font = GameFont.Small; GUI.color = FlowStyle.InkSoft;
             Widgets.Label(new Rect(box.x, box.y + 32f, box.width, 22f), "Write a circle from the centre outward: an element, then the runes of each section in order. Set a neighbour to see two elements meet.");
             float top = box.y + 60f, h = box.height - 60f;
-            Rect left = new Rect(box.x, top, 260f, h), mid = new Rect(left.xMax + 12f, top, 330f, h), right = new Rect(mid.xMax + 12f, top, box.xMax - mid.xMax - 12f, h);
-            DrawRunes(left); DrawCircle(mid); DrawEffect(right);
+            // the runes and the circle as written on the left; what it does in the middle; the circle drawn on the right
+            float miniW = Mathf.Min(300f, box.width * 0.26f);
+            Rect left = new Rect(box.x, top, 220f, h), mid = new Rect(left.xMax + 10f, top, 290f, h);
+            Rect mini = new Rect(box.xMax - miniW, top, miniW, h);
+            Rect right = new Rect(mid.xMax + 12f, top, mini.x - mid.xMax - 24f, h);
+            DrawRunes(left); DrawCircle(mid); DrawEffect(right); DrawMini(mini);
             GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft; Text.Font = GameFont.Small;
             FlowStyle.End();
         }
@@ -165,8 +169,9 @@ namespace Avir.Magic
             Color col = built != null && element != null ? Spells.ColorOf(built) : FlowStyle.Gold;
             float ph = Mathf.Min(EffectPlaque.Height(fx, r.width), r.height * 0.55f);
             EffectPlaque.Draw(new Rect(r.x, r.y, r.width, ph), fx, col);
-            // every plaque spelled out below - the chips only show their names
-            string text = string.Join("\n\n", fx.extras.Select(e => e.Key.ToUpperInvariant() + "\n" + e.Value));
+            // the chosen plaque spelled out below (click one); with none chosen, all of them
+            var chosen = fx.extras.Where(e => e.Key == EffectPlaque.Selected).ToList();
+            string text = string.Join("\n\n", (chosen.Count > 0 ? chosen : fx.extras).Select(e => e.Key.ToUpperInvariant() + "\n" + e.Value));
             Rect area = new Rect(r.x, r.y + ph + 8f, r.width, r.height - ph - 8f);
             float th = Text.CalcHeight(text, area.width - 16f);
             Rect view = new Rect(0f, 0f, area.width - 16f, th);
@@ -175,5 +180,59 @@ namespace Avir.Magic
             Widgets.Label(view, text);
             Widgets.EndScrollView();
         }
-    }
+    
+        /// <summary>The circle as it would be drawn: the element at its heart, each section a ring round it with its runes
+        /// set in order, and the neighbour beside it, joined.</summary>
+        private void DrawMini(Rect r)
+        {
+            RitualArt.Panel(r.ExpandedBy(4f));
+            Rect area = r.ContractedBy(12f);
+            GUI.color = FlowStyle.Ink; Text.Font = GameFont.Small;
+            Widgets.Label(new Rect(area.x, area.y, area.width, 24f), "As it is drawn");
+            float top = area.y + 28f;
+            float size = Mathf.Min(area.width, area.height * 0.6f);
+            Vector2 c = new Vector2(area.center.x, top + size / 2f);
+            Color col = element != null ? element.color : FlowStyle.InkSoft;
+            int n = sections.Count;
+            float heart = size * 0.13f, step = (size / 2f - heart - 6f) / Mathf.Max(1, n);
+            // the rings, outermost first
+            for (int i = n - 1; i >= 0; i--)
+            {
+                float rr = heart + step * (i + 1);
+                GUI.color = new Color(col.r * 0.6f, col.g * 0.5f, col.b * 0.4f, 0.85f);
+                GUI.DrawTexture(new Rect(c.x - rr, c.y - rr, rr * 2f, rr * 2f), RitualTex.Ring);
+                var runes = sections[i];
+                float mid = heart + step * (i + 0.5f), gs = Mathf.Min(step * 0.8f, 30f);
+                for (int k = 0; k < runes.Count; k++)
+                {
+                    float a = -Mathf.PI / 2f + 2f * Mathf.PI * k / Mathf.Max(1, runes.Count) + i * 0.4f;
+                    Vector2 p = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * mid;
+                    Rect g = new Rect(p.x - gs / 2f, p.y - gs / 2f, gs, gs);
+                    GUI.color = Color.white;
+                    SpellGlyph.Draw(g, runes[k]);
+                    TooltipHandler.TipRegion(g, "Section " + (i + 1) + ": " + runes[k].LabelCap);
+                }
+            }
+            GUI.color = new Color(col.r, col.g, col.b, 0.9f);
+            GUI.DrawTexture(new Rect(c.x - heart, c.y - heart, heart * 2f, heart * 2f), RitualTex.Ring);
+            if (element != null) { GUI.color = Color.white; SpellGlyph.Draw(new Rect(c.x - heart * 0.75f, c.y - heart * 0.75f, heart * 1.5f, heart * 1.5f), element); }
+            float y = top + size + 10f;
+            if (neighbour != null)
+            {
+                // the neighbour, a small circle joined below
+                float nr = size * 0.12f;
+                Vector2 nc = new Vector2(c.x, y + nr + 6f);
+                Widgets.DrawLine(new Vector2(c.x, top + size - 2f), new Vector2(nc.x, nc.y - nr), new Color(0.4f, 0.3f, 0.2f, 0.8f), 2f);
+                GUI.color = new Color(neighbour.color.r, neighbour.color.g, neighbour.color.b, 0.9f);
+                GUI.DrawTexture(new Rect(nc.x - nr, nc.y - nr, nr * 2f, nr * 2f), RitualTex.Ring);
+                GUI.color = Color.white;
+                SpellGlyph.Draw(new Rect(nc.x - nr * 0.7f, nc.y - nr * 0.7f, nr * 1.4f, nr * 1.4f), neighbour);
+                y = nc.y + nr + 8f;
+            }
+            GUI.color = FlowStyle.InkSoft;
+            string legend = "The heart: the element. Each ring: a section, its runes read from the top round, the inner ring first.";
+            Widgets.Label(new Rect(area.x, y, area.width, area.yMax - y), legend);
+            GUI.color = Color.white;
+        }
+}
 }

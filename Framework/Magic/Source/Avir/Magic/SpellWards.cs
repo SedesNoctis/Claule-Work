@@ -226,6 +226,10 @@ namespace Avir.Magic
         {
             List<RuneDef> seq = s.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
             if (!seq.Any(x => x.kind == RuneKind.Barrier)) { cast(s); return; }
+            // which section each rune stands in: a part keeps its sections (the wear of a repeat counts within one)
+            var ringOf = new Dictionary<int, int>();
+            { int n = 0; for (int g = 0; g < s.rings.Count; g++) foreach (RuneDef x in s.rings[g].runes) if (x != null) ringOf[n++] = g; }
+            var segRing = new List<int>();
             var elements = seq.Where(x => x.role == RuneRole.Element).ToList();
             int firstAct = seq.FindIndex(Acts);
             var wide = seq.Take(firstAct < 0 ? seq.Count : firstAct).Where(x => x.role != RuneRole.Element && x.kind != RuneKind.Barrier).ToList();
@@ -237,25 +241,33 @@ namespace Avir.Magic
                 if (x.role == RuneRole.Element) continue;
                 if (x.kind == RuneKind.Barrier)
                 {
-                    if (seg.Any(Acts)) { cast(Part(s, elements, wide, seg)); acted = true; }
+                    if (seg.Any(Acts)) { cast(Part(s, elements, wide, seg, segRing)); acted = true; }
                     int amp = 0;
                     while (i + 1 < seq.Count && seq[i + 1].kind == RuneKind.Amplify) { amp++; i++; }
                     bool onCaster = i == seq.Count - 1 && acted;
                     LayBarrier(caster, el, k, onCaster, target, s, power, amp);
-                    seg = new List<RuneDef>();
+                    seg = new List<RuneDef>(); segRing = new List<int>();
                     continue;
                 }
                 if (firstAct < 0 || i < firstAct) continue;   // the circle-wide modifiers: in every part already
-                seg.Add(x);
+                seg.Add(x); segRing.Add(ringOf.TryGetValue(i, out int gi) ? gi : 0);
             }
-            if (seg.Any(Acts)) cast(Part(s, elements, wide, seg));
+            if (seg.Any(Acts)) cast(Part(s, elements, wide, seg, segRing));
         }
 
-        private static RitualSchema Part(RitualSchema s, List<RuneDef> elements, List<RuneDef> wide, List<RuneDef> seg)
+        private static RitualSchema Part(RitualSchema s, List<RuneDef> elements, List<RuneDef> wide, List<RuneDef> seg, List<int> segRing = null)
         {
             var p = new RitualSchema { name = s.name, size = s.size };
             p.rings.Add(new RitualRing { runes = elements.ToList(), slots = 1 });
-            p.rings.Add(new RitualRing { runes = wide.Concat(seg).ToList() });
+            if (segRing == null || segRing.Count != seg.Count) { p.rings.Add(new RitualRing { runes = wide.Concat(seg).ToList() }); return p; }
+            // section by section, as written; the circle-wide modifiers lead the first
+            bool first = true;
+            foreach (var grp in seg.Select((x, n) => new { x, g = segRing[n] }).GroupBy(z => z.g))
+            {
+                var runes = grp.Select(z => z.x).ToList();
+                if (first) { runes = wide.Concat(runes).ToList(); first = false; }
+                p.rings.Add(new RitualRing { runes = runes });
+            }
             return p;
         }
 

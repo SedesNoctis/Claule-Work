@@ -109,35 +109,27 @@ namespace Avir.Magic
         }
     }
 
-    /// <summary>The wear of a repeated verb (Магия-правила.md, author's rule): in a circle the same verb acts at full
-    /// strength once, the second time at half, the third at a quarter - that is the limit; past it, every section of the
-    /// circle beyond the first lets one more repeat act at a quarter. Each verb counts on its own, each circle on its own.
-    /// The repeats cost Arcana as any rune. Spreading verbs over sections pays; piling one verb up does not.</summary>
+    /// <summary>The wear of a repeated verb (Магия-правила.md, author's rule): the same verb written again in one section
+    /// wears - the second acts at half, the third at a quarter, the rest not at all (they still cost Arcana). In
+    /// different sections it does not wear: each section is its own act. Spread a verb over the sections, don't pile it.</summary>
     public static class SpellWear
     {
-        public static float Share(int copy, int sections)
-        {
-            if (copy <= 1) return 1f;
-            if (copy == 2) return 0.5f;
-            if (copy == 3) return 0.25f;
-            return copy - 3 <= Mathf.Max(0, sections - 1) ? 0.25f : 0f;
-        }
+        public static float Share(int copy) => copy <= 1 ? 1f : copy == 2 ? 0.5f : copy == 3 ? 0.25f : 0f;
 
-        /// <summary>Takes the repeats out of a part (the first of each verb stays in place) and returns them as parts of
-        /// their own - the element, the delivery and the modifiers, with that one verb - and the share each acts at. Null
-        /// when nothing repeats.</summary>
+        /// <summary>Takes the repeats within a section out of a part (the first of each verb stays in place) and returns
+        /// them as parts of their own - the element, the delivery and the modifiers of that section, with that one verb -
+        /// and the share each acts at. Null when nothing wears.</summary>
         public static List<KeyValuePair<RitualSchema, float>> Split(ref RitualSchema part)
         {
             if (part?.rings == null || part.rings.Count < 2) return null;
-            var all = part.rings.Skip(1).SelectMany(g => g.runes).Where(x => x != null).ToList();
-            if (!all.Where(x => x.role == RuneRole.Verb).GroupBy(x => x.kind).Any(g => g.Count() > 1)) return null;
-            int sections = part.rings.Count - 1;
+            if (!part.rings.Skip(1).Any(g => g.runes.Where(x => x != null && x.role == RuneRole.Verb).GroupBy(x => x.kind).Any(z => z.Count() > 1))) return null;
             RitualSchema main = part.Copy();
-            var seen = new Dictionary<RuneKind, int>();
             var repeats = new List<KeyValuePair<RitualSchema, float>>();
-            // what carries a repeat: the forms that deliver (not a step - the caster does not step again) and the modifiers
-            var carry = all.Where(x => (x.role == RuneRole.Form && x.kind != RuneKind.Step) || x.role == RuneRole.Modifier).ToList();
             foreach (RitualRing g in main.rings.Skip(1))
+            {
+                // what carries a repeat: the forms of the section (not a step - the caster does not step again) and its modifiers
+                var carry = g.runes.Where(x => x != null && ((x.role == RuneRole.Form && x.kind != RuneKind.Step) || x.role == RuneRole.Modifier)).ToList();
+                var seen = new Dictionary<RuneKind, int>();
                 for (int n = 0; n < g.runes.Count; n++)
                 {
                     RuneDef x = g.runes[n];
@@ -146,31 +138,32 @@ namespace Avir.Magic
                     seen[x.kind] = ++c;
                     if (c == 1) continue;
                     g.runes.RemoveAt(n--);
-                    float share = Share(c, sections);
+                    float share = Share(c);
                     if (share <= 0f) continue;
                     var one = new RitualSchema { name = part.name, size = part.size };
                     one.rings.Add(new RitualRing { runes = part.rings[0].runes.ToList(), slots = 1 });
                     one.rings.Add(new RitualRing { runes = carry.Concat(new[] { x }).ToList() });
                     repeats.Add(new KeyValuePair<RitualSchema, float>(one, share));
                 }
+            }
             main.rings.RemoveAll(g => g != main.rings[0] && g.runes.Count == 0);
             part = main;
             return repeats;
         }
 
-        /// <summary>For the codex: the verbs of a circle that wear, and how much of them is left.</summary>
+        /// <summary>For the codex: the verbs that wear in a circle's sections, and how much of them is left.</summary>
         public static string Explain(SpellCircle c)
         {
             if (c?.sections == null) return null;
-            var verbs = c.sections.SelectMany(s => s.runes).Where(x => x != null && x.role == RuneRole.Verb).GroupBy(x => x.kind).Where(g => g.Count() > 1).ToList();
-            if (verbs.Count == 0) return null;
-            int sections = c.sections.Count;
-            return string.Join("; ", verbs.Select(g =>
-            {
-                float sum = 0f; int dead = 0;
-                for (int i = 1; i <= g.Count(); i++) { float s = Share(i, sections); sum += s; if (s <= 0f) dead++; }
-                return g.First().LabelCap + " x" + g.Count() + " acts as x" + sum.ToString("0.##") + (dead > 0 ? " (" + dead + " worn out to nothing)" : "");
-            }));
+            var lines = new List<string>();
+            for (int i = 0; i < c.sections.Count; i++)
+                foreach (var g in c.sections[i].runes.Where(x => x != null && x.role == RuneRole.Verb).GroupBy(x => x.kind).Where(z => z.Count() > 1))
+                {
+                    float sum = 0f; int dead = 0;
+                    for (int n = 1; n <= g.Count(); n++) { float s = Share(n); sum += s; if (s <= 0f) dead++; }
+                    lines.Add("Section " + (i + 1) + ": " + g.First().LabelCap + " x" + g.Count() + " acts as x" + sum.ToString("0.##") + (dead > 0 ? " (" + dead + " worn to nothing)" : ""));
+                }
+            return lines.Count > 0 ? string.Join("\n", lines) : null;
         }
     }
 }

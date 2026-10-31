@@ -13,6 +13,7 @@ namespace Avir.Magic
         public string details;   // Arcana, range, cast, hold - for the mage writing it, if known
         public List<KeyValuePair<string, string>> extras = new List<KeyValuePair<string, string>>();   // plaque, its tooltip
         public void Add(string chip, string tip) => extras.Add(new KeyValuePair<string, string>(chip, tip));
+        public bool termed;   // the plaques already named by the almanac (SpellTerms)
     }
 
     public static class SpellText
@@ -81,6 +82,8 @@ namespace Avir.Magic
                     string wear = string.Join("\n", s.weave.Working.Select(k => SpellWear.Explain(k)).Where(x => x != null));
                     if (wear.Length > 0) e0.Add("Wear of repeats", "The same verb in one circle wears out: the second acts at half, the third at a quarter; past that, one more at a quarter for every section beyond the first, the rest do nothing (and still cost Arcana). Spread different verbs over the sections instead.\n" + wear);
                 }
+                string thread = SpellTerms.ThreadHere(s);
+                if (thread != null) e0.Add("The Thread", thread);
                 if (nShaped == 0 && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form)))
                     e0.Add("Strikes everyone", "Without two Barriers in the outermost section of a circle, its blow strikes whoever stands in it - friend or foe; only a ward keeps them.");
                 e0.details = Details(s);
@@ -386,7 +389,7 @@ namespace Avir.Magic
         private static void Repeats(SpellEffect e, List<RuneDef> verbs)
         {
             foreach (var g in verbs.GroupBy(v => v.kind).Where(g => g.Count() > 1))
-                e.Add(g.First().LabelCap + " x" + g.Count(), "Written " + g.Count() + " times, it happens " + g.Count() + " times in a row - each time as strong as the first.");
+                e.Add(g.First().LabelCap + " x" + g.Count(), "Written " + g.Count() + " times, it happens " + g.Count() + " times in turn.");
         }
 
         private static string Cap(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s.Substring(1);
@@ -414,6 +417,7 @@ namespace Avir.Magic
     {
         public static float Height(SpellEffect e, float w)
         {
+            SpellTerms.Apply(e);
             Text.Font = GameFont.Small;
             float h = 30f + Text.CalcHeight(e.main, w - 28f) + 8f;
             if (!e.details.NullOrEmpty()) { Text.Font = GameFont.Small; h += Text.CalcHeight(e.details, w - 28f) + 4f; Text.Font = GameFont.Small; }
@@ -435,8 +439,22 @@ namespace Avir.Magic
             return rows;
         }
 
+        /// <summary>The plaque chosen by a click: its entry is read in the codex beside, not in a floating note.</summary>
+        public static string Selected;
+
+        /// <summary>The entry of the chosen plaque in this reading - or, with none chosen, the Thread's, if the spell has one.</summary>
+        public static KeyValuePair<string, string>? Entry(SpellEffect e)
+        {
+            if (e == null) return null;
+            SpellTerms.Apply(e);
+            foreach (var c in e.extras) if (c.Key == Selected) return c;
+            foreach (var c in e.extras) if (c.Key == "The Thread") return c;
+            return null;
+        }
+
         public static void Draw(Rect r, SpellEffect e, Color col, string title = "THE MAIN EFFECT")
         {
+            SpellTerms.Apply(e);
             Color keep = GUI.color;
             if (RitualArt.HasCard) RitualArt.CardAt(r);
             else { Widgets.DrawBoxSolid(r, new Color(0.95f, 0.88f, 0.7f, 0.9f)); }
@@ -462,11 +480,14 @@ namespace Avir.Magic
                 if (x + cw > inner.xMax && x > inner.x) { x = inner.x; y += 32f; }
                 Rect chip = new Rect(x, y, cw, 28f);
                 bool price = c.Key.StartsWith("Price");
+                bool on = Selected == c.Key;
                 Widgets.DrawBoxSolid(chip, price ? new Color(0.55f, 0.15f, 0.08f, 0.92f) : new Color(col.r * 0.32f, col.g * 0.32f, col.b * 0.32f, 0.92f));
+                if (on) { GUI.color = new Color(1f, 0.85f, 0.45f, 1f); Widgets.DrawBox(chip, 2); }
+                else if (Mouse.IsOver(chip)) { GUI.color = new Color(1f, 0.95f, 0.8f, 0.6f); Widgets.DrawBox(chip, 1); }
                 GUI.color = Color.white; Text.Anchor = TextAnchor.MiddleCenter;
                 Widgets.Label(chip, c.Key);
                 Text.Anchor = TextAnchor.UpperLeft;
-                TooltipHandler.TipRegion(chip, c.Value);
+                if (Widgets.ButtonInvisible(chip)) Selected = on ? null : c.Key;
                 x += cw + 6f;
             }
             Text.Font = GameFont.Small;
