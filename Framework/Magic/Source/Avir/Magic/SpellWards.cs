@@ -152,6 +152,16 @@ namespace Avir.Magic
             return p != null && p.Spawned ? MapComponent_WardsDrawn.Over(p.Map, p.Position) : null;
         }
 
+        /// <summary>The layers of ward round a pawn, outside first: the dome it stands in, then its own ward. A blow meets
+        /// the dome, and what the dome lets through meets the ward on the body.</summary>
+        public static IEnumerable<IWard> Layers(Pawn p)
+        {
+            if (p == null) yield break;
+            if (p.Spawned) { IWard d = MapComponent_WardsDrawn.Over(p.Map, p.Position); if (d != null && d.Energy > 0f) yield return d; }
+            IWard own = On(p);
+            if (own != null) yield return own;
+        }
+
         // ------------------------------------------------------------------ a spell meeting a ward whole
 
         /// <summary>A spell (its elements) meets a ward or a dome whole - a bolt flying in, a spell landing inside a dome.
@@ -325,7 +335,12 @@ namespace Avir.Magic
         public static bool Stops(Pawn p, bool soft)
         {
             if (!AtWork) return false;
-            IWard w = Of(p);
+            foreach (IWard w in Layers(p).ToList()) if (StopsBy(w, soft)) return true;
+            return false;
+        }
+
+        private static bool StopsBy(IWard w, bool soft)
+        {
             if (w == null || w.Energy <= 0f) return false;
             RuneKind[] mine = w.Parts, inc = Incoming;
             bool own = mine.Length > 0 && inc.Any(k => mine.Contains(k));
@@ -339,7 +354,13 @@ namespace Avir.Magic
         /// <summary>A blow on a warded body. Returns true if nothing of it is left.</summary>
         internal static bool Take(Pawn p, ref DamageInfo dinfo)
         {
-            IWard w = Of(p);
+            // layer by layer: the dome over the ground, then the ward on the body
+            foreach (IWard w in Layers(p).ToList()) if (TakeBy(w, p, ref dinfo)) return true;
+            return false;
+        }
+
+        private static bool TakeBy(IWard w, Pawn p, ref DamageInfo dinfo)
+        {
             if (w == null || dinfo.Def == null) return false;
             float amount = dinfo.Amount;
             if (amount <= 0f) return false;
@@ -426,6 +447,26 @@ namespace Avir.Magic
             if (!SpellWards.Take(__instance, ref __0)) return true;
             __1 = true;
             return false;
+        }
+    }
+
+    /// <summary>Whoever stands in a zone dome sees it on their bar: its charge, over the ward of their own if they have one.</summary>
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.GetGizmos))]
+    public static class Patch_DomeGizmo
+    {
+        public static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> __result, Pawn __instance)
+        {
+            foreach (Gizmo g in __result) yield return g;
+            if (!AvirMagic.On || !__instance.Spawned || __instance.Faction != Faction.OfPlayer || Find.Selector.SingleSelectedThing != __instance) yield break;
+            MapComponent_WardsDrawn.Dome d = MapComponent_WardsDrawn.Over(__instance.Map, __instance.Position);
+            if (d == null) yield break;
+            Color c = d.combo != ComboKind.None ? Combos.ColorOf(d.combo) : d.el != null ? d.el.color : new Color(0.6f, 0.6f, 0.9f);
+            yield return new Gizmo_ArtifactShield
+            {
+                title = d.Name.CapitalizeFirst(), cur = () => d.energy, max = () => d.energyMax, fill = c,
+                tip = () => d.Name.CapitalizeFirst() + " - the outer layer: a blow meets the dome first, and what it lets through meets the ward on the body."
+                    + "\nShots: " + d.ranged.ToStringPercent() + " held · melee: " + d.melee.ToStringPercent() + " held."
+            };
         }
     }
 }

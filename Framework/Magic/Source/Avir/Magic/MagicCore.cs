@@ -249,6 +249,20 @@ namespace Avir.Magic
                     icon = ContentFinder<Texture2D>.Get("UI/Designators/Cancel", false) ?? BaseContent.BadTex,
                     action = () => SpellCasting.BreakOff(pawn)
                 };
+            if (Prefs.DevMode)
+            {
+                // the dice of the hold, right on the caster: for trying a spell held or slipped
+                yield return new Command_Toggle
+                {
+                    defaultLabel = "DEV: hold 100%", defaultDesc = "Every spell is held, whatever the risk. Applies to all casters.",
+                    icon = TexCommand.ForbidOff, isActive = () => Spells.DevHold == 1, toggleAction = () => Spells.DevHold = Spells.DevHold == 1 ? 0 : 1
+                };
+                yield return new Command_Toggle
+                {
+                    defaultLabel = "DEV: hold 0%", defaultDesc = "Every spell slips, whatever the risk. Applies to all casters.",
+                    icon = TexCommand.ForbidOn, isActive = () => Spells.DevHold == -1, toggleAction = () => Spells.DevHold = Spells.DevHold == -1 ? 0 : -1
+                };
+            }
             MageBook b = Book;
             for (int i = 0; i < b.open && i < 5; i++)
             {

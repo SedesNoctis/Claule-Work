@@ -814,7 +814,7 @@ namespace Avir.Magic
             Destroy();
             if (Rand.Chance(0.4f)) ComboMagic.Ash(m, c.ToVector3Shifted(), 1.4f);
             FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), m, 1.5f, new Color(0.3f, 0.3f, 0.3f, 0.7f));
-            if (setsHard) SetIntoBasalt(c, m, stoneLife);
+            if (setsHard) SetIntoBasalt(c, m, stoneLife, power);
             else
             {
                 MagicFx.Rubble(c, m);
@@ -825,11 +825,13 @@ namespace Avir.Magic
 
         /// <summary>Molten stone set where it stood: real rock, basalt - smoothed into a wall, mined for chunks, cut into
         /// blocks. Whoever still stands in it is not walled up: there it only sets as a passing earthen wall.</summary>
-        public static void SetIntoBasalt(IntVec3 c, Map map, int stoneLife)
+        public static void SetIntoBasalt(IntVec3 c, Map map, int stoneLife, float power = 1f)
         {
             if (!c.InBounds(map)) return;
             if (ComboDefOf.Avir_Basalt == null || c.GetFirstPawn(map) != null || c.GetEdifice(map) != null) { EarthWall.Raise(c, map, stoneLife); return; }
-            GenSpawn.Spawn(ComboDefOf.Avir_Basalt, c, map, WipeMode.VanishOrMoveAside);
+            Thing rock = GenSpawn.Spawn(ComboDefOf.Avir_Basalt, c, map, WipeMode.VanishOrMoveAside);
+            // as strong as the shaping that poured it: a weak cast sets brittle, crumbling stone
+            if (rock != null) rock.HitPoints = Mathf.Clamp(Mathf.RoundToInt(250f * Mathf.Max(0.3f, power)), 80, rock.MaxHitPoints);
             FleckMaker.ThrowSmoke(c.ToVector3Shifted(), map, 1.2f);
         }
 
