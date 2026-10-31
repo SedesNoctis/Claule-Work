@@ -475,7 +475,8 @@ namespace Avir.Magic
 
     /// <summary>Magic's blows go through armour by their own measure (Магия-правила.md): blunt by element - water and bog,
     /// earth and magma, air and the rest - and cutting ones alike; heat by the game's own rules. With Combat Extended the
-    /// measures are its own (MPa, mm), set apart in the settings. Grows with the blow: a blow of 10 is the base.</summary>
+    /// measures are its own (MPa, mm), set apart in the settings. Grows with the blow: a blow of 10 is the base, a blow
+    /// of 50 goes five times as deep (up to the cap in the settings).</summary>
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.PreApplyDamage))]
     public static class Patch_SpellPenetration
     {
@@ -499,7 +500,9 @@ namespace Avir.Magic
                 : water ? (ce.Value ? o.magicPenWaterCE : o.magicPenWater)
                 : earth ? (ce.Value ? o.magicPenEarthCE : o.magicPenEarth)
                 : (ce.Value ? o.magicPenAirCE : o.magicPenAir);
-            pen *= Mathf.Clamp(__0.Amount / 10f, 0.5f, 2.5f);
+            // a heavier blow goes deeper: a spell raised high enough (amplified, focused, a great circle, a strong stream)
+            // breaks through any plate - up to the cap set in the settings
+            pen *= Mathf.Clamp(__0.Amount / 10f, 0.5f, Mathf.Max(1f, AvirMod.Settings.magicPenScaleMax));
             if (pen <= 0f) return;
             SpellWards.Note("penetration " + d.defName + " " + __0.Amount.ToString("0.#") + ": " + pen.ToString("0.##") + (ce.Value ? (sharp ? " mm" : " MPa") : " (share)"));
             object box = __0;

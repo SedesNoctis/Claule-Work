@@ -53,11 +53,11 @@ namespace Avir.Magic
         }
 
         /// <summary>What a blast of the caster's passes over: in a shaped blow every one of their own people within reach
-        /// of it - never the caster, who stands in their own blast unwarded at their peril.</summary>
+        /// of it, the caster too; unshaped, the caster stands in their own blast unwarded at their peril.</summary>
         public static List<Thing> Ignored(Pawn caster, Map map, IntVec3 at, float radius, bool keepCaster = false)
         {
             var l = new List<Thing>();
-            if (caster != null && keepCaster) l.Add(caster);
+            if (caster != null && (keepCaster || Active)) l.Add(caster);
             if (Active && caster != null && map != null)
                 foreach (Pawn p in GenRadial.RadialDistinctThingsAround(at, map, radius + 1f, true).OfType<Pawn>())
                     if (p != caster && !p.HostileTo(caster)) l.Add(p);
