@@ -30,6 +30,13 @@ namespace Avir.Magic
         public const float BaseRadius = 3.9f;
         public const int PerAnchor = 3;
 
+        private static int field;
+        /// <summary>An aura's blow is being dealt now (its first strike or any after): a ward of its own element lets it
+        /// pass round the wearer untouched and unspent; a ward of another element takes it on its charge.</summary>
+        public static bool Field => field > 0;
+        private sealed class FieldScope : System.IDisposable { public void Dispose() { if (field > 0) field--; } }
+        public static System.IDisposable InField(bool on = true) { if (!on) return null; field++; return new FieldScope(); }
+
         /// <summary>A strike of a living aura is being dealt now: it must not raise another.</summary>
         public static bool Pulsing;
         public static float PulseRadius;
@@ -248,6 +255,7 @@ namespace Avir.Magic
             a.flash = Time.realtimeSinceStartup;
             bool keep = SpellAura.Pulsing; float keepR = SpellAura.PulseRadius;
             SpellAura.Pulsing = true; SpellAura.PulseRadius = a.radius;
+            using (SpellAura.InField())
             try
             {
                 using (SpellWards.Of(a.combo == ComboKind.None ? a.el?.kind : null, a.combo, false))   // a field round the caster, not a blow thrown: it meets wards as the ground does

@@ -39,7 +39,7 @@ namespace Avir
     {
         // Bump this every time you rebuild. If the string in your log does not match the string
         // in the source you just edited, you are running a stale DLL and that is the whole bug.
-        public const string BuildStamp = "AVIR-2026-10-31-MAGIC86";
+        public const string BuildStamp = "AVIR-2026-10-31-MAGIC87";
 
         // OFF by default. When this was on, every generated pawn wrote a line to the log AND
         // did a File.AppendAllText - a disk open, write and close PER PAWN. In a modpack that

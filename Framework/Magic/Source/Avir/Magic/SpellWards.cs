@@ -395,6 +395,7 @@ namespace Avir.Magic
             bool own = mine.Length > 0 && inc.Any(k => mine.Contains(k));
             bool other = mine.Length == 0 || inc.Any(k => !mine.Contains(k));
             if (own && w.Fiery && inc.Contains(RuneKind.Fire)) return true;   // its own fire: nothing of it touches the wearer
+            if (own && !other && SpellAura.Field) return true;                  // an aura of its own element goes round the wearer
             if (own && !other) return soft;                                     // its own element: the soft is held, the hard passes
             w.Spend(soft ? 2f : 5f);                                            // another element: held, at a little cost
             return true;
@@ -437,6 +438,9 @@ namespace Avir.Magic
             foreach (RuneKind k in inc)
             {
                 bool own = mine.Contains(k);
+                // an aura of the ward's own element goes round the wearer: untouched, unspent (an aura of another one
+                // breaks on the ward at the cost of its charge, as below)
+                if (own && SpellAura.Field) continue;
                 if (own && w.Fiery && k == RuneKind.Fire)
                 {
                     // fire on a ward of fire: its ground does nothing; a direct blow puts out both
@@ -471,18 +475,19 @@ namespace Avir.Magic
         internal static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Explosion, object[]> of = new System.Runtime.CompilerServices.ConditionalWeakTable<Explosion, object[]>();
         public static void Postfix(Explosion __instance)
         {
-            if (SpellWards.AtWork) of.Add(__instance, new object[] { SpellWards.element, SpellWards.combo, SpellWards.direct });
+            if (SpellWards.AtWork) of.Add(__instance, new object[] { SpellWards.element, SpellWards.combo, SpellWards.direct, SpellAura.Field });
         }
     }
 
     [HarmonyPatch(typeof(Explosion), "AffectCell")]
     public static class Patch_SpellWardsBlastCell
     {
-        public static void Prefix(Explosion __instance, out IDisposable __state)
+        public static void Prefix(Explosion __instance, out IDisposable[] __state)
         {
-            __state = Patch_SpellWardsBlastBorn.of.TryGetValue(__instance, out object[] e) ? SpellWards.Of((RuneKind?)e[0], (ComboKind)e[1], (bool)e[2]) : null;
+            __state = Patch_SpellWardsBlastBorn.of.TryGetValue(__instance, out object[] e)
+                ? new[] { SpellWards.Of((RuneKind?)e[0], (ComboKind)e[1], (bool)e[2]), SpellAura.InField(e.Length > 3 && (bool)e[3]) } : null;
         }
-        public static void Postfix(IDisposable __state) => __state?.Dispose();
+        public static void Postfix(IDisposable[] __state) { if (__state != null) for (int i = __state.Length - 1; i >= 0; i--) __state[i]?.Dispose(); }
     }
 
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.PreApplyDamage))]

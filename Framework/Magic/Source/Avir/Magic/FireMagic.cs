@@ -53,6 +53,7 @@ namespace Avir.Magic
                         // an aura is a field round the caster, not a blow thrown: it meets wards as the ground of its fire does -
                         // a ward of flame stands in it untouched, and is not put out
                         using (SpellWards.Of(RuneKind.Fire, ComboKind.None, false))
+                        using (SpellAura.InField())
                             Apply(caster, map, verbs, Point(caster.Position, map, ar), caster.Position, power, rf, true);
                         break;
                     case RuneKind.Beam:
@@ -189,7 +190,16 @@ namespace Avir.Magic
                             foreach (IntVec3 c in cells) FleckMaker.ThrowFireGlow(c.ToVector3Shifted(), map, 1.1f);
                         }
                         // an aura seeks the living, not the ground: it sets alight those it strikes, the grass under them it spares
-                        if (aroundSelf) { foreach (Pawn p in PawnsIn(cells, map)) if (MagicFx.Foe(p, caster) && Rand.Chance(0.5f)) p.TryAttachFire(0.3f + 0.1f * power, caster); }
+                        if (aroundSelf)
+                        {
+                            // what burns falls where it stands: the ground under the struck may catch after them, not before
+                            foreach (Pawn p in PawnsIn(cells, map))
+                            {
+                                if (!MagicFx.Foe(p, caster)) continue;
+                                if (Rand.Chance(0.5f)) p.TryAttachFire(0.3f + 0.1f * power, caster);
+                                if (p.Position != caster.Position && Rand.Chance(0.25f)) FireUtility.TryStartFireIn(p.Position, map, 0.2f + 0.1f * power, caster);
+                            }
+                        }
                         else foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) FireUtility.TryStartFireIn(c, map, 0.3f + 0.2f * power, caster);
                         // and smoke rolls off it - the fire mage's own, that does not trouble them
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.3f)) FireSmoke.Puff(c, map, 0.5f + 0.3f * power);

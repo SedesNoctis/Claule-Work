@@ -917,12 +917,14 @@ namespace Avir.Magic
                 if (p.Dead || (owner != null && !MagicFx.Foe(p, owner)) || MagicFx.Rooted(p) || SpellWards.Stops(p, true)) continue;
                 MagicFx.Give(p, ComboDefOf.Avir_Mired, 150);
                 // the longer they stay, the deeper they sink; the fallen go under fast
-                Hediff h = p.health.hediffSet.GetFirstHediffOfDef(ComboDefOf.Avir_Sinking) ?? p.health.AddHediff(ComboDefOf.Avir_Sinking);
                 // a machine does not drown: the mire only swallows it to the joints and holds it fast, helpless, for as long
-                // as it lies there - to be dug out and taken, not killed
-                bool machine = p.RaceProps.IsMechanoid;
-                h.Severity = Mathf.Min(machine ? 0.9f : 1f, h.Severity + (p.Downed ? 0.08f : 0.025f) * power);
-                if (machine && h.Severity >= 0.85f) MagicFx.Stun(p, 180, owner);
+                // as it lies there - to be dug out and taken, not killed. Nor does one wholly sealed (a void suit, a
+                // cataphract's plate): it breathes its own air under the mud - swallowed to the neck, held fast, but alive
+                bool machine = p.RaceProps.IsMechanoid, held = machine || SpellBody.Of(p).sealedFull;
+                HediffDef sink = held && !machine && ComboDefOf.Avir_SinkingSealed != null ? ComboDefOf.Avir_SinkingSealed : ComboDefOf.Avir_Sinking;
+                Hediff h = p.health.hediffSet.GetFirstHediffOfDef(sink) ?? p.health.AddHediff(sink);
+                h.Severity = Mathf.Min(held ? 0.9f : 1f, h.Severity + (p.Downed ? 0.08f : 0.025f) * power);
+                if (held && h.Severity >= 0.85f) MagicFx.Stun(p, 180, owner);
                 FleckMaker.Static(Position, Map, FleckDefOf.WaterSplash, 0.9f);
             }
         }
@@ -1040,6 +1042,7 @@ namespace Avir.Magic
     public static class ComboDefOf
     {
         public static HediffDef Avir_Dazzled, Avir_Hazed, Avir_Dusted, Avir_Mired, Avir_Sinking;
+        public static HediffDef Avir_SinkingSealed;
         public static HediffDef Avir_SteamWard, Avir_StormWard, Avir_MagmaWard, Avir_HazeWard, Avir_BogWard, Avir_DustWard;
         public static HediffDef Avir_SteamEnchant, Avir_StormEnchant, Avir_MagmaEnchant, Avir_HazeEnchant, Avir_BogEnchant, Avir_DustEnchant;
         public static ThingDef Avir_Magma, Avir_Mire, Avir_GasSteam, Avir_GasMarsh, Avir_Obsidian, Avir_Glass, Avir_Basalt, Avir_ChunkBasalt;

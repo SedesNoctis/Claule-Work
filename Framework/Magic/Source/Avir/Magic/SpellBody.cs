@@ -20,6 +20,7 @@ namespace Avir.Magic
             public int at;
             public float weight;            // kg, body and gear
             public bool sealed_;
+            public bool sealedFull;         // wholly sealed: holds the void outright, or full head and body cover of a spacer's make
             public bool woodAny, bionicLimb, metalArmour;
             public float eyeDazzle = 1f;    // how much a flash blinds: flesh 1, bionic 0.5, archotech 0.1, none 0
             public float eyeSeesThrough;    // the chance to see through a mirage: archotech eyes
@@ -70,7 +71,7 @@ namespace Avir.Magic
         {
             var i = new Info();
             i.weight = p.GetStatValue(StatDefOf.Mass) + (p.inventory != null || p.apparel != null || p.equipment != null ? MassUtility.GearAndInventoryMass(p) : 0f);
-            i.sealed_ = Sealed(p);
+            i.sealed_ = Sealed(p, out i.sealedFull);
             HediffSet hs = p.health?.hediffSet;
             if (hs == null) return i;
             var added = hs.hediffs.OfType<Hediff_AddedPart>().ToList();
@@ -120,10 +121,13 @@ namespace Avir.Magic
 
         /// <summary>Gear sealed against the outside: what holds the void (Odyssey), or full head and body cover of a
         /// spacer's make or finer.</summary>
-        private static bool Sealed(Pawn p)
+        private static bool Sealed(Pawn p, out bool full)
         {
+            full = false;
             StatDef vac = DefDatabase<StatDef>.GetNamedSilentFail("VacuumResistance");
-            if (vac != null && p.GetStatValue(vac) >= 0.5f) return true;
+            float v = vac != null ? p.GetStatValue(vac) : 0f;
+            if (v >= 0.99f) { full = true; return true; }
+            if (v >= 0.5f) return true;
             if (p.apparel == null) return false;
             bool head = false, body = false;
             foreach (Apparel a in p.apparel.WornApparel)
@@ -134,6 +138,7 @@ namespace Avir.Magic
                 if (g.Contains(BodyPartGroupDefOf.FullHead)) head = true;
                 if (g.Contains(BodyPartGroupDefOf.Torso)) body = true;
             }
+            full = head && body;
             return head && body;
         }
 

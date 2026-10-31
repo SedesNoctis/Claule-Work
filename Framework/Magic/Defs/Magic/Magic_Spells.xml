@@ -1482,6 +1482,45 @@
       </li>
     </stages>
   </HediffDef>
+  <HediffDef>
+    <defName>Avir_SinkingSealed</defName>
+    <label>held in the mire</label>
+    <description>A caster's bog has them, but cannot drown them: sealed against the outside, they breathe their own air under the mud. The longer they stay, the deeper it swallows them - to the neck, held fast and helpless - but no deeper. Out of the mire it slowly lets go.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.38, 0.47, 0.24)</defaultLabelColor>
+    <isBad>true</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>0.9</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay"><severityPerDay>-12</severityPerDay></li>
+      <li Class="Avir.Magic.HediffCompProperties_SpellMotes">
+        <kind>splash</kind>
+        <color>(1,1,1,1)</color>
+        <interval>50</interval>
+        <scale>0.9</scale>
+        <height>0</height>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <label>to the knees</label>
+        <capMods><li><capacity>Moving</capacity><offset>-0.2</offset></li></capMods>
+      </li>
+      <li>
+        <minSeverity>0.35</minSeverity>
+        <label>to the waist</label>
+        <capMods><li><capacity>Moving</capacity><offset>-0.5</offset></li></capMods>
+      </li>
+      <li>
+        <minSeverity>0.7</minSeverity>
+        <label>to the neck</label>
+        <capMods>
+          <li><capacity>Moving</capacity><offset>-0.7</offset></li>
+          <li><capacity>Manipulation</capacity><offset>-0.3</offset></li>
+        </capMods>
+      </li>
+    </stages>
+  </HediffDef>
   <ThingDef>
     <defName>Avir_Mire</defName>
     <label>mire</label>
