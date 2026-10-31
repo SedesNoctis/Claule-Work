@@ -213,6 +213,10 @@ namespace Avir
                 + "no traits, no implants, no spells, no new runes; the rest of the mod (artifacts, ritualistics, the Song) works as before. "
                 + "Left off while the system is being built. Takes effect after a restart.");
             list.Gap();
+            list.CheckboxLabeled("Strict modifiers (test)", ref o.magicStrictMods,
+                "The author's rule, on trial. Modifiers beside the element work on the whole circle; modifiers after a verb or a form work on that one only, up to the next verb or form - and nothing of them leaks to the rest: Amplify on one verb no longer drives the others deeper through armour. "
+                + "A verb written again later in the circle is its own act with its own modifiers; and it hears an echo of the copy before it - half of what that copy came to, its own modifiers and its echo together - so echoes build up: four Releases, each with a Breadth, burst each wider than the last. Reach is the cast's, never echoed.");
+            list.Gap();
             list.CheckboxLabeled("The stream strengthens casters", ref o.flowStrengthensMages,
                 "Under a strong stream on the map (restless and above) a caster's spells grow stronger - and greatness presses on them harder with every spell.");
             list.Label("A caster weighs in the stream as " + o.mageFlowWeight.ToString("0.#") + " pawns", -1f,
@@ -250,10 +254,6 @@ namespace Avir
             list.Label("Penetration grows with the craft of the blow up to ×" + o.magicPenDepthMax.ToString("0.0#"), -1f,
                 new TipSignal("Amplify runes on the striking verb drive a blow deeper, each less than the one before (1 + the square root of their number: 1 - x2, 4 - x3, 9 - x4); a strong stream +15% a tier; stone at hand under an earthen blow x1.2. Many circles of one element and focus make it stronger, not deeper. Away from the heart of the blow it goes in shallower: at its edge, by half."));
             o.magicPenDepthMax = Mathf.Round(list.Slider(o.magicPenDepthMax, 1f, 10f) * 4f) / 4f;
-            list.Gap();
-            list.CheckboxLabeled("Strict modifiers (test)", ref o.magicStrictMods,
-                "The author's rule, on trial. Modifiers beside the element work on the whole circle; modifiers after a verb or a form work on that one only, up to the next verb or form - and nothing of them leaks to the rest: Amplify on one verb no longer drives the others deeper through armour. "
-                + "A verb written again later in the circle is its own act with its own modifiers; and it hears an echo of the copy before it - half of what that copy came to, its own modifiers and its echo together - so echoes build up: four Releases, each with a Breadth, burst each wider than the last. Reach is the cast's, never echoed.");
             list.Gap();
             list.Label("Where a kept spell goes:");
             if (list.RadioButton("The colony's book (this game)", o.spellKeep == 0)) o.spellKeep = 0;
@@ -316,6 +316,9 @@ namespace Avir
             value = Mathf.Round(list.Slider(value, min, max) / round) * round;
         }
 
+        private static Vector2 magicScroll;
+        private static float magicHeight = 1200f;
+
         public override void DoSettingsWindowContents(Rect inRect)
         {
             // two tabs: the Avir and everything else, and the Singers on their own
@@ -326,10 +329,15 @@ namespace Avir
             inRect = new Rect(inRect.x, inRect.y + 40f, inRect.width, inRect.height - 40f);
             if (magicTab)
             {
+                // the magic page grows: it scrolls, measured by what it drew last time
+                Rect mview = new Rect(0f, 0f, inRect.width - 20f, Mathf.Max(inRect.height, magicHeight));
+                Widgets.BeginScrollView(inRect, ref magicScroll, mview);
                 Listing_Standard ml = new Listing_Standard();
-                ml.Begin(inRect);
+                ml.Begin(new Rect(0f, 0f, mview.width, 99999f));
                 DrawMagic(ml, Settings);
+                magicHeight = ml.CurHeight + 20f;
                 ml.End();
+                Widgets.EndScrollView();
                 base.DoSettingsWindowContents(inRect);
                 return;
             }
