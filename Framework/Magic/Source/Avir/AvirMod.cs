@@ -253,7 +253,7 @@ namespace Avir
             list.Gap();
             list.CheckboxLabeled("Strict modifiers (test)", ref o.magicStrictMods,
                 "The author's rule, on trial. Modifiers beside the element work on the whole circle; modifiers after a verb or a form work on that one only, up to the next verb or form - and nothing of them leaks to the rest: Amplify on one verb no longer drives the others deeper through armour. "
-                + "A verb written again later in the circle is its own act with its own modifiers; and it hears an echo of the copy before it - that copy's own modifiers at half (rounded down; an odd one left over makes the echo 15% stronger).");
+                + "A verb written again later in the circle is its own act with its own modifiers; and it hears an echo of the copy before it - half of what that copy came to, its own modifiers and its echo together - so echoes build up: four Releases, each with a Breadth, burst each wider than the last. Reach is the cast's, never echoed.");
             list.Gap();
             list.Label("Where a kept spell goes:");
             if (list.RadioButton("The colony's book (this game)", o.spellKeep == 0)) o.spellKeep = 0;

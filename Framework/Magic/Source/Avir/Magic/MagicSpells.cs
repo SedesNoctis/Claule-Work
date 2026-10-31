@@ -421,9 +421,42 @@ namespace Avir.Magic
             {
                 if (!mage.Spawned) return;
                 if (t.Cell.DistanceTo(mage.Position) > range) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
-                SpellCasting.Order(mage, spell, slot, t, IntVec3.Invalid);
+                Then(t, IntVec3.Invalid);
             }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, null, null, true, null,
             t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
+        }
+
+        /// <summary>After the target: the further places for each Reach and Thread, one by one - each within the spell's
+        /// reach of the place before it - then the order.</summary>
+        private void Then(LocalTargetInfo target, IntVec3 wallEnd)
+        {
+            int need = SpellHops.Count(spell);
+            var places = new List<IntVec3>();
+            if (need == 0) { SpellHops.Set(mage, null); SpellCasting.Order(mage, spell, slot, target, wallEnd); return; }
+            float range = Spells.Range(spell);
+            void Ask(IntVec3 from)
+            {
+                Messages.Message("Reach and Thread: choose where the spell leaps next (" + (places.Count + 1) + " of " + need + ").", MessageTypeDefOf.SilentInput, false);
+                var parms = new TargetingParameters { canTargetLocations = true, canTargetPawns = true, canTargetSelf = true, canTargetBuildings = false };
+                Find.Targeter.BeginTargeting(parms, t =>
+                {
+                    if (!mage.Spawned) return;
+                    if (t.Cell.DistanceTo(from) > range) { Messages.Message("Too far from where it struck.", MessageTypeDefOf.RejectInput, false); return; }
+                    places.Add(t.Cell);
+                    if (places.Count < need) { Ask(t.Cell); return; }
+                    SpellHops.Set(mage, places);
+                    SpellCasting.Order(mage, spell, slot, target, wallEnd);
+                }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(from) <= range, mage, null, null, true, null,
+                t =>
+                {
+                    GenDraw.DrawRadiusRing(from, Mathf.Min(range, GenRadial.MaxRadialPatternRadius - 1f));
+                    IntVec3 prev = target.Cell;
+                    foreach (IntVec3 p in places) { GenDraw.DrawLineBetween(prev.ToVector3Shifted(), p.ToVector3Shifted()); prev = p; }
+                    IntVec3 m = Verse.UI.MouseCell();
+                    if (m.InBounds(mage.Map)) GenDraw.DrawLineBetween(from.ToVector3Shifted(), m.ToVector3Shifted(), SimpleColor.Yellow);
+                });
+            }
+            Ask(target.Cell);
         }
 
         /// <summary>A wall: the first click sets where it begins, the second where it ends - straight or slanting.</summary>
@@ -441,7 +474,7 @@ namespace Avir.Magic
                     SpellPreview.WallStart = IntVec3.Invalid;
                     if (!mage.Spawned) return;
                     if (end.Cell.DistanceTo(mage.Position) > range) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
-                    SpellCasting.Order(mage, spell, slot, start.Cell, end.Cell);
+                    Then(start.Cell, end.Cell);
                 }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, () => SpellPreview.WallStart = IntVec3.Invalid, null, true, null,
                 t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
             }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, null, null, true, null,

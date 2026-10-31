@@ -93,7 +93,7 @@ namespace Avir.Magic
         public static IntVec3 WallTo = IntVec3.Invalid;
 
         /// <summary>The radius of a spell striking a point: round enough to read as a ball of fire.</summary>
-        public static float PointRadius(RitualReading r) => 2.4f + 1.5f * r.breadth;
+        public static float PointRadius(RitualReading r) => 2.4f + 1.5f * (r.breadth + (r.schema?.echoBreadth ?? 0f));
 
         public static int WallMax(RitualReading r) => 7 + 3 * r.breadth;
 

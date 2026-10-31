@@ -181,6 +181,8 @@ namespace Avir.Ritualistics
         public SpellIcon icon;
         /// <summary>Who wrote it: a mage's name, "path" for the ready spells of a path, empty if not known.</summary>
         public string author;
+        /// <summary>Not kept: the part of an echo's Breadth below a whole rune (strict modifiers) - it widens the point.</summary>
+        public float echoBreadth;
 
         public IEnumerable<RuneDef> AllRunes => rings.SelectMany(r => r.runes).Where(r => r != null);
 
@@ -199,6 +201,7 @@ namespace Avir.Ritualistics
             c.weave = weave?.Copy();
             c.icon = icon?.Copy();
             c.author = author;
+            c.echoBreadth = echoBreadth;
             return c;
         }
 

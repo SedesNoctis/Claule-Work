@@ -50,7 +50,7 @@ namespace Avir.Magic
                     case RuneKind.Amplify: b.amplify++; break;
                     case RuneKind.Breadth: b.breadth++; break;
                     case RuneKind.Anchor: b.anchor++; break;
-                    case RuneKind.Thread: if (holder != null) b.thread++; break;
+                    case RuneKind.Thread: if (holder != null && !SpellHops.PairThread(seq, i)) b.thread++; break;   // after a Reach: the pair leaps, it turns nothing
                     case RuneKind.Barrier:
                         if (holder != null && i == seq.Count - 1) rd.wardOnMage = true;
                         else rd.wide.barrier++;
@@ -91,10 +91,14 @@ namespace Avir.Magic
         /// <summary>The Amplify runes beside the element: the whole circle's.</summary>
         public static int WideAmplify(RitualSchema s) => ReadOf(s).wide.amplify;
 
+        /// <summary>What an echo carries: the modifiers of a verb's pattern - not Reach (it is how far the spell is cast, the
+        /// whole spell's), nor the flow runes.</summary>
+        private static bool Echoed(RuneDef x) => x.role == RuneRole.Modifier && x.kind != RuneKind.Reach;
+
         /// <summary>Strict modifiers: every later copy of a verb is cut out into a part of its own - the element, the
         /// circle-wide modifiers, the forms that carry it (with their own modifiers), the verb with the modifiers written
-        /// after it, and the echo of the copy before it: that copy's own modifiers at half (an odd one left over: the part
-        /// is 15% stronger). In the section of the copy before it, it also wears (the Tautology). Returns the parts and the
+        /// after it, and the echo of the copy before it: half of what that copy came to (its own and its echo) - so it builds up;
+        /// what is less than a whole rune counts as strength (Amplify) or width (Breadth). In the section of the copy before it, it also wears (the Tautology). Returns the parts and the
         /// share of strength each acts at; null when no verb repeats.</summary>
         public static List<KeyValuePair<RitualSchema, float>> Echoes(ref RitualSchema part)
         {
@@ -116,28 +120,37 @@ namespace Avir.Magic
             foreach (var a in acts) if (a.act.role == RuneRole.Form && a.act.kind != RuneKind.Step) { carriers.Add(a.act); carriers.AddRange(a.own.Where(x => x.kind != RuneKind.Barrier)); }
             var outParts = new List<KeyValuePair<RitualSchema, float>>();
             var cut = new HashSet<int>();   // places in seq taken out of the main part
-            var last = new Dictionary<RuneKind, (List<RuneDef> own, int sec)>();
+            // what each verb's last copy came to: its own modifiers and the echo it heard - the next copy hears half of it,
+            // so the echo builds up: four releases, each with a Breadth, burst each wider than the one before
+            var last = new Dictionary<RuneKind, Dictionary<RuneKind, float>>();
             var inSection = new Dictionary<(RuneKind, int), int>();
+            Dictionary<RuneKind, float> Count(List<RuneDef> own) => own.Where(Echoed).GroupBy(x => x.kind).ToDictionary(g => g.Key, g => (float)g.Count());
             foreach (var a in acts)
             {
                 if (a.act.role != RuneRole.Verb) continue;
                 inSection.TryGetValue((a.act.kind, a.sec), out int n); inSection[(a.act.kind, a.sec)] = ++n;
-                if (!last.TryGetValue(a.act.kind, out var prev)) { last[a.act.kind] = (a.own, a.sec); continue; }
-                // the echo of the copy before: its own modifiers at half
+                if (!last.TryGetValue(a.act.kind, out var prev)) { last[a.act.kind] = Count(a.own); continue; }
+                var total = Count(a.own);
                 var echo = new List<RuneDef>();
-                bool odd = false;
-                foreach (var grp in prev.own.Where(x => x.role == RuneRole.Modifier).GroupBy(x => x.kind))
+                float share = SpellWear.Share(n), wideFrac = 0f;
+                foreach (var kv in prev)
                 {
-                    int c = grp.Count();
-                    for (int k = 0; k < c / 2; k++) echo.Add(grp.First());
-                    if (c % 2 == 1 && grp.Key == RuneKind.Amplify) odd = true;
+                    float e = kv.Value * 0.5f;
+                    if (e <= 0f) continue;
+                    total.TryGetValue(kv.Key, out float t); total[kv.Key] = t + e;
+                    RuneDef rune = DefDatabase<RuneDef>.AllDefs.FirstOrDefault(x => x.kind == kv.Key && x.role == RuneRole.Modifier);
+                    int whole = Mathf.FloorToInt(e);
+                    for (int k = 0; k < whole && rune != null; k++) echo.Add(rune);
+                    float frac = e - whole;
+                    // what is less than a whole rune still counts: Amplify as strength, Breadth as width
+                    if (kv.Key == RuneKind.Amplify) share *= 1f + 0.3f * frac;
+                    else if (kv.Key == RuneKind.Breadth) wideFrac = frac;
                 }
-                float share = SpellWear.Share(n) * (odd ? 1.15f : 1f);
-                last[a.act.kind] = (a.own, a.sec);
+                last[a.act.kind] = total;
                 cut.Add(a.at);
                 for (int k = 1; k <= a.own.Count; k++) cut.Add(a.at + k);
                 if (share <= 0f) continue;
-                var one = new RitualSchema { name = part.name, size = part.size };
+                var one = new RitualSchema { name = part.name, size = part.size, echoBreadth = wideFrac };
                 one.rings.Add(new RitualRing { runes = part.rings[0].runes.ToList(), slots = 1 });
                 one.rings.Add(new RitualRing { runes = wide.Concat(carriers).Concat(new[] { a.act }).Concat(a.own).Concat(echo).ToList() });
                 outParts.Add(new KeyValuePair<RitualSchema, float>(one, share));

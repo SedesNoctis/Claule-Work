@@ -41,9 +41,15 @@ namespace Avir.Magic
             public Dictionary<SpellCircle, ComboKind> combos;
             /// <summary>Where the caster stood when the spell was let go: a later step aimed at the caster goes back here.</summary>
             public IntVec3 origin = IntVec3.Invalid;
+            /// <summary>The further places named for Reach and Thread, in order, and how many are used.</summary>
+            public List<IntVec3> hops = new List<IntVec3>();
+            public int hopNext;
 
             public void ExposeData()
             {
+                Scribe_Collections.Look(ref hops, "hops", LookMode.Value);
+                Scribe_Values.Look(ref hopNext, "hopNext");
+                if (hops == null) hops = new List<IntVec3>();
                 Scribe_References.Look(ref caster, "caster");
                 Scribe_Deep.Look(ref root, "root");
                 Scribe_Values.Look(ref next, "next");
@@ -106,7 +112,8 @@ namespace Avir.Magic
             var c = new Chain
             {
                 caster = caster, root = root, links = Order(root), power = power, target = target,
-                storm = false, wallTo = FireMagic.WallTo, combos = Combos.Pairs(root), origin = caster.Position
+                storm = false, wallTo = FireMagic.WallTo, combos = Combos.Pairs(root), origin = caster.Position,
+                hops = SpellHops.Take(caster)
             };
             // the map is taken before the first circle: a step may carry the mage off it (under the ground, in the air)
             Map map = caster.Map;
@@ -128,6 +135,8 @@ namespace Avir.Magic
             RitualSchema one = circle.AsSchema();
             // two Barriers in the outermost section: the blow is shaped round the caster's own people (weaker for it)
             bool shaped = SpellSculpt.Take(one, out bool aid);   // with a Thread: Selective Aid - to the caster's own only
+            // Reach and Thread: what is outward of the pair leaps on to the next place named
+            List<RitualSchema> leaps = SpellHops.Cut(ref one);
             // outward of a step: cut off, to act where the caster comes out
             RitualSchema after = SpellDash.Split(ref one);
             if (shaped && after != null) SpellSculpt.Mark(after, aid);
@@ -152,6 +161,19 @@ namespace Avir.Magic
             }
             finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; SpellAura.Spell = keepSpell; }
             SpellDash.Hang(after, met, caster, c.target, p);
+            if (leaps != null)
+                foreach (RitualSchema leap in leaps)
+                {
+                    if (caster.Dead || !caster.Spawned) break;
+                    IntVec3 from = c.target.Cell;
+                    IntVec3 to = c.hopNext < c.hops.Count ? c.hops[c.hopNext++] : from;
+                    if (!to.InBounds(caster.Map)) to = from;
+                    Leap(caster.Map, from, to, circle.element?.color ?? Color.white);
+                    if (shaped) SpellSculpt.Mark(leap, aid);
+                    c.target = new LocalTargetInfo(to);
+                    SpellDash.Last = null;
+                    SpellDash.Hang(leap, met, caster, c.target, p);
+                }
             // where this circle ends, the next one strikes
             bool step = r.verbs.Any(v => v.kind == RuneKind.Step);
             bool aura = r.verbs.Any(v => v.kind == RuneKind.Aura);
@@ -165,6 +187,16 @@ namespace Avir.Magic
             c.giveUp = now + Patience;
             c.at = now + Gap;
             SpellDash.LastPulled = null;
+        }
+
+        /// <summary>The spell leaping on from one place to the next: a trail of light along the way.</summary>
+        private static void Leap(Map map, IntVec3 from, IntVec3 to, Color col)
+        {
+            if (map == null || from == to) return;
+            Vector3 a = from.ToVector3Shifted(), b = to.ToVector3Shifted();
+            int n = Mathf.Clamp(Mathf.RoundToInt((b - a).magnitude), 2, 30);
+            for (int i = 0; i <= n; i++) FleckMaker.ThrowLightningGlow(Vector3.Lerp(a, b, i / (float)n), map, 0.7f);
+            FleckMaker.Static(to, map, FleckDefOf.PsycastAreaEffect, 1.6f);
         }
 
         private static void Finish(Chain c)

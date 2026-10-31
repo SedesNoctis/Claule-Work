@@ -863,7 +863,9 @@ namespace Avir.Magic
                 Spell("TEST Closing ring (magma)", "Fire:Hold", "Earth:Shape,Thread"),
                 Spell("TEST Pressed into the ground", "Earth:Lift,Thread"),
                 Spell("TEST Selective Aid: water mends own only", "Water:Release|Barrier,Barrier,Thread"),
-                Spell("TEST Strict modifiers: echo", "Fire:Release,Amplify,Amplify|Release"),
+                Spell("TEST Strict: echo widens (4 releases)", "Fire:Release,Breadth|Release,Breadth|Release,Breadth|Release,Breadth"),
+                Spell("TEST Leaping fire (Reach + Thread)", "Fire:Release|Reach,Thread,Release|Reach,Thread,Release"),
+                Spell("TEST Chain of mire (Reach + Thread)", "Water:Hold|Reach,Thread,Hold", "Earth:Hold|Reach,Thread,Hold"),
             };
             foreach (RitualSchema s in list) core.Book.spells.Add(s);
             Messages.Message(list.Count + " test spells written into " + p.LabelShort + "'s book.", MessageTypeDefOf.NeutralEvent, false);

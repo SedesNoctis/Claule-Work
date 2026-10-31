@@ -80,7 +80,7 @@ namespace Avir.Magic
                 if (nAid > 0) e0.Add("Turned to its own", "Two Barriers and a Thread in the outermost section of a circle turn its blow to the caster's own people - the caster among them - and past the foes; "
                     + (1f - SpellSculpt.Keeps).ToStringPercent() + " weaker for it. For mending, warding and strengthening one's own from the circle.");
                 if (SpellMods.Strict && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Where(x => x.role == RuneRole.Verb).GroupBy(x => x.kind).Any(g => g.Count() > 1)))
-                    e0.Add("Echo", "Strict modifiers (a setting, on trial): each later copy of a verb acts with the modifiers written after it, and hears the copy before it - that copy's own modifiers at half.");
+                    e0.Add("Echo", "Strict modifiers (a setting, on trial): each later copy of a verb acts with the modifiers written after it, and hears the copy before it - half of all that copy came to; echoes build up.");
                 if (s.weave != null)
                 {
                     string wear = string.Join("\n", s.weave.Working.Select(k => SpellWear.Explain(k)).Where(x => x != null));

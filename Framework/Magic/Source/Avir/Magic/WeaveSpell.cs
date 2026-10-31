@@ -20,7 +20,8 @@ namespace Avir.Magic
 
         public static int Runes(SpellCircle root) => root.Working.Sum(c => c.OwnRunes.Count() + (c.element != null ? 1 : 0));
 
-        public static int Reach(SpellCircle root) => root.Working.Sum(c => c.OwnRunes.Count(r => r.kind == RuneKind.Reach));
+        /// <summary>The Reach that lengthens the cast: a Reach paired with a Thread leaps instead.</summary>
+        public static int Reach(SpellCircle root) => root.Working.Sum(c => SpellHops.CastReach(c));
 
         public static float Cost(SpellCircle root)
         {
