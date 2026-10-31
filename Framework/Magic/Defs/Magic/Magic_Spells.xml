@@ -119,7 +119,7 @@
   <HediffDef>
     <defName>Avir_RagingFlame</defName>
     <label>raging flame</label>
-    <description>The mage has lost hold of their fire. For a while flame keeps breaking out around them, and they cannot hold it back.</description>
+    <description>The mage has lost hold of their fire. For a while new flame breaks out all round them and every fire near them burns higher and spreads faster - friend and foe are in it alike. A ward of fire keeps the mage out of it.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.9, 0.25, 0.1)</defaultLabelColor>
     <isBad>true</isBad>
@@ -1518,4 +1518,26 @@
       <drawSize>(1.3, 1.3)</drawSize>
     </graphicData>
   </ThingDef>
+  <HediffDef>
+    <defName>Avir_AirMomentum</defName>
+    <label>wind at their back</label>
+    <description>Spells of the air cast one after another: each stage makes the next quicker and cheaper while the wind holds. A pause lets it drop (both set in the mod options, magic section).</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.8, 0.92, 1)</defaultLabelColor>
+    <isBad>false</isBad>
+    <initialSeverity>1</initialSeverity>
+    <maxSeverity>5</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>600~600</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li><label>rising</label></li>
+      <li><minSeverity>1.5</minSeverity><label>strong</label></li>
+      <li><minSeverity>2.5</minSeverity><label>gale</label></li>
+    </stages>
+  </HediffDef>
+
 </Defs>

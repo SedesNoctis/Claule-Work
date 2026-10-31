@@ -756,6 +756,12 @@ namespace Avir.Magic
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(opts));
         }
 
+        [DebugAction(Cat, "Wind at their back +1 (air momentum)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevMomentum(Pawn p) => AirMomentum.Rise(p);
+
+        [DebugAction(Cat, "Raging flame on this mage", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevRaging(Pawn p) => FireMagic.Raging(p);
+
         [DebugAction(Cat, "Magma wall here (sets into stone)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevMagmaWall() { Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell(); for (int i = -2; i <= 2; i++) MagmaPool.Pour(c + new IntVec3(i, 0, 0), map, null, 1f, 300, true, 5000); }
 

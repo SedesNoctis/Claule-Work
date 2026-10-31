@@ -294,13 +294,18 @@ namespace Avir.Magic
         {
             Map map = caster.Map;
             if (map == null) return;
-            foreach (IntVec3 c in GenRadial.RadialCellsAround(caster.Position, 3.5f, false).InRandomOrder().Take(8))
-                if (c.InBounds(map)) FireUtility.TryStartFireIn(c, map, 1f, caster);
+            // the fire breaks loose round the mage, not on them: whoever stands near burns, the mage among them only if
+            // the flames reach them (a ward of fire keeps them out of it)
+            foreach (IntVec3 c in RagingCells(caster.Position, map).Take(6)) FireUtility.TryStartFireIn(c, map, 0.8f, caster);
             Hediff h = caster.health.hediffSet.GetFirstHediffOfDef(FireDefOf.Avir_RagingFlame) ?? caster.health.AddHediff(FireDefOf.Avir_RagingFlame);
             HediffComp_Disappears d = h.TryGetComp<HediffComp_Disappears>();
-            if (d != null) d.ticksToDisappear = 1200;
-            Messages.Message("Raging flame: " + caster.LabelShortCap + " can no longer hold back the fire around them.", caster, MessageTypeDefOf.NegativeEvent, false);
+            if (d != null) d.ticksToDisappear = 1800;
+            Messages.Message("Raging flame: " + caster.LabelShortCap + " can no longer hold back the fire - it breaks out all round and spreads fast.", caster, MessageTypeDefOf.NegativeEvent, false);
         }
+
+        /// <summary>Where raging fire breaks out: two to six cells from the mage, never at their feet.</summary>
+        public static IEnumerable<IntVec3> RagingCells(IntVec3 at, Map map) =>
+            GenRadial.RadialCellsAround(at, 6f, false).Where(c => c.InBounds(map) && c.DistanceTo(at) >= 2f && !c.Filled(map)).InRandomOrder();
 
         public static string Describe(RitualReading r)
         {
@@ -492,13 +497,24 @@ namespace Avir.Magic
         public HediffCompProperties_RagingFlame() { compClass = typeof(HediffComp_RagingFlame); }
     }
 
+    /// <summary>Raging flame: for a while new fire keeps breaking out round the mage, and every fire near them burns
+    /// higher and leaps on faster - friend and foe alike are in it.</summary>
     public class HediffComp_RagingFlame : HediffComp
     {
         public override void CompPostTick(ref float severityAdjustment)
         {
-            if (!Pawn.Spawned || !Pawn.IsHashIntervalTick(120)) return;
-            IntVec3 c = Pawn.Position + GenRadial.RadialPattern[Rand.Range(2, GenRadial.NumCellsInRadius(3.5f))];
-            if (c.InBounds(Pawn.Map)) FireUtility.TryStartFireIn(c, Pawn.Map, 0.6f, Pawn);
+            if (!Pawn.Spawned || !Pawn.IsHashIntervalTick(90)) return;
+            Map map = Pawn.Map;
+            IntVec3 c = FireMagic.RagingCells(Pawn.Position, map).FirstOrDefault();
+            if (c.IsValid && Rand.Chance(0.6f)) FireUtility.TryStartFireIn(c, map, 0.6f, Pawn);
+            // the fires already burning grow and spread on their own, faster than any fire should
+            foreach (Fire f in GenRadial.RadialDistinctThingsAround(Pawn.Position, map, 8f, true).OfType<Fire>().ToList())
+            {
+                f.fireSize = Mathf.Min(1.75f, f.fireSize + 0.12f);
+                if (!Rand.Chance(0.25f)) continue;
+                IntVec3 n = f.Position + GenAdj.AdjacentCells[Rand.Range(0, 8)];
+                if (n.InBounds(map) && n != Pawn.Position && !n.Filled(map)) FireUtility.TryStartFireIn(n, map, 0.4f, Pawn);
+            }
         }
     }
 

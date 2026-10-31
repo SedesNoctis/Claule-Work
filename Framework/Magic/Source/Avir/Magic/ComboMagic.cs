@@ -134,6 +134,14 @@ namespace Avir.Magic
 
     public static class ComboMagic
     {
+        private static bool storming;
+
+        /// <summary>The foes a storm strikes besides its target: the nearest round it, within eight cells, in sight of the sky's reach.</summary>
+        private static List<Pawn> StormTargets(Pawn caster, Map map, IntVec3 at, int count) =>
+            GenRadial.RadialDistinctThingsAround(at, map, 8f, true).OfType<Pawn>()
+                .Where(p => !p.Dead && p.Position != at && MagicFx.Foe(p, caster))
+                .OrderBy(p => p.Position.DistanceToSquared(at)).Take(count).ToList();
+
         public static void Cast(ComboKind k, Pawn caster, RitualSchema s, RitualReading r, LocalTargetInfo target, float power)
         {
             Map map = caster.Map;
@@ -151,6 +159,20 @@ namespace Avir.Magic
                 foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(wat, map, Mathf.Max(0.9f, radius - 1f)), map))
                     if (!p.HostileTo(caster)) SpellWards.Lay(p, ward, power, r.amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
                 MapComponent_WardsDrawn.Raise(map, wat, Mathf.Max(0.9f, radius - 1f), null, caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power), Combos.ColorOf(k));
+            }
+            // a storm is not aimed at one: it strikes the chosen target and as many foes round it (2 + Breadth more, a quarter weaker)
+            if (k == ComboKind.Storm && !storming && !forms.Any(f => f.kind == RuneKind.Step || f.kind == RuneKind.Shape || f.kind == RuneKind.Aura || f.kind == RuneKind.Enchant || f.kind == RuneKind.Restore))
+            {
+                storming = true;
+                try
+                {
+                    foreach (Pawn extra in StormTargets(caster, map, at, 2 + r.breadth))
+                    {
+                        MapComponent_SpellSprites.Bolt(map, at.ToVector3Shifted(), extra.DrawPos);
+                        Cast(k, caster, s, r, extra, power * 0.75f);
+                    }
+                }
+                finally { storming = false; }
             }
             if (forms.Count == 0) { Apply(k, caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); return; }
             foreach (RuneDef f in forms)

@@ -60,6 +60,10 @@ namespace Avir.Magic
             {
                 SpellEffect e0 = s.weave != null ? WeaveSpell.Explain(s.weave) : ExplainCore(s);
                 e0.details = Details(s);
+                if (SpellCasting.OfAir(s)) e0.Add("Momentum", "A spell of the air: cast on the move. Cast another of the air within " + AvirMod.Settings.airMomentumSeconds.ToString("0") + " seconds and it comes "
+                    + AvirMod.Settings.airMomentumStep.ToStringPercent() + " quicker and cheaper - up to " + AirMomentum.MaxStage + " stages; a pause lets the wind drop.");
+                if ((s.weave != null && WeaveSpell.Heavy(s.weave)) || (s.weave == null && EarthMagic.Is(Spells.Element(s)))) e0.Add("Heavy", "Earth is heavy: this spell takes ×" + AvirMod.Settings.earthCastFactor.ToString("0.0#") + " as long to cast.");
+                if (s.weave != null && Combos.Pairs(s.weave).ContainsValue(ComboKind.Storm)) e0.Add("Many targets", "A storm is not aimed at one: besides its target it strikes the 2 nearest foes round it (+1 for each Breadth), a quarter weaker - unless it is a step, a wall, an aura, an enchanting or a restoring.");
                 if (read.Count > 300) read.Clear();
                 kv = new KeyValuePair<float, SpellEffect>(now, e0);
                 read[s] = kv;

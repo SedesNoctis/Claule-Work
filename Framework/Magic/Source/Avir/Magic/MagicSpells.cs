@@ -54,13 +54,14 @@ namespace Avir.Magic
             return (2f + n) * size + 3f * Mathf.Max(0, r.elements.Count - 1);
         }
 
-        public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s) => CastTicks(c.Sorcerer, s);
+        public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s) => Mathf.RoundToInt(CastTicks(c.Sorcerer, s) * AirMomentum.Factor(c.pawn, s));
 
         /// <summary>A far target takes longer: +2% for every cell past twelve - a mage across the map is seen coming.</summary>
         public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s, float distance) => Mathf.RoundToInt(CastTicks(c, s) * (1f + 0.02f * Mathf.Max(0f, distance - 12f)));
 
         /// <summary>Sorcerer quick, mage slow; a larger circle longer; each reach rune a little longer (+5%).</summary>
-        public static int CastTicks(bool sorcerer, RitualSchema s) => s.weave != null ? WeaveSpell.CastTicks(sorcerer, s.weave) : Mathf.RoundToInt((sorcerer ? 60f : 150f) * (1f + 0.25f * (int)s.size) * (1f + 0.05f * RitualEvaluator.Read(s).reach));
+        public static int CastTicks(bool sorcerer, RitualSchema s) => s.weave != null ? WeaveSpell.CastTicks(sorcerer, s.weave) : Mathf.RoundToInt((sorcerer ? 60f : 150f) * (1f + 0.25f * (int)s.size) * (1f + 0.05f * RitualEvaluator.Read(s).reach)
+            * (EarthMagic.Is(RitualEvaluator.Read(s).elements.FirstOrDefault()) ? AvirMod.Settings.earthCastFactor : 1f));
 
         /// <summary>The map's stream, by tier (0 calm ... 4 cataclysm), if it is set to strengthen mages.</summary>
         /// <summary>The stream that strengthens a spell makes it wilder too: every stage of it is harder to hold.</summary>
@@ -109,7 +110,7 @@ namespace Avir.Magic
             Map map = caster.Map;
             if (map == null) return;
             RitualReading r = RitualEvaluator.Read(s);
-            float cost = Cost(s);
+            float cost = Cost(s) * AirMomentum.Factor(caster, s);
             if (core.arcana < cost) { Messages.Message(caster.LabelShortCap + " has not enough Arcana for " + s.name + ".", caster, MessageTypeDefOf.RejectInput, false); return; }
             core.Add(-cost);
             // the hold: composure against the spell's instability
@@ -132,6 +133,7 @@ namespace Avir.Magic
                 return;
             }
             GameComponent_AvirComposure.Performed(caster, cost, risk, comp, GameComponent_AvirComposure.KeyOf(s));
+            AirMomentum.Note(caster, s);
             core.Note("Cast " + s.name + " (" + cost.ToString("0.#") + " Arcana).");
             float power = Power(s);
             int tier = FlowTier(map);

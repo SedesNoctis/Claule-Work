@@ -34,7 +34,14 @@ namespace Avir.Magic
         {
             int n = root.Working.Count();
             int breadth = root.Working.Sum(c => c.OwnRunes.Count(r => r.kind == RuneKind.Breadth));
-            return Mathf.RoundToInt((sorcerer ? 60f : 150f) * (1f + 0.25f * (n - 1)) * (1f + 0.05f * Reach(root)) * (1f + 0.08f * breadth));
+            return Mathf.RoundToInt((sorcerer ? 60f : 150f) * (1f + 0.25f * (n - 1)) * (1f + 0.05f * Reach(root)) * (1f + 0.08f * breadth) * (Heavy(root) ? AvirMod.Settings.earthCastFactor : 1f));
+        }
+
+        /// <summary>Earth is heavy: a spell with earth in it, or magma, or bog, is slower to cast (dust rides the air and is not).</summary>
+        public static bool Heavy(SpellCircle root)
+        {
+            var pairs = Combos.Pairs(root);
+            return Small(root).Any(c => EarthMagic.Is(c.element) && (!pairs.TryGetValue(c, out ComboKind k) || k == ComboKind.Magma || k == ComboKind.Bog));
         }
 
         /// <summary>What it asks of composure: the hardest circle, and a little more for every other one.</summary>

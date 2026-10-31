@@ -78,6 +78,11 @@ namespace Avir
         public bool magicOn;
         /// <summary>Magic: the map's stream strengthens mages (and presses greatness on them); a mage weighs in the stream as this many pawns.</summary>
         public bool flowStrengthensMages = true;
+        // air's momentum: seconds the wind holds between casts, share per stage, stages
+        public float airMomentumSeconds = 10f, airMomentumStep = 0.15f;
+        public int airMomentumStages = 3;
+        // earth (and magma, bog) casts slower by this much
+        public float earthCastFactor = 1.5f;
         public float mageFlowWeight = 3f;
         /// <summary>Where a kept spell goes: 0 the colony's book, 1 files beside the mod (every game), 2 both.</summary>
         public int spellKeep = 0;
@@ -133,6 +138,10 @@ namespace Avir
             Scribe_Values.Look(ref ritualItalic, "ritualItalic", true);
             Scribe_Values.Look(ref magicOn, "magicOn", false);
             Scribe_Values.Look(ref flowStrengthensMages, "flowStrengthensMages", true);
+            Scribe_Values.Look(ref airMomentumSeconds, "airMomentumSeconds", 10f);
+            Scribe_Values.Look(ref airMomentumStep, "airMomentumStep", 0.15f);
+            Scribe_Values.Look(ref airMomentumStages, "airMomentumStages", 3);
+            Scribe_Values.Look(ref earthCastFactor, "earthCastFactor", 1.5f);
             Scribe_Values.Look(ref mageFlowWeight, "mageFlowWeight", 3f);
             Scribe_Values.Look(ref spellKeep, "spellKeep", 0);
             Scribe_Values.Look(ref arliaIntroBook, "arliaIntroBook");
@@ -196,6 +205,16 @@ namespace Avir
             list.Label("A mage weighs in the stream as " + o.mageFlowWeight.ToString("0.#") + " pawns", -1f,
                 new TipSignal("How much a mage or sorcerer adds to the map's stream, counted in ordinary pawns (their psychic sensitivity times this). 1 - like anyone else."));
             o.mageFlowWeight = Mathf.Round(list.Slider(o.mageFlowWeight, 1f, 6f) * 2f) / 2f;
+            list.Gap();
+            list.Label("Air's momentum: casts within " + o.airMomentumSeconds.ToString("0") + " s of each other", -1f,
+                new TipSignal("Spells of the air (and storm, haze, dust) cast one after another come quicker and cheaper while the wind holds. A longer pause lets it drop."));
+            o.airMomentumSeconds = Mathf.Round(list.Slider(o.airMomentumSeconds, 3f, 30f));
+            list.Label("each stage -" + o.airMomentumStep.ToStringPercent() + " cast time and Arcana, up to " + o.airMomentumStages + " stages (-" + Mathf.Min(0.9f, o.airMomentumStep * o.airMomentumStages).ToStringPercent() + ")");
+            o.airMomentumStep = Mathf.Round(list.Slider(o.airMomentumStep, 0.05f, 0.3f) * 100f) / 100f;
+            o.airMomentumStages = Mathf.RoundToInt(list.Slider(o.airMomentumStages, 1f, 5f));
+            list.Label("Earth casts slower: ×" + o.earthCastFactor.ToString("0.0#"), -1f,
+                new TipSignal("Earth is heavy: spells of earth, and of magma and bog, take this much longer to cast."));
+            o.earthCastFactor = Mathf.Round(list.Slider(o.earthCastFactor, 1f, 2.5f) * 10f) / 10f;
             list.Gap();
             list.Label("Where a kept spell goes:");
             if (list.RadioButton("The colony's book (this game)", o.spellKeep == 0)) o.spellKeep = 0;
