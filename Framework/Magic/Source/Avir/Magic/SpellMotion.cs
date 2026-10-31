@@ -332,7 +332,7 @@ namespace Avir.Magic
         public override void DynamicDrawPhaseAt(DrawPhase phase, Vector3 drawLoc, bool flip = false)
         {
             if (element == RuneKind.Earth || combo == ComboKind.Haze || combo == ComboKind.Steam) return; // under the ground, in a shimmer, a cloud: nothing of the mage is seen
-            if (element == RuneKind.Water && puller == null && phase == DrawPhase.Draw)
+            if (element == RuneKind.Water && phase == DrawPhase.Draw)
             {
                 // the wave itself, rolling ahead of the mage
                 if (waveMat == null) waveMat = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Wave_Water", ShaderDatabase.Transparent);

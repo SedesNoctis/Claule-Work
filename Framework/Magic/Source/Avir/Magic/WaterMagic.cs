@@ -211,8 +211,14 @@ namespace Avir.Magic
         /// <summary>Soaked: slower, and hard to set alight, for a while.</summary>
         public static void Soak(Pawn p, float power)
         {
-            if (!p.RaceProps.IsFlesh || SpellWards.Stops(p, true)) return;
-            Hediff h = p.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Soaked) ?? p.health.AddHediff(WaterDefOf.Avir_Soaked);
+            if (p == null || p.Dead || p.health?.hediffSet == null || WaterDefOf.Avir_Soaked == null || !p.RaceProps.IsFlesh || SpellWards.Stops(p, true)) return;
+            Hediff h = p.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Soaked);
+            if (h == null)
+            {
+                try { h = p.health.AddHediff(WaterDefOf.Avir_Soaked); }
+                catch (System.Exception e) { Log.WarningOnce("[Avir] soaking " + p + " failed: " + e.Message, 774411); return; }
+            }
+            if (h == null) return;
             h.Severity = 1f;
             HediffComp_Disappears d = h.TryGetComp<HediffComp_Disappears>();
             // sealed gear sheds the water; open gear drinks it and weighs the more the heavier it is

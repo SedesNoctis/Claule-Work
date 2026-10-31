@@ -104,6 +104,13 @@ namespace Avir.Magic
             if (pawn.health.hediffSet.hediffs.Contains(this)) pawn.health.RemoveHediff(this);
         }
 
+        /// <summary>Dev trace: who took the ward away, and from where.</summary>
+        public override void PostRemoved()
+        {
+            base.PostRemoved();
+            if (SpellWards.Trace) Log.Message("[Avir ward] " + def.defName + " removed from " + pawn?.LabelShort + " (energy " + energy.ToString("0") + "/" + energyMax.ToString("0") + ", ticks left " + (this.TryGetComp<HediffComp_Disappears>()?.ticksToDisappear ?? -1) + ")\n" + System.Environment.StackTrace);
+        }
+
         public override void ExposeData()
         {
             base.ExposeData();
