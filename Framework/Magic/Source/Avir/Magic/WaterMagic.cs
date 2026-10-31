@@ -271,7 +271,8 @@ namespace Avir.Magic
             Hediff h = caster.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Chilled) ?? caster.health.AddHediff(WaterDefOf.Avir_Chilled);
             HediffComp_Disappears d = h.TryGetComp<HediffComp_Disappears>();
             if (d != null) d.ticksToDisappear = Mathf.RoundToInt(GenDate.TicksPerHour * 4f);
-            Messages.Message(caster.LabelShortCap + " lost the water - chilled to the bone.", caster, MessageTypeDefOf.NegativeEvent, false);
+            SpellSlip.Water(caster);
+            Messages.Message(caster.LabelShortCap + " lost the water - a cold wave broke over everyone round.", caster, MessageTypeDefOf.NegativeEvent, false);
         }
     }
 

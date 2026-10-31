@@ -25,6 +25,8 @@ namespace Avir.Magic
             Hediff kept = caster.health.hediffSet.GetFirstHediffOfDef(EarthAirDefOf.Avir_StoredStone);
             if (kept != null && !r.verbs.Any(v => v.kind == RuneKind.Drain)) { power *= 1f + kept.Severity; caster.health.RemoveHediff(kept); }
             IntVec3 at = target.Cell;
+            // stone remains: what lies at hand round the target is taken up and flung
+            power *= EarthStone.Gather(map, at, ComboKind.None);
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             float radius = FireMagic.PointRadius(r);
@@ -167,9 +169,10 @@ namespace Avir.Magic
 
         public static void Petrified(Pawn caster)
         {
-            MagicFx.Give(caster, EarthAirDefOf.Avir_Petrified, Mathf.RoundToInt(GenDate.TicksPerHour * 2f));
+            MagicFx.Give(caster, EarthAirDefOf.Avir_Petrified, Mathf.RoundToInt(GenDate.TicksPerHour));
             caster.stances?.stunner?.StunFor(180, caster);
-            Messages.Message(caster.LabelShortCap + " lost the earth - the stone takes hold of their limbs.", caster, MessageTypeDefOf.NegativeEvent, false);
+            SpellSlip.Earth(caster);
+            Messages.Message(caster.LabelShortCap + " lost the earth - the ground shuddered under everyone round, and the stone takes hold of their limbs.", caster, MessageTypeDefOf.NegativeEvent, false);
         }
     }
 
@@ -354,7 +357,8 @@ namespace Avir.Magic
         {
             MagicFx.Give(caster, EarthAirDefOf.Avir_Winded, Mathf.RoundToInt(GenDate.TicksPerHour));
             caster.stances?.stunner?.StunFor(120, caster);
-            Messages.Message(caster.LabelShortCap + " lost the wind - it tore the breath out of them.", caster, MessageTypeDefOf.NegativeEvent, false);
+            SpellSlip.Air(caster);
+            Messages.Message(caster.LabelShortCap + " lost the wind - it burst every way and tore the breath out of them.", caster, MessageTypeDefOf.NegativeEvent, false);
         }
     }
 
@@ -419,7 +423,8 @@ namespace Avir.Magic
 
         public static void Rubble(IntVec3 c, Map map)
         {
-            if (ThingDefOf.Filth_RubbleRock != null && c.InBounds(map) && c.Standable(map)) FilthMaker.TryMakeFilth(c, map, ThingDefOf.Filth_RubbleRock);
+            ThingDef d = EarthStone.Rubble ?? ThingDefOf.Filth_RubbleRock;
+            if (d != null && c.InBounds(map) && c.Standable(map)) FilthMaker.TryMakeFilth(c, map, d);
         }
 
         public static void Ward(Pawn caster, IntVec3 at, Map map, float radius, float power, HediffDef ward, string rune, int amplify = 0)

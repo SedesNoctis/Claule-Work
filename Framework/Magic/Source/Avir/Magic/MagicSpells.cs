@@ -110,7 +110,7 @@ namespace Avir.Magic
             Map map = caster.Map;
             if (map == null) return;
             RitualReading r = RitualEvaluator.Read(s);
-            float cost = Cost(s) * AirMomentum.Factor(caster, s);
+            float cost = Cost(s) * AirMomentum.Factor(caster, s) * EarthStone.CostFactor(map, target.Cell, s);
             if (core.arcana < cost) { Messages.Message(caster.LabelShortCap + " has not enough Arcana for " + s.name + ".", caster, MessageTypeDefOf.RejectInput, false); return; }
             core.Add(-cost);
             // the hold: composure against the spell's instability
@@ -119,9 +119,9 @@ namespace Avir.Magic
             if (core.Sorcerer) comp *= 1.3f;   // a sorcerer's composure goes into the hold of a spell
             if (risk > comp && Rand.Chance((risk - comp) * 0.4f))
             {
+                // a lost hold burns the mage a little; the element's own price falls on all round. No greatness from it:
+                // greatness is Arcana held without restraint, not a spell that slipped
                 caster.TakeDamage(new DamageInfo(DamageDefOf.Burn, 4f + 10f * (risk - comp), 0f, -1f, caster));
-                Hediff g = caster.health.hediffSet.GetFirstHediffOfDef(MagicDefOf.Avir_ArcaneGreatness) ?? caster.health.AddHediff(MagicDefOf.Avir_ArcaneGreatness);
-                g.Severity = Mathf.Min(1f, g.Severity + 0.08f);
                 FleckMaker.ThrowMicroSparks(caster.DrawPos, map);
                 Messages.Message(caster.LabelShortCap + " lost the hold on " + s.name + ": the Arcana burnt through.", caster, MessageTypeDefOf.NegativeEvent, false);
                 core.Note("Lost the hold on " + s.name + ".");

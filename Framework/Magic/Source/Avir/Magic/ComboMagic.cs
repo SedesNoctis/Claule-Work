@@ -149,6 +149,8 @@ namespace Avir.Magic
             GameComponent_Combos.Made(k, caster);
             r = SpellMods.Begin(s, r);
             IntVec3 at = target.Cell;
+            // magma, bog and dust take up their own ground at hand, as earth takes up stone
+            if (EarthStone.Heavy(k) && !storming) power *= EarthStone.Gather(map, at, k);
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             float radius = FireMagic.PointRadius(r);
@@ -528,19 +530,11 @@ namespace Avir.Magic
         }
 
         /// <summary>What a meeting takes from the mage when the hold slips - on top of its two elements' own prices.</summary>
+        /// <summary>A lost hold on a meeting: it breaks loose on everyone round the mage (SpellSlip).</summary>
         public static void Price(ComboKind k, Pawn caster)
         {
             if (caster == null || caster.Dead) return;
-            switch (k)
-            {
-                case ComboKind.Steam: caster.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f, 0f, -1f, caster)); if (caster.Spawned) Smoke(caster.Map, FireMagic.Point(caster.Position, caster.Map, 2f), 0.8f); break;
-                case ComboKind.Storm: if (caster.Spawned) AirMagic.Chain(caster, new List<IntVec3>(), caster.Map, 0, 0f, true); caster.TakeDamage(new DamageInfo(DamageDefOf.Burn, 7f, 0f, -1f, caster)); caster.stances?.stunner?.StunFor(150, caster); if (caster.Spawned) FleckMaker.ThrowLightningGlow(caster.DrawPos, caster.Map, 2f); break;
-                case ComboKind.Magma: if (caster.Spawned) MagmaPool.Pour(caster.Position, caster.Map, null, 1f, 300, false); break;
-                case ComboKind.Haze: MagicFx.Give(caster, ComboDefOf.Avir_Dazzled, 2500); break;
-                case ComboKind.Bog: MagicFx.Give(caster, EarthAirDefOf.Avir_Rooted, 600); WaterMagic.Soak(caster, 1f); MagicFx.Give(caster, ComboDefOf.Avir_Sinking, 2500); caster.health.hediffSet.GetFirstHediffOfDef(ComboDefOf.Avir_Sinking).Severity = 0.25f; break;
-                case ComboKind.Dust: MagicFx.Give(caster, EarthAirDefOf.Avir_Breathless, 2500); MagicFx.Give(caster, ComboDefOf.Avir_Dusted, 1200); break;
-            }
-            Messages.Message(caster.LabelShortCap + " lost hold of the " + Combos.Label(k) + ".", caster, MessageTypeDefOf.NegativeEvent, false);
+            SpellSlip.Combo(k, caster);
         }
 
         // ------------------------------------------------------------------------------------- shared
@@ -849,7 +843,8 @@ namespace Avir.Magic
             using (SpellWards.Of(null, ComboKind.Bog, false))
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
             {
-                if (p.Dead || owner == null || !MagicFx.Foe(p, owner) || MagicFx.Rooted(p) || SpellWards.Stops(p, true)) continue;
+                // a mire with no master (a lost hold) takes anyone
+                if (p.Dead || (owner != null && !MagicFx.Foe(p, owner)) || MagicFx.Rooted(p) || SpellWards.Stops(p, true)) continue;
                 MagicFx.Give(p, ComboDefOf.Avir_Mired, 150);
                 // the longer they stay, the deeper they sink; the fallen go under fast
                 Hediff h = p.health.hediffSet.GetFirstHediffOfDef(ComboDefOf.Avir_Sinking) ?? p.health.AddHediff(ComboDefOf.Avir_Sinking);

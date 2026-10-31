@@ -1540,4 +1540,20 @@
     </stages>
   </HediffDef>
 
+  <ThingDef ParentName="BaseFilth">
+    <defName>Avir_SpellRubble</defName>
+    <label>spell rubble</label>
+    <description>Broken stone an earth spell left on the ground. It lies for days - longer than water - and the next earth spell nearby flings it.</description>
+    <statBases>
+      <BeautyOutdoors>-4</BeautyOutdoors>
+    </statBases>
+    <graphicData>
+      <texPath>Things/Filth/RubbleRock</texPath>
+    </graphicData>
+    <filth>
+      <disappearsInDays>3~5</disappearsInDays>
+      <cleaningWorkToReduceThickness>35</cleaningWorkToReduceThickness>
+    </filth>
+  </ThingDef>
+
 </Defs>

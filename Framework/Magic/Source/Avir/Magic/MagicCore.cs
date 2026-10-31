@@ -91,6 +91,10 @@ namespace Avir.Magic
         /// <summary>What the core can hold, against a mage with no conductor at all.</summary>
         public static float CapacityFactor(Pawn p) => Mathf.Max(0.4f, (Horned(p) ? 0.7f : 1f) * Mathf.Pow(0.85f, Artifacts(p)));
 
+        /// <summary>Physical conductors carry part of the Arcana outside the body: the feeling of greatness swells slower
+        /// (horns -15%, each worn or held artifact -15%, never below half).</summary>
+        public static float PrideFactor(Pawn p) => Mathf.Max(0.5f, 1f - (Horned(p) ? 0.15f : 0f) - 0.15f * Artifacts(p));
+
         /// <summary>How much wider the band is for what steadies the mage.</summary>
         public static float BandWidening(Pawn p) => (Horned(p) ? 0.1f : 0f) + Mathf.Min(0.1f, 0.05f * Artifacts(p));
 
@@ -145,7 +149,7 @@ namespace Avir.Magic
 
         /// <summary>How readily greatness swells past the band: a sorcerer always gives way to it; a mage less and less
         /// the steadier they are - never not at all.</summary>
-        public float Pride => Sorcerer ? 1.25f - 0.15f * Mathf.Clamp01(Composure) : 0.15f + 1.35f * Mathf.Exp(-1.5f * Mathf.Max(0f, Composure));
+        public float Pride => (Sorcerer ? 1.25f - 0.15f * Mathf.Clamp01(Composure) : 0.15f + 1.35f * Mathf.Exp(-1.5f * Mathf.Max(0f, Composure))) * MagicConductors.PrideFactor(pawn);
 
         /// <summary>No ceiling: Arcana may be held past the reserve (only never below nothing).</summary>
         public void Add(float amount) => arcana = Mathf.Max(0f, arcana + amount);
@@ -761,6 +765,35 @@ namespace Avir.Magic
 
         [DebugAction(Cat, "Raging flame on this mage", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevRaging(Pawn p) => FireMagic.Raging(p);
+
+        [DebugAction(Cat, "Stone at hand here (count for earth, magma, bog, dust)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevStone()
+        {
+            Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell();
+            Messages.Message("Stone at hand: earth " + EarthStone.Units(map, c, ComboKind.None).ToString("0.#") + ", magma " + EarthStone.Units(map, c, ComboKind.Magma).ToString("0.#")
+                + ", bog " + EarthStone.Units(map, c, ComboKind.Bog).ToString("0.#") + ", dust " + EarthStone.Units(map, c, ComboKind.Dust).ToString("0.#") + " (of 10)", MessageTypeDefOf.NeutralEvent, false);
+        }
+
+        [DebugAction(Cat, "Spell rubble here (stone for earth)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevRubble() { Map map = Find.CurrentMap; foreach (IntVec3 c in FireMagic.Point(Verse.UI.MouseCell(), map, 1.5f)) MagicFx.Rubble(c, map); }
+
+        [DebugAction(Cat, "Lost hold on this mage (choose element)", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevSlip()
+        {
+            var opts = new List<DebugMenuOption>
+            {
+                new DebugMenuOption("Fire", DebugMenuOptionMode.Tool, () => { Pawn p = Verse.UI.MouseCell().GetFirstPawn(Find.CurrentMap); if (p != null) FireMagic.Raging(p); }),
+                new DebugMenuOption("Water", DebugMenuOptionMode.Tool, () => { Pawn p = Verse.UI.MouseCell().GetFirstPawn(Find.CurrentMap); if (p != null) WaterMagic.Chilled(p); }),
+                new DebugMenuOption("Earth", DebugMenuOptionMode.Tool, () => { Pawn p = Verse.UI.MouseCell().GetFirstPawn(Find.CurrentMap); if (p != null) EarthMagic.Petrified(p); }),
+                new DebugMenuOption("Air", DebugMenuOptionMode.Tool, () => { Pawn p = Verse.UI.MouseCell().GetFirstPawn(Find.CurrentMap); if (p != null) AirMagic.Winded(p); }),
+            };
+            foreach (ComboKind c in new[] { ComboKind.Steam, ComboKind.Storm, ComboKind.Magma, ComboKind.Haze, ComboKind.Bog, ComboKind.Dust })
+            {
+                ComboKind cc = c;
+                opts.Add(new DebugMenuOption(Combos.Label(c), DebugMenuOptionMode.Tool, () => { Pawn p = Verse.UI.MouseCell().GetFirstPawn(Find.CurrentMap); if (p != null) ComboMagic.Price(cc, p); }));
+            }
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(opts));
+        }
 
         [DebugAction(Cat, "Magma wall here (sets into stone)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevMagmaWall() { Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell(); for (int i = -2; i <= 2; i++) MagmaPool.Pour(c + new IntVec3(i, 0, 0), map, null, 1f, 300, true, 5000); }
