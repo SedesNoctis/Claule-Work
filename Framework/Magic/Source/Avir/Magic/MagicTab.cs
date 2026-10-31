@@ -127,7 +127,7 @@ namespace Avir.Magic
             Widgets.Label(new Rect(r.x, r.y, r.width, 34f), "The path of " + pawn.LabelShort);
             Text.Font = GameFont.Small; GUI.color = InkSoft;
             Widgets.Label(new Rect(r.x, r.y + 40f, r.width, 60f), core == null ? "No arcane core." :
-                "Core level " + core.level + ". How a wizard grows - and where their path leads - is still to be written here.");
+                "Core level " + core.level + ". How a " + (core.Sorcerer ? "sorcerer" : "wizard") + " grows - and where their path leads - is still to be written here.");
         }
 
         private void DrawMage(Rect r, Hediff_ArcaneCore core)
@@ -310,7 +310,7 @@ namespace Avir.Magic
                     TooltipHandler.TipRegion(sl, s.name + "\n" + Spells.Describe(s) + "\n\nClick to take it from the hand.");
                     if (Widgets.ButtonInvisible(sl)) b.ready[i] = null;
                 }
-                else TooltipHandler.TipRegion(sl, open ? "An empty place: put a spell here from the book below." : "Not open yet - the wizard's growth opens it.");
+                else TooltipHandler.TipRegion(sl, open ? "An empty place: put a spell here from the book below." : "Not open yet - the caster's growth opens it.");
             }
             // the book of the mage
             float top = r.y + 52f + w + 32f;

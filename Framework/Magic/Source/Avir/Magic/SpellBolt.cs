@@ -123,7 +123,7 @@ namespace Avir.Magic
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_References.Look(ref mage, "wizard");
+            Scribe_References.Look(ref mage, "caster");
             Scribe_Deep.Look(ref spell, "spell");
             Scribe_Values.Look(ref power, "power", 1f);
             Scribe_Values.Look(ref tint, "tint", Color.white);

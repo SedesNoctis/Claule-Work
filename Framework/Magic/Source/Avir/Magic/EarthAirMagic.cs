@@ -308,7 +308,13 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Hold:
                         // the air is held still and thin: hard to breathe; fire starves
-                        foreach (Pawn p in MagicFx.PawnsIn(cells, map)) if (MagicFx.Foe(p, caster) && p.RaceProps.IsFlesh) MagicFx.Give(p, EarthAirDefOf.Avir_Breathless, Mathf.RoundToInt(GenDate.TicksPerHour * 0.5f * power));
+                        foreach (Pawn p in MagicFx.PawnsIn(cells, map))
+                        {
+                            if (!MagicFx.Foe(p, caster)) continue;
+                            if (p.RaceProps.IsFlesh) MagicFx.Give(p, EarthAirDefOf.Avir_Breathless, Mathf.RoundToInt(GenDate.TicksPerHour * 0.5f * power));
+                            // the still air leans on them: they go slowly through it
+                            MagicFx.Give(p, EarthAirDefOf.Avir_Buffeted, Mathf.RoundToInt(900f * power));
+                        }
                         foreach (IntVec3 c in cells) FireMagic.Extinguish(c, map);
                         break;
                     case RuneKind.Drain:

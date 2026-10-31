@@ -26,9 +26,9 @@ namespace Avir.Magic
             string d = "Arcana " + Spells.Cost(s).ToString("0.#") + " · range " + Spells.Range(s).ToString("0") + " cells";
             Hediff_ArcaneCore c = Caster != null ? Mages.Core(Caster) : null;
             if (c != null)
-                d += "\nCast - " + Caster.LabelShortCap + ", " + (c.Sorcerer ? "sorcerer" : "wizard") + ": " + sec(Spells.CastTicks(c, s))
+                d += "\nCast - " + Caster.LabelShortCap + ", " + (c.Sorcerer ? "sorcerer" : "caster") + ": " + sec(Spells.CastTicks(c, s))
                    + " · hold " + Spells.HoldChance(Caster, s).ToStringPercent();
-            else d += "\nCast: sorcerer " + sec(Spells.CastTicks(true, s)) + " · wizard " + sec(Spells.CastTicks(false, s));
+            else d += "\nCast: sorcerer " + sec(Spells.CastTicks(true, s)) + " · caster " + sec(Spells.CastTicks(false, s));
             return d;
         }
 
@@ -46,7 +46,7 @@ namespace Avir.Magic
             if (forms.Count == 0) return "At the target, in turn: " + list(verbs) + ".";
             if (verbs.Count == 0) return "In turn: " + list(forms) + ".";
             return (forms.Count > 1 ? "The forms in turn: " + list(forms) + "; each carries" : forms[0].LabelCap + " carries") + " the verbs in turn: " + list(verbs) + "."
-                + (forms.Any(f => f.kind == RuneKind.Step) ? " (A step: its verbs strike where the wizard comes out.)" : "");
+                + (forms.Any(f => f.kind == RuneKind.Step) ? " (A step: its verbs strike where the caster comes out.)" : "");
         }
 
         /// <summary>The reading is heavy (the chain, what met, where each modifier sits) and lists and the codex ask
@@ -66,15 +66,15 @@ namespace Avir.Magic
                     foreach (ComboKind ck in Combos.Pairs(s.weave).Values.Distinct())
                     {
                         string inh = ck == ComboKind.Steam ? "From water: the wet ground round the target feeds it (+4% a wet cell, up to +40%), and the pools there boil off as scalding clouds. From fire: a lost hold scalds everyone round."
-                            : ck == ComboKind.Storm ? "From water: wet ground feeds it, and on it the bolt leaps further. From air: cast on the move, momentum, many targets. A lost hold: bolts strike at random round the wizard."
+                            : ck == ComboKind.Storm ? "From water: wet ground feeds it, and on it the bolt leaps further. From air: cast on the move, momentum, many targets. A lost hold: bolts strike at random round the caster."
                             : ck == ComboKind.Magma ? "From earth: it takes up the magma and basalt at hand - stronger, cheaper - and casts slowly. From fire: a lost hold opens lava all round."
-                            : ck == ComboKind.Haze ? "From air: cast on the move, momentum; every mirage of the wizard near the target lets the verbs out too, at half strength. From fire: a lost hold dazzles everyone round."
-                            : ck == ComboKind.Bog ? "From earth: it takes up the mire and pools at hand - stronger, cheaper - and casts slowly. From water: it lies long. A lost hold: a masterless mire round the wizard."
-                            : "From earth: it lifts the rubble, chunks and shards at hand - stronger, cheaper. From air: cast on the move, momentum. A lost hold: a dust storm round the wizard.";
+                            : ck == ComboKind.Haze ? "From air: cast on the move, momentum; every mirage of the caster near the target lets the verbs out too, at half strength. From fire: a lost hold dazzles everyone round."
+                            : ck == ComboKind.Bog ? "From earth: it takes up the mire and pools at hand - stronger, cheaper - and casts slowly. From water: it lies long. A lost hold: a masterless mire round the caster."
+                            : "From earth: it lifts the rubble, chunks and shards at hand - stronger, cheaper. From air: cast on the move, momentum. A lost hold: a dust storm round the caster.";
                         e0.Add(Combos.Label(ck).CapitalizeFirst() + ": inherited", inh);
                     }
                 bool shaped = s.weave != null ? s.weave.All().Any(c => c.OwnRunes.Any(x => x.kind == RuneKind.Shape)) : RitualEvaluator.Read(s).verbs.Any(v => v.kind == RuneKind.Shape);
-                if (shaped) e0.Add("Ring", "Shaping struck at the wizard - after a step, from an aura, or cast at their own feet - raises the wall as a ring round them, three cells out (+1 for each Breadth): whoever is inside is shut in with the wizard. Between two chosen points it stands as a line.");
+                if (shaped) e0.Add("Ring", "Shaping struck at the caster - after a step, from an aura, or cast at their own feet - raises the wall as a ring round them, three cells out (+1 for each Breadth): whoever is inside is shut in with the caster. Between two chosen points it stands as a line.");
                 ComboKind? stone = EarthStone.KindOf(s);
                 if (stone.HasValue) e0.Add("Stone at hand", "Earth's rule - stone remains. At its target the spell takes up the " + EarthStone.Ground(stone.Value) + " lying within three cells: +5% strength and 3% less Arcana for each, up to +50% and -30%. Loose stone is flung and gone; rock, basalt and walls stay and give half.");
                 if ((s.weave != null && WeaveSpell.Heavy(s.weave)) || (s.weave == null && EarthMagic.Is(Spells.Element(s)))) e0.Add("Heavy", "Earth is heavy: this spell takes ×" + AvirMod.Settings.earthCastFactor.ToString("0.0#") + " as long to cast.");
@@ -108,7 +108,7 @@ namespace Avir.Magic
             {
                 SpellEffect pulled = WaterMagic.Is(el) ? Water(r) : EarthMagic.Is(el) ? Earth(r) : AirMagic.Is(el) ? Air(r) : Fire(r);
                 pulled.main = Pulled(el.kind);
-                pulled.extras.Insert(0, new KeyValuePair<string, string>("The step turned round", "The thread turns the step: not the wizard goes, but the one at the target is carried to the wizard. A friend comes unharmed; a foe was not ready for it. Whoever the earth roots cannot be moved."));
+                pulled.extras.Insert(0, new KeyValuePair<string, string>("The step turned round", "The thread turns the step: not the caster goes, but the one at the target is carried to the caster. A friend comes unharmed; a foe was not ready for it. Whoever the earth roots cannot be moved."));
                 return pulled;
             }
             if (WaterMagic.Is(el)) return Water(r);
@@ -122,16 +122,16 @@ namespace Avir.Magic
         private static string DrainNote(List<RuneDef> verbs, string what, string el) =>
             MagicFx.Later(verbs, verbs.First(v => v.kind == RuneKind.Drain))
                 ? "The " + what + " taken goes at once into the verbs written after the drain - they strike harder."
-                : "The " + what + " taken is kept by the wizard: their next " + el + " spell is stronger. (Write a verb after the drain, and it is fed into that verb at once.)";
+                : "The " + what + " taken is kept by the caster: their next " + el + " spell is stronger. (Write a verb after the drain, and it is fed into that verb at once.)";
 
         private static string Pulled(RuneKind el)
         {
             switch (el)
             {
-                case RuneKind.Fire: return "Draws one at the target to the wizard through flame: fire bursts where they stood and burns them, but at the wizard's end it is only light - they land at the wizard's feet, knocked down.";
-                case RuneKind.Water: return "An undertow: every foe at the target is swept to the wizard - soaked, struck and knocked off their feet when the water sets them down.";
-                case RuneKind.Air: return "The wind snatches one at the target and carries them to the wizard over anything in the way: they land reeling - slow, clumsy and shooting wild for a while.";
-                case RuneKind.Earth: return "The ground swallows one at the target - anywhere the wizard can reach - and throws them up beside the wizard, stunned senseless for several seconds.";
+                case RuneKind.Fire: return "Draws one at the target to the caster through flame: fire bursts where they stood and burns them, but at the caster's end it is only light - they land at the caster's feet, knocked down.";
+                case RuneKind.Water: return "An undertow: every foe at the target is swept to the caster - soaked, struck and knocked off their feet when the water sets them down.";
+                case RuneKind.Air: return "The wind snatches one at the target and carries them to the caster over anything in the way: they land reeling - slow, clumsy and shooting wild for a while.";
+                case RuneKind.Earth: return "The ground swallows one at the target - anywhere the caster can reach - and throws them up beside the caster, stunned senseless for several seconds.";
                 default: return "";
             }
         }
@@ -147,13 +147,13 @@ namespace Avir.Magic
             switch (form?.kind)
             {
                 case RuneKind.Restore: e.main = "Cauterizes: bleeding wounds of friends at the target are seared shut, as if tended."; break;
-                case RuneKind.Enchant: e.main = "Sets a friend's weapon burning (the wizard's, if no friend stands there): blows add flame, shots may set foes alight."; break;
+                case RuneKind.Enchant: e.main = "Sets a friend's weapon burning (the caster's, if no friend stands there): blows add flame, shots may set foes alight."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
-                case RuneKind.Sense: e.main = "The wizard feels every warm body within " + (25 + 10 * r.reach) + " cells - through walls and darkness - for a while."; break;
-                case RuneKind.Step: e.main = "The wizard leaps to the target; along the way the fire " + (verbs.Count > 0 ? what : "stays held on the trail") + "."; break;
+                case RuneKind.Sense: e.main = "The caster feels every warm body within " + (25 + 10 * r.reach) + " cells - through walls and darkness - for a while."; break;
+                case RuneKind.Step: e.main = "The caster leaps to the target; along the way the fire " + (verbs.Count > 0 ? what : "stays held on the trail") + "."; break;
                 default:
                     if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A ward of flame on friends at the target." : "Fire with nothing to do: add a verb (release, hold, drain, lift, growth, purge) or a form."; break; }
-                    string where = form?.kind == RuneKind.Aura ? "all around the wizard (radius " + (radius + 1.5f).ToString("0.#") + ")"
+                    string where = form?.kind == RuneKind.Aura ? "all around the caster (radius " + (radius + 1.5f).ToString("0.#") + ")"
                         : form?.kind == RuneKind.Beam ? "along a line to the target - a wall stops it"
                         : form?.kind == RuneKind.Shape ? "as a wall up to " + FireMagic.WallMax(r) + " cells long - its two ends chosen with two clicks"
                         : "at the chosen point (radius " + radius.ToString("0.#") + ")";
@@ -173,7 +173,7 @@ namespace Avir.Magic
             if (form?.kind == RuneKind.Restore && verbs.Any(v => v.kind == RuneKind.Growth)) e.Add("Better cautery", "The seared wounds hold better.");
             if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader line - and each one makes the cast 8% longer.");
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
-            e.Add("Price: raging flame", "If the hold slips, the fire around the wizard breaks out of control for a while - fire keeps starting at their feet.");
+            e.Add("Price: raging flame", "If the hold slips, the fire around the caster breaks out of control for a while - fire keeps starting at their feet.");
             return e;
         }
 
@@ -188,14 +188,14 @@ namespace Avir.Magic
             switch (form?.kind)
             {
                 case RuneKind.Restore: e.main = "Washes the wounds of friends at the target and binds them - the bleeding stops."; break;
-                case RuneKind.Enchant: e.main = "Wraps a friend's weapon in water (the wizard's, if no friend stands there): blows soak the foe, and every blow on a soaked one weakens them further."; break;
+                case RuneKind.Enchant: e.main = "Wraps a friend's weapon in water (the caster's, if no friend stands there): blows soak the foe, and every blow on a soaked one weakens them further."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
-                case RuneKind.Sense: e.main = "There is water in every living thing: the wizard feels them all within " + (25 + 10 * r.reach) + " cells, through walls - the unseen too, a ripple where they stand."; break;
-                case RuneKind.Step: e.main = "The wizard rides a wave to the target: it strikes whoever stands in its way and carries them on - wider and harder with breadth" + (verbs.Count > 0 ? "; and the water " + what : "") + "."; break;
+                case RuneKind.Sense: e.main = "There is water in every living thing: the caster feels them all within " + (25 + 10 * r.reach) + " cells, through walls - the unseen too, a ripple where they stand."; break;
+                case RuneKind.Step: e.main = "The caster rides a wave to the target: it strikes whoever stands in its way and carries them on - wider and harder with breadth" + (verbs.Count > 0 ? "; and the water " + what : "") + "."; break;
                 case RuneKind.Shape: e.main = "The ground between two chosen points (up to " + FireMagic.WallMax(r) + " cells) turns to shallow water for a few hours: a moat - slow to cross, and fire will not burn there."; break;
                 default:
                     if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A ward of water on friends at the target." : "Water with nothing to do: add a verb or a form."; break; }
-                    string where = form?.kind == RuneKind.Aura ? "all round the wizard - and a mist stays round them for a while: foes in it are slowed and shoot poorly, fire does not start, and this happens again every few seconds"
+                    string where = form?.kind == RuneKind.Aura ? "all round the caster - and a mist stays round them for a while: foes in it are slowed and shoot poorly, fire does not start, and this happens again every few seconds"
                                  : form?.kind == RuneKind.Beam ? "in a jet to the target"
                                  : "at the point, " + radius.ToString("0.#") + " cells round";
                     e.main = Cap(what) + " - " + where + ".";
@@ -207,7 +207,7 @@ namespace Avir.Magic
             if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the water", DrainNote(verbs, "water", "water"));
             if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader jet - and each one makes the cast 8% longer.");
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
-            e.Add("Price: chilled", "If the hold slips, the water soaks the wizard instead - slower, and the cold bites hard for a few hours.");
+            e.Add("Price: chilled", "If the hold slips, the water soaks the caster instead - slower, and the cold bites hard for a few hours.");
             return e;
         }
 
@@ -222,14 +222,14 @@ namespace Avir.Magic
             switch (form?.kind)
             {
                 case RuneKind.Restore: e.main = "Binds the wounds of friends at the target in stone, like splints, and covers them in stone skin for an hour."; break;
-                case RuneKind.Enchant: e.main = "Makes a friend's weapon heavy with stone (the wizard's, if no friend stands there): blows hit harder and now and then knock the foe senseless."; break;
+                case RuneKind.Enchant: e.main = "Makes a friend's weapon heavy with stone (the caster's, if no friend stands there): blows hit harder and now and then knock the foe senseless."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
-                case RuneKind.Sense: e.main = "Every step is felt through the ground: the wizard knows where everyone walks within " + (35 + 10 * r.reach) + " cells, even through walls and the unseen."; break;
-                case RuneKind.Step: e.main = "The wizard sinks into the ground and comes up anywhere on the map - only a crack of dust runs above. Where they come out the ground bursts: foes round about are thrown aside and stunned" + (verbs.Count > 0 ? "; and there, round the wizard, the earth " + what : "") + "."; break;
+                case RuneKind.Sense: e.main = "Every step is felt through the ground: the caster knows where everyone walks within " + (35 + 10 * r.reach) + " cells, even through walls and the unseen."; break;
+                case RuneKind.Step: e.main = "The caster sinks into the ground and comes up anywhere on the map - only a crack of dust runs above. Where they come out the ground bursts: foes round about are thrown aside and stunned" + (verbs.Count > 0 ? "; and there, round the caster, the earth " + what : "") + "."; break;
                 case RuneKind.Shape: e.main = "Stone walls rise between two chosen points (up to " + FireMagic.WallMax(r) + " cells): they stop feet and shots and crumble after a few hours" + (verbs.Any(v => v.kind != RuneKind.Hold) ? "; and along them the earth " + Verbs(verbs.Where(v => v.kind != RuneKind.Hold).ToList(), EarthVerb) : "") + "."; break;
                 default:
                     if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A ward of earth on friends at the target." : "Earth with nothing to do: add a verb or a form."; break; }
-                    string where = form?.kind == RuneKind.Aura ? "all round the wizard - and the ground stays theirs for a while: friends in it wear stone skin, foes wade as through mud, and this happens again every few seconds"
+                    string where = form?.kind == RuneKind.Aura ? "all round the caster - and the ground stays theirs for a while: friends in it wear stone skin, foes wade as through mud, and this happens again every few seconds"
                                  : form?.kind == RuneKind.Beam ? "along a crack that runs to the target and throws down whoever stands on it"
                                  : "at the point, " + radius.ToString("0.#") + " cells round";
                     e.main = Cap(what) + " - " + where + ".";
@@ -244,7 +244,7 @@ namespace Avir.Magic
             if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader crack - and each one makes the cast 8% longer.");
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
             if (verbs.Any(v => v.kind == RuneKind.Lift)) e.Add("Bodies thrown", "Whoever is thrown up hangs out of reach of any blow or shot, then falls: the legs take it first, bones may crack, a bad fall kills. Under a roof they strike the ceiling too. Big beasts are too heavy to lift - they are knocked down instead.");
-            e.Add("Price: stone-bound", "If the hold slips, the stone takes the wizard instead: they stand stunned for a moment and their limbs are stiff for a couple of hours.");
+            e.Add("Price: stone-bound", "If the hold slips, the stone takes the caster instead: they stand stunned for a moment and their limbs are stiff for a couple of hours.");
             return e;
         }
 
@@ -254,7 +254,7 @@ namespace Avir.Magic
             {
                 case RuneKind.Release: return "shakes, striking foes and throwing them to the ground";
                 case RuneKind.Hold: return "grips the feet of foes: they cannot take a step, though their hands are still free";
-                case RuneKind.Drain: return "pours weight into foes' limbs and keeps some for the wizard";
+                case RuneKind.Drain: return "pours weight into foes' limbs and keeps some for the caster";
                 case RuneKind.Lift: return "bursts up in stone spikes that toss foes into the air";
                 case RuneKind.Growth: return "grows rich, and the plants grow faster";
                 case RuneKind.Purge: return "smothers fires and swallows filth";
@@ -273,10 +273,10 @@ namespace Avir.Magic
             switch (form?.kind)
             {
                 case RuneKind.Restore: e.main = "A second wind for friends at the target: tiredness lifts, breath comes back, poison in the blood thins."; break;
-                case RuneKind.Enchant: e.main = "Wraps a friend's weapon in wind (the wizard's, if no friend stands there): every blow throws the foe back."; break;
+                case RuneKind.Enchant: e.main = "Wraps a friend's weapon in wind (the caster's, if no friend stands there): every blow throws the foe back."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
-                case RuneKind.Sense: e.main = "The wind brings every sound: the wizard hears everyone within " + (30 + 10 * r.reach) + " cells, through walls - the unseen too."; break;
-                case RuneKind.Step: e.main = "The wind lifts the wizard high and carries them to the target over anything in the way - walls, water, foes. They land on a gust that throws close foes aside" + (verbs.Count > 0 ? "; and there, round the wizard, the air " + what : "") + "."; break;
+                case RuneKind.Sense: e.main = "The wind brings every sound: the caster hears everyone within " + (30 + 10 * r.reach) + " cells, through walls - the unseen too."; break;
+                case RuneKind.Step: e.main = "The wind lifts the caster high and carries them to the target over anything in the way - walls, water, foes. They land on a gust that throws close foes aside" + (verbs.Count > 0 ? "; and there, round the caster, the air " + what : "") + "."; break;
                 case RuneKind.Shape: e.main = "A wall of wind between two chosen points (up to " + FireMagic.WallMax(r) + " cells): foes who step into it are thrown back the way they came. It blows for a couple of hours."; break;
                 default:
                     if (verbs.Count == 0)
@@ -284,7 +284,7 @@ namespace Avir.Magic
                         if (form?.kind == RuneKind.Beam) { e.main = "A chained blow: the wind strikes the first foe on the line and leaps on to " + (1 + r.breadth + r.amplify) + " more nearby, throwing each one on. With water in the spell it is a storm, and the blow becomes lightning."; break; }
                         e.main = r.barrier > 0 ? "A ward of air on friends at the target." : "Air with nothing to do: add a verb or a form."; break;
                     }
-                    string where = form?.kind == RuneKind.Aura ? "all round the wizard - and a whirlwind stays round them for a while: foes in it are slowed and shoot poorly, and those who come close are thrown back"
+                    string where = form?.kind == RuneKind.Aura ? "all round the caster - and a whirlwind stays round them for a while: foes in it are slowed and shoot poorly, and those who come close are thrown back"
                                  : form?.kind == RuneKind.Beam ? "along the line - and with it a chained blow that leaps from foe to foe (" + (2 + r.breadth + r.amplify) + " in all; lightning, in a storm with water)"
                                  : "at the point, " + radius.ToString("0.#") + " cells round";
                     e.main = Cap(what) + " - " + where + ".";
@@ -299,7 +299,7 @@ namespace Avir.Magic
             if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area, a broader line, more jumps of lightning - and each one makes the cast 8% longer.");
             if (r.reach > 0) e.Add("Further", "Reach: the spell can be cast further.");
             if (verbs.Any(v => v.kind == RuneKind.Lift)) e.Add("The fall", "Whoever is thrown up hangs out of reach of any blow or shot, then falls: the legs take it first, bones may crack, a bad fall kills. Under a roof they strike the ceiling too.");
-            e.Add("Price: winded", "If the hold slips, the wind tears the breath out of the wizard: a moment stunned, and an hour short of breath.");
+            e.Add("Price: winded", "If the hold slips, the wind tears the breath out of the caster: a moment stunned, and an hour short of breath.");
             return e;
         }
 
@@ -308,8 +308,8 @@ namespace Avir.Magic
             switch (v.kind)
             {
                 case RuneKind.Release: return "blows in a gust that throws foes back";
-                case RuneKind.Hold: return "stands still and thin: foes can hardly breathe, fires starve";
-                case RuneKind.Drain: return "is pulled out of foes' lungs and kept by the wizard";
+                case RuneKind.Hold: return "stands still and thin: foes can hardly breathe and go slowly through it, fires starve";
+                case RuneKind.Drain: return "is pulled out of foes' lungs and kept by the caster";
                 case RuneKind.Lift: return "rises in an updraft that throws foes high - the fall breaks bones";
                 case RuneKind.Growth: return "spreads wide, pushing foes further round";
                 case RuneKind.Purge: return "clears the air: small flames blown out, every gas (smoke, toxic gas) blown away, and friends breathe out what gas they took in";
@@ -336,7 +336,7 @@ namespace Avir.Magic
             switch (v.kind)
             {
                 case RuneKind.Release: return "sets fire and burns foes";
-                case RuneKind.Hold: return "lays held fire that never spreads, burns foes standing in it and smoulders";
+                case RuneKind.Hold: return "lays held fire that never spreads: it burns foes crossing it and bites at their legs (they go slowly), and smoulders";
                 case RuneKind.Drain: return "takes the heat out of fires";
                 case RuneKind.Lift: return "raises tall flames";
                 case RuneKind.Growth: return "spreads fire further and faster";

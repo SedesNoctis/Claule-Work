@@ -196,13 +196,13 @@ namespace Avir
             list.Label("Magic");
             Text.Font = GameFont.Small;
             list.CheckboxLabeled("Magic (in development)", ref o.magicOn,
-                "The magic system: Arcana, wizards, spells written like rituals, sanctuaries. Off: none of it exists in the game - "
+                "The magic system: Arcana, casters (wizards and sorcerers), spells written like rituals, sanctuaries. Off: none of it exists in the game - "
                 + "no traits, no implants, no spells, no new runes; the rest of the mod (artifacts, ritualistics, the Song) works as before. "
                 + "Left off while the system is being built. Takes effect after a restart.");
             list.Gap();
-            list.CheckboxLabeled("The stream strengthens wizards", ref o.flowStrengthensMages,
-                "Under a strong stream on the map (restless and above) a wizard's spells grow stronger - and greatness presses on them harder with every spell.");
-            list.Label("A wizard weighs in the stream as " + o.mageFlowWeight.ToString("0.#") + " pawns", -1f,
+            list.CheckboxLabeled("The stream strengthens casters", ref o.flowStrengthensMages,
+                "Under a strong stream on the map (restless and above) a caster's spells grow stronger - and greatness presses on them harder with every spell.");
+            list.Label("A caster weighs in the stream as " + o.mageFlowWeight.ToString("0.#") + " pawns", -1f,
                 new TipSignal("How much a wizard or sorcerer adds to the map's stream, counted in ordinary pawns (their psychic sensitivity times this). 1 - like anyone else."));
             o.mageFlowWeight = Mathf.Round(list.Slider(o.mageFlowWeight, 1f, 6f) * 2f) / 2f;
             list.Gap();

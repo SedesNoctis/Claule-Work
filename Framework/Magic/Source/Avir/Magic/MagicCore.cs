@@ -393,9 +393,9 @@ namespace Avir.Magic
             int a = MagicConductors.Artifacts(p);
             if (a > 0) sb.AppendLine("Artifacts worn: " + a + " - steadier, but the core holds less.");
             sb.AppendLine();
-            sb.AppendLine("Above the band greatness swells - and forbids work beneath the wizard; held there long, the Arcana breaks out - in pulses, or (with a poor hold) into the mind.");
-            sb.AppendLine("Below it the wizard grows hollow, never ordinary.");
-            sb.Append("Filled by meditation (more where the stream is strong), by a filling ritual in whose reach the wizard stands, and slowly by the stream itself.");
+            sb.AppendLine("Above the band greatness swells - and forbids work beneath the caster; held there long, the Arcana breaks out - in pulses, or (with a poor hold) into the mind.");
+            sb.AppendLine("Below it the caster grows hollow, never ordinary.");
+            sb.Append("Filled by meditation (more where the stream is strong), by a filling ritual in whose reach the caster stands, and slowly by the stream itself.");
             return sb.ToString();
         }
     }

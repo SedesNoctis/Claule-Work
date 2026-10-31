@@ -139,7 +139,7 @@ namespace Avir.Magic
         public static string Note(string own, bool fiery, string soft, string answer, int amplify)
         {
             float s = 1f + 0.5f * amplify;
-            return "Friends at the target get a ward of " + own + " (the wizard, if the Barrier is the last rune of the outer section). It has a charge and lasts for hours.\n"
+            return "Friends at the target get a ward of " + own + " (the caster, if the Barrier is the last rune of the outer section). It has a charge and lasts for hours.\n"
                 + "• Magic of other elements is put out at the cost of charge; a blow stronger than what is left breaks it and comes through.\n"
                 + (fiery ? "• Its own fire does not burn the wearer and does not spend the ward; a direct blow of it puts out both the ward and the spell.\n"
                          : "• Its own element passes, stronger by the ward's charge, and the ward falls" + (soft != null ? " - but it keeps off " + soft : "") + ".\n")

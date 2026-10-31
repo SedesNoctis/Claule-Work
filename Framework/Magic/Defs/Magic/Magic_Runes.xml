@@ -4,7 +4,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Fire</defName>
     <label>fire</label>
-    <description>Fire. It burns, heats and spreads: sets things alight, holds a fire that never spreads, takes the heat out of flames and keeps it, raises walls of flame, sears wounds shut, wards a friend against burning. Price - raging flame: if the wizard loses the hold, fire keeps breaking out at their feet for a while.</description>
+    <description>Fire. It burns, heats and spreads: sets things alight, holds a fire that never spreads, takes the heat out of flames and keeps it, raises walls of flame, sears wounds shut, wards a friend against burning. Price - raging flame: if the caster loses the hold, fire keeps breaking out at their feet for a while.</description>
     <role>Element</role>
     <kind>Fire</kind>
     <glyph>Fire</glyph>
@@ -19,7 +19,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Water</defName>
     <label>water</label>
-    <description>Water. It pushes, soaks, slows and puts fires out: a burst that throws foes back, standing water that holds them, water drawn out of a body, a geyser, a curtain, a jet. Price - chilled to the bone: if the hold slips, the water soaks the wizard instead.</description>
+    <description>Water. It pushes, soaks, slows and puts fires out: a burst that throws foes back, standing water that holds them, water drawn out of a body, a geyser, a curtain, a jet. Price - chilled to the bone: if the hold slips, the water soaks the caster instead.</description>
     <role>Element</role>
     <kind>Water</kind>
     <glyph>Water</glyph>
@@ -34,7 +34,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Earth</defName>
     <label>earth</label>
-    <description>Earth. Stone, soil and weight: a tremor that knocks foes off their feet, stone that grips them, spikes from below, walls raised between two points, a crack running through the ground. An earth wizard can go under the ground and come up anywhere they like, and the ground breaks open where they do. Price - stone-bound: if the hold slips, the wizard stiffens like stone for a while.</description>
+    <description>Earth. Stone, soil and weight: a tremor that knocks foes off their feet, stone that grips them, spikes from below, walls raised between two points, a crack running through the ground. An earth caster can go under the ground and come up anywhere they like, and the ground breaks open where they do. Price - stone-bound: if the hold slips, the caster stiffens like stone for a while.</description>
     <role>Element</role>
     <kind>Earth</kind>
     <glyph>Earth</glyph>
@@ -49,7 +49,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Air</defName>
     <label>air</label>
-    <description>Air. Wind and breath: a gust that throws foes back, air too thin to breathe, an updraft, a wall of wind, a blow that leaps from one foe to the next - and lightning, when water joins it in a storm. The wind feeds fire as easily as it snuffs it out. An air wizard can be carried over walls and water. Price - winded: if the hold slips, the wind tears the breath out of the wizard.</description>
+    <description>Air. Wind and breath: a gust that throws foes back, air too thin to breathe, an updraft, a wall of wind, a blow that leaps from one foe to the next - and lightning, when water joins it in a storm. The wind feeds fire as easily as it snuffs it out. An air caster can be carried over walls and water. Price - winded: if the hold slips, the wind tears the breath out of the caster.</description>
     <role>Element</role>
     <kind>Air</kind>
     <glyph>Air</glyph>

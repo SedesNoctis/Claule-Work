@@ -83,7 +83,7 @@ namespace Avir.Magic
                 {
                     RitualReading prev = RitualEvaluator.Read(order[k - 1].AsSchema());
                     bool step = prev.verbs.Any(v => v.kind == RuneKind.Step), aura = prev.verbs.Any(v => v.kind == RuneKind.Aura);
-                    where = step && !SpellMods.Pulls(order[k - 1].AsSchema()) ? "then, once the wizard is there, round them: " : step || aura ? "then, by the wizard: " : "then: ";
+                    where = step && !SpellMods.Pulls(order[k - 1].AsSchema()) ? "then, once the caster is there, round them: " : step || aura ? "then, by the caster: " : "then: ";
                 }
                 parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + where + (met ? Combos.Label(ck).CapitalizeFirst() + " (" + c.element.label + ")" : c.element.LabelCap) + " - " + one.main.TrimEnd('.'));
                 // the order of its own runes, numbered by the circle when there are several

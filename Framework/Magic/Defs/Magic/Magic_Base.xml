@@ -23,7 +23,7 @@
   <HediffDef>
     <defName>Avir_ArcaneCore</defName>
     <label>arcane core</label>
-    <description>The seat of a wizard's magic in the brain. It holds the Arcana; the stronger the core, the more it holds. Held well, the Arcana sits between two edges: too much, and it presses outwards and swells the wizard's sense of greatness; too little, and the wizard grows hollow and weak - though never quite ordinary again.</description>
+    <description>The seat of a caster's magic in the brain. It holds the Arcana; the stronger the core, the more it holds. Held well, the Arcana sits between two edges: too much, and it presses outwards and swells the wizard's sense of greatness; too little, and the wizard grows hollow and weak - though never quite ordinary again.</description>
     <hediffClass>Avir.Magic.Hediff_ArcaneCore</hediffClass>
     <defaultLabelColor>(0.62, 0.48, 0.95)</defaultLabelColor>
     <isBad>false</isBad>
@@ -35,7 +35,7 @@
   <HediffDef>
     <defName>Avir_ArcaneGreatness</defName>
     <label>greatness</label>
-    <description>Arcana held past what the wizard can bear presses outwards - and inwards, into the mind: a growing certainty of being more than everyone else. It fades while the Arcana sits within its edges. The greater it grows, the more work the wizard holds beneath them: first cleaning, then hauling and the fields, at last all plain labour and mining.</description>
+    <description>Arcana held past what the caster can bear presses outwards - and inwards, into the mind: a growing certainty of being more than everyone else. It fades while the Arcana sits within its edges. The greater it grows, the more work the wizard holds beneath them: first cleaning, then hauling and the fields, at last all plain labour and mining.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.95, 0.78, 0.35)</defaultLabelColor>
     <isBad>true</isBad>
@@ -68,7 +68,7 @@
   <HediffDef>
     <defName>Avir_ArcaneHollow</defName>
     <label>arcane hollowness</label>
-    <description>Too little Arcana for the core that holds it: the wizard feels emptied, slow of mind and body. It passes once the Arcana is filled back within its edges.</description>
+    <description>Too little Arcana for the core that holds it: the caster feels emptied, slow of mind and body. It passes once the Arcana is filled back within its edges.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.55, 0.55, 0.7)</defaultLabelColor>
     <isBad>true</isBad>

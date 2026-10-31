@@ -176,7 +176,7 @@ namespace Avir.Ritualistics
             if (r.Has(RuneKind.Reforge) && Size != RitualCircleSize.Large) return "reforging needs a large circle";
             if (r.Has(RuneKind.Infuse) && !IsPath(r) && Size == RitualCircleSize.Small) return "infusion needs a medium or large circle";
             if ((r.Has(RuneKind.Blood) || r.Has(RuneKind.Shroud)) && Size == RitualCircleSize.Small) return "an awakening needs a medium or large circle";
-            if (drawn?.preset?.defName == Avir.Magic.MagePath.Preset && r.elements.Count == 0) return "write the wizard's element into the empty place";
+            if (drawn?.preset?.defName == Avir.Magic.MagePath.Preset && r.elements.Count == 0) return "write the caster's element into the empty place";
             if (IsPath(r)) { string pw = PathCircle(r, Size); if (pw != null) return pw; }
             if (vortex > 0f) return "an endless vortex spins in it - erase the chalk first";
             if (r.verbs.Count > 0 && r.verbs.All(v => !v.implemented)) return "its effect is not made yet";

@@ -387,7 +387,12 @@ namespace Avir.Magic
             if (this.IsHashIntervalTick(60))
             {
                 foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
-                    if (owner == null || p.HostileTo(owner)) p.TakeDamage(new DamageInfo(DamageDefOf.Flame, (tall ? 6f : 3f) * power, 0f, -1f, owner));
+                    if (owner == null || p.HostileTo(owner))
+                    {
+                        p.TakeDamage(new DamageInfo(DamageDefOf.Flame, (tall ? 6f : 3f) * power, 0f, -1f, owner));
+                        // held flame does not trap - it bites at the legs, and whoever crosses it goes slowly
+                        if (!p.Dead) MagicFx.Give(p, HeldSlow.Scorched, 180);
+                    }
                 GenTemperature.PushHeat(Position, Map, tall ? 12f : 6f);
             }
             if (this.IsHashIntervalTick(90)) FleckMaker.ThrowSmoke(DrawPos, Map, tall ? 1.2f : 0.6f);

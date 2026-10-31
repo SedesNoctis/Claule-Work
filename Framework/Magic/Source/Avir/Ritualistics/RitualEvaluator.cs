@@ -159,7 +159,7 @@ namespace Avir.Ritualistics
                                       + "(every cell closes and every point returns, burnt ones too, and it scoops more experience out of the map's stream - more with focus and amplification). Needs a large circle.");
                         break;
                     case RuneKind.Infuse when elements.Count > 0:
-                        sb.AppendLine(step + "Gives the wizard chosen the path of " + elements[0].label + ": the element becomes theirs, and of its spells as many as the ritual earns - all of them at its best. "
+                        sb.AppendLine(step + "Gives the caster chosen the path of " + elements[0].label + ": the element becomes theirs, and of its spells as many as the ritual earns - all of them at its best. "
                                       + (SpellCircle.GreatElement(elements[0]) ? "A great element needs a medium circle; a large one gives more." : "A small circle is enough; a medium or a large one gives more."));
                         break;
                     case RuneKind.Infuse:
