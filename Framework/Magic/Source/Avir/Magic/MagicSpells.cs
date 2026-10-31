@@ -108,8 +108,10 @@ namespace Avir.Magic
             return (el != null ? el.LabelCap + " - " : "") + string.Join(", ", parts) + "\nArcana " + Cost(s).ToString("0") + ", range " + Range(s).ToString("0");
         }
 
+        /// <summary>The verbs a spell can be written with: every one each element (and every meeting) knows how to do.
+        /// Lift was left out of this list once, and so hidden from the editor while it worked all along.</summary>
         public static bool Made(RuneKind k) => k == RuneKind.Release || k == RuneKind.Hold || k == RuneKind.Drain || k == RuneKind.Growth
-                                               || k == RuneKind.Restore || k == RuneKind.Barrier || k == RuneKind.Step || k == RuneKind.Purge;
+                                               || k == RuneKind.Lift || k == RuneKind.Restore || k == RuneKind.Barrier || k == RuneKind.Step || k == RuneKind.Purge;
 
         /// <summary>The spell takes effect.</summary>
         public static void Resolve(Pawn caster, Hediff_ArcaneCore core, RitualSchema s, LocalTargetInfo target, IntVec3? wallTo = null)
