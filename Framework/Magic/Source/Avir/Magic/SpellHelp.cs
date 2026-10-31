@@ -199,7 +199,10 @@ namespace Avir.Magic
                 case RuneKind.Step: e.main = "The caster leaps to the target; along the way the fire " + (verbs.Count > 0 ? what : "stays held on the trail") + "."; break;
                 default:
                     if (verbs.Count == 0) { e.main = r.barrier > 0 ? "Aimed at someone - yourself or another - a ward of flame on them; aimed at the ground - a dome of flame there: whoever stands inside is warded, spells landing in it are put out." : "Fire with nothing to do: add a verb (release, hold, drain, lift, growth, purge) or a form."; break; }
-                    string where = form?.kind == RuneKind.Aura ? "all around the caster (radius " + (radius + 1.5f).ToString("0.#") + ")"
+                    int lb = 0, la = 0;
+                    bool living = form?.kind == RuneKind.Aura && r.schema != null && SpellAura.Raises(r.schema, r.elements.FirstOrDefault(), ComboKind.None, out lb, out la);
+                    string where = living ? "on the living all around the caster (radius " + SpellAura.Radius(lb).ToString("0.#") + "), and again " + SpellAura.Strikes(la) + " times, wherever the caster goes - the ground and the plants it spares"
+                        : form?.kind == RuneKind.Aura ? "on the living all around the caster (radius " + (radius + 1.5f).ToString("0.#") + ") - the ground and the plants it spares"
                         : form?.kind == RuneKind.Beam ? "along a line to the target - a wall stops it"
                         : form?.kind == RuneKind.Shape ? "as a wall up to " + FireMagic.WallMax(r) + " cells long - its two ends chosen with two clicks"
                         : "at the chosen point (radius " + radius.ToString("0.#") + ")";

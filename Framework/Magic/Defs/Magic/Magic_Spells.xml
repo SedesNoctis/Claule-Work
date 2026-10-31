@@ -1664,4 +1664,14 @@
     </stages>
   </HediffDef>
 
+
+  <HediffDef>
+    <defName>Avir_LivingAura</defName>
+    <label>living aura</label>
+    <description>An anchored aura stays round the caster and lets its circle's verbs out again every few seconds, wherever the caster goes. It ends when its strikes are spent, or when the caster falls.</description>
+    <hediffClass>Avir.Magic.Hediff_LivingAura</hediffClass>
+    <defaultLabelColor>(1, 0.55, 0.2)</defaultLabelColor>
+    <isBad>false</isBad>
+    <everCurableByItem>false</everCurableByItem>
+  </HediffDef>
 </Defs>

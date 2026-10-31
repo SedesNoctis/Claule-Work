@@ -81,6 +81,7 @@ namespace Avir.Magic
                 old.interval = Interval(old.breadth);
                 old.radius = Radius(old.breadth);
                 if (caster.Spawned) MoteMaker.ThrowText(caster.DrawPos, caster.Map, "Aura widened", 2f);
+                Hediff_LivingAura.Show(caster);
                 return;
             }
             if (anchor <= 0) return;   // no anchor and no aura of this spell to feed: it strikes once, as an aura always did
@@ -93,7 +94,65 @@ namespace Avir.Magic
             a.parts.Add(part.Copy());
             a.next = now + a.interval;
             c.all.Add(a);
+            Hediff_LivingAura.Show(caster);
         }
+
+        /// <summary>The living aura round this pawn, if any.</summary>
+        public static MapComponent_Auras.Aura Of(Pawn p) => p?.MapHeld?.GetComponent<MapComponent_Auras>()?.all.FirstOrDefault(a => a.caster == p);
+
+        public static Color ColorOf(MapComponent_Auras.Aura a) =>
+            a == null ? Color.white : a.combo != ComboKind.None ? Combos.ColorOf(a.combo) : a.el != null ? a.el.color : Color.white;
+    }
+
+    /// <summary>The living aura on the caster's health tab, in its element's colour: how many strikes it has left and
+    /// how often it strikes. It goes when the aura goes.</summary>
+    public class Hediff_LivingAura : HediffWithComps
+    {
+        private static HediffDef def_;
+        public static HediffDef Def => def_ ?? (def_ = DefDatabase<HediffDef>.GetNamedSilentFail("Avir_LivingAura"));
+
+        public static void Show(Pawn p)
+        {
+            if (Def == null || p?.health == null) return;
+            if (p.health.hediffSet.GetFirstHediffOfDef(Def) == null) p.health.AddHediff(Def);
+        }
+
+        private MapComponent_Auras.Aura Aura => SpellAura.Of(pawn);
+
+        public override string Label
+        {
+            get
+            {
+                MapComponent_Auras.Aura a = Aura;
+                string of = a == null ? "" : a.combo != ComboKind.None ? Combos.Label(a.combo) : a.el?.label;
+                return of.NullOrEmpty() ? base.Label : "living aura of " + of;
+            }
+        }
+
+        public override string LabelInBrackets
+        {
+            get
+            {
+                MapComponent_Auras.Aura a = Aura;
+                if (a == null) return null;
+                return a.left + " strikes left · every " + (a.interval / 60f).ToString("0.#") + " s";
+            }
+        }
+
+        public override Color LabelColor => Aura != null ? SpellAura.ColorOf(Aura) : base.LabelColor;
+
+        public override string TipStringExtra
+        {
+            get
+            {
+                MapComponent_Auras.Aura a = Aura;
+                if (a == null) return base.TipStringExtra;
+                return "Radius " + a.radius.ToString("0.#") + " · next strike in " + Mathf.Max(0f, (a.next - Find.TickManager.TicksGame) / 60f).ToString("0.#") + " s · each strike at "
+                    + SpellAura.PulseShare.ToStringPercent() + " of the cast" + (a.shaped ? " · spares the caster's own" : " · strikes everyone in it, the caster too");
+            }
+        }
+
+        public override bool ShouldRemove => Aura == null;
     }
 
     /// <summary>The living auras on a map. They are not kept in a save: an aura lasts seconds, not days.</summary>
@@ -109,6 +168,46 @@ namespace Avir.Magic
             public int breadth, left, interval, next;
             public float power, radius;
             public bool shaped;
+            public float flash;   // when it last struck (real time), for the flare of the ring
+            public float seed = Rand.Range(0f, 360f);
+        }
+
+        private static readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
+
+        /// <summary>The ring of the aura: its own picture by the element (or what two elements made), else the
+        /// element's; whatever it is, tinted by its colour.</summary>
+        private static Material Mat(Aura a)
+        {
+            string key = a.combo != ComboKind.None ? a.combo.ToString() : a.el?.kind.ToString() ?? "Fire";
+            if (mats.TryGetValue(key, out Material m)) return m;
+            string path = "Things/Mote/Avir/Magic/Aura_" + key;
+            if (ContentFinder<Texture2D>.Get(path, false) != null) m = MaterialPool.MatFrom(path, ShaderDatabase.MoteGlow, Color.white);
+            else
+            {
+                string parent = a.combo == ComboKind.Magma || a.combo == ComboKind.Haze ? "Fire" : a.combo == ComboKind.Storm || a.combo == ComboKind.Dust ? "Air" : a.combo == ComboKind.Bog ? "Earth" : a.combo == ComboKind.Steam ? "Water" : "Fire";
+                m = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Aura_" + parent, ShaderDatabase.MoteGlow, SpellAura.ColorOf(a));
+            }
+            mats[key] = m;
+            return m;
+        }
+
+        public override void MapComponentUpdate()
+        {
+            if (all.Count == 0 || Find.CurrentMap != map) return;
+            float t = Time.realtimeSinceStartup;
+            foreach (Aura a in all)
+            {
+                if (a.caster == null || !a.caster.Spawned) continue;
+                Vector3 pos = a.caster.DrawPos;
+                pos.y = AltitudeLayer.MoteLow.AltitudeFor();
+                // breathing gently; it flares as it strikes
+                float flare = Mathf.Clamp01(1f - (t - a.flash) / 0.6f);
+                float size = (a.radius * 2f + 1f) * (1f + 0.02f * Mathf.Sin(t * 2.2f) + 0.08f * flare);
+                var block = new MaterialPropertyBlock();
+                Color c = Color.white; c.a = 0.55f + 0.1f * Mathf.Sin(t * 2.2f) + 0.45f * flare;
+                block.SetColor(ShaderPropertyIDs.Color, c);
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis((t * 9f + a.seed) % 360f, Vector3.up), new Vector3(size, 1f, size)), Mat(a), 0, null, 0, block);
+            }
         }
 
         public readonly List<Aura> all = new List<Aura>();
@@ -146,11 +245,12 @@ namespace Avir.Magic
         private void Pulse(Aura a)
         {
             Glow(a, 12);
+            a.flash = Time.realtimeSinceStartup;
             bool keep = SpellAura.Pulsing; float keepR = SpellAura.PulseRadius;
             SpellAura.Pulsing = true; SpellAura.PulseRadius = a.radius;
             try
             {
-                using (SpellWards.Of(a.combo == ComboKind.None ? a.el?.kind : null, a.combo, true))
+                using (SpellWards.Of(a.combo == ComboKind.None ? a.el?.kind : null, a.combo, false))   // a field round the caster, not a blow thrown: it meets wards as the ground does
                 using (a.shaped ? SpellSculpt.Spare() : null)
                     foreach (RitualSchema part in a.parts)
                     {

@@ -50,7 +50,10 @@ namespace Avir.Magic
                         // a living aura (with an Anchor) widens hard, a cell for each Breadth; a lone one is a little over a point
                         float ar = SpellAura.Pulsing ? SpellAura.PulseRadius
                                  : SpellAura.Raises(s, r.elements.FirstOrDefault(), ComboKind.None, out int ab, out _) ? SpellAura.Radius(ab) : fradius + 1.5f;
-                        Apply(caster, map, verbs, Point(caster.Position, map, ar), caster.Position, power, rf, true);
+                        // an aura is a field round the caster, not a blow thrown: it meets wards as the ground of its fire does -
+                        // a ward of flame stands in it untouched, and is not put out
+                        using (SpellWards.Of(RuneKind.Fire, ComboKind.None, false))
+                            Apply(caster, map, verbs, Point(caster.Position, map, ar), caster.Position, power, rf, true);
                         break;
                     case RuneKind.Beam:
                         Apply(caster, map, verbs, Beam(caster.Position, at, map, rf.breadth), at, power, rf, false);
@@ -185,7 +188,9 @@ namespace Avir.Magic
                             FleckMaker.Static(at.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, Mathf.Sqrt(cells.Count) * 1.6f);
                             foreach (IntVec3 c in cells) FleckMaker.ThrowFireGlow(c.ToVector3Shifted(), map, 1.1f);
                         }
-                        foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) FireUtility.TryStartFireIn(c, map, 0.3f + 0.2f * power, caster);
+                        // an aura seeks the living, not the ground: it sets alight those it strikes, the grass under them it spares
+                        if (aroundSelf) { foreach (Pawn p in PawnsIn(cells, map)) if (MagicFx.Foe(p, caster) && Rand.Chance(0.5f)) p.TryAttachFire(0.3f + 0.1f * power, caster); }
+                        else foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) FireUtility.TryStartFireIn(c, map, 0.3f + 0.2f * power, caster);
                         // and smoke rolls off it - the fire mage's own, that does not trouble them
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.3f)) FireSmoke.Puff(c, map, 0.5f + 0.3f * power);
                         // and every fire already burning round about answers: it flares up and bursts where it burns - the
@@ -196,8 +201,11 @@ namespace Avir.Magic
                             // within an aura a blast is half as wide: it bursts at the caster's own feet
                             float br = (1.9f + rv.amplify) * (aroundSelf ? 0.5f : 1f);
                             IntVec3 bc = aroundSelf ? at : cells[cells.Count - 1];
+                            // in an aura the blast seeks bodies: it sets no ground alight and spares the plants about
+                            List<Thing> spared = SpellSculpt.Ignored(caster, map, bc, br);
+                            if (aroundSelf) spared.AddRange(GenRadial.RadialDistinctThingsAround(bc, map, br + 1f, true).Where(x => x is Plant || x.def.category == ThingCategory.Plant));
                             GenExplosion.DoExplosion(bc, map, br, DamageDefOf.Flame, caster, Mathf.RoundToInt(12f * power), -1f,
-                                null, null, null, null, null, 0f, 1, null, null, 255, false, null, 0f, 1, 0.5f, false, null, SpellSculpt.Ignored(caster, map, bc, br));
+                                null, null, null, null, null, 0f, 1, null, null, 255, false, null, 0f, 1, aroundSelf ? 0f : 0.5f, false, null, spared);
                         }
                         break;
                     case RuneKind.Hold:
@@ -219,6 +227,17 @@ namespace Avir.Magic
                         Burn(caster, map, cells, 5f * power);
                         break;
                     case RuneKind.Growth:
+                        if (aroundSelf)
+                        {
+                            // in an aura the fire spreads from body to body: whoever burns in it sets the next alight, up to
+                            // two cells past its edge - the ground between them is left as it was
+                            var burning = PawnsIn(cells, map).Where(p => MagicFx.Foe(p, caster)).ToList();
+                            foreach (Pawn p in burning) { p.TryAttachFire(0.4f + 0.2f * power, caster); FleckMaker.ThrowFireGlow(p.DrawPos, map, 1f); }
+                            var past = PawnsIn(Point(at, map, (cells.Count > 0 ? Mathf.Sqrt(cells.Count / Mathf.PI) : 2f) + 2f), map)
+                                .Where(p => !burning.Contains(p) && MagicFx.Foe(p, caster) && burning.Any(b => b.Position.DistanceTo(p.Position) <= 2.9f)).ToList();
+                            foreach (Pawn p in past) { p.TryAttachFire(0.3f + 0.1f * power, caster); FleckMaker.ThrowFireGlow(p.DrawPos, map, 1f); }
+                            break;
+                        }
                         var near = cells.SelectMany(c => GenAdj.CellsAdjacent8Way(new TargetInfo(c, map))).Concat(cells).Where(c => c.InBounds(map)).Distinct().ToList();
                         foreach (IntVec3 c in near)
                         {
