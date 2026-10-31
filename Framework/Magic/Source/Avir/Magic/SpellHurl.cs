@@ -72,8 +72,24 @@ namespace Avir.Magic
         public static void Lift(Pawn p, Pawn by, float power)
         {
             if (Unmoved(p)) return;
-            if (p.BodySize > 2.5f) { Fell(p, Mathf.RoundToInt(120f * power), by); return; }
-            Launch(p, p.Position, HurlKind.Lifted, by, power, 0, false);
+            // the updraft is the spell's strength: the heavier the body with all it wears, the lower it goes up - and the
+            // fall is that weight on the ground from that height, through any plate (Магия-правила.md, "Тело и стихии")
+            float height = power / Mathf.Sqrt(SpellBody.Heavy(p));
+            if (p.BodySize > 2.5f || height < 0.6f) { Topple(p, by, power); Fell(p, Mathf.RoundToInt(120f * power), by); return; }
+            Launch(p, p.Position, HurlKind.Lifted, by, height, 0, false);
+        }
+
+        /// <summary>Too heavy to throw far or lift high: the body is toppled where it stands, and its own weight strikes
+        /// the ground - through any plate, the heavier the harder.</summary>
+        public static void Topple(Pawn p, Pawn by, float power)
+        {
+            if (p == null || p.Dead) return;
+            var b = SpellBody.Of(p);
+            float w = SpellBody.Heavy(p) * b.legsLand;
+            float pen = ModsConfig.IsActive("CETeam.CombatExtended") ? 500f : 2f;
+            for (int i = 0; i < 2 && !p.Dead; i++)
+                p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Rand.Range(2f, 4f) * Mathf.Max(0.5f, power) * w, pen, -1f, by, Part(p, 0.1f)));
+            if (p.Spawned) FleckMaker.ThrowDustPuffThick(p.DrawPos, p.Map, 1.6f, MagicFx.AirDust);
         }
 
         private static void Launch(Pawn p, IntVec3 to, HurlKind kind, Pawn by, float power, int lie, bool slam)
