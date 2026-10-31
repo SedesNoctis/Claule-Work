@@ -47,8 +47,8 @@
     <stages>
       <li>
         <damageFactors>
-          <li><damageDef>Flame</damageDef><factor>0</factor></li>
-          <li><damageDef>Burn</damageDef><factor>0</factor></li>
+          <Flame>0</Flame>
+          <Burn>0</Burn>
         </damageFactors>
       </li>
     </stages>
@@ -246,7 +246,7 @@
     <stages>
       <li>
         <capMods><li><capacity>Moving</capacity><offset>-0.2</offset></li></capMods>
-        <damageFactors><li><damageDef>Flame</damageDef><factor>0.5</factor></li></damageFactors>
+        <damageFactors><Flame>0.5</Flame></damageFactors>
         <statOffsets><ComfyTemperatureMin>10</ComfyTemperatureMin></statOffsets>
       </li>
     </stages>
@@ -1108,8 +1108,8 @@
     <stages>
       <li>
         <damageFactors>
-          <li><damageDef>Flame</damageDef><factor>0</factor></li>
-          <li><damageDef>Burn</damageDef><factor>0</factor></li>
+          <Flame>0</Flame>
+          <Burn>0</Burn>
         </damageFactors>
       </li>
     </stages>
@@ -1161,8 +1161,8 @@
     <stages>
       <li>
         <damageFactors>
-          <li><damageDef>Flame</damageDef><factor>0</factor></li>
-          <li><damageDef>Burn</damageDef><factor>0</factor></li>
+          <Flame>0</Flame>
+          <Burn>0</Burn>
         </damageFactors>
       </li>
     </stages>
