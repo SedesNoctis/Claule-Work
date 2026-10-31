@@ -556,6 +556,7 @@ namespace Avir.Magic
 
         public override void GameComponentTick()
         {
+            SpellShock.Flush();
             if (!AvirMagic.On || Find.TickManager.TicksGame % 2500 != 0) return;
             foreach (Map m in Find.Maps)
                 foreach (Pawn p in m.mapPawns.AllPawnsSpawned.ToList())

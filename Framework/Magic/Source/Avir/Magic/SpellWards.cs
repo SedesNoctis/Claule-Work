@@ -537,6 +537,16 @@ namespace Avir.Magic
             // a slight blow (a tick of a pool, a scratch) goes in shallower
             pen *= SpellDepth.Factor(__instance.Map) * SpellDepth.At(__instance.Position) * Mathf.Clamp(__0.Amount / 10f, 0.5f, 1f);
             if (pen <= 0f) return;
+            // Combat Extended stops a blunt blow outright when the plate outweighs it. A rock in the face is a rock in the
+            // face: a share of a spell's blunt blow is the shock that goes through any plate to the body behind it - the
+            // rest meets the armour by its depth. Unarmoured, the two add up to the same blow.
+            if (ce.Value && blunt && __0.Amount > 0.5f)
+            {
+                float s = earth ? 0.4f : water ? 0.3f : 0.2f;
+                float shock = __0.Amount * s;
+                __0.SetAmount(__0.Amount - shock);
+                SpellShock.Queue(__instance, new DamageInfo(DamageDefOf.Blunt, shock, 9999f, -1f, __0.Instigator, __0.HitPart));
+            }
             SpellWards.Note("penetration " + d.defName + " " + __0.Amount.ToString("0.#") + ": " + pen.ToString("0.##") + (ce.Value ? (sharp ? " mm" : " MPa") : " (share)"));
             object box = __0;
             Pen.SetValue(box, pen);
@@ -621,6 +631,24 @@ namespace Avir.Magic
             Scribe_Values.Look(ref power, "power", 1f);
             Scribe_Values.Look(ref amplify, "amplify");
             Scribe_Values.Look(ref nextAt, "nextAt");
+        }
+    }
+
+    /// <summary>The shock of a spell's blunt blow that goes through plate (see Patch_SpellPenetration): dealt a moment
+    /// after the blow itself, never inside it.</summary>
+    public static class SpellShock
+    {
+        private static readonly List<KeyValuePair<Pawn, DamageInfo>> due = new List<KeyValuePair<Pawn, DamageInfo>>();
+
+        public static void Queue(Pawn p, DamageInfo d) { if (p != null && due.Count < 400) due.Add(new KeyValuePair<Pawn, DamageInfo>(p, d)); }
+
+        public static void Flush()
+        {
+            if (due.Count == 0) return;
+            var now = due.ToList();
+            due.Clear();
+            foreach (var kv in now)
+                if (kv.Key != null && !kv.Key.Dead && kv.Key.Spawned) kv.Key.TakeDamage(kv.Value);
         }
     }
 }
