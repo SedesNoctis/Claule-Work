@@ -224,6 +224,14 @@ namespace Avir.Magic
                         Apply(k, caster, map, verbs, line, caster.Position, power, rf);
                         break;
                     case RuneKind.Shape:
+                        // magma turned round by the Thread: a ring of hot stone closing on the target
+                        if (rf.thread > 0 && k == ComboKind.Magma)
+                        {
+                            float sr = MapComponent_Squeeze.StartRadius(rf.breadth);
+                            MapComponent_Squeeze.Begin(caster, map, at, sr, power, true, rf.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0));
+                            Apply(k, caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), FireMagic.Ring(at, map, sr), at, power, rf);
+                            break;
+                        }
                         var wall = FireMagic.ShapeCells(caster, at, map, rf, forms);
                         Wall(k, caster, map, wall, power, rf, verbs.Any(v => v.kind == RuneKind.Hold));
                         Apply(k, caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, rf);

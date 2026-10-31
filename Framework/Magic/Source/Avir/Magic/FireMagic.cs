@@ -47,7 +47,10 @@ namespace Avir.Magic
                 switch (f.kind)
                 {
                     case RuneKind.Aura:
-                        Apply(caster, map, verbs, Point(caster.Position, map, fradius + 1.5f), caster.Position, power, rf, true);
+                        // a living aura (with an Anchor) widens hard, a cell for each Breadth; a lone one is a little over a point
+                        float ar = SpellAura.Pulsing ? SpellAura.PulseRadius
+                                 : SpellAura.Raises(s, r.elements.FirstOrDefault(), ComboKind.None, out int ab, out _) ? SpellAura.Radius(ab) : fradius + 1.5f;
+                        Apply(caster, map, verbs, Point(caster.Position, map, ar), caster.Position, power, rf, true);
                         break;
                     case RuneKind.Beam:
                         Apply(caster, map, verbs, Beam(caster.Position, at, map, rf.breadth), at, power, rf, false);
@@ -189,8 +192,13 @@ namespace Avir.Magic
                         // more the ground is alight, the further the blow runs (up to eight flares, for the sake of the world's pace)
                         Flares(caster, map, at, cells, FireMagic.PointRadius(rv) + 4f, power);
                         if (rv.amplify > 0)
-                            GenExplosion.DoExplosion(aroundSelf ? at : cells[cells.Count - 1], map, 1.9f + rv.amplify, DamageDefOf.Flame, caster, Mathf.RoundToInt(12f * power), -1f,
-                                null, null, null, null, null, 0f, 1, null, null, 255, false, null, 0f, 1, 0.5f, false, null, SpellSculpt.Ignored(caster, map, aroundSelf ? at : cells[cells.Count - 1], 1.9f + rv.amplify));
+                        {
+                            // within an aura a blast is half as wide: it bursts at the caster's own feet
+                            float br = (1.9f + rv.amplify) * (aroundSelf ? 0.5f : 1f);
+                            IntVec3 bc = aroundSelf ? at : cells[cells.Count - 1];
+                            GenExplosion.DoExplosion(bc, map, br, DamageDefOf.Flame, caster, Mathf.RoundToInt(12f * power), -1f,
+                                null, null, null, null, null, 0f, 1, null, null, 255, false, null, 0f, 1, 0.5f, false, null, SpellSculpt.Ignored(caster, map, bc, br));
+                        }
                         break;
                     case RuneKind.Hold:
                         foreach (IntVec3 c in cells) HeldFlame.Place(c, map, caster, power, false);

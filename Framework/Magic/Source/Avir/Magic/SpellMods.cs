@@ -10,7 +10,7 @@ namespace Avir.Magic
     // stands just inward of it: the nearest verb or form towards the element. Written next to the element (before any
     // verb or form) it works on the whole circle - as every modifier did before.
     //   Amplify, Breadth, Anchor - on that verb or form only (or on the whole circle).
-    //   Thread - only outward of a step: it turns the step round. Anywhere else it does nothing.
+    //   Thread - turns what is inward of it round: a step draws the target in, a lift presses down, a shaping closes in.
     //   Barrier - next to the element or in the middle: a ward where the spell strikes; on the very edge of the circle,
     //             after its verbs: a ward on the mage, to cover the way back.
     //   Reach - always the whole spell: it is how far the spell is cast, not a part of its pattern.
@@ -86,6 +86,26 @@ namespace Avir.Magic
             return rd.own.Any(kv => kv.Key.kind == RuneKind.Step && kv.Value.thread > 0);
         }
 
+        /// <summary>Does a shaping in this circle close in (a thread outward of it)?</summary>
+        public static bool Squeezes(RitualSchema s)
+        {
+            Reading rd = ReadOf(s);
+            return rd.own.Any(kv => kv.Key.kind == RuneKind.Shape && kv.Value.thread > 0);
+        }
+
+        /// <summary>The modifiers written on one verb or form of a circle (outward of it, before the next one), and
+        /// those beside the element that work on the whole circle.</summary>
+        public static void Own(RitualSchema s, RuneKind kind, out int amplify, out int breadth, out int anchor, out int thread)
+        {
+            Reading rd = ReadOf(s);
+            amplify = rd.wide.amplify; breadth = rd.wide.breadth; anchor = rd.wide.anchor; thread = 0;
+            foreach (var kv in rd.own)
+            {
+                if (kv.Key.kind != kind) continue;
+                amplify += kv.Value.amplify; breadth += kv.Value.breadth; anchor += kv.Value.anchor; thread += kv.Value.thread;
+            }
+        }
+
         /// <summary>In words: which modifier works on which verb or form, when not on the whole circle.</summary>
         public static List<string> Bindings(RitualSchema s)
         {
@@ -97,7 +117,7 @@ namespace Avir.Magic
                 if (kv.Value.amplify > 0) parts.Add("amplify" + (kv.Value.amplify > 1 ? " ×" + kv.Value.amplify : ""));
                 if (kv.Value.breadth > 0) parts.Add("breadth" + (kv.Value.breadth > 1 ? " ×" + kv.Value.breadth : ""));
                 if (kv.Value.anchor > 0) parts.Add("anchor" + (kv.Value.anchor > 1 ? " ×" + kv.Value.anchor : ""));
-                if (kv.Value.thread > 0) parts.Add(kv.Key.kind == RuneKind.Step ? "thread (the step turns round)" : "thread");
+                if (kv.Value.thread > 0) parts.Add(kv.Key.kind == RuneKind.Step ? "thread (the step turns round)" : kv.Key.kind == RuneKind.Shape ? "thread (the wall closes in)" : kv.Key.kind == RuneKind.Lift ? "thread (it presses down instead)" : "thread");
                 if (parts.Count > 0) lines.Add(string.Join(", ", parts) + " - on " + kv.Key.label + " only");
             }
             if (rd.wardOnMage) lines.Add("barrier on the edge - a ward on the caster");

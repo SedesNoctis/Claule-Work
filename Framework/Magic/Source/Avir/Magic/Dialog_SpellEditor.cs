@@ -36,6 +36,7 @@ namespace Avir.Magic
         private Vector2 outlineScroll;
         private int tab;                        // 0 all, 1 elements, 2 verbs, 3 forms, 4 modifiers and flow
         private Vector2 leftScroll;
+        private string search = "";
         private readonly RitualView view = new RitualView();
         private bool sheetMax;
         private Rect sheetNormal;
@@ -120,9 +121,18 @@ namespace Avir.Magic
             return false;
         }
 
+        /// <summary>Does the search find this text (any word of it, any case)?</summary>
+        private bool Found(params string[] texts)
+        {
+            if (search.NullOrEmpty()) return true;
+            foreach (string w in search.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries))
+                if (!texts.Any(t => t != null && t.IndexOf(w, System.StringComparison.OrdinalIgnoreCase) >= 0)) return false;
+            return true;
+        }
+
         private List<RuneDef> Shown()
         {
-            var all = RuneDef.All.Where(ForSpells);
+            var all = RuneDef.All.Where(ForSpells).Where(r => Found(r.label, r.description, r.kind.ToString(), Role(r)));
             switch (tab)
             {
                 case 1: return all.Where(r => r.role == RuneRole.Element).ToList();
@@ -149,7 +159,22 @@ namespace Avir.Magic
                 float w = (r.width - 8f) / 3f;
                 if (Button(new Rect(r.x + (i % 3) * (w + 4f), ty + (i / 3) * 32f, w, 28f), Tabs[i], true, tab == i)) { tab = i; leftScroll = Vector2.zero; }
             }
-            const float cardH = 290f, encH = 34f, top = 180f;
+            // the search: runes by name, kind and description; in the book - spells by name and what they do
+            Rect sr = new Rect(r.x, ty + 98f, r.width, 26f);
+            Rect sf = new Rect(sr.x + 24f, sr.y, sr.width - (search.NullOrEmpty() ? 24f : 52f), sr.height);
+            GUI.color = InkSoft;
+            Widgets.DrawTextureFitted(new Rect(sr.x + 2f, sr.y + 3f, 20f, 20f), TexButton.Search, 1f);
+            GUI.color = Color.white;
+            GUI.SetNextControlName("AvirSpellSearch");
+            search = Widgets.TextField(sf, search, 40);
+            if (search.NullOrEmpty() && GUI.GetNameOfFocusedControl() != "AvirSpellSearch")
+            {
+                GUI.color = FlowStyle.InkGrey;
+                ArtInk.Label(new Rect(sf.x + 6f, sf.y + 3f, sf.width - 8f, sf.height), tab == 6 ? "Search the spells..." : "Search the runes...");
+            }
+            if (!search.NullOrEmpty() && Button(new Rect(sr.xMax - 26f, sr.y, 26f, 26f), "×", true)) { search = ""; GUI.FocusControl(null); }
+            GUI.color = Color.white;
+            const float cardH = 290f, encH = 34f, top = 212f;
             Rect list = new Rect(r.x, r.y + top, r.width, r.height - top - cardH - encH - 12f);
             if (tab == 6)
             {
@@ -213,6 +238,13 @@ namespace Avir.Magic
             if (mage != null && Mages.Core(mage) != null) book.AddRange(Mages.Core(mage).Book.spells);
             int own = book.Count;
             if (GameComponent_SpellLibrary.Get != null) book.AddRange(GameComponent_SpellLibrary.Get.spells.Where(x => !book.Any(y => y.name == x.name)));
+            if (!search.NullOrEmpty())
+            {
+                var mine = book.Take(own).Where(x => Found(x.name, SpellText.Explain(x).main)).ToList();
+                var theirs = book.Skip(own).Where(x => Found(x.name, SpellText.Explain(x).main)).ToList();
+                own = mine.Count; book = mine.Concat(theirs).ToList();
+                if (book.Count == 0) { GUI.color = InkSoft; ArtInk.Label(r, "Nothing found for \"" + search + "\"."); return; }
+            }
             if (book.Count == 0)
             {
                 GUI.color = InkSoft;

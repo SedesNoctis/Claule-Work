@@ -133,6 +133,8 @@ namespace Avir.Magic
         public static void CastPart(Pawn caster, RitualSchema part, ComboKind k, RuneDef el, LocalTargetInfo target, float power)
         {
             if (caster == null || caster.Dead) return;
+            // an Aura with an Anchor lives on round the caster and strikes again (Магия-правила.md, "Аура")
+            SpellAura.Note(caster, part, k, el, power);
             RitualReading r = RitualEvaluator.Read(part);
             int keepAmp = SpellDepth.Amplify; IntVec3 keepHeart = SpellDepth.Heart; float keepReach = SpellDepth.Reach, keepStone = SpellDepth.Stone;
             SpellDepth.Amplify = r.amplify;

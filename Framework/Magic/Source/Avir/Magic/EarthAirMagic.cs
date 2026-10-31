@@ -50,6 +50,14 @@ namespace Avir.Magic
                         Apply(caster, map, verbs, line, caster.Position, power, rf);
                         break;
                     case RuneKind.Shape:
+                        // turned round by the Thread: the stone does not stand - a ring rises round the target and closes on it
+                        if (rf.thread > 0)
+                        {
+                            float sr = MapComponent_Squeeze.StartRadius(rf.breadth);
+                            MapComponent_Squeeze.Begin(caster, map, at, sr, power, false, rf.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0));
+                            Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), FireMagic.Ring(at, map, sr), at, power, rf);
+                            break;
+                        }
                         // a wall of stone rises between the two chosen points; with holding or an anchor it stands longer
                         var wall = FireMagic.ShapeCells(caster, at, map, rf, forms);
                         int life = Mathf.RoundToInt(GenDate.TicksPerHour * 3f * power * (1 + rf.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0)));

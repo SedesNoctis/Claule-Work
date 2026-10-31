@@ -87,6 +87,16 @@ namespace Avir.Magic
                 if (s.weave != null && s.weave.Working.Any(k => !SpellSculpt.Of(k) && k.OwnRunes.Any(x => x.kind == RuneKind.Release)
                         && k.OwnRunes.Any(x => x.kind == RuneKind.Aura || x.kind == RuneKind.Step)))
                     e0.Add("Own Blast", "A release here falls where the caster stands - round them, or where the step brings them. Unshaped, it strikes them as it strikes anyone. Write two Barriers in the circle's outermost section (Selective Protection), and a third one before them if a ward should be laid on the caster after the blow.");
+                if (s.weave != null)
+                    foreach (SpellCircle k in s.weave.Working)
+                    {
+                        RitualSchema ks = k.AsSchema();
+                        if (SpellAura.Raises(ks, k.element, Combos.Pairs(s.weave).TryGetValue(k, out ComboKind kk) ? kk : ComboKind.None, out int ab, out int an))
+                            e0.Add("Living aura", "Here: " + SpellAura.Strikes(an) + " strikes more after the first, every " + (SpellAura.Interval(ab) / 60f).ToString("0.#") + " s, at "
+                                + SpellAura.PulseShare.ToStringPercent() + " strength, radius " + SpellAura.Radius(ab).ToString("0.#") + ".");
+                        if (SpellMods.Squeezes(ks) && (k.element?.kind == RuneKind.Earth || Combos.Pairs(s.weave).TryGetValue(k, out ComboKind sk) && sk == ComboKind.Magma))
+                            e0.Add("Walls close in", "Here: from " + MapComponent_Squeeze.StartRadius(RitualEvaluator.Read(ks).breadth).ToString("0") + " cells out, a step every " + ((150 + 60 * (RitualEvaluator.Read(ks).anchor + (RitualEvaluator.Read(ks).Has(RuneKind.Hold) ? 1 : 0))) / 60f).ToString("0.#") + " s.");
+                    }
                 string thread = SpellTerms.ThreadHere(s);
                 if (thread != null) e0.Add("The Thread", thread);
                 if (nShaped == 0 && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form)))

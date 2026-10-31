@@ -139,6 +139,8 @@ namespace Avir.Magic
             FireMagic.WallTo = c.wallTo;
             SpellDash.LastPulled = null;
             ComboKind met = c.combos != null && c.combos.TryGetValue(circle, out ComboKind mk) ? mk : ComboKind.None;
+            object keepSpell = SpellAura.Spell;
+            SpellAura.Spell = c.root;
             using (SpellWards.Of(circle.element?.kind, met, true))
             using (shaped ? SpellSculpt.Spare() : null)
             try
@@ -148,7 +150,7 @@ namespace Avir.Magic
                 // the barriers in their turn; two elements that met work as what they made
                 else SpellWards.InOrder(caster, one, met, circle.element, c.target, pHere, part => SpellDash.CastPart(caster, part, met, circle.element, c.target, pHere));
             }
-            finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; }
+            finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; SpellAura.Spell = keepSpell; }
             SpellDash.Hang(after, met, caster, c.target, p);
             // where this circle ends, the next one strikes
             bool step = r.verbs.Any(v => v.kind == RuneKind.Step);

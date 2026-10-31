@@ -87,16 +87,33 @@ namespace Avir.Magic
         {
             if (p == null || p.Dead || !p.Spawned) return;
             var b = SpellBody.Of(p);
-            float w = SpellBody.Heavy(p) * b.legsLand * (earth ? 1.5f : 1f);
-            float pen = ModsConfig.IsActive("CETeam.CombatExtended") ? 500f : 2f;
-            int hits = 2 + Mathf.RoundToInt(power);
-            for (int i = 0; i < hits && !p.Dead; i++)
-                p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Rand.Range(3f, 6f) * power * w, pen, -1f, by, Part(p, 0.15f)));
+            Strike(p, by, power, 2 + Mathf.RoundToInt(power), 3f, 6f, SpellBody.Heavy(p) * b.legsLand * (earth ? 1.5f : 1f), 0.15f);
             if (p.Dead) return;
             Map map = p.Map;
             if (map != null) { FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 2.4f, earth ? MagicFx.EarthDust : Color.gray); FleckMaker.Static(p.Position, map, FleckDefOf.PsycastAreaEffect, 1.2f); }
             Fell(p, Mathf.RoundToInt(150f * power), by);
             if (earth) MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, Mathf.RoundToInt(300f * power));
+        }
+
+        /// <summary>Caught between stone that closes: a squeeze of walls. Not the weight against the ground here but the
+        /// body against the stone on every side - the bigger and the heavier, the more of it the stone takes; through any
+        /// plate. full: the walls have met (several blows, then they lie); otherwise one grinding blow.</summary>
+        public static void Squash(Pawn p, Pawn by, float power, int extra, bool full)
+        {
+            if (p == null || p.Dead || !p.Spawned) return;
+            float w = Mathf.Sqrt(SpellBody.Heavy(p) * Mathf.Clamp(p.BodySize, 0.5f, 4f));
+            Strike(p, by, power, full ? extra + Mathf.RoundToInt(power) : 1, full ? 5f : 2f, full ? 9f : 4f, w, 0.25f);
+            if (p.Dead) return;
+            if (p.Spawned) FleckMaker.ThrowDustPuffThick(p.DrawPos, p.Map, full ? 2.4f : 1.4f, MagicFx.EarthDust);
+            if (full) Fell(p, Mathf.RoundToInt(200f * power), by);
+        }
+
+        /// <summary>Blunt blows of a body's own bulk: plate does not soften them (CE: through any of it).</summary>
+        private static void Strike(Pawn p, Pawn by, float power, int hits, float min, float max, float w, float headChance)
+        {
+            float pen = ModsConfig.IsActive("CETeam.CombatExtended") ? 500f : 2f;
+            for (int i = 0; i < hits && !p.Dead; i++)
+                p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Rand.Range(min, max) * power * w, pen, -1f, by, Part(p, headChance)));
         }
 
         /// <summary>Too heavy to throw far or lift high: the body is toppled where it stands, and its own weight strikes

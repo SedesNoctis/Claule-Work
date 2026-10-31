@@ -33,7 +33,7 @@ namespace Avir.Magic
 
         /// <summary>A spell asks where its wall stands only when the wall will really be a line: Shaping in a circle that also
         /// steps or works as an aura raises a ring round the caster instead, and there is nothing to choose.</summary>
-        public static bool Walls(RitualSchema s) => Parts(s).Any(r => r.verbs.Any(v => v.kind == RuneKind.Shape) && !Ringed(r));
+        public static bool Walls(RitualSchema s) => Parts(s).Any(r => r.verbs.Any(v => v.kind == RuneKind.Shape) && !Ringed(r) && !SpellMods.Squeezes(r.schema));
 
         private static bool Ringed(RitualReading r) =>
             r.schema?.rings != null && r.schema.rings.Any(g => g.runes != null && g.runes.Any(x => x != null && (x.kind == RuneKind.Step || x.kind == RuneKind.Aura)));

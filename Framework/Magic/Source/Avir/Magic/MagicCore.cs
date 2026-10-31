@@ -856,6 +856,12 @@ namespace Avir.Magic
                 Spell("TEST Haze", "Fire:Release", "Air:Release"),
                 Spell("TEST Bog hold", "Water:Hold", "Earth:Hold"),
                 Spell("TEST Dust", "Earth:Release", "Air:Release"),
+                Spell("TEST Living aura of fire (spares own)", "Fire:Aura,Anchor,Anchor|Release,Amplify|Barrier,Barrier"),
+                Spell("TEST Living aura of fire (open - hits the caster)", "Fire:Aura,Anchor|Release,Amplify"),
+                Spell("TEST Aura widened by a second circle", "Fire:Aura,Anchor,Breadth|Release|Barrier,Barrier", "Fire:Aura,Breadth|Release|Barrier,Barrier"),
+                Spell("TEST Closing ring (earth)", "Earth:Shape,Thread"),
+                Spell("TEST Closing ring (magma)", "Fire:Hold", "Earth:Shape,Thread"),
+                Spell("TEST Pressed into the ground", "Earth:Lift,Thread"),
             };
             foreach (RitualSchema s in list) core.Book.spells.Add(s);
             Messages.Message(list.Count + " test spells written into " + p.LabelShort + "'s book.", MessageTypeDefOf.NeutralEvent, false);

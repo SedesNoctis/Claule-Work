@@ -76,7 +76,11 @@ namespace Avir.Magic
             T("Feeds fire", "Fanned Flames", "Fanned Flames. A gust feeds the fires it passes over - careful near your own walls."),
             T("Own Blast", "Own Blast", "Own Blast. Magic does not know its maker. A blow that falls where the caster stands - an aura, a release after a step, a spell aimed at one's own feet - strikes the caster like anyone else. A ward laid by the same circle comes after the blow, too late for it; and a ward of the same fire is put out by a direct blow of it. What keeps the caster is Selective Protection."),
             T("The Thread", "The Thread",
-                "The Thread. The Thread rune turns a Step round: written right outward of a Step, it makes the caster's way the target's - the one at the target is drawn to the caster, as the caster would have gone to them. Anywhere else it ties nothing and does nothing."),
+                "The Thread. The Thread rune turns round what stands just inward of it. After a Step the caster's way becomes the target's: the one at the target is drawn to the caster. After a Lift the body is not thrown up but pressed down, by its own weight. After a Shaping the wall does not stand but closes: a ring round the target, a cell nearer at each step, until the stone meets. Anywhere else it ties nothing and does nothing."),
+            T("Living aura", "Living Aura",
+                "Living Aura. An Aura anchored does not strike once and fade: it stays round the caster and lets the circle's verbs out again every few seconds, wherever the caster goes. What is written between the Aura and its first verb tunes the aura: each Anchor - three strikes more; each Breadth - a cell wider, and a half again as slow; Amplify - stronger strikes. Each strike is half the cast; a blast within it is half as wide, and bursts at the caster's feet. It strikes whoever stands in it, the caster too - Selective Protection keeps the caster's people. A further circle of the same element in the same spell, with an Aura of its own, widens the first rather than raising a second. Small circles never hold it wider than eight cells."),
+            T("Walls close in", "Closing Ring",
+                "Closing Ring. Shaping turned round by the Thread: a ring of stone rises round the target and steps inward, a cell at a time. Whoever stands where the next ring rises is shoved inside; whoever is too big to shove is ground against the stone. At the last step the stone meets and crushes whoever is caught - by their size and weight, through any plate. A wall the shut-in break leaves a gap on that side for every ring after. Holding and Anchors slow the closing."),
         };
 
         /// <summary>Names the plaques of a reading by the almanac, once.</summary>
@@ -160,16 +164,20 @@ namespace Avir.Magic
         {
             if (s == null) return null;
             IEnumerable<RitualSchema> circles = s.weave != null ? s.weave.Working.Select(c => c.AsSchema()) : new[] { s };
-            bool any = false, pulls = false;
+            bool any = false;
+            var said = new List<string>();
             foreach (RitualSchema c in circles)
             {
                 if (!c.rings.SelectMany(g => g.runes).Any(x => x != null && x.kind == RuneKind.Thread)) continue;
                 any = true;
-                if (SpellMods.Pulls(c)) pulls = true;
+                if (SpellMods.Pulls(c)) said.Add("Outward of a Step: the step turns round - whoever stands at the target is drawn to the caster.");
+                if (SpellMods.Squeezes(c)) said.Add("Outward of a Shaping: the wall does not stand - a ring of stone rises round the target and closes a cell at a time; whoever is caught in the middle is crushed.");
+                SpellMods.Own(c, RuneKind.Lift, out _, out _, out _, out int lt);
+                if (lt > 0) said.Add("Outward of a Lift: the lift turns round - the body is pressed into the ground by its own weight instead of thrown up.");
             }
             if (!any) return null;
-            return pulls ? "Written outward of a Step: the step turns round - whoever stands at the target is drawn to the caster."
-                         : "Not outward of a Step here: it ties nothing and does nothing. Write it right after a Step to draw the target to you.";
+            return said.Count > 0 ? string.Join("\n", said.Distinct())
+                : "Not outward of a Step, a Lift or a Shaping here: it ties nothing and does nothing. Write it right after one of them to turn it round.";
         }
     }
 }
