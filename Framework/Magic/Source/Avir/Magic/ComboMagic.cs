@@ -303,7 +303,8 @@ namespace Avir.Magic
                     Pawn first = foes.OrderBy(p => p.Position.DistanceToSquared(Center(cells))).FirstOrDefault();
                     // on wet ground the bolt finds more to leap to: +1 jump for every tenth of the water round
                     if (first != null) AirMagic.Chain(caster, new List<IntVec3> { first.Position }, map, 1 + r.breadth + Mathf.FloorToInt(Reactions.WaterAround(Center(cells), map) * 10f), power, true);
-                    foreach (Pawn p in foes) WaterMagic.Soak(p, power);
+                    // every one in the burst is struck by the discharge too, not only the one the bolt leaps from
+                    foreach (Pawn p in foes) { WaterMagic.Soak(p, power); if (!p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, caster)); }
                     FleckMaker.Static(Center(cells).ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 4f);
                     MapComponent_SpellSprites.Put(map, "Storm/Bolt_Fork", Center(cells).ToVector3Shifted(), 3.5f, 22);
                     break;
@@ -323,7 +324,7 @@ namespace Avir.Magic
                 }
                 case ComboKind.Haze:
                     // a flash of heat: foes dazzled for a while, a little burnt
-                    foreach (Pawn p in foes) { p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 3f * power, 0f, -1f, caster)); MagicFx.Give(p, ComboDefOf.Avir_Dazzled, Mathf.RoundToInt(900f * power)); }
+                    foreach (Pawn p in foes) { p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, caster)); MagicFx.Give(p, ComboDefOf.Avir_Dazzled, Mathf.RoundToInt(900f * power)); }
                     MapComponent_SpellSprites.Put(map, "Haze/Shimmer", Center(cells).ToVector3Shifted(), Spread(cells) * 2.2f, 90, -1f, 1.5f);
                     FleckMaker.Static(Center(cells).ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 3f);
                     break;
@@ -332,6 +333,8 @@ namespace Avir.Magic
                     MapComponent_SpellSprites.Put(map, "Bog/Splash", Center(cells).ToVector3Shifted(), Spread(cells) * 1.8f, 70);
                     foreach (Pawn p in foes) MapComponent_SpellSprites.Put(map, "Bog/Splash", p.DrawPos, 1.4f, 50);
                     foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) MirePatch.Spread(c, map, caster, power, Mathf.RoundToInt(GenDate.TicksPerHour * power));
+                    // the mud strikes like a fall of wet earth
+                    foreach (Pawn p in foes) if (!p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 10f * power, 0f, -1f, caster));
                     foreach (Pawn p in foes) { WaterMagic.Soak(p, power); MagicFx.Give(p, ComboDefOf.Avir_Mired, Mathf.RoundToInt(600f * power)); MagicFx.Fell(p, Center(cells), 1, map, caster, power, Mathf.RoundToInt(90f * power)); }
                     break;
                 case ComboKind.Dust:
@@ -578,7 +581,7 @@ namespace Avir.Magic
         /// <summary>Sand ground into every bare part: a few small cuts all over.</summary>
         internal static void Grind(Pawn p, Pawn by, float power)
         {
-            for (int i = 0; i < 3 && !p.Dead; i++) p.TakeDamage(new DamageInfo(DamageDefOf.Scratch, 2f * power, 0f, -1f, by));
+            for (int i = 0; i < 3 && !p.Dead; i++) p.TakeDamage(new DamageInfo(DamageDefOf.Scratch, 3f * power, 0f, -1f, by));
         }
 
         /// <summary>Heat felt through the rock: the veins of ore within it are shown, even inside mountains.</summary>
@@ -1054,8 +1057,8 @@ namespace Avir.Magic
             switch (v)
             {
                 case RuneKind.Release:
-                    return k == ComboKind.Steam ? "bursts scalding, and the cloud stays" : k == ComboKind.Storm ? "falls as a bolt that leaps on" : k == ComboKind.Magma ? "bursts: a blast of molten stone, then the magma runs outward"
-                         : k == ComboKind.Haze ? "flashes with heat: foes dazzled" : k == ComboKind.Bog ? "bursts in mud: foes knocked down in a mire" : "blasts sand: every bare part ground, the dust hangs";
+                    return k == ComboKind.Steam ? "bursts scalding, and the cloud stays" : k == ComboKind.Storm ? "a discharge strikes all in the burst, and a bolt leaps on" : k == ComboKind.Magma ? "bursts: a blast of molten stone, then the magma runs outward"
+                         : k == ComboKind.Haze ? "flashes with heat: foes burnt and dazzled" : k == ComboKind.Bog ? "bursts in mud: foes struck and knocked down in a mire" : "blasts sand: every bare part ground, the dust hangs";
                 case RuneKind.Hold:
                     return k == ComboKind.Magma ? "lies as a field of magma that burns and slows whoever crosses it" : k == ComboKind.Bog ? "lies as a mire that draws foes under" : k == ComboKind.Storm ? "hangs as a storm that keeps striking"
                          : k == ComboKind.Steam ? "hangs as a scalding cloud that slows whoever crosses it" : k == ComboKind.Haze ? "hangs as a shimmer foes cannot aim through" : "hangs as a cloud of dust";

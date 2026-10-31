@@ -902,6 +902,7 @@
     </graphicData>
     <filth>
       <disappearsInDays>0.3~0.5</disappearsInDays>
+      <ignoreFilthMultiplierStat>true</ignoreFilthMultiplierStat>
       <cleaningWorkToReduceThickness>30</cleaningWorkToReduceThickness>
       <canFilthAttach>false</canFilthAttach>
       <allowsFire>false</allowsFire>

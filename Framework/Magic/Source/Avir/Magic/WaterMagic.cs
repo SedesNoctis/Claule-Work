@@ -102,12 +102,12 @@ namespace Avir.Magic
                         foreach (Pawn p in PawnsIn(cells, map))
                         {
                             if (p == caster || !p.HostileTo(caster)) continue;
-                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (9f + 3f * rv.amplify) * power, 0f, -1f, caster));
+                            p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (12f + 3f * rv.amplify) * power, 0f, -1f, caster));
                             Soak(p, power);
                             FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 2.2f);
                             SpellHurl.Fell(p, from, 3 + rv.amplify, map, caster, power, Mathf.RoundToInt(60f * power));
                         }
-                        foreach (IntVec3 c in cells) { if (Rand.Chance(0.5f)) FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.6f); if (Rand.Chance(0.35f)) Puddle(c, map); }
+                        foreach (IntVec3 c in cells) { if (Rand.Chance(0.5f)) FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.6f); if (c == from || Rand.Chance(0.45f)) Puddle(c, map); }
                         // and every pool lying round about answers: a jet bursts out of it under whoever stands there
                         foreach (IntVec3 c in FireMagic.Point(from, map, FireMagic.PointRadius(rv) + 3f).Where(x => !cells.Contains(x) && Reactions.Pools(x, map).Any(t => !(t is MirePatch))).ToList())
                         {
@@ -175,7 +175,9 @@ namespace Avir.Magic
         {
             // a pool, not a drop: wide and deep enough to be seen
             ThingDef pool = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_SpellPuddle") ?? ThingDefOf.Filth_Water;
-            if (pool != null && c.InBounds(map) && c.Standable(map)) FilthMaker.TryMakeFilth(c, map, pool, 3);
+            if (pool == null || !c.InBounds(map) || !c.Standable(map) || c.GetTerrain(map).IsWater) return;
+            // the game's own filth check turns water away on some ground; spell water lies wherever it falls
+            if (!FilthMaker.TryMakeFilth(c, map, pool, 3) && !c.GetThingList(map).Any(t => t.def == pool)) GenSpawn.Spawn(pool, c, map);
         }
 
         /// <summary>Water flows on: from where the jet ends to the next foe within four cells, and on again.</summary>
