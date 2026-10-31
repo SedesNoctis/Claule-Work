@@ -225,6 +225,9 @@ namespace Avir.Magic
 
         public static void Order(Pawn mage, RitualSchema spell, int slot, LocalTargetInfo target, IntVec3 wallEnd)
         {
+            // a step that has nowhere to land is not begun at all: no Arcana is spent on it
+            string why = StepBlocked(mage, spell, target);
+            if (why != null) { Messages.Message("Cannot cast " + spell.name + ": " + why, mage, MessageTypeDefOf.RejectInput, false); return; }
             if (OfAir(spell))
             {
                 Hediff_ArcaneCore core = Mages.Core(mage);
@@ -236,6 +239,31 @@ namespace Avir.Magic
             JobDriver_CastSpell.Pending[j] = new KeyValuePair<RitualSchema, int>(spell.Copy(), slot);
             if (wallEnd.IsValid) JobDriver_CastSpell.WallEnds[j] = wallEnd;
             if (!mage.jobs.TryTakeOrderedJob(j, Verse.AI.JobTag.Misc)) { JobDriver_CastSpell.Pending.Remove(j); JobDriver_CastSpell.WallEnds.Remove(j); }
+        }
+
+        /// <summary>Why a spell that opens with a step cannot go where it is aimed (null - it can). Only the first circle is
+        /// looked at: the later ones strike where the one before them ended, which is not known before the cast.</summary>
+        public static string StepBlocked(Pawn mage, RitualSchema s, LocalTargetInfo target)
+        {
+            if (mage?.Map == null || s == null) return null;
+            RitualSchema first = s;
+            if (s.weave != null)
+            {
+                SpellCircle c = MapComponent_SpellChain.Order(s.weave).FirstOrDefault();
+                if (c == null) return null;
+                first = c.AsSchema();
+            }
+            RitualReading r = RitualEvaluator.Read(first);
+            if (!r.verbs.Any(v => v.kind == RuneKind.Step)) return null;
+            Map map = mage.Map;
+            IntVec3 at = target.Cell;
+            if (SpellMods.Pulls(first))
+                return target.Thing is Pawn || MagicFx.PawnsIn(FireMagic.Point(at, map, 2.5f), map).Any(p => p != mage) ? null : "there is no one there to draw in.";
+            if (!at.InBounds(map)) return "the place is off the map.";
+            if (at == mage.Position) return "the caster is already there.";
+            if (!at.Standable(map)) return "there is no standing room there (a wall, rock or deep water).";
+            if (at.Fogged(map)) return "the place is unexplored.";
+            return null;
         }
 
         /// <summary>Is this mage holding a cast right now (standing, or air on the move)?</summary>

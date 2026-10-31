@@ -110,6 +110,9 @@ namespace Avir.Magic
             Map map = caster.Map;
             if (map == null) return;
             RitualReading r = RitualEvaluator.Read(s);
+            // the place a step aims at may have filled up while the spell was cast: then it is not let go, and costs nothing
+            string blocked = SpellCasting.StepBlocked(caster, s, target);
+            if (blocked != null) { Messages.Message(s.name + " was not let go: " + blocked + " No Arcana spent.", caster, MessageTypeDefOf.RejectInput, false); return; }
             float cost = Cost(s) * AirMomentum.Factor(caster, s) * EarthStone.CostFactor(map, target.Cell, s);
             if (core.arcana < cost) { Messages.Message(caster.LabelShortCap + " has not enough Arcana for " + s.name + ".", caster, MessageTypeDefOf.RejectInput, false); return; }
             core.Add(-cost);
