@@ -96,7 +96,7 @@ namespace Avir.Magic
             var a = new MapComponent_Auras.Aura
             {
                 caster = caster, el = el, combo = k, spell = Spell, breadth = breadth, left = Strikes(anchor), power = power,
-                interval = Interval(breadth), radius = Radius(breadth), shaped = SpellSculpt.Active
+                interval = Interval(breadth), radius = Radius(breadth), shaped = SpellSculpt.Active, aid = SpellSculpt.Allies
             };
             a.parts.Add(part.Copy());
             a.next = now + a.interval;
@@ -155,7 +155,7 @@ namespace Avir.Magic
                 MapComponent_Auras.Aura a = Aura;
                 if (a == null) return base.TipStringExtra;
                 return "Radius " + a.radius.ToString("0.#") + " · next strike in " + Mathf.Max(0f, (a.next - Find.TickManager.TicksGame) / 60f).ToString("0.#") + " s · each strike at "
-                    + SpellAura.PulseShare.ToStringPercent() + " of the cast" + (a.shaped ? " · spares the caster's own" : " · strikes everyone in it, the caster too");
+                    + SpellAura.PulseShare.ToStringPercent() + " of the cast" + (a.aid ? " · only the caster's own (Selective Aid)" : a.shaped ? " · spares the caster's own" : " · strikes everyone in it, the caster too");
             }
         }
 
@@ -174,7 +174,7 @@ namespace Avir.Magic
             public List<RitualSchema> parts = new List<RitualSchema>();
             public int breadth, left, interval, next;
             public float power, radius;
-            public bool shaped;
+            public bool shaped, aid;
             public float flash;   // when it last struck (real time), for the flare of the ring
             public float seed = Rand.Range(0f, 360f);
         }
@@ -259,7 +259,7 @@ namespace Avir.Magic
             try
             {
                 using (SpellWards.Of(a.combo == ComboKind.None ? a.el?.kind : null, a.combo, false))   // a field round the caster, not a blow thrown: it meets wards as the ground does
-                using (a.shaped ? SpellSculpt.Spare() : null)
+                using (a.shaped ? SpellSculpt.Spare(a.aid) : null)
                     foreach (RitualSchema part in a.parts)
                     {
                         if (a.caster.Dead || !a.caster.Spawned) break;

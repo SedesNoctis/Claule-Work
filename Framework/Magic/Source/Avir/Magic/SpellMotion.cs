@@ -109,17 +109,17 @@ namespace Avir.Magic
             if (home.IsValid) ReturnTo = home;
             s = s.Copy();
             float whole = power;
-            bool shaped = SpellSculpt.Take(s);
+            bool shaped = SpellSculpt.Take(s, out bool aid);
             if (shaped) power *= SpellSculpt.Keeps;
             // a second step cuts again: what is written outward of it acts where that step comes down - and so on
             RitualSchema next = Split(ref s);
-            if (shaped && next != null) SpellSculpt.Mark(next);
+            if (shaped && next != null) SpellSculpt.Mark(next, aid);
             Last = null;
             bool quenched = false;
             try
             {
                 using (SpellWards.Of(k == ComboKind.None ? el?.kind : null, k, true))
-                using (shaped ? SpellSculpt.Spare() : null)
+                using (shaped ? SpellSculpt.Spare(aid) : null)
                 {
                     if (SpellWards.Strikes(s) && SpellWards.DomeTakes(caster.Map, target.Cell, el, k, ref power)) quenched = true;
                     else SpellWards.InOrder(caster, s, k, el, target, power, part => CastPart(caster, part, k, el, target, power));
@@ -137,7 +137,7 @@ namespace Avir.Magic
             SpellAura.Note(caster, part, k, el, power);
             RitualReading r = RitualEvaluator.Read(part);
             int keepAmp = SpellDepth.Amplify; IntVec3 keepHeart = SpellDepth.Heart; float keepReach = SpellDepth.Reach, keepStone = SpellDepth.Stone;
-            SpellDepth.Amplify = r.amplify;
+            SpellDepth.Amplify = SpellMods.Strict ? SpellMods.WideAmplify(part) : r.amplify;
             // the heart of the blow: where it strikes (round the caster for an aura), as wide as its point
             SpellDepth.Heart = r.verbs.Any(v => v.kind == RuneKind.Aura) ? caster.Position : target.Cell;
             SpellDepth.Reach = FireMagic.PointRadius(r);
@@ -147,7 +147,8 @@ namespace Avir.Magic
             {
                 // a verb written over and over wears out (Магия-правила.md): the part acts once with each verb, then the
                 // repeats act alone, each weaker - 1/2, 1/4, then one more at 1/4 for every section past the first
-                List<KeyValuePair<RitualSchema, float>> repeats = SpellWear.Split(ref part);
+                // strict modifiers (on trial): each later copy of a verb acts with its own modifiers and an echo of the one before
+                List<KeyValuePair<RitualSchema, float>> repeats = SpellMods.Strict ? SpellMods.Echoes(ref part) : SpellWear.Split(ref part);
                 if (repeats != null) r = RitualEvaluator.Read(part);
                 Dispatch(caster, part, r, k, el, target, power);
                 if (repeats != null)

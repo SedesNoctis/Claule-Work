@@ -404,7 +404,7 @@ namespace Avir.Magic
         /// <summary>Struck by the caster's blow: anyone standing in it - friend or foe, and the caster too if they strike at
         /// their own feet; only a ward keeps them. A shaped blow (two Barriers on the outer edge of the circle) spares the
         /// caster's people - and the caster among them.</summary>
-        public static bool Foe(Pawn p, Pawn caster) => p != null && !p.Dead && (!SpellSculpt.Active || caster == null || (p != caster && p.HostileTo(caster)));
+        public static bool Foe(Pawn p, Pawn caster) => p != null && !p.Dead && (!SpellSculpt.Active || caster == null || SpellSculpt.Struck(p, caster));
 
         /// <summary>Held fast in the ground by earth: cannot be thrown, drawn nor moved.</summary>
         public static bool Rooted(Pawn p) => p.health?.hediffSet?.GetFirstHediffOfDef(EarthAirDefOf.Avir_Rooted) != null;

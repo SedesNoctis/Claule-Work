@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Avir.Ritualistics;
+using UnityEngine;
 using Verse;
 
 namespace Avir.Magic
@@ -69,11 +70,87 @@ namespace Avir.Magic
         /// <summary>The reading for one verb or form: the whole circle's modifiers and its own.</summary>
         public static RitualReading Verb(RitualReading r, RuneDef v)
         {
+            RitualReading c = VerbCore(r, v);
+            // strict modifiers (the author's rule, on trial): the depth of the blow is this verb's own, not the circle's
+            if (Strict && c != null && SpellWards.AtWork) SpellDepth.Amplify = c.amplify;
+            return c;
+        }
+
+        private static RitualReading VerbCore(RitualReading r, RuneDef v)
+        {
             if (r == null || cur == null || r.schema == null || r.schema != now || v == null || !cur.own.TryGetValue(v, out Bound b)) return r;
             if (b.amplify == 0 && b.breadth == 0 && b.anchor == 0 && b.thread == 0) return r;
             RitualReading c = With(r, new Bound(), false);
             c.amplify += b.amplify; c.breadth += b.breadth; c.anchor += b.anchor; c.thread += b.thread;
             return c;
+        }
+
+        /// <summary>The author's strict rule of modifiers, on trial (a setting).</summary>
+        public static bool Strict => AvirMod.Settings != null && AvirMod.Settings.magicStrictMods;
+
+        /// <summary>The Amplify runes beside the element: the whole circle's.</summary>
+        public static int WideAmplify(RitualSchema s) => ReadOf(s).wide.amplify;
+
+        /// <summary>Strict modifiers: every later copy of a verb is cut out into a part of its own - the element, the
+        /// circle-wide modifiers, the forms that carry it (with their own modifiers), the verb with the modifiers written
+        /// after it, and the echo of the copy before it: that copy's own modifiers at half (an odd one left over: the part
+        /// is 15% stronger). In the section of the copy before it, it also wears (the Tautology). Returns the parts and the
+        /// share of strength each acts at; null when no verb repeats.</summary>
+        public static List<KeyValuePair<RitualSchema, float>> Echoes(ref RitualSchema part)
+        {
+            if (part?.rings == null || part.rings.Count < 2) return null;
+            // the runes with their sections
+            var seq = new List<KeyValuePair<RuneDef, int>>();
+            for (int g = 1; g < part.rings.Count; g++) foreach (RuneDef x in part.rings[g].runes) if (x != null) seq.Add(new KeyValuePair<RuneDef, int>(x, g));
+            if (!seq.Where(kv => kv.Key.role == RuneRole.Verb).GroupBy(kv => kv.Key.kind).Any(z => z.Count() > 1)) return null;
+            int firstAct = seq.FindIndex(kv => Acts(kv.Key));
+            var wide = seq.Take(firstAct < 0 ? 0 : firstAct).Select(kv => kv.Key).Where(x => x.kind != RuneKind.Barrier).ToList();
+            // each act with what is written after it
+            var acts = new List<(RuneDef act, int sec, List<RuneDef> own, int at)>();
+            for (int i = Mathf.Max(0, firstAct); i < seq.Count; i++)
+            {
+                if (!Acts(seq[i].Key)) { if (acts.Count > 0) acts[acts.Count - 1].own.Add(seq[i].Key); continue; }
+                acts.Add((seq[i].Key, seq[i].Value, new List<RuneDef>(), i));
+            }
+            var carriers = new List<RuneDef>();
+            foreach (var a in acts) if (a.act.role == RuneRole.Form && a.act.kind != RuneKind.Step) { carriers.Add(a.act); carriers.AddRange(a.own.Where(x => x.kind != RuneKind.Barrier)); }
+            var outParts = new List<KeyValuePair<RitualSchema, float>>();
+            var cut = new HashSet<int>();   // places in seq taken out of the main part
+            var last = new Dictionary<RuneKind, (List<RuneDef> own, int sec)>();
+            var inSection = new Dictionary<(RuneKind, int), int>();
+            foreach (var a in acts)
+            {
+                if (a.act.role != RuneRole.Verb) continue;
+                inSection.TryGetValue((a.act.kind, a.sec), out int n); inSection[(a.act.kind, a.sec)] = ++n;
+                if (!last.TryGetValue(a.act.kind, out var prev)) { last[a.act.kind] = (a.own, a.sec); continue; }
+                // the echo of the copy before: its own modifiers at half
+                var echo = new List<RuneDef>();
+                bool odd = false;
+                foreach (var grp in prev.own.Where(x => x.role == RuneRole.Modifier).GroupBy(x => x.kind))
+                {
+                    int c = grp.Count();
+                    for (int k = 0; k < c / 2; k++) echo.Add(grp.First());
+                    if (c % 2 == 1 && grp.Key == RuneKind.Amplify) odd = true;
+                }
+                float share = SpellWear.Share(n) * (odd ? 1.15f : 1f);
+                last[a.act.kind] = (a.own, a.sec);
+                cut.Add(a.at);
+                for (int k = 1; k <= a.own.Count; k++) cut.Add(a.at + k);
+                if (share <= 0f) continue;
+                var one = new RitualSchema { name = part.name, size = part.size };
+                one.rings.Add(new RitualRing { runes = part.rings[0].runes.ToList(), slots = 1 });
+                one.rings.Add(new RitualRing { runes = wide.Concat(carriers).Concat(new[] { a.act }).Concat(a.own).Concat(echo).ToList() });
+                outParts.Add(new KeyValuePair<RitualSchema, float>(one, share));
+            }
+            if (cut.Count == 0) return null;
+            // the main part without the copies
+            RitualSchema main = new RitualSchema { name = part.name, size = part.size };
+            main.rings.Add(part.rings[0].Copy());
+            for (int g = 1; g < part.rings.Count; g++) main.rings.Add(new RitualRing { slots = part.rings[g].slots });
+            for (int i = 0; i < seq.Count; i++) if (!cut.Contains(i)) main.rings[seq[i].Value].runes.Add(seq[i].Key);
+            main.rings.RemoveAll(g => g != main.rings[0] && g.runes.Count == 0);
+            part = main;
+            return outParts;
         }
 
         /// <summary>A ward on the mage: a barrier on the very edge of the circle, after its verbs.</summary>

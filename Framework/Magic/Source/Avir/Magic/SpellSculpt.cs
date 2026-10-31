@@ -17,32 +17,59 @@ namespace Avir.Magic
         /// <summary>The share of strength a shaped blow keeps.</summary>
         public const float Keeps = 0.75f;
 
-        private static int depth;
+        private static readonly Stack<bool> scopes = new Stack<bool>();
         /// <summary>A shaped blow is being dealt now: the caster's own people are spared.</summary>
-        public static bool Active => depth > 0;
+        public static bool Active => scopes.Count > 0;
+        /// <summary>Selective Aid (two Barriers and a Thread): the blow goes to the caster's own people only - the
+        /// caster among them - and passes the foes by.</summary>
+        public static bool Allies => scopes.Count > 0 && scopes.Peek();
 
-        private sealed class Scope : IDisposable { public void Dispose() { if (depth > 0) depth--; } }
-        public static IDisposable Spare() { depth++; return new Scope(); }
+        private sealed class Scope : IDisposable { public void Dispose() { if (scopes.Count > 0) scopes.Pop(); } }
+        public static IDisposable Spare(bool allies = false) { scopes.Push(allies); return new Scope(); }
+
+        /// <summary>Is a pawn struck by a shaped blow: a foe for Selective Protection, one of the caster's own (the caster
+        /// too) for Selective Aid.</summary>
+        public static bool Struck(Pawn p, Pawn caster) => Allies ? (p == caster || !p.HostileTo(caster)) : (p != caster && p.HostileTo(caster));
 
         private static bool Marked(RitualRing outer) => outer?.runes != null && outer.runes.Count(x => x != null && x.kind == RuneKind.Barrier) >= 2;
+
+        /// <summary>A Thread written outward of the first Barrier of the pair: the pair turns round - Selective Aid.</summary>
+        private static int AidThread(RitualRing outer)
+        {
+            if (!Marked(outer)) return -1;
+            int firstOfPair = -1, seen = 0;
+            for (int i = outer.runes.Count - 1; i >= 0; i--)
+                if (outer.runes[i] != null && outer.runes[i].kind == RuneKind.Barrier && ++seen == 2) { firstOfPair = i; break; }
+            for (int i = outer.runes.Count - 1; i > firstOfPair; i--)
+                if (outer.runes[i] != null && outer.runes[i].kind == RuneKind.Thread) return i;
+            return -1;
+        }
+
+        /// <summary>Is this circle turned to its own (two Barriers and a Thread in its outermost section)?</summary>
+        public static bool AidOf(SpellCircle c) => c?.sections != null && c.sections.Count > 0 && AidThread(c.sections[c.sections.Count - 1]) >= 0;
 
         /// <summary>Is this circle shaped (two Barriers in its outermost section)?</summary>
         public static bool Of(SpellCircle c) => c?.sections != null && c.sections.Count > 0 && Marked(c.sections[c.sections.Count - 1]);
 
         /// <summary>A circle's schema (element ring first, then its sections): if shaped, the two Barriers are taken out
         /// - they shape the blow, they lay no ward - and true is returned.</summary>
-        public static bool Take(RitualSchema s)
+        public static bool Take(RitualSchema s) => Take(s, out _);
+
+        public static bool Take(RitualSchema s, out bool allies)
         {
+            allies = false;
             if (s?.rings == null || s.rings.Count < 2) return false;
             RitualRing outer = s.rings[s.rings.Count - 1];
             if (!Marked(outer)) return false;
+            int th = AidThread(outer);
+            if (th >= 0) { allies = true; outer.runes.RemoveAt(th); }
             for (int n = 0; n < 2; n++) outer.runes.RemoveAt(outer.runes.FindLastIndex(x => x != null && x.kind == RuneKind.Barrier));
             if (outer.runes.Count == 0) s.rings.RemoveAt(s.rings.Count - 1);
             return true;
         }
 
         /// <summary>The pair put back on the outermost ring of a part cut off by a step: it is shaped too.</summary>
-        public static void Mark(RitualSchema s)
+        public static void Mark(RitualSchema s, bool allies = false)
         {
             if (s?.rings == null) return;
             RuneDef b = DefDatabase<RuneDef>.AllDefs.FirstOrDefault(x => x.kind == RuneKind.Barrier);
@@ -50,6 +77,8 @@ namespace Avir.Magic
             if (s.rings.Count < 2) s.rings.Add(new RitualRing { runes = new List<RuneDef>() });
             RitualRing outer = s.rings[s.rings.Count - 1];
             outer.runes.Add(b); outer.runes.Add(b);
+            RuneDef th = allies ? DefDatabase<RuneDef>.AllDefs.FirstOrDefault(x => x.kind == RuneKind.Thread) : null;
+            if (th != null) outer.runes.Add(th);
             outer.slots = Math.Max(outer.Slots, outer.runes.Count);
         }
 
@@ -58,25 +87,28 @@ namespace Avir.Magic
         public static List<Thing> Ignored(Pawn caster, Map map, IntVec3 at, float radius, bool keepCaster = false)
         {
             var l = new List<Thing>();
-            if (caster != null && (keepCaster || Active)) l.Add(caster);
+            if (caster != null && (keepCaster || Active && !Allies)) l.Add(caster);
             if (Active && caster != null && map != null)
                 foreach (Pawn p in GenRadial.RadialDistinctThingsAround(at, map, radius + 1f, true).OfType<Pawn>())
-                    if (p != caster && !p.HostileTo(caster)) l.Add(p);
+                    if (p != caster && !Struck(p, caster)) l.Add(p);
             return l;
         }
 
         /// <summary>A copy of the spell with the shaping pairs taken out of every circle, for reading what it does.</summary>
-        public static RitualSchema Stripped(RitualSchema s, out int shaped, out int plain)
+        public static RitualSchema Stripped(RitualSchema s, out int shaped, out int plain) => Stripped(s, out shaped, out plain, out _);
+
+        public static RitualSchema Stripped(RitualSchema s, out int shaped, out int plain, out int aid)
         {
-            shaped = plain = 0;
+            shaped = plain = aid = 0;
             if (s?.weave == null) return s;
             RitualSchema c = s.Copy();
             foreach (SpellCircle k in c.weave.All())
             {
                 if (k.binding || k.sections == null || k.sections.Count == 0) continue;
                 if (!Of(k)) { if (k.element != null) plain++; continue; }
-                shaped++;
                 RitualRing outer = k.sections[k.sections.Count - 1];
+                int th = AidThread(outer);
+                if (th >= 0) { aid++; outer.runes.RemoveAt(th); } else shaped++;
                 for (int n = 0; n < 2; n++) outer.runes.RemoveAt(outer.runes.FindLastIndex(x => x != null && x.kind == RuneKind.Barrier));
             }
             return c;

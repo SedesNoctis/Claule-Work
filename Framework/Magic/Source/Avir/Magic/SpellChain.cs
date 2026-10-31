@@ -127,10 +127,10 @@ namespace Avir.Magic
             float p = c.power * WeaveSpell.ResonanceFactor(WeaveSpell.Resonance(c.root, circle.element)) * Combos.FocusBoost(circle, caster.Map);
             RitualSchema one = circle.AsSchema();
             // two Barriers in the outermost section: the blow is shaped round the caster's own people (weaker for it)
-            bool shaped = SpellSculpt.Take(one);
+            bool shaped = SpellSculpt.Take(one, out bool aid);   // with a Thread: Selective Aid - to the caster's own only
             // outward of a step: cut off, to act where the caster comes out
             RitualSchema after = SpellDash.Split(ref one);
-            if (shaped && after != null) SpellSculpt.Mark(after);
+            if (shaped && after != null) SpellSculpt.Mark(after, aid);
             float pHere = shaped ? p * SpellSculpt.Keeps : p;
             RitualReading r = RitualEvaluator.Read(one);
             SpellDash.Last = null;
@@ -142,7 +142,7 @@ namespace Avir.Magic
             object keepSpell = SpellAura.Spell;
             SpellAura.Spell = c.root;
             using (SpellWards.Of(circle.element?.kind, met, true))
-            using (shaped ? SpellSculpt.Spare() : null)
+            using (shaped ? SpellSculpt.Spare(aid) : null)
             try
             {
                 // a spell landing inside a dome meets it first (Магия-правила.md, part 1)

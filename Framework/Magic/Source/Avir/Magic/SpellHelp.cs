@@ -72,11 +72,15 @@ namespace Avir.Magic
             if (!read.TryGetValue(s, out var kv) || now - kv.Key > 0.5f)
             {
                 // two Barriers on a circle's outer edge shape its blow: read without them, and say so
-                RitualSchema rs = SpellSculpt.Stripped(s, out int nShaped, out int nPlain);
+                RitualSchema rs = SpellSculpt.Stripped(s, out int nShaped, out int nPlain, out int nAid);
                 SpellEffect e0 = rs.weave != null ? WeaveSpell.Explain(rs.weave) : ExplainCore(rs);
                 if (nShaped > 0) e0.Add(nPlain > 0 ? "Spares its own - in part" : "Spares its own", "Two Barriers in the outermost section of a circle shape its blow round the caster's own people: it strikes foes only, "
                     + "and is " + (1f - SpellSculpt.Keeps).ToStringPercent() + " weaker for it. Each circle needs its own pair" + (nPlain > 0 ? " - here " + nPlain + " circle(s) without it strike everyone." : ".")
                     + " What is left on the ground (magma, mire, held fields) does not know its own.");
+                if (nAid > 0) e0.Add("Turned to its own", "Two Barriers and a Thread in the outermost section of a circle turn its blow to the caster's own people - the caster among them - and past the foes; "
+                    + (1f - SpellSculpt.Keeps).ToStringPercent() + " weaker for it. For mending, warding and strengthening one's own from the circle.");
+                if (SpellMods.Strict && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Where(x => x.role == RuneRole.Verb).GroupBy(x => x.kind).Any(g => g.Count() > 1)))
+                    e0.Add("Echo", "Strict modifiers (a setting, on trial): each later copy of a verb acts with the modifiers written after it, and hears the copy before it - that copy's own modifiers at half.");
                 if (s.weave != null)
                 {
                     string wear = string.Join("\n", s.weave.Working.Select(k => SpellWear.Explain(k)).Where(x => x != null));
@@ -99,7 +103,7 @@ namespace Avir.Magic
                     }
                 string thread = SpellTerms.ThreadHere(s);
                 if (thread != null) e0.Add("The Thread", thread);
-                if (nShaped == 0 && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form)))
+                if (nShaped == 0 && nAid == 0 && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form)))
                     e0.Add("Strikes everyone", "Without two Barriers in the outermost section of a circle, its blow strikes whoever stands in it - friend or foe; only a ward keeps them.");
                 e0.details = Details(s);
                 if (SpellCasting.OfAir(s)) e0.Add("Momentum", "A spell of the air: cast on the move. Cast another of the air within " + AvirMod.Settings.airMomentumSeconds.ToString("0") + " seconds and it comes "

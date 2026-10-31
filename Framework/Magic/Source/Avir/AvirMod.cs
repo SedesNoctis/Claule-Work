@@ -89,6 +89,7 @@ namespace Avir
         public float magicPenWater = 0.1f, magicPenEarth = 0.15f, magicPenAir = 0.05f, magicPenSharp = 0.05f;
         // how far penetration grows with the craft of the blow (Amplify on its verb, a great circle), and no further
         public float magicPenDepthMax = 8f;
+        public bool magicStrictMods = false;
         public float mageFlowWeight = 3f;
         /// <summary>Where a kept spell goes: 0 the colony's book, 1 files beside the mod (every game), 2 both.</summary>
         public int spellKeep = 0;
@@ -153,6 +154,7 @@ namespace Avir
             Scribe_Values.Look(ref magicPenWater, "magicPenWater2", 0.1f); Scribe_Values.Look(ref magicPenEarth, "magicPenEarth2", 0.15f);
             Scribe_Values.Look(ref magicPenAir, "magicPenAir2", 0.05f); Scribe_Values.Look(ref magicPenSharp, "magicPenSharp2", 0.05f);
             Scribe_Values.Look(ref magicPenDepthMax, "magicPenDepthMax3", 8f);
+            Scribe_Values.Look(ref magicStrictMods, "magicStrictMods", false);
             Scribe_Values.Look(ref mageFlowWeight, "mageFlowWeight", 3f);
             Scribe_Values.Look(ref spellKeep, "spellKeep", 0);
             Scribe_Values.Look(ref arliaIntroBook, "arliaIntroBook");
@@ -248,6 +250,10 @@ namespace Avir
             list.Label("Penetration grows with the craft of the blow up to ×" + o.magicPenDepthMax.ToString("0.0#"), -1f,
                 new TipSignal("Amplify runes on the striking verb drive a blow deeper, each less than the one before (1 + the square root of their number: 1 - x2, 4 - x3, 9 - x4); a strong stream +15% a tier; stone at hand under an earthen blow x1.2. Many circles of one element and focus make it stronger, not deeper. Away from the heart of the blow it goes in shallower: at its edge, by half."));
             o.magicPenDepthMax = Mathf.Round(list.Slider(o.magicPenDepthMax, 1f, 10f) * 4f) / 4f;
+            list.Gap();
+            list.CheckboxLabeled("Strict modifiers (test)", ref o.magicStrictMods,
+                "The author's rule, on trial. Modifiers beside the element work on the whole circle; modifiers after a verb or a form work on that one only, up to the next verb or form - and nothing of them leaks to the rest: Amplify on one verb no longer drives the others deeper through armour. "
+                + "A verb written again later in the circle is its own act with its own modifiers; and it hears an echo of the copy before it - that copy's own modifiers at half (rounded down; an odd one left over makes the echo 15% stronger).");
             list.Gap();
             list.Label("Where a kept spell goes:");
             if (list.RadioButton("The colony's book (this game)", o.spellKeep == 0)) o.spellKeep = 0;

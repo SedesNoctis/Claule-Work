@@ -20,7 +20,7 @@ namespace Avir.Magic
             public IntVec3 center;
             public float radius, power;
             public int next, step;
-            public bool magma, shaped;
+            public bool magma, shaped, aid;
             public List<IntVec3> walls = new List<IntVec3>();
             public List<IntVec3> broken = new List<IntVec3>();   // directions (from the centre) the foe broke through: a gap stays there
 
@@ -34,7 +34,7 @@ namespace Avir.Magic
                 Scribe_Values.Look(ref next, "next");
                 Scribe_Values.Look(ref step, "step", 150);
                 Scribe_Values.Look(ref magma, "magma");
-                Scribe_Values.Look(ref shaped, "shaped");
+                Scribe_Values.Look(ref shaped, "shaped"); Scribe_Values.Look(ref aid, "aid");
                 Scribe_Collections.Look(ref walls, "walls", LookMode.Value);
                 Scribe_Collections.Look(ref broken, "broken", LookMode.Value);
                 if (walls == null) walls = new List<IntVec3>();
@@ -65,7 +65,7 @@ namespace Avir.Magic
             var q = new Squeeze
             {
                 caster = caster, of = caster?.Faction, center = center, radius = radius, power = power, magma = magma,
-                shaped = SpellSculpt.Active, step = 150 + 60 * slow, next = Find.TickManager.TicksGame + 150 + 60 * slow
+                shaped = SpellSculpt.Active, aid = SpellSculpt.Allies, step = 150 + 60 * slow, next = Find.TickManager.TicksGame + 150 + 60 * slow
             };
             c.all.Add(q);
             c.Raise(q);
@@ -118,7 +118,7 @@ namespace Avir.Magic
             q.walls.Clear();
             List<IntVec3> ring = FireMagic.Ring(q.center, map, q.radius);
             // whoever stands where the stone rises is shoved inside - the ring does not part for them
-            using (q.shaped ? SpellSculpt.Spare() : null)
+            using (q.shaped ? SpellSculpt.Spare(q.aid) : null)
                 foreach (IntVec3 c in ring)
                 {
                     if (OnBrokenSide(q, c)) continue;
@@ -136,7 +136,7 @@ namespace Avir.Magic
                 if (stuck != null)
                 {
                     // too big or too firmly held to be moved: the stone grinds against them where they stand, and leaves the cell open
-                    using (q.shaped ? SpellSculpt.Spare() : null)
+                    using (q.shaped ? SpellSculpt.Spare(q.aid) : null)
                         if (MagicFx.Foe(stuck, q.caster)) SpellHurl.Squash(stuck, q.caster, q.power * 0.4f, 1, false);
                     continue;
                 }
@@ -167,7 +167,7 @@ namespace Avir.Magic
         private void Crush(Squeeze q)
         {
             var cells = FireMagic.Point(q.center, map, 1.5f);
-            using (q.shaped ? SpellSculpt.Spare() : null)
+            using (q.shaped ? SpellSculpt.Spare(q.aid) : null)
                 foreach (Pawn p in MagicFx.PawnsIn(cells, map))
                 {
                     if (!MagicFx.Foe(p, q.caster)) continue;
