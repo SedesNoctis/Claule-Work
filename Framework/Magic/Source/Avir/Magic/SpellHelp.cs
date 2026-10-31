@@ -38,6 +38,18 @@ namespace Avir.Magic
         /// their runes are written from the centre outward; each carries every verb of the circle, in the same order.</summary>
         public static string Turns(RitualSchema s)
         {
+            // a step cuts the circle: what is outward of it acts where the caster comes out
+            RitualSchema head = s.Copy();
+            RitualSchema tail = SpellDash.Split(ref head);
+            if (tail != null)
+            {
+                string now = Turns(head), later = Turns(tail);
+                var tr = RitualEvaluator.Read(tail);
+                string acts = string.Join(", then ", tr.verbs.Select(x => x.label));
+                return (now != null ? now + "\n" : "") + "Outward of the step - where the caster comes out (or where the one drawn in arrives): " + acts + "."
+                    + (tr.verbs.Any(v => v.kind == RuneKind.Shape) ? " A shaping there rises as a ring round the caster." : "")
+                    + (tr.verbs.Any(v => v.kind == RuneKind.Step) ? " A second step takes the caster back where they cast from." : "");
+            }
             RitualReading r = RitualEvaluator.Read(s);
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();

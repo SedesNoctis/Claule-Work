@@ -39,6 +39,8 @@ namespace Avir.Magic
             public int giveUp;
             public bool endByMage;
             public Dictionary<SpellCircle, ComboKind> combos;
+            /// <summary>Where the caster stood when the spell was let go: a later step aimed at the caster goes back here.</summary>
+            public IntVec3 origin = IntVec3.Invalid;
 
             public void ExposeData()
             {
@@ -54,6 +56,7 @@ namespace Avir.Magic
                 Scribe_Collections.Look(ref waitFor, "waitFor", LookMode.Reference);
                 Scribe_Values.Look(ref giveUp, "giveUp");
                 Scribe_Values.Look(ref endByMage, "endByMage");
+                Scribe_Values.Look(ref origin, "origin", IntVec3.Invalid);
                 if (Scribe.mode == LoadSaveMode.PostLoadInit && root != null) { links = Order(root); combos = Combos.Pairs(root); }
             }
         }
@@ -103,7 +106,7 @@ namespace Avir.Magic
             var c = new Chain
             {
                 caster = caster, root = root, links = Order(root), power = power, target = target,
-                storm = false, wallTo = FireMagic.WallTo, combos = Combos.Pairs(root)
+                storm = false, wallTo = FireMagic.WallTo, combos = Combos.Pairs(root), origin = caster.Position
             };
             // the map is taken before the first circle: a step may carry the mage off it (under the ground, in the air)
             Map map = caster.Map;
@@ -123,7 +126,11 @@ namespace Avir.Magic
             if (caster == null || caster.Dead || !caster.Spawned) return;
             float p = c.power * (1f + 0.25f * (WeaveSpell.Resonance(c.root, circle.element) - 1)) * Combos.FocusBoost(circle, caster.Map);
             RitualSchema one = circle.AsSchema();
+            // outward of a step: cut off, to act where the caster comes out
+            RitualSchema after = SpellDash.Split(ref one);
             RitualReading r = RitualEvaluator.Read(one);
+            SpellDash.Last = null;
+            SpellDash.ReturnTo = c.origin;
             AirMagic.Storm = c.storm;
             FireMagic.WallTo = c.wallTo;
             SpellDash.LastPulled = null;
@@ -138,7 +145,8 @@ namespace Avir.Magic
                 else if (EarthMagic.Is(circle.element)) EarthMagic.Cast(caster, one, r, c.target, p);
                 else if (AirMagic.Is(circle.element)) AirMagic.Cast(caster, one, r, c.target, p);
             }
-            finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; }
+            finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; }
+            SpellDash.Hang(after, met, caster, c.target, p);
             // where this circle ends, the next one strikes
             bool step = r.verbs.Any(v => v.kind == RuneKind.Step);
             bool aura = r.verbs.Any(v => v.kind == RuneKind.Aura);

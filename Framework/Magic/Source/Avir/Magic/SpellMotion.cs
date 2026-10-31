@@ -27,7 +27,9 @@ namespace Avir.Magic
         public static void Travel(Pawn p, IntVec3 dest, ComboKind k, float power)
         {
             Map map = p.Map;
-            if (map == null || !dest.InBounds(map) || !dest.Standable(map) || dest == p.Position) return;
+            if (map == null) return;
+            dest = Home(p, dest);
+            if (!dest.InBounds(map) || !dest.Standable(map) || dest == p.Position) return;
             string name = k == ComboKind.Magma || k == ComboKind.Bog ? "Avir_SpellBurrow" : k == ComboKind.Storm ? "Avir_SpellBoltRide" : k == ComboKind.Steam ? "Avir_SpellDash" : "Avir_SpellFlight";
             ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(name) ?? DefDatabase<ThingDef>.GetNamedSilentFail("Avir_SpellDash");
             if (def == null) return;
@@ -37,11 +39,91 @@ namespace Avir.Magic
             if (flyer == null) return;
             flyer.combo = k; flyer.power = power;
             flyer.element = k == ComboKind.Magma || k == ComboKind.Bog ? RuneKind.Earth : k == ComboKind.Steam ? RuneKind.Water : RuneKind.Air;
+            flyer.origin = from;
             GenSpawn.Spawn(flyer, from, map);
+            Last = flyer;
         }
 
         /// <summary>Who the last pull took - the chain of a spell waits until they have arrived.</summary>
         public static List<Pawn> LastPulled;
+
+        // ------------------------------------------------------------- outward of a step: where the caster comes out
+
+        /// <summary>The flyer the last step of this cast sent off (null - none).</summary>
+        public static SpellDash Last;
+        /// <summary>Where a step aimed at the caster's own spot goes instead: home, where the spell was cast from.</summary>
+        public static IntVec3 ReturnTo = IntVec3.Invalid;
+
+        /// <summary>What the step's circle holds outward of the step: cast when the flyer lands, by the caster, at their feet.</summary>
+        public RitualSchema afterLand;
+        public ComboKind afterCombo;
+        public Pawn owner;
+        /// <summary>Where this flight began: a second step goes back here.</summary>
+        public IntVec3 origin = IntVec3.Invalid;
+
+        private static bool Acts(RuneDef x) => x.role == RuneRole.Verb || x.role == RuneRole.Form;
+
+        /// <summary>Cuts a circle at its first step (Магия-правила.md, 2.9): what is written up to the step (and the thread
+        /// bound to it) stays in s and acts at once; what is written outward of it is returned, to act where the caster
+        /// comes out (or, for a step turned round, where the one drawn in arrives). Null - nothing acts outward of the step.</summary>
+        public static RitualSchema Split(ref RitualSchema schema)
+        {
+            RitualSchema s = schema;
+            if (s == null) return null;
+            var seq = new List<KeyValuePair<int, int>>();
+            for (int g = 0; g < s.rings.Count; g++)
+                for (int i = 0; i < s.rings[g].runes.Count; i++)
+                    if (s.rings[g].runes[i] != null) seq.Add(new KeyValuePair<int, int>(g, i));
+            RuneDef At(KeyValuePair<int, int> k) => s.rings[k.Key].runes[k.Value];
+            int step = seq.FindIndex(k => At(k).kind == RuneKind.Step);
+            if (step < 0) return null;
+            int cut = step + 1;
+            while (cut < seq.Count && At(seq[cut]).kind == RuneKind.Thread) cut++;
+            if (!seq.Skip(cut).Any(k => Acts(At(k)))) return null;
+            var after = new RitualSchema { name = s.name, size = s.size };
+            after.rings.Add(new RitualRing { runes = seq.Select(At).Where(x => x.role == RuneRole.Element).ToList(), slots = 1 });
+            var tail = seq.TakeWhile(k => !Acts(At(k))).Select(At).Where(x => x.role != RuneRole.Element).ToList();   // what works on the whole circle
+            tail.AddRange(seq.Skip(cut).Select(At));
+            after.rings.Add(new RitualRing { runes = tail });
+            RitualSchema before = s.Copy();
+            foreach (var k in seq.Skip(cut).Reverse()) before.rings[k.Key].runes.RemoveAt(k.Value);
+            schema = before;
+            return after;
+        }
+
+        /// <summary>Hangs the rest of the circle on the flyer the step just sent off; if nothing flew, it acts at once, at the target.</summary>
+        public static void Hang(RitualSchema after, ComboKind k, Pawn caster, LocalTargetInfo target, float power)
+        {
+            if (after == null) return;
+            SpellDash f = Last;
+            Last = null;
+            if (f != null) { f.afterLand = after; f.afterCombo = k; f.owner = caster; f.power = Mathf.Max(f.power, power); return; }
+            Cast(caster, after, k, target, power, IntVec3.Invalid);
+        }
+
+        private static void Cast(Pawn caster, RitualSchema s, ComboKind k, LocalTargetInfo target, float power, IntVec3 home)
+        {
+            if (caster == null || caster.Dead || !caster.Spawned) return;
+            RitualReading r = RitualEvaluator.Read(s);
+            RuneDef el = r.elements.FirstOrDefault();
+            IntVec3 keep = ReturnTo;
+            if (home.IsValid) ReturnTo = home;
+            try
+            {
+                using (SpellWards.Of(k == ComboKind.None ? el?.kind : null, k, true))
+                {
+                    if (k != ComboKind.None) ComboMagic.Cast(k, caster, s, r, target, power);
+                    else if (FireMagic.Is(el)) FireMagic.Cast(caster, s, r, target, power);
+                    else if (WaterMagic.Is(el)) WaterMagic.Cast(caster, s, r, target, power);
+                    else if (EarthMagic.Is(el)) EarthMagic.Cast(caster, s, r, target, power);
+                    else if (AirMagic.Is(el)) AirMagic.Cast(caster, s, r, target, power);
+                }
+            }
+            finally { ReturnTo = keep; }
+        }
+
+        /// <summary>A step aimed where the caster already stands goes home instead (a second step: there and back).</summary>
+        private static IntVec3 Home(Pawn p, IntVec3 dest) => dest == p.Position && ReturnTo.IsValid && ReturnTo != p.Position && ReturnTo.Standable(p.Map) ? ReturnTo : dest;
 
         /// <summary>The step turned round: whoever is chosen is carried to the mage the way the mage would have gone
         /// to them. Water gathers every foe at the point; fire, earth and air take one. A friend comes unharmed; a foe
@@ -77,6 +159,7 @@ namespace Avir.Magic
                 if (flyer == null) continue;
                 flyer.element = el; flyer.power = power; flyer.puller = foe ? mage : null;
                 GenSpawn.Spawn(flyer, from, map);
+                if (Last == null) Last = flyer;   // the first one drawn in: what is outward of the step waits for them
                 if (foe && el == RuneKind.Fire)
                 {
                     // where the path begins the fire bursts for real - torn out of it, the foe takes the burns along
@@ -154,7 +237,9 @@ namespace Avir.Magic
         public static void Carry(Pawn p, IntVec3 dest, RuneKind el, float power = 1f, List<RuneDef> verbs = null, RitualReading r = null)
         {
             Map map = p.Map;
-            if (map == null || !dest.InBounds(map) || !dest.Standable(map) || dest == p.Position) return;
+            if (map == null) return;
+            dest = Home(p, dest);
+            if (!dest.InBounds(map) || !dest.Standable(map) || dest == p.Position) return;
             string name = el == RuneKind.Earth ? "Avir_SpellBurrow" : el == RuneKind.Air ? "Avir_SpellFlight" : "Avir_SpellDash";
             ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(name) ?? DefDatabase<ThingDef>.GetNamedSilentFail("Avir_SpellDash");
             IntVec3 from = p.Position;
@@ -165,7 +250,9 @@ namespace Avir.Magic
             flyer.element = el;
             flyer.power = power;
             if (verbs != null && verbs.Count > 0) { flyer.verbs = verbs.ToList(); flyer.amplify = r?.amplify ?? 0; flyer.breadth = r?.breadth ?? 0; }
+            flyer.origin = from;
             GenSpawn.Spawn(flyer, from, map);
+            Last = flyer;
         }
 
         /// <summary>Foes round a point thrown off and stunned; with dust of the element.</summary>
@@ -192,6 +279,10 @@ namespace Avir.Magic
             Scribe_Collections.Look(ref verbs, "verbs", LookMode.Def);
             Scribe_Values.Look(ref amplify, "amplify");
             Scribe_Values.Look(ref breadth, "breadth");
+            Scribe_Deep.Look(ref afterLand, "afterLand");
+            Scribe_Values.Look(ref afterCombo, "afterCombo", ComboKind.None);
+            Scribe_References.Look(ref owner, "owner");
+            Scribe_Values.Look(ref origin, "origin", IntVec3.Invalid);
         }
 
         private static Material waveMat;
@@ -217,29 +308,38 @@ namespace Avir.Magic
         protected override void RespawnPawn()
         {
             Map map = Map; IntVec3 at = Position; Pawn mage = FlyingPawn; RuneKind el = element; float pw = power; Pawn by = puller;
+            RitualSchema after = afterLand; ComboKind ak = afterCombo; Pawn who = owner; IntVec3 home = origin;
             base.RespawnPawn();
             if (map == null || mage == null) return;
-            if (by != null) { if (!mage.Dead) using (SpellWards.Of(el, combo, true)) Arrive(mage, by, el, pw, map); return; }
-            if (combo != ComboKind.None) { if (!mage.Dead) ComboMagic.Land(combo, mage, at, pw); return; }
-            if (verbs != null && verbs.Count > 0 && !mage.Dead)
+            try
             {
-                // the circle's verbs, outward of the step: they work where the mage comes out
-                var rr = new RitualReading { amplify = amplify, breadth = breadth };
-                var cells = FireMagic.Point(at, map, FireMagic.PointRadius(rr)).Where(c => c != at).ToList();
-                if (el == RuneKind.Earth) EarthMagic.Apply(mage, map, verbs, cells, at, pw, rr);
-                else if (el == RuneKind.Air) AirMagic.Apply(mage, map, verbs, cells, at, pw, rr);
+                if (by != null) { if (!mage.Dead) using (SpellWards.Of(el, combo, true)) Arrive(mage, by, el, pw, map); return; }
+                if (combo != ComboKind.None) { if (!mage.Dead) ComboMagic.Land(combo, mage, at, pw); return; }
+                if (verbs != null && verbs.Count > 0 && !mage.Dead)
+                {
+                    // the circle's verbs, outward of the step: they work where the mage comes out
+                    var rr = new RitualReading { amplify = amplify, breadth = breadth };
+                    var cells = FireMagic.Point(at, map, FireMagic.PointRadius(rr)).Where(c => c != at).ToList();
+                    if (el == RuneKind.Earth) EarthMagic.Apply(mage, map, verbs, cells, at, pw, rr);
+                    else if (el == RuneKind.Air) AirMagic.Apply(mage, map, verbs, cells, at, pw, rr);
+                }
+                if (el == RuneKind.Earth)
+                {
+                    // the ground breaks open and throws the mage up; those standing round are thrown off their feet
+                    Burst(at, map, mage, 2.5f + 0.5f * pw, 2, pw);
+                    foreach (IntVec3 c in GenRadial.RadialCellsAround(at, 2.5f, true)) if (Rand.Chance(0.4f)) MagicFx.Rubble(c, map);
+                }
+                else if (el == RuneKind.Air)
+                {
+                    // the mage comes down on a gust
+                    foreach (IntVec3 c in GenRadial.RadialCellsAround(at, 2f, true)) if (c.InBounds(map) && Rand.Chance(0.6f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.6f, MagicFx.AirDust);
+                    foreach (Pawn q in GenRadial.RadialDistinctThingsAround(at, map, 2f, true).OfType<Pawn>().ToList()) if (MagicFx.Foe(q, mage)) MagicFx.Push(q, at, 2, map);
+                }
             }
-            if (el == RuneKind.Earth)
+            finally
             {
-                // the ground breaks open and throws the mage up; those standing round are thrown off their feet
-                Burst(at, map, mage, 2.5f + 0.5f * pw, 2, pw);
-                foreach (IntVec3 c in GenRadial.RadialCellsAround(at, 2.5f, true)) if (Rand.Chance(0.4f)) MagicFx.Rubble(c, map);
-            }
-            else if (el == RuneKind.Air)
-            {
-                // the mage comes down on a gust
-                foreach (IntVec3 c in GenRadial.RadialCellsAround(at, 2f, true)) if (c.InBounds(map) && Rand.Chance(0.6f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.6f, MagicFx.AirDust);
-                foreach (Pawn q in GenRadial.RadialDistinctThingsAround(at, map, 2f, true).OfType<Pawn>().ToList()) if (MagicFx.Foe(q, mage)) MagicFx.Push(q, at, 2, map);
+                // what the circle held outward of the step: now, at the caster's feet (a shaping there - a ring round them)
+                if (after != null && who != null && !who.Dead && who.Spawned) Cast(who, after, ak, who.Position, pw, home);
             }
         }
 

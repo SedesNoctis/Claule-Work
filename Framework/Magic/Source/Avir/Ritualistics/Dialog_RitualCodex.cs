@@ -177,6 +177,14 @@ namespace Avir.Ritualistics
             }
             Widgets.EndScrollView();
 
+            // the table for trying runes together, spell by spell
+            if (Avir.Magic.AvirMagic.On)
+            {
+                Rect comb = new Rect(right.x, right.y, 200f, 32f);
+                if (RitualUI.Button(comb, "Runes together...", true)) Find.WindowStack.Add(new Avir.Magic.Dialog_RuneCombiner());
+                TooltipHandler.TipRegion(comb, "Write a spell circle from runes and read what it would do - and how the place of a rune changes it.");
+            }
+
             // the chosen rune, large
             if (shown != null)
             {

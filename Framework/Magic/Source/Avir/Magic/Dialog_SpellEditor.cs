@@ -106,7 +106,7 @@ namespace Avir.Magic
 
         private static readonly string[] Tabs = { "All", "Elements", "Verbs", "Forms", "Modifiers", "Pinned", "Spells" };
 
-        private static bool ForSpells(RuneDef r)
+        internal static bool ForSpells(RuneDef r)
         {
             if (!(r.Unlocked || Prefs.DevMode)) return false;
             switch (r.role)
