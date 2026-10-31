@@ -68,6 +68,8 @@ namespace Avir.Ritualistics
         /// <summary>A rune in plain words (Arlie's short version), or its full description.</summary>
         public static string Plain(RuneDef r) => simple.TryGetValue(r.kind.ToString(), out string s) ? s : RitualText.Desc(r);
 
+        private bool curiousSaid;
+
         public Dialog_RitualCodex(Map map)
         {
             this.map = map;
@@ -171,7 +173,9 @@ namespace Avir.Ritualistics
                 {
                     shown = r;
                     SoundDefOf.Tick_High.PlayOneShotOnCamera();
-                    Arlia.Say(r.Unlocked ? "rune" : "unknownrune", 2.5f);   // a passing word; her real one is on the page
+                    // a passing word; her real one is on the page. "Curious?" once a visit, not at every rune not yet learnt
+                    if (r.Unlocked) Arlia.Say("rune", 2.5f);
+                    else if (!curiousSaid) { curiousSaid = true; Arlia.Say("unknownrune", 2.5f); }
                 }
                 y += 58f;
             }

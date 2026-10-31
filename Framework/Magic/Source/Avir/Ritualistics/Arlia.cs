@@ -86,6 +86,13 @@ namespace Avir.Ritualistics
             { "bells", new[] { "Don't you dare to build bells!" } },
             { "rune", new[] { "Ah, that one. Listen closely.", "Good choice. Or at least an interesting one." } },
             { "unknownrune", new[] { "Curious? You should be." } },
+            // the first time two elements meet
+            { "comboBog", new[] { "You're rather fond of filth, aren't you?" } },
+            { "comboMagma", new[] { "The dirt is burning? Good." } },
+            { "comboSteam", new[] { "Ha! I've seen oceans turn to steam! Though you won't manage." } },
+            { "comboStorm", new[] { "Mind dressing up in metal?" } },
+            { "comboHaze", new[] { "Can't see straight? Neither can they. That's the point." } },
+            { "comboDust", new[] { "Eat dust. No, really - that's the spell." } },
             { "fresh", new[] { "A clean sheet. Don't waste it.", "Fresh chalk, fresh mistakes. Try not to make too many." } },
             { "pin", new[] { "Oh, do you actually have an idea?", "Yes, initiative is good for studies." } },
             { "lessons", new[] { "In need of a master, huh?", "Pay attention now, I'd rather not repeat myself.", "It's good to know your limits." } },

@@ -131,6 +131,7 @@ namespace Avir.Magic
             var c = Current.Game?.GetComponent<GameComponent_Combos>();
             if (c == null || k == ComboKind.None || c.known.Contains(k)) return;
             c.known.Add(k);
+            if (by != null && by.Faction == Faction.OfPlayer) Avir.Ritualistics.Arlia.Say("combo" + k);
             if (by != null && by.Faction == Faction.OfPlayer)
                 Find.LetterStack.ReceiveLetter("A new element: " + Combos.Label(k).CapitalizeFirst(),
                     by.LabelShortCap + " let two elements meet in one spell, and they made something new: " + Combos.Label(k) + ".\n\n" + ComboText.Short(k),

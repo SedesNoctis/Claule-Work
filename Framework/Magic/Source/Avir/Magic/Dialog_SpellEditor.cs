@@ -1144,21 +1144,44 @@ namespace Avir.Magic
             SpellCircle root = s.weave;
             var all = root.Working.ToList();
             var smalls = all.Where(c => !c.Great).ToList();
-            if (sel.binding) return "The rim binds it all, and you stand in the heart. Choose a circle round you - or add one below.";
-            if (all.All(c => c.element == null && !c.OwnRunes.Any())) return "Start in the centre of the circle. Which element? Fire, for now - the others are still being worked out.";
-            if (sel.Great && sel.element == null) return "A great circle wants its seal - the plate on top: Life, Light, Time, Space or Darkness.";
-            if (sel.element == null) return "This circle has no heart yet. Click an element on the left.";
-            if (all.Count >= 10) return "So many circles. Whoever holds this - I would like to meet them.";
-            if (smalls.Any(c => c.element != null && !c.OwnRunes.Any())) return "A circle of " + smalls.First(c => c.element != null && !c.OwnRunes.Any()).element.label + " with nothing to do. Give it a verb - release, hold, drain...";
+            // a verb said four times in one section: the fourth does nothing at all (Tautology)
+            foreach (SpellCircle c in smalls)
+                foreach (RitualRing sec in c.sections)
+                    if (sec.runes.Where(x => x != null && x.role == RuneRole.Verb).GroupBy(x => x.kind).Any(g => g.Count() >= 4))
+                        return "You know, there is a word made to describe you. \"The s-s-s-st-stutterer.\"";
+            if (sel.binding) return "The rim holds everything together. You, so far, hold nothing. Pick a circle.";
+            if (all.All(c => c.element == null && !c.OwnRunes.Any())) return "An empty heart. Fire, water, earth, air - pick one. I'll wait. Not long.";
+            if (sel.Great && sel.element == null) return "A great circle without its seal is a crown without a head. Life, Light, Time, Space or Darkness - on top.";
+            if (sel.element == null) return "No heart in this one. Even I have one. Somewhere.";
+            if (all.Count >= 10) return "So many circles. Whoever holds this - I'd like to meet them. Briefly.";
+            if (met.TryGetValue(sel, out ComboKind mk) && sel.OwnRunes.Any())
+                switch (mk)
+                {
+                    case ComboKind.Bog: return "You're rather fond of filth, aren't you?";
+                    case ComboKind.Magma: return "The dirt is burning? Good.";
+                    case ComboKind.Steam: return "Ha! I've seen oceans turn to steam! Though you won't manage.";
+                    case ComboKind.Storm: return "Mind dressing up in metal?";
+                    case ComboKind.Haze: return "Can't see straight? Neither can they. That's the point.";
+                    case ComboKind.Dust: return "Eat dust. No, really - that's the spell.";
+                }
+            if (!sel.OwnRunes.Any())
+                switch (sel.element.kind)
+                {
+                    case RuneKind.Water: return "It's wet and it's deep. Yes, yes, this is water. Now tell it what to do.";
+                    case RuneKind.Fire: return "Fire is always good. Mostly. Well, unless you're not fireproof. Are you?";
+                    case RuneKind.Earth: return "Boring and heavy, stubborn and dirty. You have something in common.";
+                    case RuneKind.Air: return "Air. Light, quick, never where you left it. I approve. Mostly.";
+                    default: return "A heart of " + sel.element.label + " and nothing round it. A verb, perhaps?";
+                }
             var same = smalls.Where(c => c.element != null).GroupBy(c => c.element).FirstOrDefault(g => g.Count() >= 3);
             if (WeaveSpell.Steam(root)) return "Fire and water in one weave? You will boil them before they burn.";
-            if (same != null) return same.Count() + " circles of " + same.Key.label + ". They will sing together - and burn together.";
+            if (same != null) return same.Count() + " circles of " + same.Key.label + ". They'll feed each other - and burn out together.";
             if (WeaveSpell.Wraps(root, RuneKind.Life)) return "Life round the fire: it burns whom it must, and spares whom it should.";
             SpellCircle hollow = all.FirstOrDefault(c => c.Great && c.inner.Count == 0 && !c.OwnRunes.Any());
-            if (hollow != null) return "A great circle with nothing in it and nothing of its own. What is it for?";
+            if (hollow != null) return "A great circle with nothing in it and nothing of its own. A very expensive hoop.";
             for (int i = 0; i < sel.sections.Count; i++)
-                if (sel.sections[i].runes.Count < sel.sections[i].Slots) return "An empty place in section " + (i + 1) + ". Fill it, or take the place away.";
-            return "Good. Read the main effect before you keep it.";
+                if (sel.sections[i].runes.Count < sel.sections[i].Slots) return "Section " + (i + 1) + " has a hole in it. Fill it or cut it - holes are for cheese.";
+            return "Good. Now read what it does - before it does it to you.";
         }
 
         // ================================================================== helpers
