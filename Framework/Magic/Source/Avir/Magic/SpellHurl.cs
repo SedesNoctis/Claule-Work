@@ -155,6 +155,28 @@ namespace Avir.Magic
             Scribe_Values.Look(ref lie, "lie");
         }
 
+        /// <summary>A body thrown up rises as high as the updraft is strong: a strong spell flings it far above the
+        /// battle, and it hangs there longer - the fall from there is the harder for it.</summary>
+        private float Rise => kind == HurlKind.Lifted ? Mathf.Clamp(power, 0.6f, 6f) : 1f;
+
+        public override void SpawnSetup(Map map, bool respawningAfterLoad)
+        {
+            base.SpawnSetup(map, respawningAfterLoad);
+            if (!respawningAfterLoad && kind == HurlKind.Lifted) ticksFlightTime = Mathf.RoundToInt(ticksFlightTime * Mathf.Sqrt(Rise));
+        }
+
+        public override Vector3 DrawPos
+        {
+            get
+            {
+                Vector3 v = base.DrawPos;
+                if (kind != HurlKind.Lifted || ticksFlightTime <= 0) return v;
+                float t = Mathf.Clamp01((float)ticksFlying / ticksFlightTime);
+                // the def's own arc covers a plain lift; a stronger one goes higher above it
+                return v + Vector3.forward * (4f * t * (1f - t) * 2.5f * (Rise - 1f));
+            }
+        }
+
         protected override void TickInterval(int delta)
         {
             base.TickInterval(delta);
