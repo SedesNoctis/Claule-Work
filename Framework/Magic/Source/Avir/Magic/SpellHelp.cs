@@ -82,6 +82,11 @@ namespace Avir.Magic
                     string wear = string.Join("\n", s.weave.Working.Select(k => SpellWear.Explain(k)).Where(x => x != null));
                     if (wear.Length > 0) e0.Add("Wear of repeats", "The same verb in one circle wears out: the second acts at half, the third at a quarter; past that, one more at a quarter for every section beyond the first, the rest do nothing (and still cost Arcana). Spread different verbs over the sections instead.\n" + wear);
                 }
+                // a blow that falls where the caster stands - round them (an aura) or where a step brings them - strikes
+                // them too, unless the circle is shaped; a ward laid after it comes too late
+                if (s.weave != null && s.weave.Working.Any(k => !SpellSculpt.Of(k) && k.OwnRunes.Any(x => x.kind == RuneKind.Release)
+                        && k.OwnRunes.Any(x => x.kind == RuneKind.Aura || x.kind == RuneKind.Step)))
+                    e0.Add("Own Blast", "A release here falls where the caster stands - round them, or where the step brings them. Unshaped, it strikes them as it strikes anyone. Write two Barriers in the circle's outermost section (Selective Protection), and a third one before them if a ward should be laid on the caster after the blow.");
                 string thread = SpellTerms.ThreadHere(s);
                 if (thread != null) e0.Add("The Thread", thread);
                 if (nShaped == 0 && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form)))

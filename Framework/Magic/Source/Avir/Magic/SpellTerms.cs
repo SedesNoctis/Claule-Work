@@ -74,6 +74,7 @@ namespace Avir.Magic
             T("Stores heat|Keeps the water|Keeps the weight|Keeps the breath", "Drawn Store", "Drawn Store. What the Drawing-out rune takes from the target the caster keeps in the body for a while, and the next spell of that element draws on it - stronger."),
             T("Stands longer", "Lasting Stone", "Lasting Stone. Holding and anchors keep shaped stone standing longer."),
             T("Feeds fire", "Fanned Flames", "Fanned Flames. A gust feeds the fires it passes over - careful near your own walls."),
+            T("Own Blast", "Own Blast", "Own Blast. Magic does not know its maker. A blow that falls where the caster stands - an aura, a release after a step, a spell aimed at one's own feet - strikes the caster like anyone else. A ward laid by the same circle comes after the blow, too late for it; and a ward of the same fire is put out by a direct blow of it. What keeps the caster is Selective Protection."),
             T("The Thread", "The Thread",
                 "The Thread. The Thread rune turns a Step round: written right outward of a Step, it makes the caster's way the target's - the one at the target is drawn to the caster, as the caster would have gone to them. Anywhere else it ties nothing and does nothing."),
         };
