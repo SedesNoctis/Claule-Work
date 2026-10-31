@@ -120,7 +120,7 @@ namespace Avir.Magic
 
         public static string CannotTake(Pawn who)
         {
-            if (!Mages.IsMage(who)) return "not a mage";
+            if (!Mages.IsMage(who)) return "not a wizard";
             Hediff_ArcaneCore c = Mages.Core(who);
             if (c == null) return "no arcane core";
             if (c.path != null) return "already walks the path of " + c.path.label;
@@ -219,7 +219,7 @@ namespace Avir.Magic
             if (list.Count == 0)
             {
                 GUI.color = FlowStyle.InkSoft;
-                ArtInk.Label(new Rect(0f, 0f, view.width, 60f), tab == 0 ? "Nothing here yet. A mage who joins the colony brings their spells here; and any spell can be kept here from a mage's book."
+                ArtInk.Label(new Rect(0f, 0f, view.width, 60f), tab == 0 ? "Nothing here yet. A wizard who joins the colony brings their spells here; and any spell can be kept here from a wizard's book."
                                                                        : "No spell files yet. Keep a spell with the files chosen in the mod settings (Magic).");
             }
             float y = 0f;

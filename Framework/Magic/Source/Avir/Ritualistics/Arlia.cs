@@ -56,7 +56,7 @@ namespace Avir.Ritualistics
             { "bigger", new[] { "This needs a bigger circle. Size does matter - here, at least." } },
             { "works", new[] { "This will work. Most likely." } },
             // the mage's path, and what she makes of each choice
-            { "pathopen", new[] { "The mage's path. One place is empty - the element that will be theirs. Choose well; they will not let you forget it." } },
+            { "pathopen", new[] { "The wizard's path. One place is empty - the element that will be theirs. Choose well; they will not let you forget it." } },
             { "pathFire", new[] { "Fire. Of course. They were always the one standing too close to the hearth." } },
             { "pathWater", new[] { "Water. Patient, cold, quietly certain they are right. Fitting." } },
             { "pathEarth", new[] { "Earth. Slow to start, impossible to stop. Like their arguments." } },
@@ -357,7 +357,7 @@ namespace Avir.Ritualistics
             { "Avir_Ritual_TrapPulse", "The prisoner becomes a turret. Waste not." },
             { "Avir_Ritual_KindleCore", "Spire business. Learn how they are raised first - then come back and wake its heart." },
             { "Avir_Ritual_SelfDetonation", "It goes off in the hands of whoever holds it. An easy mistake. An unforgettable one." },
-            { "Avir_Ritual_MagePath", "The mage's path. One place is left empty - write the element that will be theirs. Choose well: they will never let you forget it." },
+            { "Avir_Ritual_MagePath", "The wizard's path. One place is left empty - write the element that will be theirs. Choose well: they will never let you forget it." },
             { "Avir_Ritual_EndlessVortex", "Nothing to fill and nothing to close it. It spins, and grows, and does not stop. Bring a mop." },
         };
 

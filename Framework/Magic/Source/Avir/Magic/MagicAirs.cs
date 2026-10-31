@@ -10,8 +10,9 @@ using Verse;
 
 namespace Avir.Magic
 {
-    /// <summary>Fire's smoke (the plan, part 50): fire spells raise smoke, and fire mages - and whoever wears a golden
-    /// amulet, the amulet of fire - breathe it as if it were not there. Under Combat Extended it is CE's own black smoke,
+    /// <summary>Fire's smoke (the plan, part 50): fire spells raise smoke, and fire wizards and sorcerers (fire their main
+    /// element, given by the path ritual), whoever wears a golden amulet (the amulet of fire), and whoever is under a ward
+    /// of fire, magma or steam breathe it as if it were not there. Under Combat Extended it is CE's own black smoke,
     /// with its own rules (it thickens, drifts, chokes); without CE - the game's blinding smoke.</summary>
     public static class FireSmoke
     {
@@ -43,17 +44,17 @@ namespace Avir.Magic
 
         private static readonly Dictionary<int, KeyValuePair<int, bool>> known = new Dictionary<int, KeyValuePair<int, bool>>();
 
-        /// <summary>A fire mage (fire in their book) or the wearer of a golden amulet: smoke does not touch them. Asked
-        /// often, so kept for an in-game hour per pawn.</summary>
+        /// <summary>Of fire: fire their main element, a golden amulet, or a fiery ward. The first two are asked often and
+        /// change rarely, so they are kept for an in-game hour per pawn; the ward is looked at each time.</summary>
         public static bool Ignores(Pawn p)
         {
             if (p == null) return false;
+            if (SpellWards.On(p) is Hediff_SpellWard w && w.Fiery) return true;
             int now = Find.TickManager?.TicksGame ?? 0;
             if (known.TryGetValue(p.thingIDNumber, out var kv) && now - kv.Key < GenDate.TicksPerHour) return kv.Value;
             bool yes = SpherePaths.Element(p) == "Gold";
             Hediff_ArcaneCore core = Mages.Core(p);
-            if (!yes && core != null)
-                yes = core.Book.spells.Any(s => s.weave != null ? s.weave.All().Any(c => FireMagic.Is(c.element)) : FireMagic.Is(Spells.Element(s)));
+            if (!yes && core != null) yes = FireMagic.Is(core.path);
             if (known.Count > 2000) known.Clear();
             known[p.thingIDNumber] = new KeyValuePair<int, bool>(now, yes);
             return yes;

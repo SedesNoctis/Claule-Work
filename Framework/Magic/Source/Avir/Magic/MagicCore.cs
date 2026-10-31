@@ -303,7 +303,7 @@ namespace Avir.Magic
             Rect inner = r.ContractedBy(5f);
             Text.Font = GameFont.Tiny;
             Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(inner.x, inner.y, inner.width - 22f, 24f), sorc ? "Arcana - sorcerer" : "Arcana - mage");
+            Widgets.Label(new Rect(inner.x, inner.y, inner.width - 22f, 24f), sorc ? "Arcana - sorcerer" : "Arcana - wizard");
             Text.Font = GameFont.Tiny;
             Rect tog = new Rect(inner.xMax - 16f, inner.y + 3f, 15f, 15f);
             Widgets.DrawBoxSolid(tog, core.vent ? (sorc ? new Color(0.93f, 0.68f, 0.12f) : new Color(0.16f, 0.32f, 0.92f)) : new Color(0.2f, 0.2f, 0.2f));
@@ -386,16 +386,16 @@ namespace Avir.Magic
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("Arcana: " + Mathf.FloorToInt(core.arcana) + " of " + Mathf.FloorToInt(core.Capacity) + " (core level " + core.level + ").");
             sb.AppendLine("Safe between " + lo.ToStringPercent() + " and " + hi.ToStringPercent() + " (the marks) - wider with composure ("
-                          + core.Composure.ToStringPercent() + ") and with what steadies the " + (core.Sorcerer ? "sorcerer" : "mage") + ".");
+                          + core.Composure.ToStringPercent() + ") and with what steadies the " + (core.Sorcerer ? "sorcerer" : "wizard") + ".");
             if (core.vent) sb.AppendLine("Kept at " + core.target.ToStringPercent() + " (the white mark): the excess goes into worn artifacts, then artifacts nearby, else into the air.");
             sb.AppendLine("Click the bar to set where it is kept.");
             if (MagicConductors.Horned(p)) sb.AppendLine("Horns: natural composure +" + MagicConductors.HornComposure.ToStringPercent() + ", but the core holds less.");
             int a = MagicConductors.Artifacts(p);
             if (a > 0) sb.AppendLine("Artifacts worn: " + a + " - steadier, but the core holds less.");
             sb.AppendLine();
-            sb.AppendLine("Above the band greatness swells - and forbids work beneath the mage; held there long, the Arcana breaks out - in pulses, or (with a poor hold) into the mind.");
-            sb.AppendLine("Below it the mage grows hollow, never ordinary.");
-            sb.Append("Filled by meditation (more where the stream is strong), by a filling ritual in whose reach the mage stands, and slowly by the stream itself.");
+            sb.AppendLine("Above the band greatness swells - and forbids work beneath the wizard; held there long, the Arcana breaks out - in pulses, or (with a poor hold) into the mind.");
+            sb.AppendLine("Below it the wizard grows hollow, never ordinary.");
+            sb.Append("Filled by meditation (more where the stream is strong), by a filling ritual in whose reach the wizard stands, and slowly by the stream itself.");
             return sb.ToString();
         }
     }
@@ -592,10 +592,10 @@ namespace Avir.Magic
 
         private static bool Ready() { if (AvirMagic.On) return true; Messages.Message("Magic is off (mod settings; it takes effect after a restart).", MessageTypeDefOf.RejectInput, false); return false; }
 
-        [DebugAction(Cat, "Make mage (learned)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction(Cat, "Make wizard (learned)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Learned(Pawn p) { if (Ready()) Mages.Gift(p, Mages.Learned); }
 
-        [DebugAction(Cat, "Make mage (born)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction(Cat, "Make sorcerer (born)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Born(Pawn p) { if (Ready()) Mages.Gift(p, Mages.Born); }
 
         [DebugAction(Cat, "Arcana full", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -763,7 +763,7 @@ namespace Avir.Magic
         [DebugAction(Cat, "Wind at their back +1 (air momentum)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevMomentum(Pawn p) => AirMomentum.Rise(p);
 
-        [DebugAction(Cat, "Raging flame on this mage", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction(Cat, "Raging flame on this wizard or sorcerer", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevRaging(Pawn p) => FireMagic.Raging(p);
 
         [DebugAction(Cat, "Stone at hand here (count for earth, magma, bog, dust)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
@@ -777,7 +777,7 @@ namespace Avir.Magic
         [DebugAction(Cat, "Spell rubble here (stone for earth)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevRubble() { Map map = Find.CurrentMap; foreach (IntVec3 c in FireMagic.Point(Verse.UI.MouseCell(), map, 1.5f)) MagicFx.Rubble(c, map); }
 
-        [DebugAction(Cat, "Lost hold on this mage (choose element)", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction(Cat, "Lost hold on this wizard or sorcerer (choose element)", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevSlip()
         {
             var opts = new List<DebugMenuOption>
@@ -870,7 +870,7 @@ namespace Avir.Magic
             Mages.Gift(p, Mages.Learned, 1, 0.3f);
             if (p.Faction == RimWorld.Faction.OfPlayer)
                 Find.LetterStack.ReceiveLetter("Magic taken in: " + p.LabelShort,
-                    p.LabelShortCap + " has stood in living magic long enough to take it in. " + p.LabelShortCap + " is a mage now - an arcane core has formed in the brain, and its Arcana must be kept within its edges.",
+                    p.LabelShortCap + " has stood in living magic long enough to take it in. " + p.LabelShortCap + " is a wizard now - an arcane core has formed in the brain, and its Arcana must be kept within its edges.",
                     RimWorld.LetterDefOf.PositiveEvent, p);
         }
     }

@@ -1006,7 +1006,7 @@ namespace Avir.Magic
                 case ComboKind.Steam: return "Fire and water side by side make steam: it scalds, and its cloud hides everyone in it - no shot goes in or out.";
                 case ComboKind.Storm: return "Water and air side by side make a storm: lightning that leaps from foe to foe, worse for the soaked, and machines are struck hardest.";
                 case ComboKind.Magma: return "Fire and earth side by side make magma: molten ground that burns whoever stands on it and cools into stone.";
-                case ComboKind.Haze: return "Fire and air side by side make haze: the air shimmers, foes are dazzled and miss, and they shoot at false shapes of the mage.";
+                case ComboKind.Haze: return "Fire and air side by side make haze: the air shimmers, foes are dazzled and miss, and they shoot at false shapes of the wizard.";
                 case ComboKind.Bog: return "Water and earth side by side make a bog: a mire that grips foes, slower and slower - and whoever stays in it too long, or falls in it, is drawn under and chokes.";
                 case ComboKind.Dust: return "Earth and air side by side make dust: a cloud that blinds and grinds, and shows the unseen.";
                 default: return "";
@@ -1042,12 +1042,12 @@ namespace Avir.Magic
         {
             switch (k)
             {
-                case ComboKind.Steam: return "The mage scatters into a cloud and drifts low to the target - nothing can reach them on the way; there the cloud bursts and scalds everyone round.";
-                case ComboKind.Storm: return "The mage rides a bolt of lightning - the fastest of all journeys, but seen: every foe on the way is struck, and where they land the thunder knocks those round off their feet.";
-                case ComboKind.Magma: return "The mage goes through the ground as lava: a glowing crack runs above; where they come up, a ring of magma round them (none under the mage).";
-                case ComboKind.Haze: return "The mage shimmers and is gone from sight for the journey; a false shape of them stays where they stood, and foes go on shooting at it.";
-                case ComboKind.Bog: return "The mage sinks into the ground as into water and comes up at the target; the ground on the way and round where they come up turns to mire.";
-                default: return "The mage spins up in a dust devil, over whatever stands between, and lands in a cloud that blinds everyone round.";
+                case ComboKind.Steam: return "The wizard scatters into a cloud and drifts low to the target - nothing can reach them on the way; there the cloud bursts and scalds everyone round.";
+                case ComboKind.Storm: return "The wizard rides a bolt of lightning - the fastest of all journeys, but seen: every foe on the way is struck, and where they land the thunder knocks those round off their feet.";
+                case ComboKind.Magma: return "The wizard goes through the ground as lava: a glowing crack runs above; where they come up, a ring of magma round them (none under the wizard).";
+                case ComboKind.Haze: return "The wizard shimmers and is gone from sight for the journey; a false shape of them stays where they stood, and foes go on shooting at it.";
+                case ComboKind.Bog: return "The wizard sinks into the ground as into water and comes up at the target; the ground on the way and round where they come up turns to mire.";
+                default: return "The wizard spins up in a dust devil, over whatever stands between, and lands in a cloud that blinds everyone round.";
             }
         }
 
@@ -1070,20 +1070,20 @@ namespace Avir.Magic
                     e.main = "A weapon of " + Combos.Label(k) + ": " + (k == ComboKind.Steam ? "blows scald and leave a puff of cloud" : k == ComboKind.Storm ? "blows jolt (machines worse), sometimes stun"
                            : k == ComboKind.Magma ? "blows burn and may set the foe alight" : k == ComboKind.Haze ? "blows dazzle" : k == ComboKind.Bog ? "blows clog the foe with mud - slow" : "blows grind and blind") + "."; break;
                 case RuneKind.Step:
-                    e.main = SpellMods.Pulls(s) ? "The one at the target is drawn to the mage through " + Combos.Label(k) + "." : Step(k); break;
+                    e.main = SpellMods.Pulls(s) ? "The one at the target is drawn to the wizard through " + Combos.Label(k) + "." : Step(k); break;
                 case RuneKind.Shape:
-                    e.main = k == ComboKind.Magma ? "A wall of magma between two points: it burns, then sets into basalt - real rock that stays: smooth it into a wall, or mine it for chunks and cut them into blocks." : k == ComboKind.Haze ? "A row of false shapes of the mage between two points: foes shoot at them."
+                    e.main = k == ComboKind.Magma ? "A wall of magma between two points: it burns, then sets into basalt - real rock that stays: smooth it into a wall, or mine it for chunks and cut them into blocks." : k == ComboKind.Haze ? "A row of false shapes of the wizard between two points: foes shoot at them."
                            : k == ComboKind.Bog ? "A moat of mire between two points, two cells wide: foes wade, and those who stay are drawn under." : k == ComboKind.Storm ? "A fence of lightning between two points: it strikes whoever is in it."
                            : "A curtain of " + Combos.Label(k) + " between two points" + (k == ComboKind.Steam ? ": nothing is seen through it" : ": whoever is in it can hardly see") + "."; break;
                 case RuneKind.Sense:
-                    e.main = k == ComboKind.Dust ? "Dust settles on everything: the mage feels everyone round about - and the unseen are shown."
-                           : k == ComboKind.Magma ? "The heat in the rock: the mage feels everyone round about - and the veins of ore inside the rock are shown, even in mountains."
-                           : "The mage feels everyone round about, through walls."; break;
+                    e.main = k == ComboKind.Dust ? "Dust settles on everything: the wizard feels everyone round about - and the unseen are shown."
+                           : k == ComboKind.Magma ? "The heat in the rock: the wizard feels everyone round about - and the veins of ore inside the rock are shown, even in mountains."
+                           : "The wizard feels everyone round about, through walls."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Aura:
-                    string aura = k == ComboKind.Steam ? "a cloak of steam: the mage is hidden in it, no shot goes in or out" : k == ComboKind.Storm ? "a crown of storm: lightning strikes foes who come near"
-                                : k == ComboKind.Magma ? "heat: foes close to the mage burn" : k == ComboKind.Haze ? "a shimmer: foes near the mage miss" : k == ComboKind.Bog ? "the ground round the mage a mire for foes" : "a sandstorm: foes near miss, the unseen are shown";
-                    e.main = (what.Length > 0 ? name + " " + what + " round the mage; and " : "Round the mage, for a while: ") + aura + ".";
+                    string aura = k == ComboKind.Steam ? "a cloak of steam: the wizard is hidden in it, no shot goes in or out" : k == ComboKind.Storm ? "a crown of storm: lightning strikes foes who come near"
+                                : k == ComboKind.Magma ? "heat: foes close to the wizard burn" : k == ComboKind.Haze ? "a shimmer: foes near the wizard miss" : k == ComboKind.Bog ? "the ground round the wizard a mire for foes" : "a sandstorm: foes near miss, the unseen are shown";
+                    e.main = (what.Length > 0 ? name + " " + what + " round the wizard; and " : "Round the wizard, for a while: ") + aura + ".";
                     break;
                 default:
                     string where = form?.kind == RuneKind.Beam ? (k == ComboKind.Storm ? "as lightning leaping from foe to foe along the line" : k == ComboKind.Magma ? "as a stream of lava along the line" : k == ComboKind.Haze ? "as a ray of heat along the line" : k == ComboKind.Bog ? "as a jet of mud along the line" : "along a line to the target") : "at the point";

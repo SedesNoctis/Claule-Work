@@ -253,7 +253,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Thread</defName>
     <label>thread</label>
-    <description>Draws a thin grey thread from the circle to chosen things anywhere on the map, three per rune: filling reaches them, drawing out takes from them, a Trap feeds or milks along them, transmutation into current charges their grids. In a spell it turns a step round: not the mage goes to the target - the one at the target is drawn to the mage.</description>
+    <description>Draws a thin grey thread from the circle to chosen things anywhere on the map, three per rune: filling reaches them, drawing out takes from them, a Trap feeds or milks along them, transmutation into current charges their grids. In a spell it turns a step round: not the wizard goes to the target - the one at the target is drawn to the wizard.</description>
     <role>Flow</role>
     <kind>Thread</kind>
     <glyph>Thread</glyph>

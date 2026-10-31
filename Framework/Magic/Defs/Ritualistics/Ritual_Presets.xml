@@ -364,8 +364,8 @@
   </Avir.Ritualistics.RitualPresetDef>
   <Avir.Ritualistics.RitualPresetDef>
     <defName>Avir_Ritual_MagePath</defName>
-    <label>the mage's path</label>
-    <description>Gives a mage their path: the element that becomes theirs, and its first spells - more of them the better the ritual goes. The place beside infusion is left empty: write the element there. Fire, water, earth or air need only a small circle; a great element needs a medium one. A bigger circle gives more. The mage stands in the circle, or performs it.</description>
+    <label>the wizard's path</label>
+    <description>Gives a wizard their path: the element that becomes theirs, and its first spells - more of them the better the ritual goes. The place beside infusion is left empty: write the element there. Fire, water, earth or air need only a small circle; a great element needs a medium one. A bigger circle gives more. The wizard stands in the circle, or performs it.</description>
     <size>Small</size>
     <uiOrder>27</uiOrder>
     <rings>

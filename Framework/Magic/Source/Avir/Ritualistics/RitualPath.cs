@@ -44,7 +44,7 @@ namespace Avir.Ritualistics
                 string label = "Give " + q.LabelShort + " the path of " + el.label + (q == p ? " (the performer)" : "");
                 opts.Add(new FloatMenuOption(why == null ? label : label + " - " + why, why != null ? null : (System.Action)(() => Order(p, at, null, qq, 0))));
             }
-            opts.Add(new FloatMenuOption("(The mage, if not the performer, must stand in the circle)", null));
+            opts.Add(new FloatMenuOption("(The wizard, if not the performer, must stand in the circle)", null));
             Find.WindowStack.Add(new FloatMenu(opts));
         }
 
@@ -52,7 +52,7 @@ namespace Avir.Ritualistics
         {
             Pawn who = AwakenTarget;
             RuneDef el = r.elements[0];
-            if (who == null || who.Dead || Avir.Magic.MagePath.CannotTake(who) != null) { End("the mage is gone, or already has a path."); return true; }
+            if (who == null || who.Dead || Avir.Magic.MagePath.CannotTake(who) != null) { End("the wizard is gone, or already has a path."); return true; }
             if (!Pours(who, delta, Avir.Magic.MagePath.Need, el.color)) return false;
             float share = Mathf.Clamp01(drawQuality * r.Efficiency * (1f + 0.3f * r.amplify) * PathSizeFactor(el, Size));
             int n = Avir.Magic.MagePath.Grant(who, el, share);

@@ -6,7 +6,7 @@
     <defName>Avir_Sanctuary</defName>
     <thingClass>Avir.Magic.Building_Sanctuary</thingClass>
     <label>sanctuary</label>
-    <description>A round platform of carved stone set into the ground, its grooves waiting for a ritual. Bound by the ritual of binding to one element - the rune at its centre names which - it holds that element's stream: the energy circles over the stone in its colour, slowly fading, and lights the ground around it. A mage who meditates beside it draws on that store, far faster than alone. Empty, it stays bound, dark and quiet, until it is filled again. A ritual is drawn on it as on any medium circle.</description>
+    <description>A round platform of carved stone set into the ground, its grooves waiting for a ritual. Bound by the ritual of binding to one element - the rune at its centre names which - it holds that element's stream: the energy circles over the stone in its colour, slowly fading, and lights the ground around it. A wizard who meditates beside it draws on that store, far faster than alone. Empty, it stays bound, dark and quiet, until it is filled again. A ritual is drawn on it as on any medium circle.</description>
     <graphicData>
       <texPath>Things/Building/Magic/Sanctuary</texPath>
       <graphicClass>Graphic_Single</graphicClass>

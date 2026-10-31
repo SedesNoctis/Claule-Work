@@ -141,7 +141,7 @@ namespace Avir.Magic
             GUI.color = Ink; Text.Font = GameFont.Medium;
             ArtInk.Label(new Rect(r.x, r.y, r.width, 32f), "Runes");
             Text.Font = GameFont.Small; GUI.color = InkSoft;
-            ArtInk.Label(new Rect(r.x, r.y + 32f, r.width, 44f), tab == 6 ? "The spells of this mage's book: click one to open it here." : "Choose a circle or a section, then click a rune to write it there. Point at a rune to read it.");
+            ArtInk.Label(new Rect(r.x, r.y + 32f, r.width, 44f), tab == 6 ? "The spells of this wizard's book: click one to open it here." : "Choose a circle or a section, then click a rune to write it there. Point at a rune to read it.");
             // the tabs, in two rows so they read
             float tx = r.x, ty = r.y + 80f;
             for (int i = 0; i < Tabs.Length; i++)
@@ -214,7 +214,7 @@ namespace Avir.Magic
             if (book.Count == 0)
             {
                 GUI.color = InkSoft;
-                ArtInk.Label(r, "No spells yet - neither in this mage's book nor in the colony's.");
+                ArtInk.Label(r, "No spells yet - neither in this wizard's book nor in the colony's.");
                 return;
             }
             const float h = 70f;
@@ -307,11 +307,11 @@ namespace Avir.Magic
                 case RuneKind.Earth: return "the circle is stone";
                 case RuneKind.Release: return "a tremor: blunt blows, foes fall";
                 case RuneKind.Hold: return "rooted: no step, hands still free";
-                case RuneKind.Drain: return "weight into foes, kept by the mage";
+                case RuneKind.Drain: return "weight into foes, kept by the wizard";
                 case RuneKind.Lift: return "stone spikes from below";
                 case RuneKind.Growth: return "rich soil, plants grow";
                 case RuneKind.Purge: return "smothers fire, swallows filth";
-                case RuneKind.Aura: return "the mage's ground: stone skin, mud";
+                case RuneKind.Aura: return "the wizard's ground: stone skin, mud";
                 case RuneKind.Beam: return "a fissure that throws foes down";
                 case RuneKind.Shape: return "a wall of stone between two points";
                 case RuneKind.Step: return "under the ground - anywhere on the map";
@@ -324,7 +324,7 @@ namespace Avir.Magic
                 case RuneKind.Breadth: return "wider";
                 case RuneKind.Reach: return "further (+5% cast)";
                 case RuneKind.Anchor: return "stone stands longer";
-                case RuneKind.Thread: return "with a step - drags one to the mage, stunned";
+                case RuneKind.Thread: return "with a step - drags one to the wizard, stunned";
                 default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
             }
         }
@@ -337,11 +337,11 @@ namespace Avir.Magic
                 case RuneKind.Air: return "the circle blows";
                 case RuneKind.Release: return "a gust that throws foes back";
                 case RuneKind.Hold: return "still air: no breath, fires starve";
-                case RuneKind.Drain: return "breath pulled out, kept by the mage";
+                case RuneKind.Drain: return "breath pulled out, kept by the wizard";
                 case RuneKind.Lift: return "an updraft: up, and a fall that breaks";
                 case RuneKind.Growth: return "the wind spreads wider";
                 case RuneKind.Purge: return "clean air: gas gone, breathed out";
-                case RuneKind.Aura: return "a whirlwind round the mage";
+                case RuneKind.Aura: return "a whirlwind round the wizard";
                 case RuneKind.Beam: return "a blow that leaps foe to foe (lightning with water)";
                 case RuneKind.Shape: return "a wall of wind that throws back";
                 case RuneKind.Step: return "flight over walls and foes";
@@ -354,7 +354,7 @@ namespace Avir.Magic
                 case RuneKind.Breadth: return "wider; the blow leaps further";
                 case RuneKind.Reach: return "further (+5% cast)";
                 case RuneKind.Anchor: return "the wind blows longer";
-                case RuneKind.Thread: return "with a step - snatches one to the mage, reeling";
+                case RuneKind.Thread: return "with a step - snatches one to the wizard, reeling";
                 default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
             }
         }
@@ -375,7 +375,7 @@ namespace Avir.Magic
                 case RuneKind.Lift: return "a geyser that throws foes up";
                 case RuneKind.Growth: return "the water spreads, plants drink";
                 case RuneKind.Purge: return "washes fire, filth, poison away";
-                case RuneKind.Aura: return "a tide of mist round the mage";
+                case RuneKind.Aura: return "a tide of mist round the wizard";
                 case RuneKind.Beam: return "a jet to the target";
                 case RuneKind.Shape: return "the ground turns to shallow water";
                 case RuneKind.Step: return "a wave that strikes and carries foes";
@@ -388,7 +388,7 @@ namespace Avir.Magic
                 case RuneKind.Breadth: return "wider";
                 case RuneKind.Reach: return "further (+5% cast)";
                 case RuneKind.Anchor: return "the water stands longer";
-                case RuneKind.Thread: return "with a step - sweeps foes to the mage";
+                case RuneKind.Thread: return "with a step - sweeps foes to the wizard";
                 default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
             }
         }
@@ -405,7 +405,7 @@ namespace Avir.Magic
                 case RuneKind.Lift: return "tall flames, a pillar or a wall";
                 case RuneKind.Growth: return "fire spreads faster and further";
                 case RuneKind.Purge: return "puts fire out, burns infection";
-                case RuneKind.Aura: return "all round the mage";
+                case RuneKind.Aura: return "all round the wizard";
                 case RuneKind.Beam: return "a line to the target";
                 case RuneKind.Shape: return "a wall across the target";
                 case RuneKind.Step: return "a leap with a trail of fire";
@@ -707,7 +707,7 @@ namespace Avir.Magic
                 DrawAt(c, hr * 0.95f, RitualTex.Rim, new Color(1f, 0.84f, 0.55f, 0.9f));
                 if (star != null) { GUI.color = Color.white; GUI.DrawTexture(new Rect(c.x - hr * 0.7f, c.y - hr * 0.7f, hr * 1.4f, hr * 1.4f), star, ScaleMode.ScaleToFit); }
                 else DrawAt(c, hr * 0.6f, Ring(ref disc, 0f), new Color(1f, 0.85f, 0.5f, 0.9f));
-                if (Mouse.IsOver(hRect)) TooltipHandler.TipRegion(hRect, "The heart of the spell: here the mage stands. Every circle is bound to it by a thread.");
+                if (Mouse.IsOver(hRect)) TooltipHandler.TipRegion(hRect, "The heart of the spell: here the wizard stands. Every circle is bound to it by a thread.");
                 for (int i = 0; i < m; i++) DrawNode(n.kids[i], c + n.at[i] * scale);
                 return;
             }

@@ -88,7 +88,7 @@ namespace Avir.Magic
             float tx = inner.x;
             foreach (int pg in new[] { 0, 1 })
             {
-                string label = pg == 0 ? "Spells" : core != null && core.Sorcerer ? "Path of the sorcerer" : "Path of the mage";
+                string label = pg == 0 ? "Spells" : core != null && core.Sorcerer ? "Path of the sorcerer" : "Path of the wizard";
                 float w = Text.CalcSize(label).x + 40f;
                 Rect tr = new Rect(tx, inner.y, w, 30f);
                 if (RitualUI.Button(tr, label, true, page == pg)) page = pg;
@@ -127,7 +127,7 @@ namespace Avir.Magic
             Widgets.Label(new Rect(r.x, r.y, r.width, 34f), "The path of " + pawn.LabelShort);
             Text.Font = GameFont.Small; GUI.color = InkSoft;
             Widgets.Label(new Rect(r.x, r.y + 40f, r.width, 60f), core == null ? "No arcane core." :
-                "Core level " + core.level + ". How a mage grows - and where their path leads - is still to be written here.");
+                "Core level " + core.level + ". How a wizard grows - and where their path leads - is still to be written here.");
         }
 
         private void DrawMage(Rect r, Hediff_ArcaneCore core)
@@ -137,7 +137,7 @@ namespace Avir.Magic
             Widgets.Label(new Rect(r.x, r.y, r.width, 34f), pawn.LabelShortCap);
             Text.Font = GameFont.Small;
             GUI.color = SpellGlyph.Ink(sorc ? Hediff_ArcaneCore.SorcererColor : Hediff_ArcaneCore.MageColor);
-            Widgets.Label(new Rect(r.x, r.y + 34f, r.width, 24f), sorc ? "Sorcerer - born with magic" : "Mage - magic taken in");
+            Widgets.Label(new Rect(r.x, r.y + 34f, r.width, 24f), sorc ? "Sorcerer - born with magic" : "Wizard - magic taken in");
             if (core == null) { GUI.color = InkSoft; Widgets.Label(new Rect(r.x, r.y + 64f, r.width, 60f), "No arcane core - the gift will grow it back."); return; }
             // the Arcana, large
             Rect bar = new Rect(r.x, r.y + 70f, r.width, 34f);
@@ -203,7 +203,7 @@ namespace Avir.Magic
 
             // 4. the casting
             Heading(ref y, w, "Casting");
-            y += Row(y, w, "Speed", sorc ? "quick - a sorcerer" : "slow - a mage", true);
+            y += Row(y, w, "Speed", sorc ? "quick - a sorcerer" : "slow - a wizard", true);
             RitualSchema probe = SpellExamples.Fire().FirstOrDefault();
             if (probe != null) y += Row(y, w, "Holds a simple spell", Spells.HoldChance(pawn, probe).ToStringPercent(), true);
             y += Row(y, w, "The stream", tier > 0 ? "+" + (15 * tier) + "% power" : "no help", tier > 0);
@@ -310,7 +310,7 @@ namespace Avir.Magic
                     TooltipHandler.TipRegion(sl, s.name + "\n" + Spells.Describe(s) + "\n\nClick to take it from the hand.");
                     if (Widgets.ButtonInvisible(sl)) b.ready[i] = null;
                 }
-                else TooltipHandler.TipRegion(sl, open ? "An empty place: put a spell here from the book below." : "Not open yet - the mage's growth opens it.");
+                else TooltipHandler.TipRegion(sl, open ? "An empty place: put a spell here from the book below." : "Not open yet - the wizard's growth opens it.");
             }
             // the book of the mage
             float top = r.y + 52f + w + 32f;

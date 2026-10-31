@@ -264,7 +264,7 @@ namespace Avir.Magic
             public float Progress => Mathf.Clamp01((Find.TickManager.TicksGame - started) / (float)Mathf.Max(1, duration));
             public void ExposeData()
             {
-                Scribe_References.Look(ref mage, "mage"); Scribe_Deep.Look(ref spell, "spell"); Scribe_Values.Look(ref slot, "slot");
+                Scribe_References.Look(ref mage, "wizard"); Scribe_Deep.Look(ref spell, "spell"); Scribe_Values.Look(ref slot, "slot");
                 Scribe_TargetInfo.Look(ref target, "target"); Scribe_Values.Look(ref wallEnd, "wallEnd", IntVec3.Invalid);
                 Scribe_Values.Look(ref started, "started"); Scribe_Values.Look(ref duration, "duration");
             }

@@ -100,7 +100,7 @@ namespace Avir.Magic
                 if (kv.Value.thread > 0) parts.Add(kv.Key.kind == RuneKind.Step ? "thread (the step turns round)" : "thread");
                 if (parts.Count > 0) lines.Add(string.Join(", ", parts) + " - on " + kv.Key.label + " only");
             }
-            if (rd.wardOnMage) lines.Add("barrier on the edge - a ward on the mage");
+            if (rd.wardOnMage) lines.Add("barrier on the edge - a ward on the wizard");
             return lines;
         }
 

@@ -57,7 +57,7 @@
   <HediffDef>
     <defName>Avir_FireWarmth</defName>
     <label>warmed by fire</label>
-    <description>Warmed through by a mage's held fire: the cold bites far less for a while.</description>
+    <description>Warmed through by a wizard's held fire: the cold bites far less for a while.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(1, 0.7, 0.4)</defaultLabelColor>
     <isBad>false</isBad>
@@ -80,7 +80,7 @@
   <HediffDef>
     <defName>Avir_StoredHeat</defName>
     <label>stored heat</label>
-    <description>Heat taken out of fire and kept. The mage's next fire spell is stronger by it; kept too long, it slowly fades.</description>
+    <description>Heat taken out of fire and kept. The wizard's next fire spell is stronger by it; kept too long, it slowly fades.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(1, 0.5, 0.15)</defaultLabelColor>
     <isBad>false</isBad>
@@ -119,7 +119,7 @@
   <HediffDef>
     <defName>Avir_RagingFlame</defName>
     <label>raging flame</label>
-    <description>The mage has lost hold of their fire. For a while new flame breaks out all round them and every fire near them burns higher and spreads faster - friend and foe are in it alike. A ward of fire keeps the mage out of it.</description>
+    <description>The wizard has lost hold of their fire. For a while new flame breaks out all round them and every fire near them burns higher and spreads faster - friend and foe are in it alike. A ward of fire keeps the wizard out of it.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.9, 0.25, 0.1)</defaultLabelColor>
     <isBad>true</isBad>
@@ -135,7 +135,7 @@
   <ThingDef>
     <defName>Avir_HeldFlame</defName>
     <label>held flame</label>
-    <description>Fire held in its place by a mage: it never spreads, it smoulders and warms - and it burns the mage's foes who stand in it.</description>
+    <description>Fire held in its place by a wizard: it never spreads, it smoulders and warms - and it burns the wizard's foes who stand in it.</description>
     <thingClass>Avir.Magic.HeldFlame</thingClass>
     <category>Ethereal</category>
     <tickerType>Normal</tickerType>
@@ -159,7 +159,7 @@
   <ThingDef>
     <defName>Avir_FireWisp</defName>
     <label>fire wisp</label>
-    <description>A small spirit of fire called by a mage. It throws flame at their foes until it burns out.</description>
+    <description>A small spirit of fire called by a wizard. It throws flame at their foes until it burns out.</description>
     <thingClass>Avir.Magic.FireWisp</thingClass>
     <category>Ethereal</category>
     <tickerType>Normal</tickerType>
@@ -225,7 +225,7 @@
   <HediffDef>
     <defName>Avir_Soaked</defName>
     <label>soaked</label>
-    <description>Soaked through by a mage's water: slower, hard to set alight - and the cold bites through wet clothes far sooner.</description>
+    <description>Soaked through by a wizard's water: slower, hard to set alight - and the cold bites through wet clothes far sooner.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.45, 0.65, 1)</defaultLabelColor>
     <isBad>true</isBad>
@@ -254,7 +254,7 @@
   <HediffDef>
     <defName>Avir_Parched</defName>
     <label>parched</label>
-    <description>Water drawn out of the body by a mage: weak, slow and dizzy until it comes back.</description>
+    <description>Water drawn out of the body by a wizard: weak, slow and dizzy until it comes back.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.8, 0.7, 0.45)</defaultLabelColor>
     <isBad>true</isBad>
@@ -282,7 +282,7 @@
   <HediffDef>
     <defName>Avir_StoredWater</defName>
     <label>drawn water</label>
-    <description>Water drawn out and kept. The mage's next water spell is stronger by it; kept too long, it slowly seeps away.</description>
+    <description>Water drawn out and kept. The wizard's next water spell is stronger by it; kept too long, it slowly seeps away.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.45, 0.65, 1)</defaultLabelColor>
     <isBad>false</isBad>
@@ -335,7 +335,7 @@
   <HediffDef>
     <defName>Avir_Chilled</defName>
     <label>chilled to the bone</label>
-    <description>The mage lost hold of their water and it soaked them through: slower, and the cold bites hard, for a few hours.</description>
+    <description>The wizard lost hold of their water and it soaked them through: slower, and the cold bites hard, for a few hours.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.5, 0.6, 0.9)</defaultLabelColor>
     <isBad>true</isBad>
@@ -362,7 +362,7 @@
   <ThingDef>
     <defName>Avir_HeldWater</defName>
     <label>held water</label>
-    <description>Water held in its place by a mage: foes in it are soaked and slowed, and fire will not take here.</description>
+    <description>Water held in its place by a wizard: foes in it are soaked and slowed, and fire will not take here.</description>
     <thingClass>Avir.Magic.HeldWater</thingClass>
     <category>Ethereal</category>
     <tickerType>Normal</tickerType>
@@ -381,7 +381,7 @@
   <ThingDef>
     <defName>Avir_WaterSpirit</defName>
     <label>water spirit</label>
-    <description>A small spirit of water called by a mage. It throws water at their foes and puts out the fires near it, until it runs dry.</description>
+    <description>A small spirit of water called by a wizard. It throws water at their foes and puts out the fires near it, until it runs dry.</description>
     <thingClass>Avir.Magic.WaterSpirit</thingClass>
     <category>Ethereal</category>
     <tickerType>Normal</tickerType>
@@ -405,7 +405,7 @@
   <HediffDef>
     <defName>Avir_InMist</defName>
     <label>in the mist</label>
-    <description>Inside a water mage's tide: slowed, and it is hard to see through the mist to shoot.</description>
+    <description>Inside a water wizard's tide: slowed, and it is hard to see through the mist to shoot.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.7, 0.8, 1)</defaultLabelColor>
     <isBad>true</isBad>
@@ -443,7 +443,7 @@
   <HediffDef>
     <defName>Avir_StoneSkin</defName>
     <label>skin of stone</label>
-    <description>Stone grown over the skin by an earth mage. Blows and cuts bite less; it is heavy to carry.</description>
+    <description>Stone grown over the skin by an earth wizard. Blows and cuts bite less; it is heavy to carry.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
     <isBad>false</isBad>
@@ -471,7 +471,7 @@
   <HediffDef>
     <defName>Avir_HeavyGround</defName>
     <label>sucking ground</label>
-    <description>The ground of an earth mage clings to the feet like mud.</description>
+    <description>The ground of an earth wizard clings to the feet like mud.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
     <isBad>true</isBad>
@@ -498,7 +498,7 @@
   <HediffDef>
     <defName>Avir_Heavy</defName>
     <label>heavy limbs</label>
-    <description>An earth mage has poured weight into the body: every step is hard.</description>
+    <description>An earth wizard has poured weight into the body: every step is hard.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
     <isBad>true</isBad>
@@ -526,7 +526,7 @@
   <HediffDef>
     <defName>Avir_StoredStone</defName>
     <label>drawn weight</label>
-    <description>Weight taken from foes and kept. The mage's next earth spell is stronger by it; it slowly settles away.</description>
+    <description>Weight taken from foes and kept. The wizard's next earth spell is stronger by it; it slowly settles away.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
     <isBad>false</isBad>
@@ -580,7 +580,7 @@
   <HediffDef>
     <defName>Avir_Petrified</defName>
     <label>stone-bound</label>
-    <description>The earth took the mage when they lost hold of it: the limbs are stiff as stone for a while.</description>
+    <description>The earth took the wizard when they lost hold of it: the limbs are stiff as stone for a while.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
     <isBad>true</isBad>
@@ -629,7 +629,7 @@
   <HediffDef>
     <defName>Avir_Buffeted</defName>
     <label>buffeted</label>
-    <description>A mage's wind beats at them: slow to walk and hard to aim.</description>
+    <description>A wizard's wind beats at them: slow to walk and hard to aim.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
     <isBad>true</isBad>
@@ -657,7 +657,7 @@
   <HediffDef>
     <defName>Avir_StoredAir</defName>
     <label>drawn breath</label>
-    <description>Breath taken from foes and kept. The mage's next air spell is stronger by it; it slowly slips away.</description>
+    <description>Breath taken from foes and kept. The wizard's next air spell is stronger by it; it slowly slips away.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
     <isBad>false</isBad>
@@ -707,7 +707,7 @@
   <HediffDef>
     <defName>Avir_Winded</defName>
     <label>winded</label>
-    <description>The wind tore the breath out of the mage when they lost hold of it.</description>
+    <description>The wind tore the breath out of the wizard when they lost hold of it.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
     <isBad>true</isBad>
@@ -735,7 +735,7 @@
   <ThingDef ParentName="BuildingBase">
     <defName>Avir_EarthWall</defName>
     <label>raised stone</label>
-    <description>A wall of stone raised from the ground by an earth mage. It stops feet and shots alike, and crumbles back into the ground after some hours.</description>
+    <description>A wall of stone raised from the ground by an earth wizard. It stops feet and shots alike, and crumbles back into the ground after some hours.</description>
     <thingClass>Avir.Magic.EarthWall</thingClass>
     <category>Building</category>
     <tickerType>Normal</tickerType>
@@ -772,7 +772,7 @@
   <ThingDef>
     <defName>Avir_AirWall</defName>
     <label>wall of wind</label>
-    <description>A wall of wind held in its place by a mage. The mage's foes who try to cross it are thrown back.</description>
+    <description>A wall of wind held in its place by a wizard. The wizard's foes who try to cross it are thrown back.</description>
     <thingClass>Avir.Magic.AirWall</thingClass>
     <category>Ethereal</category>
     <tickerType>Normal</tickerType>
@@ -859,7 +859,7 @@
   <HediffDef>
     <defName>Avir_Dizzy</defName>
     <label>reeling</label>
-    <description>Spun through the air by a mage's wind and set down hard: the world will not stand still. Walking, aiming and working with the hands are all harder until it passes.</description>
+    <description>Spun through the air by a wizard's wind and set down hard: the world will not stand still. Walking, aiming and working with the hands are all harder until it passes.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
     <isBad>true</isBad>
@@ -890,7 +890,7 @@
   <ThingDef ParentName="BaseFilth">
     <defName>Avir_SpellPuddle</defName>
     <label>pool of water</label>
-    <description>Water a mage's spell left on the ground. It dries in a few hours.</description>
+    <description>Water a wizard's spell left on the ground. It dries in a few hours.</description>
     <statBases>
       <Beauty>-5</Beauty>
       <Cleanliness>-3</Cleanliness>
@@ -1312,7 +1312,7 @@
   <ThingDef>
     <defName>Avir_Magma</defName>
     <label>magma</label>
-    <description>Molten ground made by a mage. Whoever stands on it burns; it cools into rubble - or, poured as a wall, into stone.</description>
+    <description>Molten ground made by a wizard. Whoever stands on it burns; it cools into rubble - or, poured as a wall, into stone.</description>
     <thingClass>Avir.Magic.MagmaPool</thingClass>
     <category>Ethereal</category>
     <tickerType>Normal</tickerType>
@@ -1336,7 +1336,7 @@
   <ThingDef>
     <defName>Avir_Moss</defName>
     <label>magic moss</label>
-    <description>A living carpet of moss made by a mage. Friends on it mend and walk softly; fire will not take it; foes slip in it.</description>
+    <description>A living carpet of moss made by a wizard. Friends on it mend and walk softly; fire will not take it; foes slip in it.</description>
     <thingClass>Avir.Magic.MossPatch</thingClass>
     <category>Ethereal</category>
     <tickerType>Normal</tickerType>
@@ -1354,7 +1354,7 @@
   <HediffDef>
     <defName>Avir_Sinking</defName>
     <label>drawn into the mire</label>
-    <description>A mage's bog has them: the longer they stay in it, the deeper they sink - and when it closes over them, they choke. Out of the mire it slowly lets go.</description>
+    <description>A wizard's bog has them: the longer they stay in it, the deeper they sink - and when it closes over them, they choke. Out of the mire it slowly lets go.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.38, 0.47, 0.24)</defaultLabelColor>
     <isBad>true</isBad>
@@ -1398,7 +1398,7 @@
   <ThingDef>
     <defName>Avir_Mire</defName>
     <label>mire</label>
-    <description>A bog made by a mage. Foes in it are gripped, slower and slower; whoever stays in it too long, or falls in it, is drawn under and chokes.</description>
+    <description>A bog made by a wizard. Foes in it are gripped, slower and slower; whoever stays in it too long, or falls in it, is drawn under and chokes.</description>
     <thingClass>Avir.Magic.MirePatch</thingClass>
     <category>Ethereal</category>
     <tickerType>Normal</tickerType>
@@ -1458,7 +1458,7 @@
   <ThingDef>
     <defName>Avir_GasMarsh</defName>
     <label>marsh gas</label>
-    <description>Gas rising off a mage's bog. It does nothing at all - until fire, a burning body or a blast reaches it; then it goes off, and the gas round it after.</description>
+    <description>Gas rising off a wizard's bog. It does nothing at all - until fire, a burning body or a blast reaches it; then it goes off, and the gas round it after.</description>
     <thingClass>Avir.Magic.Gas_MarshGas</thingClass>
     <category>Gas</category>
     <altitudeLayer>Gas</altitudeLayer>
