@@ -84,8 +84,8 @@ namespace Avir.Magic
     }
 
     /// <summary>How deep a blow goes through armour does not come from piling power on (circles of one element, focus -
-    /// those make it stronger, not deeper): only from Amplify runes on its own verbs, each less than the last
-    /// (1 + half the square root of their number), no hard ceiling but the safety cap in the settings. And it is
+    /// those make it stronger, not deeper): from Amplify runes on its own verbs, each less than the last (1 + the square
+    /// root of their number), the map's stream and stone at hand; no hard ceiling but the safety cap in the settings. And it is
     /// deepest at the heart of the blow: towards its edge, by half (Магия-правила.md).</summary>
     public static class SpellDepth
     {
@@ -93,7 +93,13 @@ namespace Avir.Magic
         public static IntVec3 Heart = IntVec3.Invalid;
         public static float Reach = 0f;
 
-        public static float Factor => Mathf.Min(Mathf.Max(1f, AvirMod.Settings.magicPenDepthMax), 1f + 0.5f * Mathf.Sqrt(Mathf.Max(0, Amplify)));
+        /// <summary>Stone at hand under an earthen blow (earth, magma, bog, dust): it strikes with the rock about it.</summary>
+        public static float Stone = 1f;
+
+        /// <summary>Amplify: 1 + the square root of their number (1 - x2, 4 - x3, 9 - x4); the stream: +15% a tier; stone at
+        /// hand: x1.2. A caster at their peak - nine Amplify on one verb, a strong stream, rock about - breaks a cataphract's plate.</summary>
+        public static float Factor(Map map) => Mathf.Min(Mathf.Max(1f, AvirMod.Settings.magicPenDepthMax),
+            (1f + Mathf.Sqrt(Mathf.Max(0, Amplify))) * (1f + 0.15f * Spells.FlowTier(map)) * Stone);
 
         /// <summary>The share of depth left where the struck one stands: 1 at the heart, half at the edge and past it.</summary>
         public static float At(IntVec3 c)

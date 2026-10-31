@@ -127,11 +127,13 @@ namespace Avir.Magic
         {
             if (caster == null || caster.Dead) return;
             RitualReading r = RitualEvaluator.Read(part);
-            int keepAmp = SpellDepth.Amplify; IntVec3 keepHeart = SpellDepth.Heart; float keepReach = SpellDepth.Reach;
+            int keepAmp = SpellDepth.Amplify; IntVec3 keepHeart = SpellDepth.Heart; float keepReach = SpellDepth.Reach, keepStone = SpellDepth.Stone;
             SpellDepth.Amplify = r.amplify;
             // the heart of the blow: where it strikes (round the caster for an aura), as wide as its point
             SpellDepth.Heart = r.verbs.Any(v => v.kind == RuneKind.Aura) ? caster.Position : target.Cell;
             SpellDepth.Reach = FireMagic.PointRadius(r);
+            bool earthen = k != ComboKind.None ? EarthStone.Heavy(k) : EarthMagic.Is(el);
+            SpellDepth.Stone = earthen && caster.Map != null && EarthStone.Units(caster.Map, target.Cell, k) >= 1f ? 1.2f : 1f;
             try
             {
                 if (k != ComboKind.None) ComboMagic.Cast(k, caster, part, r, target, power);
@@ -140,7 +142,7 @@ namespace Avir.Magic
                 else if (EarthMagic.Is(el)) EarthMagic.Cast(caster, part, r, target, power);
                 else if (AirMagic.Is(el)) AirMagic.Cast(caster, part, r, target, power);
             }
-            finally { SpellDepth.Amplify = keepAmp; SpellDepth.Heart = keepHeart; SpellDepth.Reach = keepReach; }
+            finally { SpellDepth.Amplify = keepAmp; SpellDepth.Heart = keepHeart; SpellDepth.Reach = keepReach; SpellDepth.Stone = keepStone; }
         }
 
         /// <summary>A step aimed where the caster already stands goes home instead (a second step: there and back).</summary>
