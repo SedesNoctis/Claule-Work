@@ -168,7 +168,7 @@ namespace Avir.Magic
                 case RuneKind.Sense: e.main = "The caster feels every warm body within " + (25 + 10 * r.reach) + " cells - through walls and darkness - for a while."; break;
                 case RuneKind.Step: e.main = "The caster leaps to the target; along the way the fire " + (verbs.Count > 0 ? what : "stays held on the trail") + "."; break;
                 default:
-                    if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A ward of flame on friends at the target." : "Fire with nothing to do: add a verb (release, hold, drain, lift, growth, purge) or a form."; break; }
+                    if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A dome of flame over the target: whoever stands inside is warded, spells landing in it are put out." : "Fire with nothing to do: add a verb (release, hold, drain, lift, growth, purge) or a form."; break; }
                     string where = form?.kind == RuneKind.Aura ? "all around the caster (radius " + (radius + 1.5f).ToString("0.#") + ")"
                         : form?.kind == RuneKind.Beam ? "along a line to the target - a wall stops it"
                         : form?.kind == RuneKind.Shape ? "as a wall up to " + FireMagic.WallMax(r) + " cells long - its two ends chosen with two clicks"
@@ -210,7 +210,7 @@ namespace Avir.Magic
                 case RuneKind.Step: e.main = "The caster rides a wave to the target: it strikes whoever stands in its way and carries them on - wider and harder with breadth" + (verbs.Count > 0 ? "; and the water " + what : "") + "."; break;
                 case RuneKind.Shape: e.main = "The ground between two chosen points (up to " + FireMagic.WallMax(r) + " cells) turns to shallow water for a few hours: a moat - slow to cross, and fire will not burn there."; break;
                 default:
-                    if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A ward of water on friends at the target." : "Water with nothing to do: add a verb or a form."; break; }
+                    if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A dome of water over the target: whoever stands inside is warded, spells landing in it are put out." : "Water with nothing to do: add a verb or a form."; break; }
                     string where = form?.kind == RuneKind.Aura ? "all round the caster - and a mist stays round them for a while: foes in it are slowed and shoot poorly, fire does not start, and this happens again every few seconds"
                                  : form?.kind == RuneKind.Beam ? "in a jet to the target"
                                  : "at the point, " + radius.ToString("0.#") + " cells round";
@@ -244,7 +244,7 @@ namespace Avir.Magic
                 case RuneKind.Step: e.main = "The caster sinks into the ground and comes up anywhere on the map - only a crack of dust runs above. Where they come out the ground bursts: foes round about are thrown aside and stunned" + (verbs.Count > 0 ? "; and there, round the caster, the earth " + what : "") + "."; break;
                 case RuneKind.Shape: e.main = "Stone walls rise between two chosen points (up to " + FireMagic.WallMax(r) + " cells): they stop feet and shots and crumble after a few hours" + (verbs.Any(v => v.kind != RuneKind.Hold) ? "; and along them the earth " + Verbs(verbs.Where(v => v.kind != RuneKind.Hold).ToList(), EarthVerb) : "") + "."; break;
                 default:
-                    if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A ward of earth on friends at the target." : "Earth with nothing to do: add a verb or a form."; break; }
+                    if (verbs.Count == 0) { e.main = r.barrier > 0 ? "A dome of earth over the target: whoever stands inside is warded, spells landing in it are put out." : "Earth with nothing to do: add a verb or a form."; break; }
                     string where = form?.kind == RuneKind.Aura ? "all round the caster - and the ground stays theirs for a while: friends in it wear stone skin, foes wade as through mud, and this happens again every few seconds"
                                  : form?.kind == RuneKind.Beam ? "along a crack that runs to the target and throws down whoever stands on it"
                                  : "at the point, " + radius.ToString("0.#") + " cells round";
@@ -298,7 +298,7 @@ namespace Avir.Magic
                     if (verbs.Count == 0)
                     {
                         if (form?.kind == RuneKind.Beam) { e.main = "A chained blow: the wind strikes the first foe on the line and leaps on to " + (1 + r.breadth + r.amplify) + " more nearby, throwing each one on. With water in the spell it is a storm, and the blow becomes lightning."; break; }
-                        e.main = r.barrier > 0 ? "A ward of air on friends at the target." : "Air with nothing to do: add a verb or a form."; break;
+                        e.main = r.barrier > 0 ? "A dome of air over the target: whoever stands inside is warded, spells landing in it are put out." : "Air with nothing to do: add a verb or a form."; break;
                     }
                     string where = form?.kind == RuneKind.Aura ? "all round the caster - and a whirlwind stays round them for a while: foes in it are slowed and shoot poorly, and those who come close are thrown back"
                                  : form?.kind == RuneKind.Beam ? "along the line - and with it a chained blow that leaps from foe to foe (" + (2 + r.breadth + r.amplify) + " in all; lightning, in a storm with water)"

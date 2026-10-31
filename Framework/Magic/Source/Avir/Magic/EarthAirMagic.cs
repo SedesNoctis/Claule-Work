@@ -437,12 +437,7 @@ namespace Avir.Magic
 
         public static void Ward(Pawn caster, IntVec3 at, Map map, float radius, float power, HediffDef ward, string rune, int amplify = 0)
         {
-            foreach (Pawn p in PawnsIn(FireMagic.Point(at, map, radius), map))
-            {
-                if (p.HostileTo(caster)) continue;
-                SpellWards.Lay(p, ward, power, amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
-            }
-            MapComponent_WardsDrawn.Raise(map, at, radius, DefDatabase<RuneDef>.GetNamedSilentFail(rune), caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
+            MapComponent_WardsDrawn.RaiseWard(map, at, radius, DefDatabase<RuneDef>.GetNamedSilentFail(rune), ComboKind.None, caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power), power, amplify);
         }
 
         /// <summary>A barrier on the very edge of the circle: a ward on the mage, wherever the spell takes them.</summary>
@@ -451,7 +446,6 @@ namespace Avir.Magic
             SpellWards.Note(caster?.LabelShort + " - " + rune + ": ward on the caster " + SpellMods.WardOnMage);
             if (!SpellMods.WardOnMage || ward == null || caster.Dead) return;
             SpellWards.Lay(caster, ward, power, amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
-            if (caster.Spawned) MapComponent_WardsDrawn.Raise(caster.Map, caster.Position, 0.9f, DefDatabase<RuneDef>.GetNamedSilentFail(rune), caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
         }
 
         public static void Enchant(Pawn caster, IntVec3 at, Map map, float power, HediffDef def)

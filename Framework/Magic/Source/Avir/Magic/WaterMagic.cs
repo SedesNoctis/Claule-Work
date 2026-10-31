@@ -222,14 +222,7 @@ namespace Avir.Magic
 
         private static void Ward(Pawn caster, IntVec3 at, Map map, float radius, float power, int amplify)
         {
-            foreach (Pawn p in FireMagic.Point(at, map, radius).SelectMany(c => c.GetThingList(map).OfType<Pawn>()).Distinct().ToList())
-            {
-                if (p.Dead || p.HostileTo(caster)) continue;
-                SpellWards.Lay(p, WaterDefOf.Avir_WaterWard, power, amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
-                p.GetAttachment(ThingDefOf.Fire)?.Destroy();
-                FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 1.5f);
-            }
-            MapComponent_WardsDrawn.Raise(map, at, radius, DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Water"), caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
+            MapComponent_WardsDrawn.RaiseWard(map, at, radius, DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Water"), ComboKind.None, caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power), power, amplify);
         }
 
         /// <summary>Wounds of friends washed and bound: bleeding stops; a cleaner tending than fire's.</summary>
@@ -364,9 +357,84 @@ namespace Avir.Magic
     {
         public MapComponent_WardsDrawn(Map map) : base(map) { }
 
-        /// <summary>A dome a ward spell raised over its ground: as wide as the spell reached, shimmering while it lasts.</summary>
-        public class Dome { public IntVec3 at; public float radius; public RuneDef el; public int until; public Faction owner; public int seed; public Color? tint; public string tex; }
-        public readonly List<Dome> domes = new List<Dome>();
+        /// <summary>A dome a ward spell raised over its ground: as wide as the spell reached, shimmering while it lasts. A
+        /// zone dome is a ward over ground (Магия-правила.md, part 1): it has a charge and the ward's rules for whoever
+        /// stands inside, and for any spell that lands inside it. A dome that is only the picture of something else
+        /// (zone = false) has none.</summary>
+        public class Dome : IExposable, IWard
+        {
+            public IntVec3 at; public float radius; public RuneDef el; public int until; public Faction owner; public int seed; public Color? tint; public string tex;
+            public bool zone; public float energy, energyMax = 1f, ranged = 0.25f, melee = 0.15f; public ComboKind combo;
+            public MapComponent_WardsDrawn of;
+
+            public float Energy { get => energy; set => energy = value; }
+            public float EnergyMax => energyMax;
+            public float Ranged => ranged;
+            public float Melee => melee;
+            public RuneKind[] Parts => combo != ComboKind.None ? Combos.Parts(combo) : el != null ? new[] { el.kind } : new RuneKind[0];
+            public bool Fiery => combo == ComboKind.Magma || combo == ComboKind.Steam || (combo == ComboKind.None && el != null && el.kind == RuneKind.Fire);
+            public string Name => (combo != ComboKind.None ? Combos.Label(combo) : el?.label ?? "magic") + " dome";
+            public void Spend(float amount) { energy -= amount; if (energy <= 0.01f) Fall("Dome broken"); }
+            public void Fall(string why)
+            {
+                SpellWards.Note(Name + " at " + at + " fell: " + why);
+                of?.domes.Remove(this);
+                Map m = of?.map;
+                if (m != null) { FleckMaker.ThrowLightningGlow(at.ToVector3Shifted(), m, 1.6f); MoteMaker.ThrowText(at.ToVector3Shifted(), m, why, 3f); }
+            }
+
+            public void ExposeData()
+            {
+                Scribe_Values.Look(ref at, "at"); Scribe_Values.Look(ref radius, "radius"); Scribe_Defs.Look(ref el, "el"); Scribe_Values.Look(ref until, "until");
+                Scribe_References.Look(ref owner, "owner"); Scribe_Values.Look(ref seed, "seed"); Scribe_Values.Look(ref tex, "tex");
+                Scribe_Values.Look(ref zone, "zone"); Scribe_Values.Look(ref energy, "energy"); Scribe_Values.Look(ref energyMax, "energyMax", 1f);
+                Scribe_Values.Look(ref ranged, "ranged", 0.25f); Scribe_Values.Look(ref melee, "melee", 0.15f); Scribe_Values.Look(ref combo, "combo", ComboKind.None);
+                bool hasTint = tint.HasValue; Color tc = tint ?? Color.white;
+                Scribe_Values.Look(ref hasTint, "hasTint"); Scribe_Values.Look(ref tc, "tint");
+                if (Scribe.mode == LoadSaveMode.LoadingVars) tint = hasTint ? tc : (Color?)null;
+            }
+        }
+        public List<Dome> domes = new List<Dome>();
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Collections.Look(ref domes, "domes", LookMode.Deep);
+            if (domes == null) domes = new List<Dome>();
+            if (Scribe.mode == LoadSaveMode.PostLoadInit) foreach (Dome d in domes) d.of = this;
+        }
+
+        /// <summary>A zone ward raised over ground: its charge and its hold on plain blows grow with the spell, as a ward's.</summary>
+        public static Dome RaiseWard(Map map, IntVec3 at, float radius, RuneDef el, ComboKind combo, Pawn caster, int ticks, float power, int amplify)
+        {
+            var c = map?.GetComponent<MapComponent_WardsDrawn>();
+            if (c == null) return null;
+            float s = Mathf.Max(0.3f, power) * (1f + 0.5f * amplify);
+            var d = new Dome
+            {
+                at = at, radius = radius + 0.5f, el = el, combo = combo, until = Find.TickManager.TicksGame + ticks, owner = caster?.Faction, seed = Rand.Int,
+                tint = combo != ComboKind.None ? Combos.ColorOf(combo) : (Color?)null, tex = combo != ComboKind.None ? "Dome_" + combo : null,
+                zone = true, energyMax = 45f * s, ranged = Mathf.Min(0.75f, 0.25f * s), melee = Mathf.Min(0.5f, 0.15f * s), of = c
+            };
+            d.energy = d.energyMax;
+            c.domes.Add(d);
+            SpellWards.Note("dome of " + d.Name + " raised at " + at + " (radius " + d.radius.ToString("0.0") + ", charge " + d.energyMax.ToString("0") + ")");
+            return d;
+        }
+
+        /// <summary>The zone dome over a cell, if any (the newest).</summary>
+        public static Dome Over(Map map, IntVec3 c)
+        {
+            var m = map?.GetComponent<MapComponent_WardsDrawn>();
+            if (m == null) return null;
+            int now = Find.TickManager.TicksGame;
+            for (int i = m.domes.Count - 1; i >= 0; i--)
+            {
+                Dome d = m.domes[i];
+                if (d.zone && d.until > now && (c - d.at).LengthHorizontal <= d.radius) return d;
+            }
+            return null;
+        }
         private static readonly MaterialPropertyBlock block = new MaterialPropertyBlock();
 
         /// <param name="tex">A dome of its own (a meeting's: the element domes recoloured), under Things/Mote/Avir/Magic/.</param>
@@ -374,19 +442,17 @@ namespace Avir.Magic
         {
             var c = map?.GetComponent<MapComponent_WardsDrawn>();
             if (c == null) return;
-            c.domes.Add(new Dome { at = at, radius = radius + 0.5f, el = el, until = Find.TickManager.TicksGame + ticks, owner = caster?.Faction, seed = Rand.Int, tint = tint, tex = tex });
+            c.domes.Add(new Dome { at = at, radius = radius + 0.5f, el = el, until = Find.TickManager.TicksGame + ticks, owner = caster?.Faction, seed = Rand.Int, tint = tint, tex = tex, of = c });
         }
 
-        /// <summary>A foe's spell flying into a dome puts it out - the dome goes, as a ward does.</summary>
-        public bool Quench(IntVec3 c, Pawn caster)
+        /// <summary>A foe's spell flying into a dome meets it by the ward's rules (SpellWards.Meets): put out at the cost
+        /// of charge, or through it. A dome that is only a picture stops nothing.</summary>
+        public bool Quench(IntVec3 c, Pawn caster, RuneKind[] inc, float power)
         {
             int now = Find.TickManager.TicksGame;
-            Dome d = domes.FirstOrDefault(x => x.until > now && caster != null && x.owner != null && caster.Faction != null && x.owner.HostileTo(caster.Faction) && (c - x.at).LengthHorizontal <= x.radius);
+            Dome d = domes.LastOrDefault(x => x.zone && x.until > now && caster != null && x.owner != null && caster.Faction != null && x.owner.HostileTo(caster.Faction) && (c - x.at).LengthHorizontal <= x.radius);
             if (d == null) return false;
-            domes.Remove(d);
-            FleckMaker.ThrowLightningGlow(c.ToVector3Shifted(), map, 1.6f);
-            MoteMaker.ThrowText(c.ToVector3Shifted(), map, "Dome spent", 3f);
-            return true;
+            return SpellWards.Meets(d, inc, power, map, c, out _);
         }
 
         private static readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
@@ -458,8 +524,19 @@ namespace Avir.Magic
                 }
                 RuneDef el = null;
                 bool any = false;
+                Hediff_SpellWard sw = SpellWards.On(p);
+                if (sw != null && sw.Combo != ComboKind.None)
+                {
+                    // a ward of a meeting: its own dome, drawn round the wearer
+                    Vector3 wat = p.DrawPos; wat.y = AltitudeLayer.MoteOverhead.AltitudeFor();
+                    float wp = 1.6f + 0.06f * Mathf.Sin(Time.realtimeSinceStartup * 2.5f + p.thingIDNumber);
+                    Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(wat, Quaternion.identity, new Vector3(wp, 1f, wp)), Mat(null, Combos.ColorOf(sw.Combo), "Dome_" + sw.Combo), 0);
+                    continue;
+                }
+                if (sw != null && sw.Parts.Length == 1 && (sw.Parts[0] == RuneKind.Earth || sw.Parts[0] == RuneKind.Air)) { el = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + sw.Parts[0]); any = true; }
                 foreach (Hediff h in p.health.hediffSet.hediffs)
                 {
+                    if (any) break;
                     if (h.def == FireDefOf.Avir_FireWard) { el = fire; any = true; break; }
                     if (h.def == WaterDefOf.Avir_WaterWard)
                 {

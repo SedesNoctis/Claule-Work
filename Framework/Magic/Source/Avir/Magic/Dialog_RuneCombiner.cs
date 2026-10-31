@@ -58,8 +58,9 @@ namespace Avir.Magic
 
         private static readonly string[][] Examples =
         {
-            new[] { "Ward on the caster", "Fire", "Release", "|Barrier", "", "The Barrier as the very last rune of the circle: the ward falls on the caster." },
-            new[] { "Ward on friends at the target", "Fire", "Barrier,Release", "", "", "The Barrier anywhere but last: the ward falls on friends where the spell strikes (a zone)." },
+            new[] { "Ward on the caster", "Fire", "Release", "|Barrier", "", "The Barrier as the very last rune of the circle, after something that acts: the ward falls on the caster." },
+            new[] { "Burst, then a new ward", "Earth", "Step", "|Release,Shaping,Barrier", "", "Barriers act in their turn: the burst first (it spends any ward of its own element), then the ring, then a fresh ward on the caster." },
+            new[] { "Dome over the target", "Fire", "Barrier,Release", "", "", "The Barrier anywhere but last: a dome over the ground where the spell strikes, guarding whoever stands inside." },
             new[] { "Draw a foe to you", "Earth", "Step,Thread", "", "", "The Thread right outward of the Step turns it round: the one at the target is drawn to the caster." },
             new[] { "Step, then a ring round you", "Earth", "Step", "|Shaping", "", "Outward of the step: it happens where the caster comes out - a shaping there rises as a ring." },
             new[] { "There and back", "Air", "Step", "|Release,Step", "", "A strike where the caster lands, and a second step back home." },

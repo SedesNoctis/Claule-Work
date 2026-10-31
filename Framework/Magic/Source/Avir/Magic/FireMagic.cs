@@ -254,14 +254,8 @@ namespace Avir.Magic
 
         private static void Ward(Pawn caster, IntVec3 at, Map map, float radius, float power, int amplify)
         {
-            foreach (Pawn p in PawnsIn(Point(at, map, radius), map))
-            {
-                if (p.HostileTo(caster)) continue;
-                SpellWards.Lay(p, FireDefOf.Avir_FireWard, power, amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 6f * power));
-                if (p.GetAttachment(ThingDefOf.Fire) is Fire f) f.Destroy();
-                FleckMaker.ThrowFireGlow(p.DrawPos, map, 1f);
-            }
-            MapComponent_WardsDrawn.Raise(map, at, radius, DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Fire"), caster, Mathf.RoundToInt(GenDate.TicksPerHour * 6f * power));
+            // a ward over ground: a dome with a charge (Магия-правила.md, part 1)
+            MapComponent_WardsDrawn.RaiseWard(map, at, radius, DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Fire"), ComboKind.None, caster, Mathf.RoundToInt(GenDate.TicksPerHour * 6f * power), power, amplify);
         }
 
         private static void Cauterize(Pawn caster, IntVec3 at, Map map, float radius, float power, List<RuneDef> verbs)

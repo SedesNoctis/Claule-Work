@@ -138,12 +138,10 @@ namespace Avir.Magic
             using (SpellWards.Of(circle.element?.kind, met, true))
             try
             {
-                // two elements that met work as what they made
-                if (c.combos != null && c.combos.TryGetValue(circle, out ComboKind k)) ComboMagic.Cast(k, caster, one, r, c.target, p);
-                else if (FireMagic.Is(circle.element)) FireMagic.Cast(caster, one, r, c.target, p);
-                else if (WaterMagic.Is(circle.element)) WaterMagic.Cast(caster, one, r, c.target, p);
-                else if (EarthMagic.Is(circle.element)) EarthMagic.Cast(caster, one, r, c.target, p);
-                else if (AirMagic.Is(circle.element)) AirMagic.Cast(caster, one, r, c.target, p);
+                // a spell landing inside a dome meets it first (Магия-правила.md, part 1)
+                if (SpellWards.DomeTakes(caster.Map, c.target.Cell, circle.element, met, ref p)) { after = null; }
+                // the barriers in their turn; two elements that met work as what they made
+                else SpellWards.InOrder(caster, one, met, circle.element, c.target, p, part => SpellDash.CastPart(caster, part, met, circle.element, c.target, p));
             }
             finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; }
             SpellDash.Hang(after, met, caster, c.target, p);

@@ -104,22 +104,30 @@ namespace Avir.Magic
         private static void Cast(Pawn caster, RitualSchema s, ComboKind k, LocalTargetInfo target, float power, IntVec3 home)
         {
             if (caster == null || caster.Dead || !caster.Spawned) return;
-            RitualReading r = RitualEvaluator.Read(s);
-            RuneDef el = r.elements.FirstOrDefault();
+            RuneDef el = RitualEvaluator.Read(s).elements.FirstOrDefault();
             IntVec3 keep = ReturnTo;
             if (home.IsValid) ReturnTo = home;
             try
             {
                 using (SpellWards.Of(k == ComboKind.None ? el?.kind : null, k, true))
                 {
-                    if (k != ComboKind.None) ComboMagic.Cast(k, caster, s, r, target, power);
-                    else if (FireMagic.Is(el)) FireMagic.Cast(caster, s, r, target, power);
-                    else if (WaterMagic.Is(el)) WaterMagic.Cast(caster, s, r, target, power);
-                    else if (EarthMagic.Is(el)) EarthMagic.Cast(caster, s, r, target, power);
-                    else if (AirMagic.Is(el)) AirMagic.Cast(caster, s, r, target, power);
+                    if (SpellWards.DomeTakes(caster.Map, target.Cell, el, k, ref power)) return;
+                    SpellWards.InOrder(caster, s, k, el, target, power, part => CastPart(caster, part, k, el, target, power));
                 }
             }
             finally { ReturnTo = keep; }
+        }
+
+        /// <summary>One part of a circle (between its barriers), cast by its element or by what two elements made.</summary>
+        public static void CastPart(Pawn caster, RitualSchema part, ComboKind k, RuneDef el, LocalTargetInfo target, float power)
+        {
+            if (caster == null || caster.Dead) return;
+            RitualReading r = RitualEvaluator.Read(part);
+            if (k != ComboKind.None) ComboMagic.Cast(k, caster, part, r, target, power);
+            else if (FireMagic.Is(el)) FireMagic.Cast(caster, part, r, target, power);
+            else if (WaterMagic.Is(el)) WaterMagic.Cast(caster, part, r, target, power);
+            else if (EarthMagic.Is(el)) EarthMagic.Cast(caster, part, r, target, power);
+            else if (AirMagic.Is(el)) AirMagic.Cast(caster, part, r, target, power);
         }
 
         /// <summary>A step aimed where the caster already stands goes home instead (a second step: there and back).</summary>

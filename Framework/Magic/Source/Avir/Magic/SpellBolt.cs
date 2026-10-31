@@ -52,7 +52,7 @@ namespace Avir.Magic
         public static bool Quench(IntVec3 c, Map map, Pawn caster, RitualSchema spell, float power)
         {
             if (map == null || !c.InBounds(map)) return false;
-            if (map.GetComponent<MapComponent_WardsDrawn>()?.Quench(c, caster) == true) return true;
+            if (map.GetComponent<MapComponent_WardsDrawn>()?.Quench(c, caster, Elements(spell), power) == true) return true;
             foreach (Pawn p in c.GetThingList(map).OfType<Pawn>())
             {
                 // the caster's own side is flown over, as any shot is; a foe's ward stands in the way

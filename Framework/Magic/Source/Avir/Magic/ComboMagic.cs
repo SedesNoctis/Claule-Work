@@ -184,13 +184,10 @@ namespace Avir.Magic
             float radius = FireMagic.PointRadius(r);
             HediffDef ward = ComboDefOf.Ward(k);
             SpellWards.Note(caster.LabelShort + " casts " + k + ": barrier (wide) " + r.barrier + ", on the caster " + SpellMods.WardOnMage + ", runes " + string.Join(", ", s.rings.SelectMany(g => g.runes).Where(x => x != null).Select(x => x.defName.Replace("Avir_Rune_", ""))));
-            if (r.barrier > 0 || SpellMods.WardOnMage)
-            {
-                IntVec3 wat = SpellMods.WardOnMage || forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at;
-                foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(wat, map, Mathf.Max(0.9f, radius - 1f)), map))
-                    if (!p.HostileTo(caster)) SpellWards.Lay(p, ward, power, r.amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
-                MapComponent_WardsDrawn.Raise(map, wat, Mathf.Max(0.9f, radius - 1f), null, caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power), Combos.ColorOf(k), "Dome_" + k);
-            }
+            // (a spell cast through the chain has its barriers taken out and laid in their turn - SpellWards.InOrder)
+            if (SpellMods.WardOnMage) SpellWards.Lay(caster, ward, power, r.amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
+            else if (r.barrier > 0)
+                MapComponent_WardsDrawn.RaiseWard(map, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, Mathf.Max(1.4f, radius - 0.5f), null, k, caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power), power, r.amplify);
             // a storm is not aimed at one: it strikes the chosen target and as many foes round it (2 + Breadth more, a quarter weaker)
             if (k == ComboKind.Storm && !storming && !forms.Any(f => f.kind == RuneKind.Step || f.kind == RuneKind.Shape || f.kind == RuneKind.Aura || f.kind == RuneKind.Enchant || f.kind == RuneKind.Restore))
             {

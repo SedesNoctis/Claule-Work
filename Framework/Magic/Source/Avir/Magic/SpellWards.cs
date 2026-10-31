@@ -18,9 +18,40 @@ namespace Avir.Magic
     /// their ground (pools, steam, flames on the body) and the ground does not spend them; a direct blow of their own
     /// element puts out both the ward and the spell. What only slows or hinders, a ward keeps off in its own element too.
     /// Plain blows: 25% of ranged and 15% of melee held, up to 75% and 50% by amplifying.</summary>
-    public class Hediff_SpellWard : HediffWithComps
+    /// <summary>What a ward is, on a body or over ground (a zone dome): a charge, its elements, its hold on plain blows.</summary>
+    public interface IWard
+    {
+        float Energy { get; set; }
+        float EnergyMax { get; }
+        float Ranged { get; }
+        float Melee { get; }
+        RuneKind[] Parts { get; }
+        bool Fiery { get; }
+        string Name { get; }
+        void Spend(float amount);
+        void Fall(string why);
+    }
+
+    public class Hediff_SpellWard : HediffWithComps, IWard
     {
         public float energy, energyMax = 1f, ranged = 0.25f, melee = 0.15f;
+
+        public float Energy { get => energy; set => energy = value; }
+        public float EnergyMax => energyMax;
+        public float Ranged => ranged;
+        public float Melee => melee;
+        public string Name => def.label + " on " + pawn?.LabelShort;
+
+        /// <summary>The meeting it is made of, if any.</summary>
+        public ComboKind Combo
+        {
+            get
+            {
+                foreach (ComboKind k in new[] { ComboKind.Steam, ComboKind.Storm, ComboKind.Magma, ComboKind.Haze, ComboKind.Bog, ComboKind.Dust })
+                    if (def == ComboDefOf.Ward(k)) return k;
+                return ComboKind.None;
+            }
+        }
 
         /// <summary>The elements it is made of: one, or the two that met; none - the arcane ward, of no element.</summary>
         public RuneKind[] Parts
@@ -113,6 +144,139 @@ namespace Avir.Magic
 
         public static Hediff_SpellWard On(Pawn p) => p?.health?.hediffSet?.hediffs.OfType<Hediff_SpellWard>().FirstOrDefault();
 
+        /// <summary>What wards a pawn: its own ward, else the zone dome it stands in.</summary>
+        public static IWard Of(Pawn p)
+        {
+            IWard w = On(p);
+            if (w != null) return w;
+            return p != null && p.Spawned ? MapComponent_WardsDrawn.Over(p.Map, p.Position) : null;
+        }
+
+        // ------------------------------------------------------------------ a spell meeting a ward whole
+
+        /// <summary>A spell (its elements) meets a ward or a dome whole - a bolt flying in, a spell landing inside a dome.
+        /// Another element: put out at the cost of charge (12 a power) - and fire and water meeting there leave steam -
+        /// or, too strong, it breaks the ward and goes on. Its own fire on a fiery ward: both go out. Its own element (not
+        /// fire): it goes on, stronger by what was left of the ward, and the ward falls. True - the spell is put out.</summary>
+        public static bool Meets(IWard d, RuneKind[] inc, float power, Map map, IntVec3 at, out float boost)
+        {
+            boost = 1f;
+            if (d == null || inc == null || inc.Length == 0) return false;
+            RuneKind[] mine = d.Parts;
+            bool overlap = mine.Length > 0 && inc.Any(k => mine.Contains(k));
+            bool allOwn = mine.Length > 0 && inc.All(k => mine.Contains(k));
+            Note(d.Name + " meets a spell of " + string.Join("+", inc) + " (power " + power.ToString("0.00") + ", charge " + d.Energy.ToString("0") + ")");
+            if (d.Fiery && overlap && inc.Contains(RuneKind.Fire)) { d.Fall("Ward and spell put out"); Puff(map, at, 0.5f); return true; }
+            if (allOwn) { boost = 1f + 0.5f * Mathf.Clamp01(d.Energy / Mathf.Max(1f, d.EnergyMax)); d.Fall("Ward burst"); return false; }
+            float need = 12f * power;
+            if (d.Energy >= need)
+            {
+                d.Spend(need);
+                // fire and water meeting in it: the spell goes up as steam (harmless)
+                bool steam = (mine.Contains(RuneKind.Fire) && inc.Contains(RuneKind.Water)) || (mine.Contains(RuneKind.Water) && inc.Contains(RuneKind.Fire));
+                if (steam) ComboMagic.Smoke(map, FireMagic.Point(at, map, 2.5f), 0.7f);
+                Puff(map, at, 1f);
+                if (map != null) MoteMaker.ThrowText(at.ToVector3Shifted(), map, steam ? "Put out - steam" : "Spell put out", 3f);
+                return true;
+            }
+            d.Fall("Ward broken");
+            return false;
+        }
+
+        private static void Puff(Map map, IntVec3 at, float s)
+        {
+            if (map == null || !at.InBounds(map)) return;
+            FleckMaker.ThrowLightningGlow(at.ToVector3Shifted(), map, 1.2f * s + 0.4f);
+            FleckMaker.ThrowMicroSparks(at.ToVector3Shifted(), map);
+        }
+
+        /// <summary>A spell landing at a point inside a zone dome meets the dome first. True - it is put out there.</summary>
+        public static bool DomeTakes(Map map, IntVec3 at, RuneDef el, ComboKind k, ref float power)
+        {
+            MapComponent_WardsDrawn.Dome d = MapComponent_WardsDrawn.Over(map, at);
+            if (d == null) return false;
+            RuneKind[] inc = k != ComboKind.None ? Combos.Parts(k) : el != null ? new[] { el.kind } : new RuneKind[0];
+            bool out_ = Meets(d, inc, power, map, at, out float boost);
+            power *= boost;
+            return out_;
+        }
+
+        // ------------------------------------------------------------------ the barrier in its turn
+
+        private static bool Acts(RuneDef x) => x.role == RuneRole.Verb || x.role == RuneRole.Form;
+
+        /// <summary>Casts a circle with its barriers in their turn (Магия-правила.md, 1.1): what is written before a Barrier
+        /// acts, then the ward is laid, then what comes after. The Barrier as the very last rune, after something that acts,
+        /// lays the ward on the caster; anywhere else - a dome over the ground where the spell strikes (round the caster,
+        /// with an aura). Amplify runes right after a Barrier strengthen its ward.</summary>
+        public static void InOrder(Pawn caster, RitualSchema s, ComboKind k, RuneDef el, LocalTargetInfo target, float power, Action<RitualSchema> cast)
+        {
+            List<RuneDef> seq = s.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
+            if (!seq.Any(x => x.kind == RuneKind.Barrier)) { cast(s); return; }
+            var elements = seq.Where(x => x.role == RuneRole.Element).ToList();
+            int firstAct = seq.FindIndex(Acts);
+            var wide = seq.Take(firstAct < 0 ? seq.Count : firstAct).Where(x => x.role != RuneRole.Element && x.kind != RuneKind.Barrier).ToList();
+            var seg = new List<RuneDef>();
+            bool acted = false;
+            for (int i = 0; i < seq.Count; i++)
+            {
+                RuneDef x = seq[i];
+                if (x.role == RuneRole.Element) continue;
+                if (x.kind == RuneKind.Barrier)
+                {
+                    if (seg.Any(Acts)) { cast(Part(s, elements, wide, seg)); acted = true; }
+                    int amp = 0;
+                    while (i + 1 < seq.Count && seq[i + 1].kind == RuneKind.Amplify) { amp++; i++; }
+                    bool onCaster = i == seq.Count - 1 && acted;
+                    LayBarrier(caster, el, k, onCaster, target, s, power, amp);
+                    seg = new List<RuneDef>();
+                    continue;
+                }
+                if (firstAct < 0 || i < firstAct) continue;   // the circle-wide modifiers: in every part already
+                seg.Add(x);
+            }
+            if (seg.Any(Acts)) cast(Part(s, elements, wide, seg));
+        }
+
+        private static RitualSchema Part(RitualSchema s, List<RuneDef> elements, List<RuneDef> wide, List<RuneDef> seg)
+        {
+            var p = new RitualSchema { name = s.name, size = s.size };
+            p.rings.Add(new RitualRing { runes = elements.ToList(), slots = 1 });
+            p.rings.Add(new RitualRing { runes = wide.Concat(seg).ToList() });
+            return p;
+        }
+
+        public static HediffDef WardDef(RuneDef el, ComboKind k)
+        {
+            if (k != ComboKind.None) return ComboDefOf.Ward(k);
+            switch (el?.kind)
+            {
+                case RuneKind.Fire: return FireDefOf.Avir_FireWard;
+                case RuneKind.Water: return WaterDefOf.Avir_WaterWard;
+                case RuneKind.Earth: return EarthAirDefOf.Avir_EarthWard;
+                case RuneKind.Air: return EarthAirDefOf.Avir_AirWard;
+                default: return MagicSpellDefOf.Avir_ArcaneWard;
+            }
+        }
+
+        /// <summary>A Barrier's ward: on the caster, or a dome over the ground.</summary>
+        public static void LayBarrier(Pawn caster, RuneDef el, ComboKind k, bool onCaster, LocalTargetInfo target, RitualSchema s, float power, int amplify)
+        {
+            if (caster == null || !caster.Spawned) return;
+            int ticks = Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power);
+            Note(caster.LabelShort + ": Barrier of " + (k != ComboKind.None ? k.ToString() : el?.kind.ToString()) + (onCaster ? " on the caster" : " - a dome") + ", amplify " + amplify);
+            if (onCaster)
+            {
+                Lay(caster, WardDef(el, k), power, amplify, ticks);
+                if (k == ComboKind.None && el?.kind == RuneKind.Fire && caster.GetAttachment(ThingDefOf.Fire) is Fire f) f.Destroy();
+                return;
+            }
+            RitualReading r = RitualEvaluator.Read(s);
+            IntVec3 at = r.verbs.Any(v => v.kind == RuneKind.Aura) ? caster.Position : target.Cell;
+            float radius = Mathf.Max(1.4f, FireMagic.PointRadius(r) - 0.5f);
+            MapComponent_WardsDrawn.RaiseWard(caster.Map, at, radius, el, k, caster, ticks, power, amplify);
+        }
+
         // ------------------------------------------------------------------ laying a ward
 
         /// <summary>A ward on a body: its charge and its hold on plain blows grow with the spell's strength (amplifying).</summary>
@@ -146,7 +310,7 @@ namespace Avir.Magic
         public static string Note(string own, bool fiery, string soft, string answer, int amplify)
         {
             float s = 1f + 0.5f * amplify;
-            return "Friends at the target get a ward of " + own + " (the caster, if the Barrier is the last rune of the outer section). It has a charge and lasts for hours.\n"
+            return "A ward of " + own + ", laid in its turn: as the very last rune of the circle - on the caster; anywhere else - a dome over the ground where the spell strikes (round the caster, with an aura), guarding whoever stands inside and putting out spells that land in it. It has a charge and lasts for hours.\n"
                 + "• Magic of other elements is put out at the cost of charge; a blow stronger than what is left breaks it and comes through.\n"
                 + (fiery ? "• Its own fire does not burn the wearer and does not spend the ward; a direct blow of it puts out both the ward and the spell.\n"
                          : "• Its own element passes, stronger by the ward's charge, and the ward falls" + (soft != null ? " - but it keeps off " + soft : "") + ".\n")
@@ -161,8 +325,8 @@ namespace Avir.Magic
         public static bool Stops(Pawn p, bool soft)
         {
             if (!AtWork) return false;
-            Hediff_SpellWard w = On(p);
-            if (w == null || w.energy <= 0f) return false;
+            IWard w = Of(p);
+            if (w == null || w.Energy <= 0f) return false;
             RuneKind[] mine = w.Parts, inc = Incoming;
             bool own = mine.Length > 0 && inc.Any(k => mine.Contains(k));
             bool other = mine.Length == 0 || inc.Any(k => !mine.Contains(k));
@@ -175,11 +339,11 @@ namespace Avir.Magic
         /// <summary>A blow on a warded body. Returns true if nothing of it is left.</summary>
         internal static bool Take(Pawn p, ref DamageInfo dinfo)
         {
-            Hediff_SpellWard w = On(p);
+            IWard w = Of(p);
             if (w == null || dinfo.Def == null) return false;
             float amount = dinfo.Amount;
             if (amount <= 0f) return false;
-            Note(p.LabelShort + " hit through " + w.def.defName + " (" + w.energy.ToString("0") + "/" + w.energyMax.ToString("0") + "): " + dinfo.Def.defName + " " + amount.ToString("0.#")
+            Note(p.LabelShort + " hit through " + w.Name + " (" + w.Energy.ToString("0") + "/" + w.EnergyMax.ToString("0") + "): " + dinfo.Def.defName + " " + amount.ToString("0.#")
                 + (AtWork ? ", magic " + element + "/" + combo + (direct ? " direct" : " ground") : ", plain"));
             if (!AtWork)
             {
@@ -188,9 +352,9 @@ namespace Avir.Magic
                 if (w.Fiery && (dinfo.Def == DamageDefOf.Flame || dinfo.Def == DamageDefOf.Burn)) return true;
                 if (!dinfo.Def.ExternalViolenceFor(p)) return false;
                 bool far = dinfo.Def.isRanged || dinfo.Def.isExplosive;
-                float held = amount * (far ? w.ranged : w.melee);
+                float held = amount * (far ? w.Ranged : w.Melee);
                 if (held <= 0f) return false;
-                held = Mathf.Min(held, w.energy);
+                held = Mathf.Min(held, w.Energy);
                 w.Spend(held);
                 dinfo.SetAmount(amount - held);
                 return amount - held <= 0.01f;
@@ -212,14 +376,14 @@ namespace Avir.Magic
                 if (own)
                 {
                     // its own element passes, and the ward lies on the blow
-                    if (direct) { laid = w.energy * 0.5f; fall = true; }
+                    if (direct) { laid = w.Energy * 0.5f; fall = true; }
                     left += share;
                     continue;
                 }
                 // another element: put out at the cost of charge; too strong - the ward breaks, the rest comes through
-                if (w.energy >= share) { w.energy -= share; continue; }
-                left += share - w.energy;
-                w.energy = 0f;
+                if (w.Energy >= share) { w.Energy -= share; continue; }
+                left += share - w.Energy;
+                w.Energy = 0f;
                 fall = true;
             }
             if (quench) w.Fall("Ward and spell put out");
@@ -248,7 +412,7 @@ namespace Avir.Magic
         {
             __state = Patch_SpellWardsBlastBorn.of.TryGetValue(__instance, out object[] e) ? SpellWards.Of((RuneKind?)e[0], (ComboKind)e[1], (bool)e[2]) : null;
         }
-        public static void Finalizer(IDisposable __state) => __state?.Dispose();
+        public static void Postfix(IDisposable __state) => __state?.Dispose();
     }
 
     [HarmonyPatch(typeof(Pawn), nameof(Pawn.PreApplyDamage))]
@@ -258,7 +422,7 @@ namespace Avir.Magic
         public static bool Prefix(Pawn __instance, ref DamageInfo __0, ref bool __1)
         {
             if (__1 || !AvirMagic.On) return true;
-            if (SpellWards.On(__instance) == null) return true;
+            if (SpellWards.Of(__instance) == null) return true;
             if (!SpellWards.Take(__instance, ref __0)) return true;
             __1 = true;
             return false;
