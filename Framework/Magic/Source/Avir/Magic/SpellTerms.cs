@@ -97,6 +97,61 @@ namespace Avir.Magic
                     break;
                 }
             }
+            Merge(e);
+        }
+
+        private const string HereMark = "\n\nHere: ";
+
+        private static string HereOf(string v)
+        {
+            if (v == null) return "";
+            int i = v.IndexOf(HereMark);
+            return i < 0 ? "" : v.Substring(i + HereMark.Length);
+        }
+
+        private static string EntryOf(string v)
+        {
+            if (v == null) return "";
+            int i = v.IndexOf(HereMark);
+            return i < 0 ? v : v.Substring(0, i);
+        }
+
+        /// <summary>One plaque for one term: the order of acts of every circle under one, each confluence once, and what
+        /// a confluence inherits read inside it rather than beside it.</summary>
+        private static void Merge(SpellEffect e)
+        {
+            var outList = new List<KeyValuePair<string, string>>();
+            var at = new Dictionary<string, int>();
+            var inherit = new List<KeyValuePair<string, string>>();
+            foreach (var kv in e.extras)
+            {
+                string key = kv.Key, here = HereOf(kv.Value);
+                Match n = Regex.Match(key, "^Order of Acts \\((\\d+)\\)$");
+                if (n.Success) { key = "Order of Acts"; if (here.Length > 0) here = "Circle " + n.Groups[1].Value + ": " + here; }
+                if (key.StartsWith("Inheritance: ")) { inherit.Add(new KeyValuePair<string, string>(key.Substring(13), here)); continue; }
+                if (at.TryGetValue(key, out int i))
+                {
+                    var old = outList[i];
+                    string oh = HereOf(old.Value);
+                    if (here.Length > 0 && !oh.Contains(here))
+                        outList[i] = new KeyValuePair<string, string>(key, EntryOf(old.Value) + HereMark + (oh.Length > 0 ? oh + "\n" : "") + here);
+                    continue;
+                }
+                at[key] = outList.Count;
+                outList.Add(new KeyValuePair<string, string>(key, here.Length > 0 ? EntryOf(kv.Value) + HereMark + here : kv.Value));
+            }
+            foreach (var ih in inherit)
+            {
+                string key = "Confluence: " + ih.Key;
+                if (at.TryGetValue(key, out int i))
+                {
+                    var old = outList[i];
+                    outList[i] = new KeyValuePair<string, string>(key, old.Value + "\n\nFrom its parents it keeps: " + ih.Value);
+                }
+                else { at[key] = outList.Count; outList.Add(new KeyValuePair<string, string>(key, "Confluence. What two elements make keeps the habits of both its parents." + HereMark + ih.Value)); }
+            }
+            e.extras.Clear();
+            e.extras.AddRange(outList);
         }
 
         /// <summary>What the Thread does in this spell, for whoever reads it.</summary>
