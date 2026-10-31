@@ -297,6 +297,18 @@ namespace Avir.Magic
                 Hediff_WardCharm.Weave(who, el, k, power, amplify);
                 return;
             }
+            // a Barrier with nothing that acts, aimed at a body - the caster's own or another's: the ward goes on that body
+            if (!onCaster && s?.rings != null && !s.rings.SelectMany(g => g.runes).Any(x => x != null && Acts(x)))
+            {
+                Pawn on = target.Pawn ?? (target.Cell.IsValid && target.Cell.InBounds(caster.Map) ? target.Cell.GetFirstPawn(caster.Map) : null);
+                if (on != null && !on.Dead)
+                {
+                    Note("a lone Barrier aimed at " + on.LabelShort + ": the ward goes on them");
+                    Lay(on, WardDef(el, k), power, amplify, ticks);
+                    if (k == ComboKind.None && el?.kind == RuneKind.Fire && on.GetAttachment(ThingDefOf.Fire) is Fire f0) f0.Destroy();
+                    return;
+                }
+            }
             if (onCaster)
             {
                 Lay(caster, WardDef(el, k), power, amplify, ticks);
