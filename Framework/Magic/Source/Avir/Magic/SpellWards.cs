@@ -484,7 +484,7 @@ namespace Avir.Magic
         private static bool? ce;
 
         [HarmonyPriority(Priority.First)]
-        public static void Prefix(ref DamageInfo __0)
+        public static void Prefix(Pawn __instance, ref DamageInfo __0)
         {
             if (!AvirMagic.On || !SpellWards.AtWork || Pen == null) return;
             DamageDef d = __0.Def;
@@ -502,7 +502,7 @@ namespace Avir.Magic
                 : (ce.Value ? o.magicPenAirCE : o.magicPenAir);
             // deeper only by the craft of the blow (Amplify on its verbs, a great circle), never by piling power on;
             // a slight blow (a tick of a pool, a scratch) goes in shallower
-            pen *= SpellDepth.Factor * Mathf.Clamp(__0.Amount / 10f, 0.5f, 1f);
+            pen *= SpellDepth.Factor * SpellDepth.At(__instance.Position) * Mathf.Clamp(__0.Amount / 10f, 0.5f, 1f);
             if (pen <= 0f) return;
             SpellWards.Note("penetration " + d.defName + " " + __0.Amount.ToString("0.#") + ": " + pen.ToString("0.##") + (ce.Value ? (sharp ? " mm" : " MPa") : " (share)"));
             object box = __0;

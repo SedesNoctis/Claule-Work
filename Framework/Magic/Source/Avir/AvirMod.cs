@@ -85,10 +85,10 @@ namespace Avir
         public float earthCastFactor = 1.5f;
         // armour penetration of magic's blows, at a blow of 10 (it grows with the blow): with Combat Extended - MPa (blunt) and
         // mm (sharp); without it - the game's own share of armour pierced
-        public float magicPenWaterCE = 8f, magicPenEarthCE = 12f, magicPenAirCE = 5f, magicPenSharpCE = 2f;
-        public float magicPenWater = 0.2f, magicPenEarth = 0.3f, magicPenAir = 0.1f, magicPenSharp = 0.1f;
+        public float magicPenWaterCE = 4f, magicPenEarthCE = 6f, magicPenAirCE = 2.5f, magicPenSharpCE = 1f;
+        public float magicPenWater = 0.1f, magicPenEarth = 0.15f, magicPenAir = 0.05f, magicPenSharp = 0.05f;
         // how far penetration grows with the craft of the blow (Amplify on its verb, a great circle), and no further
-        public float magicPenDepthMax = 3f;
+        public float magicPenDepthMax = 4f;
         public float mageFlowWeight = 3f;
         /// <summary>Where a kept spell goes: 0 the colony's book, 1 files beside the mod (every game), 2 both.</summary>
         public int spellKeep = 0;
@@ -148,11 +148,11 @@ namespace Avir
             Scribe_Values.Look(ref airMomentumStep, "airMomentumStep", 0.15f);
             Scribe_Values.Look(ref airMomentumStages, "airMomentumStages", 3);
             Scribe_Values.Look(ref earthCastFactor, "earthCastFactor", 1.5f);
-            Scribe_Values.Look(ref magicPenWaterCE, "magicPenWaterCE", 8f); Scribe_Values.Look(ref magicPenEarthCE, "magicPenEarthCE", 12f);
-            Scribe_Values.Look(ref magicPenAirCE, "magicPenAirCE", 5f); Scribe_Values.Look(ref magicPenSharpCE, "magicPenSharpCE", 2f);
-            Scribe_Values.Look(ref magicPenWater, "magicPenWater", 0.2f); Scribe_Values.Look(ref magicPenEarth, "magicPenEarth", 0.3f);
-            Scribe_Values.Look(ref magicPenAir, "magicPenAir", 0.1f); Scribe_Values.Look(ref magicPenSharp, "magicPenSharp", 0.1f);
-            Scribe_Values.Look(ref magicPenDepthMax, "magicPenDepthMax", 3f);
+            Scribe_Values.Look(ref magicPenWaterCE, "magicPenWaterCE2", 4f); Scribe_Values.Look(ref magicPenEarthCE, "magicPenEarthCE2", 6f);
+            Scribe_Values.Look(ref magicPenAirCE, "magicPenAirCE2", 2.5f); Scribe_Values.Look(ref magicPenSharpCE, "magicPenSharpCE2", 1f);
+            Scribe_Values.Look(ref magicPenWater, "magicPenWater2", 0.1f); Scribe_Values.Look(ref magicPenEarth, "magicPenEarth2", 0.15f);
+            Scribe_Values.Look(ref magicPenAir, "magicPenAir2", 0.05f); Scribe_Values.Look(ref magicPenSharp, "magicPenSharp2", 0.05f);
+            Scribe_Values.Look(ref magicPenDepthMax, "magicPenDepthMax2", 4f);
             Scribe_Values.Look(ref mageFlowWeight, "mageFlowWeight", 3f);
             Scribe_Values.Look(ref spellKeep, "spellKeep", 0);
             Scribe_Values.Look(ref arliaIntroBook, "arliaIntroBook");
@@ -246,7 +246,7 @@ namespace Avir
                 list.Label("  cutting blows (sand, shards): " + o.magicPenSharp.ToStringPercent()); o.magicPenSharp = Mathf.Round(list.Slider(o.magicPenSharp, 0f, 1f) * 20f) / 20f;
             }
             list.Label("Penetration grows with the craft of the blow up to ×" + o.magicPenDepthMax.ToString("0.0#"), -1f,
-                new TipSignal("Only Amplify runes on the striking verb (+25% each) and a great circle round it (x1.5) drive a blow deeper. Many circles of one element, focus and the stream make it stronger, not deeper."));
+                new TipSignal("Amplify runes on the striking verb drive a blow deeper, each less than the one before (1 + half the square root of their number: 1 - x1.5, 4 - x2, 9 - x2.5). Many circles of one element and focus make it stronger, not deeper. Away from the heart of the blow it goes in shallower: at its edge, by half."));
             o.magicPenDepthMax = Mathf.Round(list.Slider(o.magicPenDepthMax, 1f, 6f) * 4f) / 4f;
             list.Gap();
             list.Label("Where a kept spell goes:");

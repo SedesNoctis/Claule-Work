@@ -132,7 +132,6 @@ namespace Avir.Magic
             RitualSchema after = SpellDash.Split(ref one);
             if (shaped && after != null) SpellSculpt.Mark(after);
             float pHere = shaped ? p * SpellSculpt.Keeps : p;
-            SpellDepth.Great = c.root.ParentOf(circle)?.Great == true ? 1.5f : 1f;
             RitualReading r = RitualEvaluator.Read(one);
             SpellDash.Last = null;
             SpellDash.ReturnTo = c.origin;
@@ -149,7 +148,7 @@ namespace Avir.Magic
                 // the barriers in their turn; two elements that met work as what they made
                 else SpellWards.InOrder(caster, one, met, circle.element, c.target, pHere, part => SpellDash.CastPart(caster, part, met, circle.element, c.target, pHere));
             }
-            finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; SpellDepth.Great = 1f; }
+            finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; }
             SpellDash.Hang(after, met, caster, c.target, p);
             // where this circle ends, the next one strikes
             bool step = r.verbs.Any(v => v.kind == RuneKind.Step);

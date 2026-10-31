@@ -83,13 +83,23 @@ namespace Avir.Magic
         }
     }
 
-    /// <summary>How deep a blow goes through armour does not come from piling power on (circles of one element, focus,
-    /// the stream - those make it stronger, not deeper): only from the craft of the blow itself - Amplify runes on its
-    /// own verbs (+25% each) and its circle standing inside a great circle (x1.5). Capped in the settings.</summary>
+    /// <summary>How deep a blow goes through armour does not come from piling power on (circles of one element, focus -
+    /// those make it stronger, not deeper): only from Amplify runes on its own verbs, each less than the last
+    /// (1 + half the square root of their number), no hard ceiling but the safety cap in the settings. And it is
+    /// deepest at the heart of the blow: towards its edge, by half (Магия-правила.md).</summary>
     public static class SpellDepth
     {
-        public static float Great = 1f;
         public static int Amplify;
-        public static float Factor => Mathf.Min(Mathf.Max(1f, AvirMod.Settings.magicPenDepthMax), Great * (1f + 0.25f * Amplify));
+        public static IntVec3 Heart = IntVec3.Invalid;
+        public static float Reach = 0f;
+
+        public static float Factor => Mathf.Min(Mathf.Max(1f, AvirMod.Settings.magicPenDepthMax), 1f + 0.5f * Mathf.Sqrt(Mathf.Max(0, Amplify)));
+
+        /// <summary>The share of depth left where the struck one stands: 1 at the heart, half at the edge and past it.</summary>
+        public static float At(IntVec3 c)
+        {
+            if (!Heart.IsValid || Reach <= 0.5f || !c.IsValid) return 1f;
+            return Mathf.Lerp(1f, 0.5f, Mathf.Clamp01(c.DistanceTo(Heart) / Reach));
+        }
     }
 }
