@@ -175,7 +175,7 @@ namespace Avir.Magic
                 if (foe && el == RuneKind.Fire)
                 {
                     // where the path begins the fire bursts for real - torn out of it, the foe takes the burns along
-                    GenExplosion.DoExplosion(from, map, 1.9f + 0.3f * power, DamageDefOf.Flame, mage, Mathf.RoundToInt(8f * power), chanceToStartFire: 0.5f, ignoredThings: SpellSculpt.Ignored(mage, map, from, 1.9f + 0.3f * power, false));
+                    GenExplosion.DoExplosion(from, map, 1.9f + 0.3f * power, DamageDefOf.Flame, mage, Mathf.RoundToInt(8f * power), chanceToStartFire: 0.5f, ignoredThings: SpellSculpt.Ignored(mage, map, from, 1.9f + 0.3f * power, true));   // the blast left behind as the caster goes: not on them
                 }
                 (LastPulled ?? (LastPulled = new List<Pawn>())).Add(p);
             }
@@ -276,7 +276,7 @@ namespace Avir.Magic
             if (push <= 0) return;
             foreach (Pawn q in GenRadial.RadialDistinctThingsAround(at, map, radius, true).OfType<Pawn>().ToList())
             {
-                if (!MagicFx.Foe(q, mage)) continue;
+                if (q == mage || !MagicFx.Foe(q, mage)) continue;
                 MagicFx.Fell(q, at, push, map, mage, power, Mathf.RoundToInt(120f * power));
             }
         }
@@ -345,7 +345,7 @@ namespace Avir.Magic
                 {
                     // the mage comes down on a gust
                     foreach (IntVec3 c in GenRadial.RadialCellsAround(at, 2f, true)) if (c.InBounds(map) && Rand.Chance(0.6f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.6f, MagicFx.AirDust);
-                    foreach (Pawn q in GenRadial.RadialDistinctThingsAround(at, map, 2f, true).OfType<Pawn>().ToList()) if (MagicFx.Foe(q, mage)) MagicFx.Push(q, at, 2, map);
+                    foreach (Pawn q in GenRadial.RadialDistinctThingsAround(at, map, 2f, true).OfType<Pawn>().ToList()) if (q != mage && MagicFx.Foe(q, mage)) MagicFx.Push(q, at, 2, map);
                 }
             }
             finally

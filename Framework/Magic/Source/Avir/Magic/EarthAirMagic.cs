@@ -245,7 +245,7 @@ namespace Avir.Magic
 
         internal static void Chain(Pawn caster, List<IntVec3> line, Map map, int jumps, float power, bool storm)
         {
-            Pawn first = MagicFx.PawnsIn(line, map).Where(p => MagicFx.Foe(p, caster)).OrderBy(p => p.Position.DistanceToSquared(caster.Position)).FirstOrDefault();
+            Pawn first = MagicFx.PawnsIn(line, map).Where(p => p != caster && MagicFx.Foe(p, caster)).OrderBy(p => p.Position.DistanceToSquared(caster.Position)).FirstOrDefault();
             Vector3 prev = caster.DrawPos;
             IntVec3 prevCell = caster.Position;
             var hit = new HashSet<Pawn>();
@@ -279,7 +279,7 @@ namespace Avir.Magic
                 }
                 prev = at; prevCell = from;
                 cur = GenRadial.RadialDistinctThingsAround(from, map, 5.5f, true).OfType<Pawn>()
-                    .Where(p => MagicFx.Foe(p, caster) && !hit.Contains(p) && GenSight.LineOfSight(from, p.Position, map))
+                    .Where(p => p != caster && MagicFx.Foe(p, caster) && !hit.Contains(p) && GenSight.LineOfSight(from, p.Position, map))
                     .OrderBy(p => p.Position.DistanceToSquared(from)).FirstOrDefault();
             }
         }
@@ -387,9 +387,10 @@ namespace Avir.Magic
             return power;
         }
 
-        /// <summary>Struck by the caster's blow: anyone but the caster - friend or foe, a ward keeps whom it keeps - unless
-        /// the blow is shaped (two Barriers on the outer edge of the circle): then only foes.</summary>
-        public static bool Foe(Pawn p, Pawn caster) => p != null && p != caster && !p.Dead && (!SpellSculpt.Active || caster == null || p.HostileTo(caster));
+        /// <summary>Struck by the caster's blow: anyone standing in it - friend or foe, and the caster too if they strike at
+        /// their own feet; only a ward keeps them. A shaped blow (two Barriers on the outer edge of the circle) spares the
+        /// caster's people, but never the caster.</summary>
+        public static bool Foe(Pawn p, Pawn caster) => p != null && !p.Dead && (p == caster || !SpellSculpt.Active || caster == null || p.HostileTo(caster));
 
         /// <summary>Held fast in the ground by earth: cannot be thrown, drawn nor moved.</summary>
         public static bool Rooted(Pawn p) => p.health?.hediffSet?.GetFirstHediffOfDef(EarthAirDefOf.Avir_Rooted) != null;

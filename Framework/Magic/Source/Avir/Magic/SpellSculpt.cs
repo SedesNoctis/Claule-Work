@@ -52,9 +52,9 @@ namespace Avir.Magic
             outer.slots = Math.Max(outer.Slots, outer.runes.Count);
         }
 
-        /// <summary>What a blast of the caster's passes over: the caster (if asked), and in a shaped blow every one of
-        /// their own people within reach of it.</summary>
-        public static List<Thing> Ignored(Pawn caster, Map map, IntVec3 at, float radius, bool keepCaster = true)
+        /// <summary>What a blast of the caster's passes over: in a shaped blow every one of their own people within reach
+        /// of it - never the caster, who stands in their own blast unwarded at their peril.</summary>
+        public static List<Thing> Ignored(Pawn caster, Map map, IntVec3 at, float radius, bool keepCaster = false)
         {
             var l = new List<Thing>();
             if (caster != null && keepCaster) l.Add(caster);
