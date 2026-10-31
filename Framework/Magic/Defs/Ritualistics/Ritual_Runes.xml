@@ -227,7 +227,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Focus</defName>
     <label>focus</label>
-    <description>Draws the external stream into the ritual: the more energy on the map, the more it gives - and the less predictable it is.</description>
+    <description>Draws the external stream into the ritual: the more energy on the map, the more it gives - and the less predictable it is. In a spell it keeps its circle's element pure: the circle does not meet its neighbours.</description>
     <role>Flow</role>
     <kind>Focus</kind>
     <glyph>Focus</glyph>

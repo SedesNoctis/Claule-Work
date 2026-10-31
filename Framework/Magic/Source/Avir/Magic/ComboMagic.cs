@@ -96,6 +96,8 @@ namespace Avir.Magic
             {
                 SpellCircle a = order[i], b = order[i + 1];
                 if (map.ContainsKey(a) || map.ContainsKey(b) || !Small(a.element) || !Small(b.element)) continue;
+                // a focused circle keeps its element pure: it meets no one
+                if (Focused(a) || Focused(b)) continue;
                 if (root.ParentOf(a) != root.ParentOf(b)) continue;
                 ComboKind k = Of(a.element.kind, b.element.kind);
                 if (k == ComboKind.None) continue;
@@ -103,6 +105,9 @@ namespace Avir.Magic
             }
             return map;
         }
+
+        /// <summary>A circle with the focus rune in it: its element stays itself, whatever stands beside it.</summary>
+        public static bool Focused(SpellCircle c) => c != null && c.OwnRunes.Any(x => x.kind == RuneKind.Focus);
 
         public static ComboKind Of(SpellCircle root, SpellCircle c) => root != null && c != null && Pairs(root).TryGetValue(c, out ComboKind k) ? k : ComboKind.None;
     }

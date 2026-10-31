@@ -115,7 +115,7 @@ namespace Avir.Magic
                 case RuneRole.Form: return r.magic && r.kind != RuneKind.Summon;   // spirits: not made yet
                 case RuneRole.Verb: return Spells.Made(r.kind);
                 case RuneRole.Modifier: return true;
-                case RuneRole.Flow: return r.kind == RuneKind.Barrier || r.kind == RuneKind.Thread;   // the ward; the thread that turns a step round
+                case RuneRole.Flow: return r.kind == RuneKind.Barrier || r.kind == RuneKind.Thread || r.kind == RuneKind.Focus;   // the ward; the thread that turns a step round; focus keeps a circle pure
             }
             return false;
         }
