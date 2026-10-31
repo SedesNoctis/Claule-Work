@@ -354,15 +354,15 @@ namespace Avir.Magic
         public MapComponent_WardsDrawn(Map map) : base(map) { }
 
         /// <summary>A dome a ward spell raised over its ground: as wide as the spell reached, shimmering while it lasts.</summary>
-        public class Dome { public IntVec3 at; public float radius; public RuneDef el; public int until; public Faction owner; public int seed; }
+        public class Dome { public IntVec3 at; public float radius; public RuneDef el; public int until; public Faction owner; public int seed; public Color? tint; }
         public readonly List<Dome> domes = new List<Dome>();
         private static readonly MaterialPropertyBlock block = new MaterialPropertyBlock();
 
-        public static void Raise(Map map, IntVec3 at, float radius, RuneDef el, Pawn caster, int ticks)
+        public static void Raise(Map map, IntVec3 at, float radius, RuneDef el, Pawn caster, int ticks, Color? tint = null)
         {
             var c = map?.GetComponent<MapComponent_WardsDrawn>();
             if (c == null) return;
-            c.domes.Add(new Dome { at = at, radius = radius + 0.5f, el = el, until = Find.TickManager.TicksGame + ticks, owner = caster?.Faction, seed = Rand.Int });
+            c.domes.Add(new Dome { at = at, radius = radius + 0.5f, el = el, until = Find.TickManager.TicksGame + ticks, owner = caster?.Faction, seed = Rand.Int, tint = tint });
         }
 
         /// <summary>A foe's spell flying into a dome puts it out - the dome goes, as a ward does.</summary>
@@ -380,6 +380,18 @@ namespace Avir.Magic
         private static readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
         private static Material glowMat;
         private static Material GlowMat => glowMat ?? (glowMat = MaterialPool.MatFrom(Avir.Linarian.SongArt.Glow, ShaderDatabase.MoteGlow, Color.white));
+
+        /// <summary>A dome of two elements met wears the colour of what they made.</summary>
+        private static Material Mat(RuneDef el, Color? tint)
+        {
+            if (tint == null) return Mat(el);
+            Color t = tint.Value;
+            string key = "tint" + t.r.ToString("0.00") + t.g.ToString("0.00") + t.b.ToString("0.00");
+            if (mats.TryGetValue(key, out Material tm)) return tm;
+            tm = MaterialPool.MatFrom(FlowTex.Dome ?? RitualTex.Ring, ShaderDatabase.Transparent, new Color(t.r, t.g, t.b, 0.35f));
+            mats[key] = tm;
+            return tm;
+        }
 
         private static Material Mat(RuneDef el)
         {
@@ -407,7 +419,7 @@ namespace Avir.Magic
                 if (d.until - now < 300) a *= (d.until - now) / 300f;   // fading in its last seconds
                 Vector3 pos = d.at.ToVector3Shifted(); pos.y = AltitudeLayer.MoteOverhead.AltitudeFor();
                 float s = d.radius * 2f * breath;
-                Material m = Mat(d.el);
+                Material m = Mat(d.el, d.tint);
                 Color keep = m.color;
                 block.SetColor(ShaderPropertyIDs.Color, new Color(keep.r, keep.g, keep.b, Mathf.Clamp01(a)));
                 Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis(t * 4f % 360f, Vector3.up), new Vector3(s, 1f, s)), m, 0, null, 0, block);
