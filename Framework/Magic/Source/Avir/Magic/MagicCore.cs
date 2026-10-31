@@ -682,6 +682,21 @@ namespace Avir.Magic
             else MapComponent_ComboFields.Raise(map, k, by, c, 4f, 1f, 1800, false);
         }
 
+        [DebugAction(Cat, "Marsh gas here (light it with fire)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevMarsh() { Map map = Find.CurrentMap; foreach (IntVec3 x in FireMagic.Point(Verse.UI.MouseCell(), map, 2.5f)) Gas_MarshGas.Release(x, map, 1, false); }
+
+        [DebugAction(Cat, "Scalding steam here", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevSteam() { Gas_ScaldingSteam.Release(Verse.UI.MouseCell(), Find.CurrentMap, 3); }
+
+        [DebugAction(Cat, "Lightning into the water here (runs through it)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevConduct() { Map map = Find.CurrentMap; Reactions.Conduct(Verse.UI.MouseCell(), map, map.mapPawns.FreeColonistsSpawned.FirstOrDefault(), 1f); }
+
+        [DebugAction(Cat, "Heat this spot (reactions)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevHeat() { Map map = Find.CurrentMap; Reactions.Touch(Brings.Heat | Brings.Fire, FireMagic.Point(Verse.UI.MouseCell(), map, 2.5f), map, null, 1f); }
+
+        [DebugAction(Cat, "Water this spot (reactions)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevWater() { Map map = Find.CurrentMap; Reactions.Touch(Brings.Water, FireMagic.Point(Verse.UI.MouseCell(), map, 2.5f), map, null, 1f); }
+
         [DebugAction(Cat, "Magma wall here (sets into stone)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevMagmaWall() { Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell(); for (int i = -2; i <= 2; i++) MagmaPool.Pour(c + new IntVec3(i, 0, 0), map, null, 1f, 300, true, 5000); }
 

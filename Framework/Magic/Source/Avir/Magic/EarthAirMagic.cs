@@ -123,6 +123,7 @@ namespace Avir.Magic
                             if (!p.Dead) MagicFx.Lift(p, caster, power * 0.7f);
                         }
                         foreach (IntVec3 c in cells) { if (Rand.Chance(0.4f)) MagicFx.Rubble(c, map); FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1f, MagicFx.EarthDust); }
+                        DrawUp(caster, map, cells, power);
                         break;
                     case RuneKind.Growth:
                         // the soil grows rich: plants drink it in
@@ -142,6 +143,27 @@ namespace Avir.Magic
                         break;
                 }
             }
+        }
+
+        /// <summary>The ground gives up what lies deep in it: the deposits a deep drill would reach come up through the
+        /// spikes, a share at a time (up to 25 for each power), without a drill.</summary>
+        internal static void DrawUp(Pawn caster, Map map, List<IntVec3> cells, float power)
+        {
+            int budget = Mathf.RoundToInt(25f * power), got = 0;
+            ThingDef what = null;
+            foreach (IntVec3 c in cells)
+            {
+                if (budget <= 0) break;
+                ThingDef d = map.deepResourceGrid.ThingDefAt(c);
+                int n = d == null ? 0 : map.deepResourceGrid.CountAt(c);
+                if (n <= 0) continue;
+                int take = Mathf.Min(n, budget, Mathf.Max(1, d.deepCountPerPortion));
+                map.deepResourceGrid.SetAt(c, d, n - take);
+                Thing t = ThingMaker.MakeThing(d); t.stackCount = take;
+                GenPlace.TryPlaceThing(t, c, map, ThingPlaceMode.Near);
+                budget -= take; got += take; what = d;
+            }
+            if (got > 0) Messages.Message("The earth gives up " + got + " " + what.label + " from deep below.", new TargetInfo(cells[0], map), MessageTypeDefOf.PositiveEvent, false);
         }
 
         public static void Petrified(Pawn caster)
@@ -240,6 +262,8 @@ namespace Avir.Magic
                     cur.TakeDamage(new DamageInfo(DamageDefOf.Burn, 8f * power * wet, 0.3f, -1f, caster));
                     if (!cur.Dead && cur.RaceProps.IsMechanoid) cur.TakeDamage(new DamageInfo(DamageDefOf.EMP, 10f * power, 0f, -1f, caster));
                     if (!cur.Dead) MagicFx.Stun(cur, 50, caster);
+                    // standing in water: the bolt runs on through it
+                    Reactions.Conduct(from, map, caster, power);
                 }
                 else
                 {

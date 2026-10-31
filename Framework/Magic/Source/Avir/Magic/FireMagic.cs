@@ -136,6 +136,7 @@ namespace Avir.Magic
         private static void Apply(Pawn caster, Map map, List<RuneDef> verbs, List<IntVec3> cells, IntVec3 at, float power, RitualReading r, bool aroundSelf)
         {
             if (cells.Count == 0) return;
+            if (verbs.Count > 0) Reactions.Touch(Brings.Fire | Brings.Heat, cells, map, caster, power);
             foreach (RuneDef v in verbs)
             {
                 RitualReading rv = SpellMods.Verb(r, v);

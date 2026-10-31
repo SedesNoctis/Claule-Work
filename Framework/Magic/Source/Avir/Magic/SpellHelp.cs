@@ -404,7 +404,7 @@ namespace Avir.Magic
 
         private static RitualSchema Make(string name, params string[][] rings)
         {
-            var s = new RitualSchema { name = name, size = RitualCircleSize.Small };
+            var s = new RitualSchema { name = name, size = RitualCircleSize.Small, author = "path" };
             foreach (string[] ring in rings)
             {
                 var rr = new RitualRing();
@@ -427,7 +427,7 @@ namespace Avir.Magic
                 RitualSchema two = Make(name, new[] { b, bv });
                 var root = SpellCircle.Bound(one.weave);
                 root.inner.Add(two.weave);
-                return new RitualSchema { name = name, size = RitualCircleSize.Small, weave = root };
+                return new RitualSchema { name = name, size = RitualCircleSize.Small, weave = root, author = "path" };
             }
             return new List<RitualSchema>
             {

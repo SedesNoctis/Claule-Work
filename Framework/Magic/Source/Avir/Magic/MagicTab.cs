@@ -279,6 +279,9 @@ namespace Avir.Magic
         }
 
         private Vector2 spellScroll;
+        private int groupBy;
+        private string search = "";
+        private readonly HashSet<string> folded = new HashSet<string>();
 
         private void DrawSpells(Rect r)
         {
@@ -319,14 +322,42 @@ namespace Avir.Magic
             if (Prefs.DevMode && RitualUI.Button(new Rect(r.xMax - 524f, top - 4f, 176f, 32f), "Dev: all spells"))
                 foreach (RitualSchema ex in SpellExamples.Fire().Concat(SpellExamples.Water()).Concat(SpellExamples.Earth()).Concat(SpellExamples.Air()).Concat(SpellExamples.Meetings())) if (!b.spells.Any(x => x.name == ex.name)) b.spells.Add(ex);
             if (RitualUI.Button(new Rect(r.xMax - 150f, top - 4f, 150f, 32f), "New spell..."))
-                Find.WindowStack.Add(new Dialog_SpellEditor(new RitualSchema { name = "New spell" }, pawn, sp => b.spells.Add(sp)));
-            Rect area = new Rect(r.x, top + 32f, r.width, r.yMax - top - 32f);
-            const float rowH = 112f;
-            Rect view = new Rect(0f, 0f, area.width - 16f, Mathf.Max(1, b.spells.Count) * (rowH + 6f));
+                Find.WindowStack.Add(new Dialog_SpellEditor(new RitualSchema { name = "New spell", author = pawn.LabelShort }, pawn, sp => { if (sp.author.NullOrEmpty()) sp.author = pawn.LabelShort; b.spells.Add(sp); }));
+            // the book in sections: by what the spells do, by their element, or by who wrote them; and a search
+            float gy = top + 32f, gx = r.x;
+            foreach (int g in new[] { 0, 1, 2 })
+            {
+                string gl = g == 0 ? "By effect" : g == 1 ? "By element" : "By author";
+                float gw = Text.CalcSize(gl).x + 30f;
+                if (RitualUI.Button(new Rect(gx, gy, gw, 28f), gl, true, groupBy == g)) groupBy = g;
+                gx += gw + 6f;
+            }
+            Rect sr = new Rect(Mathf.Max(gx + 10f, r.xMax - 220f), gy, Mathf.Min(220f, r.xMax - gx - 10f), 28f);
+            search = Widgets.TextField(sr, search ?? "");
+            if (search.NullOrEmpty()) { GUI.color = InkSoft; Widgets.Label(new Rect(sr.x + 6f, sr.y + 4f, sr.width, 24f), "search..."); GUI.color = Ink; }
+            Rect area = new Rect(r.x, gy + 36f, r.width, r.yMax - gy - 36f);
+            const float rowH = 112f, headH = 30f;
+            var shown = b.spells.Where(x => search.NullOrEmpty() || x.name.IndexOf(search, System.StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+            var groups = shown.GroupBy(x => SpellSections.Of(x, groupBy, pawn)).OrderBy(g => SpellSections.Order(g.Key, groupBy)).ToList();
+            float total = 0f;
+            foreach (var g in groups) total += headH + (folded.Contains(groupBy + g.Key) ? 0f : g.Count() * (rowH + 6f));
+            Rect view = new Rect(0f, 0f, area.width - 16f, Mathf.Max(60f, total));
             RitualScroll.Begin(area, ref spellScroll, view);
             float y = 0f;
             if (b.spells.Count == 0) { GUI.color = InkSoft; Widgets.Label(new Rect(0f, 0f, view.width, 60f), "No spells yet. Write one: an element, a form or verb, and the modifiers you like - in a small circle at first."); }
-            foreach (RitualSchema s in b.spells.ToList())
+            foreach (var grp in groups)
+            {
+            // the section's head: click to fold it
+            Rect hr = new Rect(0f, y, view.width, headH - 4f);
+            bool shut = folded.Contains(groupBy + grp.Key);
+            Widgets.DrawBoxSolid(hr, new Color(0.55f, 0.4f, 0.25f, 0.18f));
+            GUI.color = Ink; Text.Anchor = TextAnchor.MiddleLeft;
+            Widgets.Label(new Rect(hr.x + 8f, hr.y, hr.width - 8f, hr.height), (shut ? "▸ " : "▾ ") + grp.Key + "  (" + grp.Count() + ")");
+            Text.Anchor = TextAnchor.UpperLeft;
+            if (Widgets.ButtonInvisible(hr)) { if (shut) folded.Remove(groupBy + grp.Key); else folded.Add(groupBy + grp.Key); }
+            y += headH;
+            if (shut) continue;
+            foreach (RitualSchema s in grp.ToList())
             {
                 // one card a spell: its sign, its name, what it does, what it costs - and the buttons under it
                 Rect row = new Rect(0f, y, view.width, rowH);
@@ -377,6 +408,7 @@ namespace Avir.Magic
                     for (int i = 0; i < 5; i++) if (b.ready[i] == s) b.ready[i] = null;
                 }
                 y += rowH + 6f;
+            }
             }
             Widgets.EndScrollView();
         }

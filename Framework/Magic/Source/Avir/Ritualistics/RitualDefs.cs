@@ -174,6 +174,8 @@ namespace Avir.Ritualistics
         public SpellCircle weave;
         /// <summary>A spell's own sign, as the player made it (null: its element on a dark disc).</summary>
         public SpellIcon icon;
+        /// <summary>Who wrote it: a mage's name, "path" for the ready spells of a path, empty if not known.</summary>
+        public string author;
 
         public IEnumerable<RuneDef> AllRunes => rings.SelectMany(r => r.runes).Where(r => r != null);
 
@@ -191,6 +193,7 @@ namespace Avir.Ritualistics
             foreach (RitualComponent k in components) c.components.Add(k.Copy());
             c.weave = weave?.Copy();
             c.icon = icon?.Copy();
+            c.author = author;
             return c;
         }
 
@@ -201,6 +204,7 @@ namespace Avir.Ritualistics
             Scribe_Defs.Look(ref preset, "preset");
             Scribe_Deep.Look(ref weave, "weave");
             Scribe_Deep.Look(ref icon, "icon");
+            Scribe_Values.Look(ref author, "author");
             // one list per ring
             List<string> packed = null;
             // "slots|rune,rune" per section (older files: just the runes)

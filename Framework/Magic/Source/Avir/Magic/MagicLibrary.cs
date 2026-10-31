@@ -176,7 +176,7 @@ namespace Avir.Magic
             if (Rand.Chance(0.5f)) { RuneDef m = R(mods.RandomElement()); if (m != null) second.runes.Add(m); }
             if (second.runes.Count > 0) { second.slots = second.runes.Count; c.sections.Add(second); }
             string what = (form != null ? form.label + " of " : "") + (v != null ? v.label : el.label);
-            var s = new RitualSchema { name = (owner != null ? owner.LabelShort + "'s " : "") + what, size = RitualCircleSize.Small };
+            var s = new RitualSchema { name = (owner != null ? owner.LabelShort + "'s " : "") + what, size = RitualCircleSize.Small, author = owner?.LabelShort };
             s.weave = SpellCircle.Bound(c);
             return s;
         }

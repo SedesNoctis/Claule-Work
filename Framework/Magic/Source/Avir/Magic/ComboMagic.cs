@@ -183,6 +183,7 @@ namespace Avir.Magic
         internal static void Apply(ComboKind k, Pawn caster, Map map, List<RuneDef> verbs, List<IntVec3> cells, IntVec3 from, float power, RitualReading r)
         {
             if (cells.Count == 0) return;
+            if (verbs.Count > 0) Reactions.Touch(Reactions.Of(k), cells, map, caster, power);
             foreach (RuneDef v in verbs)
             {
                 RitualReading rv = SpellMods.Verb(r, v);
@@ -225,7 +226,7 @@ namespace Avir.Magic
                 case ComboKind.Steam:
                     // a scalding burst; the cloud stays and hides whoever is in it
                     foreach (Pawn p in foes) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 8f * power, 0f, -1f, caster));
-                    Smoke(map, cells, 1f);
+                    Smoke(map, cells, 1f, true);
                     foreach (IntVec3 c in cells) FireMagic.Extinguish(c, map);
                     break;
                 case ComboKind.Storm:
@@ -348,13 +349,14 @@ namespace Avir.Magic
 
         private static void Beam(ComboKind k, Pawn caster, Map map, List<IntVec3> line, float power, RitualReading r)
         {
+            Reactions.Touch(Reactions.Of(k), line, map, caster, power);
             var foes = MagicFx.PawnsIn(line, map).Where(p => MagicFx.Foe(p, caster)).ToList();
             switch (k)
             {
                 // lightning that leaps from foe to foe
                 case ComboKind.Storm: AirMagic.Chain(caster, line, map, 1 + r.breadth + r.amplify, power, true); break;
                 // a jet of steam: scalds, and leaves a curtain along its way that nothing is seen through
-                case ComboKind.Steam: foreach (Pawn p in foes) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, caster)); Smoke(map, line, 1f); break;
+                case ComboKind.Steam: foreach (Pawn p in foes) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, caster)); Smoke(map, line, 1f, true); break;
                 // a stream of lava: it burns all on it and sets into a path of rubble
                 case ComboKind.Magma: foreach (IntVec3 c in line) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(600f * power), false); break;
                 // a ray of heat: all on it dazzled, the first burnt through
@@ -509,7 +511,15 @@ namespace Avir.Magic
                 FleckMaker.ThrowFireGlow(c.ToVector3Shifted(), map, 0.6f);
                 n++;
             }
-            if (n > 0) Messages.Message("The heat in the rock shows " + n + " cells of ore.", new TargetInfo(cells[0], map), MessageTypeDefOf.PositiveEvent, false);
+            // and deeper still: what a deep drill would find
+            int deep = 0;
+            foreach (IntVec3 c in cells)
+            {
+                if (map.deepResourceGrid.ThingDefAt(c) == null || map.deepResourceGrid.CountAt(c) <= 0) continue;
+                deep++;
+                if (deep % 3 == 0) FleckMaker.ThrowHeatGlow(c, map, 1.2f);
+            }
+            if (n > 0 || deep > 0) Messages.Message("The heat in the rock shows " + n + " cells of ore" + (deep > 0 ? ", and " + deep + " cells with ore deep below (an earth lift draws it up)" : "") + ".", new TargetInfo(cells[0], map), MessageTypeDefOf.PositiveEvent, false);
         }
 
         /// <summary>The unseen made seen: dust settles on them.</summary>
@@ -520,9 +530,14 @@ namespace Avir.Magic
                     inv.BecomeVisible();
         }
 
-        internal static void Smoke(Map map, List<IntVec3> cells, float share)
+        internal static void Smoke(Map map, List<IntVec3> cells, float share, bool scalding = false)
         {
-            foreach (IntVec3 c in cells) if (c.InBounds(map) && Rand.Chance(share)) GasUtility.AddGas(c, map, GasType.BlindSmoke, 1.2f);
+            foreach (IntVec3 c in cells)
+            {
+                if (!c.InBounds(map) || !Rand.Chance(share)) continue;
+                GasUtility.AddGas(c, map, GasType.BlindSmoke, 1.2f);
+                if (scalding) Gas_ScaldingSteam.Release(c, map, 1);
+            }
         }
 
         /// <summary>False shapes of the mage: the foes about are drawn to shoot at them (the Linarians' mirages, borrowed).</summary>
@@ -588,6 +603,13 @@ namespace Avir.Magic
         public List<Field> fields = new List<Field>();
         public MapComponent_ComboFields(Map map) : base(map) { }
 
+        /// <summary>Is a cloud of dust hanging over this cell? (Heat fuses it into glass.)</summary>
+        public static bool DustAt(Map map, IntVec3 c)
+        {
+            var comp = map?.GetComponent<MapComponent_ComboFields>();
+            return comp != null && comp.fields.Any(f => f.kind == ComboKind.Dust && f.Cells(map).Contains(c));
+        }
+
         public static void Raise(Map map, ComboKind k, Pawn caster, IntVec3 at, float radius, float power, int ticks, bool follow, List<IntVec3> line = null)
         {
             var c = map?.GetComponent<MapComponent_ComboFields>();
@@ -648,6 +670,15 @@ namespace Avir.Magic
         public static void Pour(IntVec3 c, Map map, Pawn owner, float power, int life, bool setsHard, int stoneLife = 2500)
         {
             if (!c.InBounds(map) || c.Impassable(map) || ComboDefOf.Avir_Magma == null) return;
+            if (Reactions.Pools(c, map).Any(t => !(t is MirePatch)))
+            {
+                // poured onto water: it sets at once into black glass, in a burst of steam
+                foreach (Thing t in Reactions.Pools(c, map).Where(t => !(t is MirePatch)).ToList()) t.Destroy();
+                ShardGround.Scatter(c, map, ComboDefOf.Avir_Obsidian);
+                Gas_ScaldingSteam.Release(c, map, 1);
+                return;
+            }
+            if (c.GetThingList(map).Any(t => t is MirePatch)) Gas_MarshGas.Release(c, map, 1, true);
             MagmaPool old = c.GetThingList(map).OfType<MagmaPool>().FirstOrDefault();
             if (old != null) { old.left = Mathf.Max(old.left, life); old.setsHard |= setsHard; return; }
             var m = (MagmaPool)ThingMaker.MakeThing(ComboDefOf.Avir_Magma);
@@ -716,6 +747,8 @@ namespace Avir.Magic
             base.Tick();
             if (--left <= 0) { Destroy(); return; }
             if (this.IsHashIntervalTick(90) && Rand.Chance(0.4f)) FleckMaker.Static(Position, Map, FleckDefOf.WaterRipple, 0.9f);
+            // a bog breathes: now and then a little marsh gas rises off it
+            if (this.IsHashIntervalTick(600) && Rand.Chance(0.12f)) Gas_MarshGas.Release(Position, Map, 1, false);
             if (!this.IsHashIntervalTick(60)) return;
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
             {
@@ -836,7 +869,7 @@ namespace Avir.Magic
         public static HediffDef Avir_Dazzled, Avir_Hazed, Avir_Dusted, Avir_Mired, Avir_Sinking;
         public static HediffDef Avir_SteamWard, Avir_StormWard, Avir_MagmaWard, Avir_HazeWard, Avir_BogWard, Avir_DustWard;
         public static HediffDef Avir_SteamEnchant, Avir_StormEnchant, Avir_MagmaEnchant, Avir_HazeEnchant, Avir_BogEnchant, Avir_DustEnchant;
-        public static ThingDef Avir_Magma, Avir_Mire;
+        public static ThingDef Avir_Magma, Avir_Mire, Avir_GasSteam, Avir_GasMarsh, Avir_Obsidian, Avir_Glass;
         static ComboDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(ComboDefOf)); }
 
         public static HediffDef Ward(ComboKind k) => k == ComboKind.Steam ? Avir_SteamWard : k == ComboKind.Storm ? Avir_StormWard : k == ComboKind.Magma ? Avir_MagmaWard : k == ComboKind.Haze ? Avir_HazeWard : k == ComboKind.Bog ? Avir_BogWard : Avir_DustWard;

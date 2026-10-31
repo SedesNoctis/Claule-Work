@@ -320,3 +320,59 @@ namespace Avir.Magic
         }
     }
 }
+
+namespace Avir.Magic
+{
+    /// <summary>The sections of a mage's book: by what a spell does, by its element, by who wrote it.</summary>
+    public static class SpellSections
+    {
+        private static readonly string[] Effects = { "Strike", "Control", "Movement", "Defence", "Healing", "Weapons", "Senses", "Work and land", "Unfinished" };
+
+        public static string Of(RitualSchema s, int by, Pawn mage)
+        {
+            if (by == 1) return Element(s);
+            if (by == 2) return Author(s, mage);
+            return Effect(s);
+        }
+
+        public static int Order(string key, int by)
+        {
+            if (by == 0) { int i = System.Array.IndexOf(Effects, key); return i < 0 ? 99 : i; }
+            if (by == 2) return key == "From the path" ? 0 : key.StartsWith("Written by") ? 1 : 3;
+            return key == "Mixed" ? 98 : key == "No element" ? 99 : 0;
+        }
+
+        private static List<RuneDef> Runes(RitualSchema s) =>
+            s.weave != null ? s.weave.Working.SelectMany(c => c.OwnRunes).ToList() : s.AllRunes.ToList();
+
+        public static string Effect(RitualSchema s)
+        {
+            var kinds = Runes(s).Select(r => r.kind).ToList();
+            bool Has(RuneKind k) => kinds.Contains(k);
+            if (Has(RuneKind.Step)) return "Movement";
+            if (Has(RuneKind.Barrier)) return "Defence";
+            if (Has(RuneKind.Restore)) return "Healing";
+            if (Has(RuneKind.Enchant)) return "Weapons";
+            if (Has(RuneKind.Sense)) return "Senses";
+            if (Has(RuneKind.Release) || Has(RuneKind.Lift) || Has(RuneKind.Beam) || Has(RuneKind.Drain)) return "Strike";
+            if (Has(RuneKind.Hold) || Has(RuneKind.Shape)) return "Control";
+            if (Has(RuneKind.Growth) || Has(RuneKind.Purge)) return "Work and land";
+            return "Unfinished";
+        }
+
+        public static string Element(RitualSchema s)
+        {
+            if (s.weave == null) { RuneDef e = Spells.Element(s); return e != null ? e.LabelCap.ToString() : "No element"; }
+            var pairs = Combos.Pairs(s.weave);
+            var names = MapComponent_SpellChain.Order(s.weave).Select(c => pairs.TryGetValue(c, out ComboKind k) ? Combos.Label(k).CapitalizeFirst() : c.element.LabelCap.ToString()).Distinct().ToList();
+            return names.Count == 0 ? "No element" : names.Count == 1 ? names[0] : "Mixed";
+        }
+
+        public static string Author(RitualSchema s, Pawn mage)
+        {
+            if (s.author == "path" || (s.author.NullOrEmpty() && MagePath.Made.Any(el => MagePath.Examples(el).Any(x => x.name == s.name)))) return "From the path";
+            if (s.author.NullOrEmpty()) return "Not known";
+            return "Written by " + s.author;
+        }
+    }
+}

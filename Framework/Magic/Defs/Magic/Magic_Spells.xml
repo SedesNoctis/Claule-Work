@@ -1435,4 +1435,94 @@
       <heightFactor>0.3</heightFactor>
     </pawnFlyer>
   </ThingDef>
+  <ThingDef>
+    <defName>Avir_GasSteam</defName>
+    <label>scalding steam</label>
+    <description>Steam from boiled water. Whoever breathes it is scalded, friend or foe.</description>
+    <thingClass>Avir.Magic.Gas_ScaldingSteam</thingClass>
+    <category>Gas</category>
+    <altitudeLayer>Gas</altitudeLayer>
+    <drawerType>RealtimeOnly</drawerType>
+    <tickerType>Normal</tickerType>
+    <useHitPoints>false</useHitPoints>
+    <isSaveable>true</isSaveable>
+    <drawOffscreen>true</drawOffscreen>
+    <selectable>false</selectable>
+    <neverMultiSelect>true</neverMultiSelect>
+    <rotatable>false</rotatable>
+    <graphicData>
+      <texPath>Things/Gas/GasCloudThickA</texPath>
+      <graphicClass>Graphic_Gas</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <color>(235, 240, 245, 150)</color>
+      <drawSize>(3, 3)</drawSize>
+    </graphicData>
+    <gas>
+      <expireSeconds>8~14</expireSeconds>
+      <rotationSpeed>8</rotationSpeed>
+    </gas>
+  </ThingDef>
+  <ThingDef>
+    <defName>Avir_GasMarsh</defName>
+    <label>marsh gas</label>
+    <description>Gas rising off a mage's bog. It does nothing at all - until fire, a burning body or a blast reaches it; then it goes off, and the gas round it after.</description>
+    <thingClass>Avir.Magic.Gas_MarshGas</thingClass>
+    <category>Gas</category>
+    <altitudeLayer>Gas</altitudeLayer>
+    <drawerType>RealtimeOnly</drawerType>
+    <tickerType>Normal</tickerType>
+    <useHitPoints>false</useHitPoints>
+    <isSaveable>true</isSaveable>
+    <drawOffscreen>true</drawOffscreen>
+    <selectable>false</selectable>
+    <neverMultiSelect>true</neverMultiSelect>
+    <rotatable>false</rotatable>
+    <graphicData>
+      <texPath>Things/Gas/GasCloudThickA</texPath>
+      <graphicClass>Graphic_Gas</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <color>(150, 165, 90, 120)</color>
+      <drawSize>(3, 3)</drawSize>
+    </graphicData>
+    <gas>
+      <expireSeconds>25~40</expireSeconds>
+      <rotationSpeed>8</rotationSpeed>
+    </gas>
+  </ThingDef>
+  <ThingDef>
+    <defName>Avir_Obsidian</defName>
+    <label>obsidian shards</label>
+    <description>Magma quenched by water, set at once into black glass. It cuts the feet of whoever walks over it.</description>
+    <thingClass>Avir.Magic.ShardGround</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Filth</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>true</selectable>
+    <drawerType>RealtimeOnly</drawerType>
+    <graphicData>
+      <texPath>Things/Avir/Magic/Obsidian</texPath>
+      <graphicClass>Graphic_Random</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.3, 1.3)</drawSize>
+    </graphicData>
+  </ThingDef>
+  <ThingDef>
+    <defName>Avir_Glass</defName>
+    <label>glass shards</label>
+    <description>Sand fused by heat into glass. It cuts the feet of whoever walks over it.</description>
+    <thingClass>Avir.Magic.ShardGround</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Filth</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>true</selectable>
+    <drawerType>RealtimeOnly</drawerType>
+    <graphicData>
+      <texPath>Things/Avir/Magic/Glass</texPath>
+      <graphicClass>Graphic_Random</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.3, 1.3)</drawSize>
+    </graphicData>
+  </ThingDef>
 </Defs>

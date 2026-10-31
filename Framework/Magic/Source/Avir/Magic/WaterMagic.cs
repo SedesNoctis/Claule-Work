@@ -26,6 +26,8 @@ namespace Avir.Magic
         public static void Cast(Pawn caster, RitualSchema s, RitualReading r, LocalTargetInfo target, float power)
         {
             r = SpellMods.Begin(s, r);
+            // water is stronger where water already lies: pools it left, a river, a mire (up to +40%)
+            if (caster.Map != null && target.Cell.InBounds(caster.Map)) power *= 1f + Reactions.WaterAround(target.Cell, caster.Map);
             Map map = caster.Map;
             Hediff kept = caster.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_StoredWater);
             bool drains = r.verbs.Any(v => v.kind == RuneKind.Drain);
@@ -89,6 +91,7 @@ namespace Avir.Magic
         internal static void Apply(Pawn caster, Map map, List<RuneDef> verbs, List<IntVec3> cells, IntVec3 from, float power, RitualReading r)
         {
             if (cells.Count == 0) return;
+            if (verbs.Count > 0) Reactions.Touch(Brings.Water, cells, map, caster, power);
             foreach (RuneDef v in verbs)
             {
                 RitualReading rv = SpellMods.Verb(r, v);
@@ -105,6 +108,12 @@ namespace Avir.Magic
                             SpellHurl.Fell(p, from, 3 + rv.amplify, map, caster, power, Mathf.RoundToInt(60f * power));
                         }
                         foreach (IntVec3 c in cells) { if (Rand.Chance(0.5f)) FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.6f); if (Rand.Chance(0.35f)) Puddle(c, map); }
+                        // and every pool lying round about answers: a jet bursts out of it under whoever stands there
+                        foreach (IntVec3 c in FireMagic.Point(from, map, FireMagic.PointRadius(rv) + 3f).Where(x => !cells.Contains(x) && Reactions.Pools(x, map).Any(t => !(t is MirePatch))).ToList())
+                        {
+                            FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 2.4f);
+                            foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList()) if (MagicFx.Foe(p, caster)) { Soak(p, power); SpellHurl.Lift(p, caster, power * 0.6f); }
+                        }
                         break;
                     case RuneKind.Hold:
                         foreach (IntVec3 c in cells) { HeldWater.Place(c, map, caster, power); if (Rand.Chance(0.5f)) Puddle(c, map); }
