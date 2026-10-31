@@ -111,7 +111,7 @@ namespace Avir.Magic
             {
                 using (SpellWards.Of(k == ComboKind.None ? el?.kind : null, k, true))
                 {
-                    if (SpellWards.DomeTakes(caster.Map, target.Cell, el, k, ref power)) return;
+                    if (SpellWards.Strikes(s) && SpellWards.DomeTakes(caster.Map, target.Cell, el, k, ref power)) return;
                     SpellWards.InOrder(caster, s, k, el, target, power, part => CastPart(caster, part, k, el, target, power));
                 }
             }

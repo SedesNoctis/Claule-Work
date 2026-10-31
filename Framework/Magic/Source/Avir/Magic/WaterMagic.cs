@@ -417,6 +417,24 @@ namespace Avir.Magic
                 zone = true, energyMax = 45f * s, ranged = Mathf.Min(0.75f, 0.25f * s), melee = Mathf.Min(0.5f, 0.15f * s), of = c
             };
             d.energy = d.energyMax;
+            // a dome raised where one already stands: of the same nature it thickens it (charge adds up, it lasts the longer);
+            // of another, the new one takes its place
+            int now = Find.TickManager.TicksGame;
+            Dome old = c.domes.LastOrDefault(o => o.zone && o.until > now && o.at.DistanceTo(at) <= Mathf.Max(1.5f, Mathf.Min(o.radius, d.radius) * 0.5f));
+            if (old != null)
+            {
+                if (old.combo == combo && old.el == el)
+                {
+                    old.energyMax += d.energyMax; old.energy += d.energy; old.until = Mathf.Max(old.until, d.until);
+                    old.radius = Mathf.Max(old.radius, d.radius);
+                    old.ranged = Mathf.Max(old.ranged, d.ranged); old.melee = Mathf.Max(old.melee, d.melee);
+                    SpellWards.Note("dome of " + old.Name + " at " + at + " thickened: charge " + old.energy.ToString("0") + "/" + old.energyMax.ToString("0"));
+                    if (map != null) MoteMaker.ThrowText(at.ToVector3Shifted(), map, "Dome thickened", 3f);
+                    return old;
+                }
+                c.domes.Remove(old);
+                SpellWards.Note("dome of " + old.Name + " at " + at + " gives way to " + d.Name);
+            }
             c.domes.Add(d);
             SpellWards.Note("dome of " + d.Name + " raised at " + at + " (radius " + d.radius.ToString("0.0") + ", charge " + d.energyMax.ToString("0") + ")");
             return d;

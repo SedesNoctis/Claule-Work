@@ -215,6 +215,9 @@ namespace Avir.Magic
 
         private static bool Acts(RuneDef x) => x.role == RuneRole.Verb || x.role == RuneRole.Form;
 
+        /// <summary>Does the circle strike anything? A circle of barriers only lays a ward: it meets no dome as a blow.</summary>
+        public static bool Strikes(RitualSchema s) => s?.rings != null && s.rings.SelectMany(g => g.runes).Any(x => x != null && Acts(x));
+
         /// <summary>Casts a circle with its barriers in their turn (Магия-правила.md, 1.1): what is written before a Barrier
         /// acts, then the ward is laid, then what comes after. The Barrier as the very last rune, after something that acts,
         /// lays the ward on the caster; anywhere else - a dome over the ground where the spell strikes (round the caster,

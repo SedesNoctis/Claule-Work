@@ -139,7 +139,7 @@ namespace Avir.Magic
             try
             {
                 // a spell landing inside a dome meets it first (Магия-правила.md, part 1)
-                if (SpellWards.DomeTakes(caster.Map, c.target.Cell, circle.element, met, ref p)) { after = null; }
+                if (SpellWards.Strikes(one) && SpellWards.DomeTakes(caster.Map, c.target.Cell, circle.element, met, ref p)) { after = null; }
                 // the barriers in their turn; two elements that met work as what they made
                 else SpellWards.InOrder(caster, one, met, circle.element, c.target, p, part => SpellDash.CastPart(caster, part, met, circle.element, c.target, p));
             }
