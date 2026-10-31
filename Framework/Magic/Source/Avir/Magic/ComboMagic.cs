@@ -908,7 +908,11 @@ namespace Avir.Magic
                 MagicFx.Give(p, ComboDefOf.Avir_Mired, 150);
                 // the longer they stay, the deeper they sink; the fallen go under fast
                 Hediff h = p.health.hediffSet.GetFirstHediffOfDef(ComboDefOf.Avir_Sinking) ?? p.health.AddHediff(ComboDefOf.Avir_Sinking);
-                h.Severity = Mathf.Min(1f, h.Severity + (p.Downed ? 0.08f : 0.025f) * power);
+                // a machine does not drown: the mire only swallows it to the joints and holds it fast, helpless, for as long
+                // as it lies there - to be dug out and taken, not killed
+                bool machine = p.RaceProps.IsMechanoid;
+                h.Severity = Mathf.Min(machine ? 0.9f : 1f, h.Severity + (p.Downed ? 0.08f : 0.025f) * power);
+                if (machine && h.Severity >= 0.85f) MagicFx.Stun(p, 180, owner);
                 FleckMaker.Static(Position, Map, FleckDefOf.WaterSplash, 0.9f);
             }
         }

@@ -298,7 +298,10 @@ namespace Avir.Magic
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
                             p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (5f + 2f * rv.amplify) * power, 0f, -1f, caster));
-                            MagicFx.Push(p, from, 4 + rv.amplify, map);
+                            // the heavy (body and gear) are not thrown far - the gust takes their feet instead, and the
+                            // ground strikes them through any plate
+                            if (!p.Dead && SpellBody.Heavy(p) >= 1.3f) MagicFx.Fell(p, from, 1, map, caster, power, Mathf.RoundToInt(90f * power));
+                            else MagicFx.Push(p, from, 4 + rv.amplify, map);
                         }
                         foreach (IntVec3 c in cells)
                         {

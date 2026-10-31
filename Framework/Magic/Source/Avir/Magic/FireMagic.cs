@@ -56,7 +56,7 @@ namespace Avir.Magic
                         Apply(caster, map, verbs, ShapeCells(caster, at, map, rf, forms), at, power, rf, false);
                         break;
                     case RuneKind.Step:
-                        var path = GenSight.BresenhamCellsBetween(caster.Position, at).Where(c => c.InBounds(map) && c != caster.Position).ToList();
+                        var path = Beam(caster.Position, at, map, rf.breadth).Where(c => c.InBounds(map) && c != caster.Position).ToList();   // as wide as its Breadth
                         // the flame carries the mage there - seen all the way
                         if (rf.thread > 0) { SpellDash.Pull(caster, target, RuneKind.Fire, power, fradius); break; }
                         SpellDash.Carry(caster, at, RuneKind.Fire);
@@ -353,17 +353,28 @@ namespace Avir.Magic
         public static RuneDef Hold => hold ?? (hold = DefDatabase<RuneDef>.GetNamed("Avir_Rune_Hold"));
     }
 
-    [DefOf]
+    /// <summary>Fire's defs, looked up by name when first needed (and again while not found): the ward of flame was once
+    /// left unbound here while every other element's was not.</summary>
     public static class FireDefOf
     {
-        public static HediffDef Avir_FireWard;
-        public static HediffDef Avir_FireWarmth;
-        public static HediffDef Avir_StoredHeat;
-        public static HediffDef Avir_FireEnchant;
-        public static HediffDef Avir_RagingFlame;
-        public static ThingDef Avir_HeldFlame;
-        public static ThingDef Avir_FireWisp;
-        static FireDefOf() { DefOfHelper.EnsureInitializedInCtor(typeof(FireDefOf)); }
+        private static HediffDef ward, warmth, heat, enchant, raging;
+        private static ThingDef held, wisp;
+
+        private static T Get<T>(ref T slot, string name) where T : Def
+        {
+            if (slot != null) return slot;
+            slot = DefDatabase<T>.GetNamedSilentFail(name);
+            if (slot == null && DefDatabase<T>.DefCount > 0) Log.ErrorOnce("[Avir] " + typeof(T).Name + " " + name + " is not in the game - Defs/Magic/Magic_Spells.xml did not load it.", name.GetHashCode());
+            return slot;
+        }
+
+        public static HediffDef Avir_FireWard => Get(ref ward, "Avir_FireWard");
+        public static HediffDef Avir_FireWarmth => Get(ref warmth, "Avir_FireWarmth");
+        public static HediffDef Avir_StoredHeat => Get(ref heat, "Avir_StoredHeat");
+        public static HediffDef Avir_FireEnchant => Get(ref enchant, "Avir_FireEnchant");
+        public static HediffDef Avir_RagingFlame => Get(ref raging, "Avir_RagingFlame");
+        public static ThingDef Avir_HeldFlame => Get(ref held, "Avir_HeldFlame");
+        public static ThingDef Avir_FireWisp => Get(ref wisp, "Avir_FireWisp");
     }
 
     /// <summary>Held fire: burns in its place, never spreads, smoulders, warms; hurts only the caster's foes.</summary>

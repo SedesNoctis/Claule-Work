@@ -280,6 +280,14 @@ namespace Avir.Magic
 
         public static HediffDef WardDef(RuneDef el, ComboKind k)
         {
+            HediffDef d = WardDefBound(el, k);
+            // a bound reference left empty is looked up by its name: never a Barrier with nothing to lay
+            if (d == null && (k != ComboKind.None || el != null)) d = DefDatabase<HediffDef>.GetNamedSilentFail("Avir_" + (k != ComboKind.None ? k.ToString() : el.kind.ToString()) + "Ward");
+            return d;
+        }
+
+        private static HediffDef WardDefBound(RuneDef el, ComboKind k)
+        {
             if (k != ComboKind.None) return ComboDefOf.Ward(k);
             switch (el?.kind)
             {

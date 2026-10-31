@@ -819,6 +819,48 @@ namespace Avir.Magic
         [DebugAction(Cat, "Hold: never (0%) - toggle", allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevHoldNever() { Spells.DevHold = Spells.DevHold == -1 ? 0 : -1; Messages.Message("Spell hold: " + (Spells.DevHold == -1 ? "always slips (0%)" : "by the dice"), MessageTypeDefOf.NeutralEvent, false); }
 
+        [DebugAction(Cat, "Test spells into this caster's book (every element, CE checks)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevTestSpells(Pawn p)
+        {
+            Hediff_ArcaneCore core = Mages.Core(p);
+            if (core == null) { Messages.Message(p.LabelShort + " is not a caster.", MessageTypeDefOf.RejectInput, false); return; }
+            RuneDef R(string n) => DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + n);
+            RitualSchema Spell(string name, params string[] circles)
+            {
+                // each circle: "Element:rune,rune|rune,rune" - sections split by |
+                var root = new SpellCircle { binding = true };
+                foreach (string c in circles)
+                {
+                    string[] parts = c.Split(':');
+                    var k = new SpellCircle { element = R(parts[0]) };
+                    foreach (string sec in parts[1].Split('|'))
+                    {
+                        var runes = sec.Split(',').Select(x => R(x.Trim())).Where(x => x != null).ToList();
+                        k.sections.Add(new RitualRing { runes = runes, slots = Mathf.Max(1, runes.Count) });
+                    }
+                    root.inner.Add(k);
+                }
+                return new RitualSchema { name = name, weave = root };
+            }
+            var list = new List<RitualSchema>
+            {
+                Spell("TEST Fire blow", "Fire:Release,Amplify,Amplify,Amplify,Amplify"),
+                Spell("TEST Water blow + lift", "Water:Release,Amplify,Amplify,Amplify,Amplify|Lift"),
+                Spell("TEST Earth blow + lift", "Earth:Release,Amplify,Amplify,Amplify,Amplify|Lift"),
+                Spell("TEST Air gust + lift", "Air:Release,Amplify,Amplify,Amplify,Amplify|Lift"),
+                Spell("TEST Water drain", "Water:Drain"),
+                Spell("TEST Ward on self (fire)", "Fire:Barrier"),
+                Spell("TEST Steam", "Fire:Release", "Water:Release"),
+                Spell("TEST Storm", "Water:Release", "Air:Release"),
+                Spell("TEST Magma", "Fire:Release,Amplify,Amplify", "Earth:Release"),
+                Spell("TEST Haze", "Fire:Release", "Air:Release"),
+                Spell("TEST Bog hold", "Water:Hold", "Earth:Hold"),
+                Spell("TEST Dust", "Earth:Release", "Air:Release"),
+            };
+            foreach (RitualSchema s in list) core.Book.spells.Add(s);
+            Messages.Message(list.Count + " test spells written into " + p.LabelShort + "'s book.", MessageTypeDefOf.NeutralEvent, false);
+        }
+
         [DebugAction(Cat, "Weave a ward into clothes (water)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevWeave(Pawn p) => Hediff_WardCharm.Weave(p, DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Water"), ComboKind.None, 1f, 0);
 
