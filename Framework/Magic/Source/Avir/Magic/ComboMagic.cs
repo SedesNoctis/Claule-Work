@@ -792,6 +792,19 @@ namespace Avir.Magic
             var m = (MagmaPool)ThingMaker.MakeThing(ComboDefOf.Avir_Magma);
             m.owner = owner; m.power = power; m.left = life; m.life = Mathf.Max(1, life); m.setsHard = setsHard; m.stoneLife = stoneLife;
             GenSpawn.Spawn(m, c, map);
+            Ignite(c, map, owner, 0.5f);
+        }
+
+        /// <summary>Molten stone sets alight whatever can burn where it lies - plants, trees, wood, cloth - unless a dome
+        /// stands over the cell or the ground is wet (water is the guard against a pyromancer, and the broom after one).</summary>
+        public static void Ignite(IntVec3 c, Map map, Pawn by, float size)
+        {
+            if (map == null || !c.InBounds(map) || Reactions.Wet(c, map) || MapComponent_WardsDrawn.Over(map, c) != null) return;
+            if (c.GetThingList(map).Any(t => t is Fire)) return;
+            bool burns = c.GetThingList(map).Any(t => !(t is Pawn) && !(t is MagmaPool) && t.FlammableNow);
+            if (!burns) return;
+            FireUtility.TryStartFireIn(c, map, size, by);
+            foreach (Thing t in c.GetThingList(map).Where(t => t.def.category == ThingCategory.Item && t.FlammableNow).ToList()) FireUtility.TryAttachFire(t, 0.3f, by);
         }
 
         public void Harden(bool now)
@@ -841,7 +854,9 @@ namespace Avir.Magic
                 p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 4f * power, 0f, -1f, owner));
                 if (!p.Dead && p.Spawned && !SpellWards.Stops(p, true) && Rand.Chance(0.2f)) FireUtility.TryAttachFire(p, 0.3f, owner);
             }
-            foreach (Thing t in Position.GetThingList(Map).Where(t => t.def.category == ThingCategory.Item && t.FlammableNow).ToList()) FireUtility.TryAttachFire(t, 0.3f, owner);
+            Ignite(Position, Map, owner, 0.35f);
+            // and the fire runs on from it: grass, trees, anything that burns round the pool
+            if (Rand.Chance(0.3f)) Ignite(Position + GenAdj.AdjacentCells[Rand.Range(0, 8)], Map, owner, 0.25f);
         }
     }
 
