@@ -107,9 +107,14 @@ namespace Avir.Magic
         private static void Fall(Pawn p, Pawn by, float power, bool ceiling)
         {
             if (ceiling && !p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 6f * power, 0f, -1f, by, Part(p, 0.6f)));
+            // a fall is the body's own weight against the ground: plate does not soften it - the heavier the gear, the
+            // harder the landing (the piano from the tenth floor); bionic legs take some of it, a peg or a stump none
+            var b = SpellBody.Of(p);
+            float w = SpellBody.Heavy(p) * b.legsLand;
+            float pen = ModsConfig.IsActive("CETeam.CombatExtended") ? 500f : 2f;
             int hits = 2 + Mathf.RoundToInt(power);
             for (int i = 0; i < hits && !p.Dead; i++)
-                p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Rand.Range(4f, 8f) * power, 0f, -1f, by, Part(p, 0.06f)));
+                p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Rand.Range(4f, 8f) * power * w, pen, -1f, by, Part(p, 0.06f)));
         }
 
         private static BodyPartRecord Part(Pawn p, float headChance)

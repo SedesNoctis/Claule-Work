@@ -631,6 +631,8 @@ namespace Avir.Magic
             ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_ShadowDecoy");
             if (def == null) return;
             var foes = map.mapPawns.AllPawnsSpawned.Where(q => q != caster && !q.Dead && q.HostileTo(caster) && q.Position.InHorDistOf(caster.Position, 30f)).ToList();
+            // a mirage is a false shape, not a glare: bionic eyes are fooled as living ones; the eyeless are not; archotech eyes see through it half the time
+            foes = foes.Where(q => { var b = SpellBody.Of(q); return b.eyeDazzle > 0f && !Rand.Chance(b.eyeSeesThrough); }).ToList();
             foreach (IntVec3 c in at)
             {
                 if (!c.InBounds(map) || !c.Standable(map) || c.GetEdifice(map) != null) continue;

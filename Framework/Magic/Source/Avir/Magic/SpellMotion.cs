@@ -136,13 +136,25 @@ namespace Avir.Magic
             SpellDepth.Stone = earthen && caster.Map != null && EarthStone.Units(caster.Map, target.Cell, k) >= 1f ? 1.2f : 1f;
             try
             {
-                if (k != ComboKind.None) ComboMagic.Cast(k, caster, part, r, target, power);
-                else if (FireMagic.Is(el)) FireMagic.Cast(caster, part, r, target, power);
-                else if (WaterMagic.Is(el)) WaterMagic.Cast(caster, part, r, target, power);
-                else if (EarthMagic.Is(el)) EarthMagic.Cast(caster, part, r, target, power);
-                else if (AirMagic.Is(el)) AirMagic.Cast(caster, part, r, target, power);
+                // a verb written over and over wears out (Магия-правила.md): the part acts once with each verb, then the
+                // repeats act alone, each weaker - 1/2, 1/4, then one more at 1/4 for every section past the first
+                List<KeyValuePair<RitualSchema, float>> repeats = SpellWear.Split(ref part);
+                if (repeats != null) r = RitualEvaluator.Read(part);
+                Dispatch(caster, part, r, k, el, target, power);
+                if (repeats != null)
+                    foreach (var rp in repeats)
+                        if (!caster.Dead) Dispatch(caster, rp.Key, RitualEvaluator.Read(rp.Key), k, el, target, power * rp.Value);
             }
             finally { SpellDepth.Amplify = keepAmp; SpellDepth.Heart = keepHeart; SpellDepth.Reach = keepReach; SpellDepth.Stone = keepStone; }
+        }
+
+        private static void Dispatch(Pawn caster, RitualSchema part, RitualReading r, ComboKind k, RuneDef el, LocalTargetInfo target, float power)
+        {
+            if (k != ComboKind.None) ComboMagic.Cast(k, caster, part, r, target, power);
+            else if (FireMagic.Is(el)) FireMagic.Cast(caster, part, r, target, power);
+            else if (WaterMagic.Is(el)) WaterMagic.Cast(caster, part, r, target, power);
+            else if (EarthMagic.Is(el)) EarthMagic.Cast(caster, part, r, target, power);
+            else if (AirMagic.Is(el)) AirMagic.Cast(caster, part, r, target, power);
         }
 
         /// <summary>A step aimed where the caster already stands goes home instead (a second step: there and back).</summary>

@@ -404,7 +404,12 @@ namespace Avir.Magic
         public static void Push(Pawn p, IntVec3 from, int dist, Map map) => SpellHurl.Throw(p, from, dist, map);
 
         /// <summary>Knocked off their feet: thrown a little from a point and left lying.</summary>
-        public static void Fell(Pawn p, IntVec3 from, int dist, Map map, Pawn by, float power, int ticks) => SpellHurl.Fell(p, from, dist, map, by, power, ticks);
+        /// <summary>Knocked down: the heavier (body and gear), the longer they lie; bionic legs get them up sooner, a peg or a stump later.</summary>
+        public static void Fell(Pawn p, IntVec3 from, int dist, Map map, Pawn by, float power, int ticks)
+        {
+            var b = SpellBody.Of(p);
+            SpellHurl.Fell(p, from, dist, map, by, power, Mathf.RoundToInt(ticks * SpellBody.Heavy(p) * b.legsLand));
+        }
 
         /// <summary>Thrown up into the air, to fall.</summary>
         public static void Lift(Pawn p, Pawn by, float power) => SpellHurl.Lift(p, by, power);
@@ -414,6 +419,8 @@ namespace Avir.Magic
             if (def == null) return;
             // a ward keeps off what magic would leave on the body - harm only, not the good it gives
             if (def.isBad && SpellWards.Stops(p, true)) return;
+            ticks = SpellBodyEffects.Ticks(p, def, ticks);
+            if (ticks <= 0) return;
             Hediff h = p.health.hediffSet.GetFirstHediffOfDef(def) ?? p.health.AddHediff(def);
             h.Severity = Mathf.Max(h.Severity, 1f);
             HediffComp_Disappears d = h.TryGetComp<HediffComp_Disappears>();

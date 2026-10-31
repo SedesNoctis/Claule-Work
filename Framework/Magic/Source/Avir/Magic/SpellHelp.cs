@@ -76,7 +76,12 @@ namespace Avir.Magic
                 if (nShaped > 0) e0.Add(nPlain > 0 ? "Spares its own - in part" : "Spares its own", "Two Barriers in the outermost section of a circle shape its blow round the caster's own people: it strikes foes only, "
                     + "and is " + (1f - SpellSculpt.Keeps).ToStringPercent() + " weaker for it. Each circle needs its own pair" + (nPlain > 0 ? " - here " + nPlain + " circle(s) without it strike everyone." : ".")
                     + " What is left on the ground (magma, mire, held fields) does not know its own.");
-                else if (s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form)))
+                if (s.weave != null)
+                {
+                    string wear = string.Join("\n", s.weave.Working.Select(k => SpellWear.Explain(k)).Where(x => x != null));
+                    if (wear.Length > 0) e0.Add("Wear of repeats", "The same verb in one circle wears out: the second acts at half, the third at a quarter; past that, one more at a quarter for every section beyond the first, the rest do nothing (and still cost Arcana). Spread different verbs over the sections instead.\n" + wear);
+                }
+                if (nShaped == 0 && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form)))
                     e0.Add("Strikes everyone", "Without two Barriers in the outermost section of a circle, its blow strikes whoever stands in it - friend or foe; only a ward keeps them.");
                 e0.details = Details(s);
                 if (SpellCasting.OfAir(s)) e0.Add("Momentum", "A spell of the air: cast on the move. Cast another of the air within " + AvirMod.Settings.airMomentumSeconds.ToString("0") + " seconds and it comes "

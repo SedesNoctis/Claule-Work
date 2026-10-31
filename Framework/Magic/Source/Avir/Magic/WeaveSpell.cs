@@ -54,6 +54,10 @@ namespace Avir.Magic
 
         public static int Resonance(SpellCircle root, RuneDef el) => Small(root).Count(c => c.element == el);
 
+        /// <summary>Circles of one element strengthen each other, less and less (Магия-правила.md): +25% for the 2nd to
+        /// the 5th, +10% for each past that, no more than x2.5 - many circles are a stronger spell, not an endless one.</summary>
+        public static float ResonanceFactor(int n) => Mathf.Min(2.5f, 1f + 0.25f * Mathf.Clamp(n - 1, 0, 4) + 0.1f * Mathf.Max(0, n - 5));
+
         public static bool Steam(SpellCircle root) => Combos.Pairs(root).ContainsValue(ComboKind.Steam);
 
         /// <summary>Water and air together: a storm - the wind's chained strike turns to lightning.</summary>

@@ -124,7 +124,7 @@ namespace Avir.Magic
             SpellCircle circle = c.links[c.next++];
             Pawn caster = c.caster;
             if (caster == null || caster.Dead || !caster.Spawned) return;
-            float p = c.power * (1f + 0.25f * (WeaveSpell.Resonance(c.root, circle.element) - 1)) * Combos.FocusBoost(circle, caster.Map);
+            float p = c.power * WeaveSpell.ResonanceFactor(WeaveSpell.Resonance(c.root, circle.element)) * Combos.FocusBoost(circle, caster.Map);
             RitualSchema one = circle.AsSchema();
             // two Barriers in the outermost section: the blow is shaped round the caster's own people (weaker for it)
             bool shaped = SpellSculpt.Take(one);

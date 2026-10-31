@@ -818,6 +818,15 @@ namespace Avir.Magic
         [DebugAction(Cat, "Hold: never (0%) - toggle", allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevHoldNever() { Spells.DevHold = Spells.DevHold == -1 ? 0 : -1; Messages.Message("Spell hold: " + (Spells.DevHold == -1 ? "always slips (0%)" : "by the dice"), MessageTypeDefOf.NeutralEvent, false); }
 
+        [DebugAction(Cat, "Body as magic sees it", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevBody(Pawn p)
+        {
+            var b = SpellBody.Of(p);
+            Messages.Message(p.LabelShort + ": weight " + b.weight.ToString("0") + " kg (x" + SpellBody.Heavy(p).ToString("0.00") + ")" + (b.sealed_ ? ", sealed" : "") + (b.metalArmour ? ", metal armour" : "")
+                + ", flesh " + b.flesh.ToStringPercent() + ", eyes dazzle x" + b.eyeDazzle.ToString("0.0#") + (b.eyeSeesThrough > 0f ? " (sees through mirages " + b.eyeSeesThrough.ToStringPercent() + ")" : "")
+                + ", legs x" + b.legsLand.ToString("0.0#") + (b.pegLeg ? ", peg leg" : "") + (b.woodAny ? ", wood" : "") + (b.bionicLimb ? ", bionic limb" : ""), MessageTypeDefOf.NeutralEvent, false);
+        }
+
         [DebugAction(Cat, "Ward trace to log - toggle", allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevWardTrace() { SpellWards.Trace = !SpellWards.Trace; Messages.Message("Ward trace: " + (SpellWards.Trace ? "on (see the log)" : "off"), MessageTypeDefOf.NeutralEvent, false); }
 

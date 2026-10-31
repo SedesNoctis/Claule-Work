@@ -488,6 +488,8 @@ namespace Avir.Magic
         {
             if (!AvirMagic.On || !SpellWards.AtWork || Pen == null) return;
             DamageDef d = __0.Def;
+            // the body it lands on: lightning and metal, steam and open plate, fire and wood
+            if (d != null) { float na = SpellBodyEffects.Blow(__instance, d, __0.Amount, SpellWards.Incoming, SpellWards.combo, __0.Instigator as Pawn); if (na != __0.Amount) __0.SetAmount(na); }
             if (d?.armorCategory == null || __0.ArmorPenetrationInt > 0f) return;
             bool sharp = d.armorCategory == DamageArmorCategoryDefOf.Sharp, blunt = d.armorCategory.defName == "Blunt";
             if (!sharp && !blunt) return;   // heat and the rest: by the game's own rules

@@ -125,7 +125,7 @@ namespace Avir.Magic
                         {
                             if (!MagicFx.Foe(p, caster) || !p.RaceProps.IsFlesh) continue;
                             Hediff h = p.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Parched) ?? p.health.AddHediff(WaterDefOf.Avir_Parched);
-                            h.Severity = Mathf.Min(1f, h.Severity + 0.35f * power);
+                            h.Severity = Mathf.Min(1f, h.Severity + 0.35f * power * SpellBody.Of(p).flesh);   // only living flesh dries
                             took += 0.3f;
                             FleckMaker.ConnectingLine(p.DrawPos, caster.DrawPos, FleckDefOf.LineEMP, map);
                         }
@@ -215,7 +215,10 @@ namespace Avir.Magic
             Hediff h = p.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Soaked) ?? p.health.AddHediff(WaterDefOf.Avir_Soaked);
             h.Severity = 1f;
             HediffComp_Disappears d = h.TryGetComp<HediffComp_Disappears>();
-            if (d != null) d.ticksToDisappear = Mathf.Max(d.ticksToDisappear, Mathf.RoundToInt(2500f * power));
+            // sealed gear sheds the water; open gear drinks it and weighs the more the heavier it is
+            var sb = SpellBody.Of(p);
+            float soak = sb.sealed_ ? 0.4f : SpellBody.Heavy(p);
+            if (d != null) d.ticksToDisappear = Mathf.Max(d.ticksToDisappear, Mathf.RoundToInt(2500f * power * soak));
             p.GetAttachment(ThingDefOf.Fire)?.Destroy();
         }
 
