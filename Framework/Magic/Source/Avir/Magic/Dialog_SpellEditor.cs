@@ -1150,9 +1150,9 @@ namespace Avir.Magic
                     if (sec.runes.Where(x => x != null && x.role == RuneRole.Verb).GroupBy(x => x.kind).Any(g => g.Count() >= 4))
                         return "You know, there is a word made to describe you. \"The s-s-s-st-stutterer.\"";
             if (sel.binding) return "The rim holds everything together. You, so far, hold nothing. Pick a circle.";
-            if (all.All(c => c.element == null && !c.OwnRunes.Any())) return "An empty heart. Fire, water, earth, air - pick one. I'll wait. Not long.";
+            if (all.All(c => c.element == null && !c.OwnRunes.Any())) return "An empty heart. Give it an element - any will do for a start. I'll wait. Not long.";
             if (sel.Great && sel.element == null) return "A great circle without its seal is a crown without a head. Life, Light, Time, Space or Darkness - on top.";
-            if (sel.element == null) return "No heart in this one. Even I have one. Somewhere.";
+            if (sel.element == null) return "A circle with no heart is a nest with no egg. Put an element in the middle.";
             if (all.Count >= 10) return "So many circles. Whoever holds this - I'd like to meet them. Briefly.";
             if (met.TryGetValue(sel, out ComboKind mk) && sel.OwnRunes.Any())
                 switch (mk)
@@ -1180,7 +1180,7 @@ namespace Avir.Magic
             SpellCircle hollow = all.FirstOrDefault(c => c.Great && c.inner.Count == 0 && !c.OwnRunes.Any());
             if (hollow != null) return "A great circle with nothing in it and nothing of its own. A very expensive hoop.";
             for (int i = 0; i < sel.sections.Count; i++)
-                if (sel.sections[i].runes.Count < sel.sections[i].Slots) return "Section " + (i + 1) + " has a hole in it. Fill it or cut it - holes are for cheese.";
+                if (sel.sections[i].runes.Count < sel.sections[i].Slots) return "Section " + (i + 1) + " has a gap in it. Fill it or cut it - a gap in a circle is where the magic leaks out.";
             return "Good. Now read what it does - before it does it to you.";
         }
 
