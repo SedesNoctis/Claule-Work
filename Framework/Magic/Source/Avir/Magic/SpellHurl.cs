@@ -74,9 +74,29 @@ namespace Avir.Magic
             if (Unmoved(p)) return;
             // the updraft is the spell's strength: the heavier the body with all it wears, the lower it goes up - and the
             // fall is that weight on the ground from that height, through any plate (Магия-правила.md, "Тело и стихии")
-            float height = power / Mathf.Sqrt(SpellBody.Heavy(p));
-            if (p.BodySize > 2.5f || height < 0.6f) { Topple(p, by, power); Fell(p, Mathf.RoundToInt(120f * power), by); return; }
+            // no size is beyond a strong enough updraft: the weight itself (body and gear, not clamped) decides the height
+            float height = power / Mathf.Sqrt(Mathf.Max(0.5f, SpellBody.Of(p).weight / 75f));
+            if (height < 0.6f) { Topple(p, by, power); Fell(p, Mathf.RoundToInt(120f * power), by); return; }
             Launch(p, p.Position, HurlKind.Lifted, by, height, 0, false);
+        }
+
+        /// <summary>A lift turned round by the Thread: the force that would throw the body up presses it into the ground
+        /// instead - its own weight driven down, through any plate, and it lies pinned a while. Earth presses hardest, and
+        /// holds the feet in the ground after.</summary>
+        public static void Press(Pawn p, Pawn by, float power, bool earth)
+        {
+            if (p == null || p.Dead || !p.Spawned) return;
+            var b = SpellBody.Of(p);
+            float w = SpellBody.Heavy(p) * b.legsLand * (earth ? 1.5f : 1f);
+            float pen = ModsConfig.IsActive("CETeam.CombatExtended") ? 500f : 2f;
+            int hits = 2 + Mathf.RoundToInt(power);
+            for (int i = 0; i < hits && !p.Dead; i++)
+                p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Rand.Range(3f, 6f) * power * w, pen, -1f, by, Part(p, 0.15f)));
+            if (p.Dead) return;
+            Map map = p.Map;
+            if (map != null) { FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 2.4f, earth ? MagicFx.EarthDust : Color.gray); FleckMaker.Static(p.Position, map, FleckDefOf.PsycastAreaEffect, 1.2f); }
+            Fell(p, Mathf.RoundToInt(150f * power), by);
+            if (earth) MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, Mathf.RoundToInt(300f * power));
         }
 
         /// <summary>Too heavy to throw far or lift high: the body is toppled where it stands, and its own weight strikes

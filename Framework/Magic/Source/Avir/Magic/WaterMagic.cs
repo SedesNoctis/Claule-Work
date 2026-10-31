@@ -137,7 +137,7 @@ namespace Avir.Magic
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
                             Soak(p, power);
-                            SpellHurl.Lift(p, caster, power);
+                            if (rv.thread > 0) SpellHurl.Press(p, caster, power, false); else SpellHurl.Lift(p, caster, power);
                         }
                         foreach (IntVec3 c in cells) FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 2.4f);
                         // the geyser itself, a column bursting from under them

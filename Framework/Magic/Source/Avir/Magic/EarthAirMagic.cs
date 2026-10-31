@@ -53,7 +53,7 @@ namespace Avir.Magic
                         // a wall of stone rises between the two chosen points; with holding or an anchor it stands longer
                         var wall = FireMagic.ShapeCells(caster, at, map, rf, forms);
                         int life = Mathf.RoundToInt(GenDate.TicksPerHour * 3f * power * (1 + rf.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0)));
-                        foreach (IntVec3 c in wall) EarthWall.Raise(c, map, life);
+                        foreach (IntVec3 c in wall) EarthWall.Raise(c, map, life, caster.Faction);
                         Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, rf);
                         break;
                     case RuneKind.Step:
@@ -100,8 +100,11 @@ namespace Avir.Magic
                         foreach (Pawn p in MagicFx.PawnsIn(cells, map))
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
-                            MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, Mathf.RoundToInt(480f * power));
+                            MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, Mathf.RoundToInt(480f * power * (1 + rv.anchor)));
                             MagicFx.Give(p, EarthAirDefOf.Avir_Heavy, Mathf.RoundToInt(GenDate.TicksPerHour * power));
+                            // with an anchor the ground does not only grip - it draws the body down into itself, by its
+                            // weight: knee-deep, waist-deep; not to death, but held there, hands half-buried too
+                            if (rv.anchor > 0) MagicFx.Bury(p, power * (1 + 0.5f * rv.anchor));
                         }
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.3f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.2f, MagicFx.EarthDust);
                         break;
@@ -122,7 +125,7 @@ namespace Avir.Magic
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
                             p.TakeDamage(new DamageInfo(DamageDefOf.Stab, (8f + 2f * rv.amplify) * power, 0.2f, -1f, caster));
-                            if (!p.Dead) MagicFx.Lift(p, caster, power * 0.7f);
+                            if (!p.Dead) { if (rv.thread > 0) SpellHurl.Press(p, caster, power, true); else MagicFx.Lift(p, caster, power * 0.7f); }
                         }
                         foreach (IntVec3 c in cells) { if (Rand.Chance(0.4f)) MagicFx.Rubble(c, map); FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1f, MagicFx.EarthDust); }
                         break;
@@ -338,7 +341,7 @@ namespace Avir.Magic
                         foreach (Pawn p in MagicFx.PawnsIn(cells, map))
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
-                            MagicFx.Lift(p, caster, power * 1.3f);
+                            if (rv.thread > 0) SpellHurl.Press(p, caster, power * 1.3f, false); else MagicFx.Lift(p, caster, power * 1.3f);
                         }
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 2f, MagicFx.AirDust);
                         break;
@@ -408,6 +411,20 @@ namespace Avir.Magic
 
         /// <summary>Knocked off their feet: thrown a little from a point and left lying.</summary>
         /// <summary>Knocked down: the heavier (body and gear), the longer they lie; bionic legs get them up sooner, a peg or a stump later.</summary>
+        /// <summary>Drawn down into the ground by its own weight: the heavier, the deeper and the longer (Магия-правила.md).</summary>
+        public static void Bury(Pawn p, float power)
+        {
+            HediffDef d = DefDatabase<HediffDef>.GetNamedSilentFail("Avir_Buried");
+            if (d == null || p == null || p.Dead || SpellWards.Stops(p, false)) return;
+            float heavy = SpellBody.Heavy(p);
+            Hediff h = p.health.hediffSet.GetFirstHediffOfDef(d) ?? p.health.AddHediff(d);
+            h.Severity = Mathf.Min(1f, h.Severity + 0.35f * power * heavy);
+            HediffComp_Disappears dc = h.TryGetComp<HediffComp_Disappears>();
+            if (dc != null) dc.ticksToDisappear = Mathf.Max(dc.ticksToDisappear, Mathf.RoundToInt(600f * power * heavy));
+            Give(p, EarthAirDefOf.Avir_Rooted, Mathf.RoundToInt(600f * power * heavy));
+            if (p.Spawned) FleckMaker.ThrowDustPuffThick(p.DrawPos, p.Map, 1.6f, EarthDust);
+        }
+
         public static void Fell(Pawn p, IntVec3 from, int dist, Map map, Pawn by, float power, int ticks)
         {
             var b = SpellBody.Of(p);
@@ -476,7 +493,7 @@ namespace Avir.Magic
     {
         public int left = 7500;
 
-        public static void Raise(IntVec3 c, Map map, int life)
+        public static void Raise(IntVec3 c, Map map, int life, Faction of = null)
         {
             if (!c.InBounds(map) || c.GetEdifice(map) != null || c.Impassable(map)) return;
             foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList()) WaterMagic.Push(p, c + IntVec3.North, 1, map);
@@ -484,6 +501,8 @@ namespace Avir.Magic
             var w = (EarthWall)ThingMaker.MakeThing(EarthAirDefOf.Avir_EarthWall);
             w.left = life;
             GenSpawn.Spawn(w, c, map);
+            // the caster's own wall: a foe shut in by it knows whose it is, and tries to break out
+            if (of != null) w.SetFaction(of);
             FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 2f, MagicFx.EarthDust);
         }
 

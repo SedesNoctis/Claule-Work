@@ -297,6 +297,36 @@
     </stages>
   </HediffDef>
   <HediffDef>
+    <defName>Avir_Buried</defName>
+    <label>drawn into the ground</label>
+    <description>The ground has drawn the body down into itself by its own weight: the feet are gone, then the knees, then the waist. It does not kill - it holds, and the hands are half in the earth too.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.6, 0.5, 0.35)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>600~600</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <label>knee-deep</label>
+        <capMods><li><capacity>Moving</capacity><offset>-0.5</offset></li></capMods>
+      </li>
+      <li>
+        <minSeverity>0.5</minSeverity>
+        <label>waist-deep</label>
+        <capMods>
+          <li><capacity>Moving</capacity><offset>-0.9</offset></li>
+          <li><capacity>Manipulation</capacity><offset>-0.3</offset></li>
+        </capMods>
+        <statOffsets><ShootingAccuracyPawn>-0.3</ShootingAccuracyPawn></statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
     <defName>Avir_WardCharm</defName>
     <label>woven ward</label>
     <description>A ward woven into the clothes by a Barrier written with Enchanting. When the ward falls, it rises again from the weave an hour later, a little weaker, until the weaving wears out.</description>
