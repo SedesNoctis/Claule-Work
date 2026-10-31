@@ -36,8 +36,8 @@ namespace Avir.Magic
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             float radius = FireMagic.PointRadius(r);
-            if (r.barrier > 0) Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power);
-            MagicFx.WardMage(caster, power, WaterDefOf.Avir_WaterWard, "Avir_Rune_Water");
+            if (r.barrier > 0) Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power, r.amplify);
+            MagicFx.WardMage(caster, power, WaterDefOf.Avir_WaterWard, "Avir_Rune_Water", r.amplify);
             if (forms.Count == 0) { if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); return; }
             foreach (RuneDef f in forms)
             {
@@ -209,7 +209,7 @@ namespace Avir.Magic
         /// <summary>Soaked: slower, and hard to set alight, for a while.</summary>
         public static void Soak(Pawn p, float power)
         {
-            if (!p.RaceProps.IsFlesh) return;
+            if (!p.RaceProps.IsFlesh || SpellWards.Stops(p, true)) return;
             Hediff h = p.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Soaked) ?? p.health.AddHediff(WaterDefOf.Avir_Soaked);
             h.Severity = 1f;
             HediffComp_Disappears d = h.TryGetComp<HediffComp_Disappears>();
@@ -220,14 +220,12 @@ namespace Avir.Magic
         /// <summary>Thrown away from a point, as far as the ground lets them.</summary>
         public static void Push(Pawn p, IntVec3 from, int dist, Map map) => SpellHurl.Throw(p, from, dist, map);
 
-        private static void Ward(Pawn caster, IntVec3 at, Map map, float radius, float power)
+        private static void Ward(Pawn caster, IntVec3 at, Map map, float radius, float power, int amplify)
         {
             foreach (Pawn p in FireMagic.Point(at, map, radius).SelectMany(c => c.GetThingList(map).OfType<Pawn>()).Distinct().ToList())
             {
                 if (p.Dead || p.HostileTo(caster)) continue;
-                Hediff w = p.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_WaterWard) ?? p.health.AddHediff(WaterDefOf.Avir_WaterWard);
-                HediffComp_Disappears d = w.TryGetComp<HediffComp_Disappears>();
-                if (d != null) d.ticksToDisappear = Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power);
+                SpellWards.Lay(p, WaterDefOf.Avir_WaterWard, power, amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
                 p.GetAttachment(ThingDefOf.Fire)?.Destroy();
                 FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 1.5f);
             }

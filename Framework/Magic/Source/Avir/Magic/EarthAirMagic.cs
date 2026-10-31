@@ -28,8 +28,8 @@ namespace Avir.Magic
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             float radius = FireMagic.PointRadius(r);
-            if (r.barrier > 0) MagicFx.Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power, EarthAirDefOf.Avir_EarthWard, "Avir_Rune_Earth");
-            MagicFx.WardMage(caster, power, EarthAirDefOf.Avir_EarthWard, "Avir_Rune_Earth");
+            if (r.barrier > 0) MagicFx.Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power, EarthAirDefOf.Avir_EarthWard, "Avir_Rune_Earth", r.amplify);
+            MagicFx.WardMage(caster, power, EarthAirDefOf.Avir_EarthWard, "Avir_Rune_Earth", r.amplify);
             if (forms.Count == 0) { if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); return; }
             foreach (RuneDef f in forms)
             {
@@ -98,7 +98,7 @@ namespace Avir.Magic
                         foreach (Pawn p in MagicFx.PawnsIn(cells, map))
                         {
                             if (!MagicFx.Foe(p, caster)) continue;
-                            if (!MagicFx.Rooted(p)) MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, Mathf.RoundToInt(480f * power));
+                            MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, Mathf.RoundToInt(480f * power));
                             MagicFx.Give(p, EarthAirDefOf.Avir_Heavy, Mathf.RoundToInt(GenDate.TicksPerHour * power));
                         }
                         foreach (IntVec3 c in cells) if (Rand.Chance(0.3f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.2f, MagicFx.EarthDust);
@@ -190,8 +190,8 @@ namespace Avir.Magic
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             float radius = FireMagic.PointRadius(r);
-            if (r.barrier > 0) MagicFx.Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power, EarthAirDefOf.Avir_AirWard, "Avir_Rune_Air");
-            MagicFx.WardMage(caster, power, EarthAirDefOf.Avir_AirWard, "Avir_Rune_Air");
+            if (r.barrier > 0) MagicFx.Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power, EarthAirDefOf.Avir_AirWard, "Avir_Rune_Air", r.amplify);
+            MagicFx.WardMage(caster, power, EarthAirDefOf.Avir_AirWard, "Avir_Rune_Air", r.amplify);
             if (forms.Count == 0) { if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); return; }
             foreach (RuneDef f in forms)
             {
@@ -383,11 +383,12 @@ namespace Avir.Magic
 
         public static bool Foe(Pawn p, Pawn caster) => p != caster && !p.Dead && p.HostileTo(caster);
 
-        public static bool Rooted(Pawn p) => p.health?.hediffSet?.GetFirstHediffOfDef(EarthAirDefOf.Avir_EarthWard) != null;
+        /// <summary>Held fast in the ground by earth: cannot be thrown, drawn nor moved.</summary>
+        public static bool Rooted(Pawn p) => p.health?.hediffSet?.GetFirstHediffOfDef(EarthAirDefOf.Avir_Rooted) != null;
 
         public static void Stun(Pawn p, int ticks, Pawn by)
         {
-            if (Rooted(p)) return;
+            if (Rooted(p) || SpellWards.Stops(p, false)) return;
             p.stances?.stunner?.StunFor(ticks, by);
         }
 
@@ -402,6 +403,8 @@ namespace Avir.Magic
         public static void Give(Pawn p, HediffDef def, int ticks)
         {
             if (def == null) return;
+            // a ward keeps off what magic would leave on the body - harm only, not the good it gives
+            if (def.isBad && SpellWards.Stops(p, true)) return;
             Hediff h = p.health.hediffSet.GetFirstHediffOfDef(def) ?? p.health.AddHediff(def);
             h.Severity = Mathf.Max(h.Severity, 1f);
             HediffComp_Disappears d = h.TryGetComp<HediffComp_Disappears>();
@@ -419,21 +422,21 @@ namespace Avir.Magic
             if (ThingDefOf.Filth_RubbleRock != null && c.InBounds(map) && c.Standable(map)) FilthMaker.TryMakeFilth(c, map, ThingDefOf.Filth_RubbleRock);
         }
 
-        public static void Ward(Pawn caster, IntVec3 at, Map map, float radius, float power, HediffDef ward, string rune)
+        public static void Ward(Pawn caster, IntVec3 at, Map map, float radius, float power, HediffDef ward, string rune, int amplify = 0)
         {
             foreach (Pawn p in PawnsIn(FireMagic.Point(at, map, radius), map))
             {
                 if (p.HostileTo(caster)) continue;
-                Give(p, ward, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
+                SpellWards.Lay(p, ward, power, amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
             }
             MapComponent_WardsDrawn.Raise(map, at, radius, DefDatabase<RuneDef>.GetNamedSilentFail(rune), caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
         }
 
         /// <summary>A barrier on the very edge of the circle: a ward on the mage, wherever the spell takes them.</summary>
-        public static void WardMage(Pawn caster, float power, HediffDef ward, string rune)
+        public static void WardMage(Pawn caster, float power, HediffDef ward, string rune, int amplify = 0)
         {
             if (!SpellMods.WardOnMage || ward == null || caster.Dead) return;
-            Give(caster, ward, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
+            SpellWards.Lay(caster, ward, power, amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
             if (caster.Spawned) MapComponent_WardsDrawn.Raise(caster.Map, caster.Position, 0.9f, DefDatabase<RuneDef>.GetNamedSilentFail(rune), caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
         }
 

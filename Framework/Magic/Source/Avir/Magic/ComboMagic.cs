@@ -38,6 +38,21 @@ namespace Avir.Magic
             return ComboKind.None;
         }
 
+        /// <summary>The two elements that met to make it.</summary>
+        public static RuneKind[] Parts(ComboKind k)
+        {
+            switch (k)
+            {
+                case ComboKind.Steam: return new[] { RuneKind.Fire, RuneKind.Water };
+                case ComboKind.Storm: return new[] { RuneKind.Water, RuneKind.Air };
+                case ComboKind.Magma: return new[] { RuneKind.Fire, RuneKind.Earth };
+                case ComboKind.Haze: return new[] { RuneKind.Fire, RuneKind.Air };
+                case ComboKind.Bog: return new[] { RuneKind.Water, RuneKind.Earth };
+                case ComboKind.Dust: return new[] { RuneKind.Earth, RuneKind.Air };
+                default: return new RuneKind[0];
+            }
+        }
+
         public static bool WithAir(ComboKind k) => k == ComboKind.Storm || k == ComboKind.Haze || k == ComboKind.Dust;
 
         public static string Label(ComboKind k)
@@ -134,7 +149,7 @@ namespace Avir.Magic
             {
                 IntVec3 wat = SpellMods.WardOnMage || forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at;
                 foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(wat, map, Mathf.Max(0.9f, radius - 1f)), map))
-                    if (!p.HostileTo(caster)) MagicFx.Give(p, ward, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
+                    if (!p.HostileTo(caster)) SpellWards.Lay(p, ward, power, r.amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power));
                 MapComponent_WardsDrawn.Raise(map, wat, Mathf.Max(0.9f, radius - 1f), null, caster, Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power), Combos.ColorOf(k));
             }
             if (forms.Count == 0) { Apply(k, caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); return; }
@@ -238,16 +253,19 @@ namespace Avir.Magic
                     MapComponent_SpellSprites.Put(map, "Storm/Bolt_Fork", Center(cells).ToVector3Shifted(), 3.5f, 22);
                     break;
                 case ComboKind.Magma:
-                    // the ground bursts open: a blow of molten stone, and pools of it left burning
-                    foreach (Pawn p in foes)
-                    {
-                        p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 7f * power, 0f, -1f, caster));
-                        if (!p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 5f * power, 0f, -1f, caster));
-                    }
-                    MapComponent_SpellSprites.Put(map, "Magma/Fissure", Center(cells).ToVector3Shifted(), Spread(cells) * 2f, 240, -1f, 0f, 4f);
-                    Ash(map, Center(cells).ToVector3Shifted(), Spread(cells) * 1.6f);
-                    foreach (IntVec3 c in cells) if (Rand.Chance(0.35f)) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(900f * power), false);
+                {
+                    // the ground bursts: a blast of molten stone - it strikes whoever is near (the mage too, if they stand
+                    // in it unwarded), and then the magma runs out from where it burst
+                    IntVec3 mid = Center(cells);
+                    float sr = Spread(cells);
+                    GenExplosion.DoExplosion(mid, map, sr + 0.9f, DamageDefOf.Flame, caster, Mathf.RoundToInt(10f * power), chanceToStartFire: 0.5f);
+                    foreach (Pawn p in foes) if (!p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 5f * power, 0f, -1f, caster));
+                    MapComponent_SpellSprites.Put(map, "Magma/Fissure", mid.ToVector3Shifted(), sr * 2f, 240, -1f, 0f, 4f);
+                    Ash(map, mid.ToVector3Shifted(), sr * 1.6f);
+                    foreach (IntVec3 c in GenRadial.RadialCellsAround(mid, 1.5f, true)) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(900f * power), false);
+                    MapComponent_Creep.Start(map, k, caster, mid, 1.5f, sr + 1.5f + r.breadth, power, Mathf.RoundToInt(900f * power));
                     break;
+                }
                 case ComboKind.Haze:
                     // a flash of heat: foes dazzled for a while, a little burnt
                     foreach (Pawn p in foes) { p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 3f * power, 0f, -1f, caster)); MagicFx.Give(p, ComboDefOf.Avir_Dazzled, Mathf.RoundToInt(900f * power)); }
@@ -319,13 +337,15 @@ namespace Avir.Magic
                     {
                         Plant plant = c.GetPlant(map);
                         if (plant != null && plant.LifeStage == PlantLifeStage.Growing) plant.Growth = Mathf.Min(1f, plant.Growth + (k == ComboKind.Bog ? 0.2f : 0.12f) * power);
-                        if (k == ComboKind.Bog && Rand.Chance(0.3f)) MirePatch.Spread(c, map, caster, power, Mathf.RoundToInt(GenDate.TicksPerHour * power));
                     }
                     if (k == ComboKind.Steam) GenTemperature.PushHeat(Center(cells), map, 60f * power);
+                    // and it spreads, ring after ring
+                    MapComponent_Creep.Start(map, k, caster, Center(cells), Spread(cells) - 1f, Spread(cells) + 3f + 2f * r.breadth, power,
+                        Mathf.RoundToInt(GenDate.TicksPerHour * (k == ComboKind.Bog ? 2f : 1f) * power * (1 + r.anchor)));
                     break;
                 case ComboKind.Magma:
-                    // the molten ground creeps out
-                    foreach (IntVec3 c in near) if (Rand.Chance(0.25f)) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(900f * power), false);
+                    // the molten ground creeps out, ring after ring
+                    MapComponent_Creep.Start(map, k, caster, Center(cells), Spread(cells) - 1f, Spread(cells) + 3f + 2f * r.breadth, power, Mathf.RoundToInt(900f * power * (1 + r.anchor)));
                     break;
                 case ComboKind.Haze:
                 case ComboKind.Dust:
@@ -657,6 +677,7 @@ namespace Avir.Magic
                     if (f.kind == ComboKind.Dust) MapComponent_SpellSprites.Put(map, "Dust/Cloud", cells.RandomElement().ToVector3Shifted(), Rand.Range(2f, 3.5f), 160, -1f, 0.2f);
                 }
                 if (now % 60 != 0) continue;
+                using (SpellWards.Of(null, f.kind, false))
                 foreach (Pawn p in MagicFx.PawnsIn(cells, map))
                 {
                     bool foe = f.caster != null && MagicFx.Foe(p, f.caster);
@@ -720,11 +741,6 @@ namespace Avir.Magic
             GenSpawn.Spawn(m, c, map);
         }
 
-        /// <summary>A ward of magma: its wearer wades molten stone as if it were warm mud.</summary>
-        public static bool Unburnt(Pawn p) => ComboDefOf.Avir_MagmaWard != null && p.health?.hediffSet?.HasHediff(ComboDefOf.Avir_MagmaWard) == true;
-        /// <summary>A ward of fire only halves it: the heat is its own, the stone is not.</summary>
-        private static bool Scorched(Pawn p) => FireDefOf.Avir_FireWard != null && p.health?.hediffSet?.HasHediff(FireDefOf.Avir_FireWard) == true;
-
         public void Harden(bool now)
         {
             if (!Spawned) return;
@@ -764,11 +780,13 @@ namespace Avir.Magic
             if (--left <= 0) { Harden(false); return; }
             if (this.IsHashIntervalTick(20) && Rand.Chance(0.3f)) FleckMaker.ThrowFireGlow(DrawPos, Map, 0.6f);
             if (!this.IsHashIntervalTick(60)) return;
+            // the ground of magma: a ward of fire, magma or steam wades it; any other ward spends itself on it
+            using (SpellWards.Of(null, ComboKind.Magma, false))
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
             {
-                if (p.Dead || Unburnt(p)) continue;
-                p.TakeDamage(new DamageInfo(DamageDefOf.Flame, (Scorched(p) ? 2f : 4f) * power, 0f, -1f, owner));
-                if (!p.Dead && p.Spawned && Rand.Chance(0.2f)) FireUtility.TryAttachFire(p, 0.3f, owner);
+                if (p.Dead) continue;
+                p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 4f * power, 0f, -1f, owner));
+                if (!p.Dead && p.Spawned && !SpellWards.Stops(p, true) && Rand.Chance(0.2f)) FireUtility.TryAttachFire(p, 0.3f, owner);
             }
             foreach (Thing t in Position.GetThingList(Map).Where(t => t.def.category == ThingCategory.Item && t.FlammableNow).ToList()) FireUtility.TryAttachFire(t, 0.3f, owner);
         }
@@ -806,9 +824,10 @@ namespace Avir.Magic
             // a bog breathes: now and then a little marsh gas rises off it
             if (this.IsHashIntervalTick(600) && Rand.Chance(0.12f)) Gas_MarshGas.Release(Position, Map, 1, false);
             if (!this.IsHashIntervalTick(60)) return;
+            using (SpellWards.Of(null, ComboKind.Bog, false))
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
             {
-                if (p.Dead || owner == null || !MagicFx.Foe(p, owner) || MagicFx.Rooted(p)) continue;
+                if (p.Dead || owner == null || !MagicFx.Foe(p, owner) || MagicFx.Rooted(p) || SpellWards.Stops(p, true)) continue;
                 MagicFx.Give(p, ComboDefOf.Avir_Mired, 150);
                 // the longer they stay, the deeper they sink; the fallen go under fast
                 Hediff h = p.health.hediffSet.GetFirstHediffOfDef(ComboDefOf.Avir_Sinking) ?? p.health.AddHediff(ComboDefOf.Avir_Sinking);
@@ -957,7 +976,7 @@ namespace Avir.Magic
             switch (v)
             {
                 case RuneKind.Release:
-                    return k == ComboKind.Steam ? "bursts scalding, and the cloud stays" : k == ComboKind.Storm ? "falls as a bolt that leaps on" : k == ComboKind.Magma ? "breaks the ground open: molten stone strikes and pools"
+                    return k == ComboKind.Steam ? "bursts scalding, and the cloud stays" : k == ComboKind.Storm ? "falls as a bolt that leaps on" : k == ComboKind.Magma ? "bursts: a blast of molten stone, then the magma runs outward"
                          : k == ComboKind.Haze ? "flashes with heat: foes dazzled" : k == ComboKind.Bog ? "bursts in mud: foes knocked down in a mire" : "blasts sand: every bare part ground, the dust hangs";
                 case RuneKind.Hold:
                     return k == ComboKind.Magma ? "lies as a field of magma" : k == ComboKind.Bog ? "lies as a mire that draws foes under" : k == ComboKind.Storm ? "hangs as a storm that keeps striking"
@@ -967,7 +986,9 @@ namespace Avir.Magic
                 case RuneKind.Lift:
                     return "throws foes up" + (k == ComboKind.Magma ? " on a spout of lava" : k == ComboKind.Steam ? " on a geyser of steam" : k == ComboKind.Dust ? " in a spout of sand" : k == ComboKind.Storm ? " in a whirl of rain" : k == ComboKind.Bog ? " on a geyser of mud" : " on rising heat");
                 case RuneKind.Growth:
-                    return k == ComboKind.Magma ? "creeps outward" : k == ComboKind.Haze || k == ComboKind.Dust ? "spreads wide and hangs" : k == ComboKind.Bog ? "spreads its black wet earth - everything green grows" : "makes everything green grow";
+                    return k == ComboKind.Magma ? "creeps outward, ring after ring" : k == ComboKind.Haze || k == ComboKind.Dust ? "spreads wide and hangs"
+                         : k == ComboKind.Bog ? "creeps outward, ring after ring - everything green grows" : k == ComboKind.Steam ? "rolls outward, scalding, ring after ring - everything green grows"
+                         : "widens, raining and striking at its edge - everything green grows";
                 case RuneKind.Purge:
                     return "cleans: fire, filth and poison" + (k == ComboKind.Haze || k == ComboKind.Dust ? ", and the wet dried" : "");
                 default: return "";
@@ -1027,9 +1048,11 @@ namespace Avir.Magic
                     break;
             }
             e.Add(name + ": two elements met", Short(k));
-            if (r.barrier > 0) e.Add("Ward of " + Combos.Label(k), k == ComboKind.Steam ? "A little cloud wraps the wearer when foes are near." : k == ComboKind.Storm ? "Whoever strikes the wearer is jolted and stunned."
-                : k == ComboKind.Magma ? "A crust: blows bite less, and whoever strikes the wearer is burnt." : k == ComboKind.Haze ? "Bullets often pass through a shape that is not there."
-                : k == ComboKind.Bog ? "Whoever strikes the wearer is stuck where they stand for a moment." : "Whoever strikes the wearer gets dust in the eyes.");
+            if (r.barrier > 0) e.Add("Ward of " + Combos.Label(k), SpellWards.Note(Combos.Label(k), k == ComboKind.Magma || k == ComboKind.Steam,
+                k == ComboKind.Storm ? "being soaked" : k == ComboKind.Haze ? "being dazzled" : k == ComboKind.Bog ? "sinking and sticking" : k == ComboKind.Dust ? "dust in the eyes" : null,
+                k == ComboKind.Steam ? "A little cloud wraps the wearer when foes are near." : k == ComboKind.Storm ? "Whoever strikes the wearer is jolted and stunned."
+                : k == ComboKind.Magma ? "The wearer wades magma like warm mud; whoever strikes them is burnt." : k == ComboKind.Haze ? "Bullets often pass through a shape that is not there."
+                : k == ComboKind.Bog ? "Whoever strikes the wearer is stuck where they stand for a moment." : "Whoever strikes the wearer gets dust in the eyes.", r.amplify));
             return e;
         }
     }

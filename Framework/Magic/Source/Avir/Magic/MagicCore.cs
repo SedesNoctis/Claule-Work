@@ -697,6 +697,65 @@ namespace Avir.Magic
         [DebugAction(Cat, "Water this spot (reactions)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevWater() { Map map = Find.CurrentMap; Reactions.Touch(Brings.Water, FireMagic.Point(Verse.UI.MouseCell(), map, 2.5f), map, null, 1f); }
 
+        [DebugAction(Cat, "Ward: lay (choose element, strength)", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevLayWard()
+        {
+            var wards = new List<HediffDef> { FireDefOf.Avir_FireWard, WaterDefOf.Avir_WaterWard, EarthAirDefOf.Avir_EarthWard, EarthAirDefOf.Avir_AirWard,
+                ComboDefOf.Avir_SteamWard, ComboDefOf.Avir_StormWard, ComboDefOf.Avir_MagmaWard, ComboDefOf.Avir_HazeWard, ComboDefOf.Avir_BogWard, ComboDefOf.Avir_DustWard };
+            var opts = new List<DebugMenuOption>();
+            foreach (HediffDef w in wards.Where(x => x != null))
+                foreach (int amp in new[] { 0, 2, 4 })
+                {
+                    HediffDef wd = w; int a = amp;
+                    opts.Add(new DebugMenuOption(w.label + (a == 0 ? "" : " (Amplify ×" + a + ")"), DebugMenuOptionMode.Tool, () =>
+                    {
+                        Pawn p = Verse.UI.MouseCell().GetFirstPawn(Find.CurrentMap);
+                        if (p != null) SpellWards.Lay(p, wd, 1f, a, 30000);
+                    }));
+                }
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(opts));
+        }
+
+        [DebugAction(Cat, "Ward: strike with an element (direct, 20)", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevHitWard()
+        {
+            var opts = new List<DebugMenuOption>();
+            foreach (RuneKind k in new[] { RuneKind.Fire, RuneKind.Water, RuneKind.Earth, RuneKind.Air })
+            {
+                RuneKind kk = k;
+                opts.Add(new DebugMenuOption(k.ToString(), DebugMenuOptionMode.Tool, () => DevStrike(kk, ComboKind.None)));
+            }
+            foreach (ComboKind c in new[] { ComboKind.Steam, ComboKind.Storm, ComboKind.Magma, ComboKind.Haze, ComboKind.Bog, ComboKind.Dust })
+            {
+                ComboKind cc = c;
+                opts.Add(new DebugMenuOption(Combos.Label(c), DebugMenuOptionMode.Tool, () => DevStrike(null, cc)));
+            }
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(opts));
+        }
+
+        private static void DevStrike(RuneKind? el, ComboKind k)
+        {
+            Pawn p = Verse.UI.MouseCell().GetFirstPawn(Find.CurrentMap);
+            if (p == null) return;
+            float before = p.health.summaryHealth.SummaryHealthPercent;
+            using (SpellWards.Of(el, k, true)) p.TakeDamage(new DamageInfo(el == RuneKind.Fire || k == ComboKind.Magma || k == ComboKind.Steam ? DamageDefOf.Flame : DamageDefOf.Blunt, 20f));
+            Messages.Message(p.LabelShortCap + ": health " + before.ToStringPercent() + " -> " + p.health.summaryHealth.SummaryHealthPercent.ToStringPercent()
+                + (SpellWards.On(p) is Hediff_SpellWard w ? ", ward " + w.energy.ToString("0") + "/" + w.energyMax.ToString("0") : ", no ward"), MessageTypeDefOf.NeutralEvent, false);
+        }
+
+        [DebugAction(Cat, "Spreading here (Growth of a meeting)", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevCreep()
+        {
+            var opts = new List<DebugMenuOption>();
+            foreach (ComboKind c in new[] { ComboKind.Magma, ComboKind.Bog, ComboKind.Steam, ComboKind.Storm })
+            {
+                ComboKind cc = c;
+                opts.Add(new DebugMenuOption(Combos.Label(c), DebugMenuOptionMode.Tool, () =>
+                    MapComponent_Creep.Start(Find.CurrentMap, cc, null, Verse.UI.MouseCell(), 0.5f, 6f, 1f, 2500)));
+            }
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(opts));
+        }
+
         [DebugAction(Cat, "Magma wall here (sets into stone)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevMagmaWall() { Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell(); for (int i = -2; i <= 2; i++) MagmaPool.Pour(c + new IntVec3(i, 0, 0), map, null, 1f, 300, true, 5000); }
 

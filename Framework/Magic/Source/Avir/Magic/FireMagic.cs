@@ -34,8 +34,8 @@ namespace Avir.Magic
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             float radius = PointRadius(r);
-            if (r.barrier > 0) Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power);
-            MagicFx.WardMage(caster, power, FireDefOf.Avir_FireWard, "Avir_Rune_Fire");
+            if (r.barrier > 0) Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power, r.amplify);
+            MagicFx.WardMage(caster, power, FireDefOf.Avir_FireWard, "Avir_Rune_Fire", r.amplify);
             if (forms.Count == 0)
             {
                 if (verbs.Count > 0) Apply(caster, map, verbs, Point(at, map, radius), at, power, r, false);
@@ -236,15 +236,12 @@ namespace Avir.Magic
             }
         }
 
-        private static void Ward(Pawn caster, IntVec3 at, Map map, float radius, float power)
+        private static void Ward(Pawn caster, IntVec3 at, Map map, float radius, float power, int amplify)
         {
             foreach (Pawn p in PawnsIn(Point(at, map, radius), map))
             {
                 if (p.HostileTo(caster)) continue;
-                Hediff w = p.health.hediffSet.GetFirstHediffOfDef(FireDefOf.Avir_FireWard) ?? p.health.AddHediff(FireDefOf.Avir_FireWard);
-                w.Severity = 1f;
-                HediffComp_Disappears d = w.TryGetComp<HediffComp_Disappears>();
-                if (d != null) d.ticksToDisappear = Mathf.RoundToInt(GenDate.TicksPerHour * 6f * power);
+                SpellWards.Lay(p, FireDefOf.Avir_FireWard, power, amplify, Mathf.RoundToInt(GenDate.TicksPerHour * 6f * power));
                 if (p.GetAttachment(ThingDefOf.Fire) is Fire f) f.Destroy();
                 FleckMaker.ThrowFireGlow(p.DrawPos, map, 1f);
             }

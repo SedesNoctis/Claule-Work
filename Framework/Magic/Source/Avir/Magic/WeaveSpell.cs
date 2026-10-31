@@ -79,6 +79,11 @@ namespace Avir.Magic
                     where = step && !SpellMods.Pulls(order[k - 1].AsSchema()) ? "then, once the mage is there, round them: " : step || aura ? "then, by the mage: " : "then: ";
                 }
                 parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + where + (met ? Combos.Label(ck).CapitalizeFirst() + " (" + c.element.label + ")" : c.element.LabelCap) + " - " + one.main.TrimEnd('.'));
+                // the order of its own runes, numbered by the circle when there are several
+                one.extras.RemoveAll(x => x.Key == "In turn");
+                string turns = SpellText.Turns(c.AsSchema());
+                if (turns != null) e.extras.Add(new KeyValuePair<string, string>(order.Count > 1 ? "In turn (" + (k + 1) + ")" : "In turn",
+                    "Runes of one circle act one after another, as they are written from the centre outward.\n" + turns));
                 foreach (var x in one.extras) if (!e.extras.Any(y => y.Key == x.Key)) e.extras.Add(x);
             }
             foreach (SpellCircle g in greats)

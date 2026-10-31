@@ -127,6 +127,8 @@ namespace Avir.Magic
             AirMagic.Storm = c.storm;
             FireMagic.WallTo = c.wallTo;
             SpellDash.LastPulled = null;
+            ComboKind met = c.combos != null && c.combos.TryGetValue(circle, out ComboKind mk) ? mk : ComboKind.None;
+            using (SpellWards.Of(circle.element?.kind, met, true))
             try
             {
                 // two elements that met work as what they made

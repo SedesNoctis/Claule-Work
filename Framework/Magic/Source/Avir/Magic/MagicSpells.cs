@@ -158,10 +158,14 @@ namespace Avir.Magic
             Hediff_ArcaneCore core = Mages.Core(caster);
             RuneDef el = r.elements.FirstOrDefault();
             if (s.weave != null) { WeaveSpell.Resolve(caster, s, target, power); return; }
-            if (FireMagic.Is(el)) { FireMagic.Cast(caster, s, r, target, power); return; }
-            if (WaterMagic.Is(el)) { WaterMagic.Cast(caster, s, r, target, power); return; }
-            if (EarthMagic.Is(el)) { EarthMagic.Cast(caster, s, r, target, power); return; }
-            if (AirMagic.Is(el)) { AirMagic.Cast(caster, s, r, target, power); return; }
+            // the element at work, for the wards it meets
+            using (SpellWards.Of(el?.kind, ComboKind.None, true))
+            {
+                if (FireMagic.Is(el)) { FireMagic.Cast(caster, s, r, target, power); return; }
+                if (WaterMagic.Is(el)) { WaterMagic.Cast(caster, s, r, target, power); return; }
+                if (EarthMagic.Is(el)) { EarthMagic.Cast(caster, s, r, target, power); return; }
+                if (AirMagic.Is(el)) { AirMagic.Cast(caster, s, r, target, power); return; }
+            }
             IntVec3 at = target.Cell;
             float radius = 1.5f + 1.5f * r.breadth;
             foreach (RuneDef v in r.verbs)
@@ -197,9 +201,8 @@ namespace Avir.Magic
                         foreach (Pawn q in PawnsAt(at, map, Mathf.Max(0.9f, radius - 1f)))
                         {
                             if (q.HostileTo(caster) || MagicSpellDefOf.Avir_ArcaneWard == null) continue;
-                            Hediff w = q.health.AddHediff(MagicSpellDefOf.Avir_ArcaneWard);
-                            w.Severity = Mathf.Clamp01(0.4f * power);
                             if (el != null) WardElement.Set(q, el);
+                            SpellWards.Lay(q, MagicSpellDefOf.Avir_ArcaneWard, power, r.amplify, 1800);
                         }
                         break;
                     case RuneKind.Step:

@@ -29,7 +29,7 @@ namespace Avir.Magic
         public bool slam;
         public int lie;
 
-        private static bool Unmoved(Pawn p) => p == null || p.Dead || !p.Spawned || MagicFx.Rooted(p);
+        private static bool Unmoved(Pawn p) => p == null || p.Dead || !p.Spawned || MagicFx.Rooted(p) || SpellWards.Stops(p, false);
 
         /// <summary>Thrown back from a point (a negative distance pulls toward it); lie &gt; 0 - and left lying.</summary>
         public static void Throw(Pawn p, IntVec3 from, int dist, Map map, Pawn by = null, float power = 1f, int lie = 0)

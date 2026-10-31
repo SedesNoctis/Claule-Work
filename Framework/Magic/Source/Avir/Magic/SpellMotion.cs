@@ -219,7 +219,7 @@ namespace Avir.Magic
             Map map = Map; IntVec3 at = Position; Pawn mage = FlyingPawn; RuneKind el = element; float pw = power; Pawn by = puller;
             base.RespawnPawn();
             if (map == null || mage == null) return;
-            if (by != null) { if (!mage.Dead) Arrive(mage, by, el, pw, map); return; }
+            if (by != null) { if (!mage.Dead) using (SpellWards.Of(el, combo, true)) Arrive(mage, by, el, pw, map); return; }
             if (combo != ComboKind.None) { if (!mage.Dead) ComboMagic.Land(combo, mage, at, pw); return; }
             if (verbs != null && verbs.Count > 0 && !mage.Dead)
             {

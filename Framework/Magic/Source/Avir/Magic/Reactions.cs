@@ -210,7 +210,7 @@ namespace Avir.Magic
         protected override void AffectPawn(Pawn p)
         {
             if (p.RaceProps.IsMechanoid) return;
-            p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 2f, 0f, -1f));
+            using (SpellWards.Of(null, ComboKind.Steam, false)) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 2f, 0f, -1f));
         }
     }
 
@@ -251,7 +251,7 @@ namespace Avir.Magic
             if (!Spawned || igniteAt < 0 || Find.TickManager.TicksGame < igniteAt) return;
             Map map = Map; IntVec3 c = Position;
             Destroy();
-            GenExplosion.DoExplosion(c, map, 1.9f, DamageDefOf.Bomb, null, 16, chanceToStartFire: 0.4f);
+            using (SpellWards.Of(null, ComboKind.Bog, true)) GenExplosion.DoExplosion(c, map, 1.9f, DamageDefOf.Bomb, null, 16, chanceToStartFire: 0.4f);
         }
 
         public override void ExposeData() { base.ExposeData(); Scribe_Values.Look(ref igniteAt, "igniteAt", -1); }

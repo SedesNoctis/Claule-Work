@@ -12,8 +12,8 @@
   <HediffDef>
     <defName>Avir_ArcaneWard</defName>
     <label>arcane ward</label>
-    <description>A ward of magic laid over the body: blows land softer while it lasts. A spell of the ward's own element passes through it - and stronger.</description>
-    <hediffClass>HediffWithComps</hediffClass>
+    <description>A ward of magic laid over the body. Magic of other elements is put out at the cost of its charge; a spell of the ward's own element passes through it, stronger, and the ward falls. Holds a share of shots and blows.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
     <defaultLabelColor>(0.62, 0.48, 0.95)</defaultLabelColor>
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
@@ -24,22 +24,7 @@
       </li>
     </comps>
     <stages>
-      <li>
-        <statOffsets>
-          <ArmorRating_Sharp>0.25</ArmorRating_Sharp>
-          <ArmorRating_Blunt>0.2</ArmorRating_Blunt>
-          <ArmorRating_Heat>0.25</ArmorRating_Heat>
-        </statOffsets>
-      </li>
-      <li>
-        <minSeverity>0.5</minSeverity>
-        <label>strong</label>
-        <statOffsets>
-          <ArmorRating_Sharp>0.5</ArmorRating_Sharp>
-          <ArmorRating_Blunt>0.4</ArmorRating_Blunt>
-          <ArmorRating_Heat>0.5</ArmorRating_Heat>
-        </statOffsets>
-      </li>
+      <li />
     </stages>
   </HediffDef>
 
@@ -47,8 +32,8 @@
   <HediffDef>
     <defName>Avir_FireWard</defName>
     <label>ward of flame</label>
-    <description>A ward woven of flame. Fire does not pass it - at most it puts out what reaches the body.</description>
-    <hediffClass>HediffWithComps</hediffClass>
+    <description>A ward woven of flame: its wearer does not burn, and fire on the body goes out. Magic of other elements is put out at the cost of its charge; a direct blow of fire puts out both the ward and the spell. Holds a share of shots and blows.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
     <defaultLabelColor>(1, 0.55, 0.2)</defaultLabelColor>
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
@@ -310,8 +295,8 @@
   <HediffDef>
     <defName>Avir_WaterWard</defName>
     <label>ward of water</label>
-    <description>A skin of water held round the body: fire and burns bite far less, and flames on it go out.</description>
-    <hediffClass>HediffWithComps</hediffClass>
+    <description>A skin of water held round the body. Magic of other elements is put out at the cost of its charge; water passes it, stronger, and the ward falls - but it keeps off being soaked. Holds a share of shots and blows.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
     <defaultLabelColor>(0.45, 0.65, 1)</defaultLabelColor>
     <isBad>false</isBad>
     <comps>
@@ -322,10 +307,6 @@
     </comps>
     <stages>
       <li>
-        <damageFactors>
-          <li><damageDef>Flame</damageDef><factor>0.3</factor></li>
-          <li><damageDef>Burn</damageDef><factor>0.3</factor></li>
-        </damageFactors>
       </li>
     </stages>
   </HediffDef>
@@ -558,8 +539,8 @@
   <HediffDef>
     <defName>Avir_EarthWard</defName>
     <label>ward of earth</label>
-    <description>A ward of earth: magic cannot throw the wearer off their feet or stun them, and blunt blows bite less.</description>
-    <hediffClass>HediffWithComps</hediffClass>
+    <description>A ward of earth. Magic of other elements is put out at the cost of its charge; earth passes it, stronger, and the ward falls - but it keeps the wearer from being rooted. Holds a share of shots and blows.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
     <defaultLabelColor>(0.72, 0.58, 0.4)</defaultLabelColor>
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
@@ -571,7 +552,6 @@
     </comps>
     <stages>
       <li>
-        <damageFactors><li><damageDef>Blunt</damageDef><factor>0.7</factor></li></damageFactors>
       </li>
     </stages>
   </HediffDef>
@@ -690,8 +670,8 @@
   <HediffDef>
     <defName>Avir_AirWard</defName>
     <label>ward of air</label>
-    <description>A ward of wind: whoever strikes the wearer in close combat is thrown back.</description>
-    <hediffClass>HediffWithComps</hediffClass>
+    <description>A ward of wind. Magic of other elements is put out at the cost of its charge; air passes it, stronger, and the ward falls - but it keeps off dizziness. Whoever strikes the wearer in close combat is thrown back.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
     <defaultLabelColor>(0.75, 0.9, 1)</defaultLabelColor>
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
@@ -1048,12 +1028,13 @@
     <HediffDef>
     <defName>Avir_SteamWard</defName>
     <label>ward of steam</label>
-    <description>A ward of steam: when foes are near, a little cloud wraps its wearer.</description>
-    <hediffClass>HediffWithComps</hediffClass>
+    <description>A ward of steam: its wearer is not scalded by steam nor burnt. Magic of other elements is put out at the cost of its charge; a direct blow of steam or fire puts out both. When foes are near, a little cloud wraps the wearer.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
     <defaultLabelColor>(0.86, 0.89, 0.93)</defaultLabelColor>
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_Fireproof" />
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -1067,12 +1048,20 @@
       </li>
       <li Class="Avir.Magic.HediffCompProperties_ComboWard" />
     </comps>
+    <stages>
+      <li>
+        <damageFactors>
+          <li><damageDef>Flame</damageDef><factor>0</factor></li>
+          <li><damageDef>Burn</damageDef><factor>0</factor></li>
+        </damageFactors>
+      </li>
+    </stages>
   </HediffDef>
   <HediffDef>
     <defName>Avir_StormWard</defName>
     <label>ward of storm</label>
-    <description>A ward of storm: whoever strikes its wearer is jolted and stunned.</description>
-    <hediffClass>HediffWithComps</hediffClass>
+    <description>A ward of storm. Magic of other elements is put out at the cost of its charge; a storm passes it, stronger, and the ward falls. Whoever strikes the wearer is jolted and stunned.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
     <defaultLabelColor>(0.42, 0.55, 0.95)</defaultLabelColor>
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
@@ -1093,12 +1082,13 @@
   <HediffDef>
     <defName>Avir_MagmaWard</defName>
     <label>ward of magma</label>
-    <description>A crust of molten stone: blows bite less, whoever strikes its wearer is burnt, and pools of magma do not burn them - they wade it like warm mud.</description>
-    <hediffClass>HediffWithComps</hediffClass>
+    <description>A crust of molten stone: its wearer is not burnt and wades magma like warm mud - neither spends the other. Magic of other elements is put out at the cost of its charge; a direct blow of magma or fire puts out both. Whoever strikes the wearer is burnt.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
     <defaultLabelColor>(1, 0.36, 0.08)</defaultLabelColor>
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
     <comps>
+      <li Class="Avir.Magic.HediffCompProperties_Fireproof" />
       <li Class="HediffCompProperties_Disappears">
         <disappearsAfterTicks>10000~10000</disappearsAfterTicks>
         <showRemainingTime>true</showRemainingTime>
@@ -1113,15 +1103,18 @@
     </comps>
     <stages>
       <li>
-        <statOffsets><ArmorRating_Blunt>0.2</ArmorRating_Blunt><ArmorRating_Sharp>0.2</ArmorRating_Sharp></statOffsets>
+        <damageFactors>
+          <li><damageDef>Flame</damageDef><factor>0</factor></li>
+          <li><damageDef>Burn</damageDef><factor>0</factor></li>
+        </damageFactors>
       </li>
     </stages>
   </HediffDef>
   <HediffDef>
     <defName>Avir_HazeWard</defName>
     <label>ward of haze</label>
-    <description>A ward of haze: bullets often pass through a shape of its wearer that is not there.</description>
-    <hediffClass>HediffWithComps</hediffClass>
+    <description>A ward of haze. Magic of other elements is put out at the cost of its charge; haze passes it, stronger, and the ward falls - but it keeps off being dazzled. Bullets often pass through a shape of the wearer that is not there.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
     <defaultLabelColor>(1, 0.78, 0.45)</defaultLabelColor>
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
@@ -1142,8 +1135,8 @@
   <HediffDef>
     <defName>Avir_BogWard</defName>
     <label>ward of bog</label>
-    <description>A ward of bog: whoever strikes its wearer is stuck where they stand for a moment.</description>
-    <hediffClass>HediffWithComps</hediffClass>
+    <description>A ward of bog. Magic of other elements is put out at the cost of its charge; a bog passes it, stronger, and the ward falls - but the wearer does not sink nor stick. Whoever strikes the wearer is stuck where they stand for a moment.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
     <defaultLabelColor>(0.42, 0.62, 0.28)</defaultLabelColor>
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>
@@ -1165,8 +1158,8 @@
   <HediffDef>
     <defName>Avir_DustWard</defName>
     <label>ward of dust</label>
-    <description>A ward of dust: whoever strikes its wearer gets dust in the eyes.</description>
-    <hediffClass>HediffWithComps</hediffClass>
+    <description>A ward of dust. Magic of other elements is put out at the cost of its charge; dust passes it, stronger, and the ward falls - but it keeps dust out of the eyes. Whoever strikes the wearer gets dust in theirs.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
     <defaultLabelColor>(0.8, 0.69, 0.48)</defaultLabelColor>
     <isBad>false</isBad>
     <maxSeverity>1</maxSeverity>

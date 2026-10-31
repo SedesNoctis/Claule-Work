@@ -43,30 +43,56 @@ namespace Avir.Magic
         }
     }
 
-    /// <summary>A ward (the barrier rune: fire's ward, the arcane ward) puts out a spell that flies into the one who
-    /// wears it - and goes out itself. It does not throw the spell back.</summary>
+    /// <summary>A ward in the way of a flying spell (Магия-правила.md, part 1). Another element: the ward puts it out at
+    /// the cost of charge - or, too weak, breaks, and the spell flies on. Its own element: it passes,
+    /// and the ward lies on the blow when it lands. Fire on a ward of fire, magma or steam: both go out. It never throws
+    /// the spell back.</summary>
     public static class Ward
     {
-        private static bool ComboWard(HediffDef d) => d != null && (d == ComboDefOf.Avir_SteamWard || d == ComboDefOf.Avir_StormWard || d == ComboDefOf.Avir_MagmaWard
-                                                                  || d == ComboDefOf.Avir_HazeWard || d == ComboDefOf.Avir_BogWard || d == ComboDefOf.Avir_DustWard);
-
-        public static bool Quench(IntVec3 c, Map map, Pawn caster)
+        public static bool Quench(IntVec3 c, Map map, Pawn caster, RitualSchema spell, float power)
         {
             if (map == null || !c.InBounds(map)) return false;
             if (map.GetComponent<MapComponent_WardsDrawn>()?.Quench(c, caster) == true) return true;
             foreach (Pawn p in c.GetThingList(map).OfType<Pawn>())
             {
-                // the caster's own side is flown over, as any shot is; a foe's ward stops it
+                // the caster's own side is flown over, as any shot is; a foe's ward stands in the way
                 if (p == caster || p.Dead || (caster != null && !p.HostileTo(caster))) continue;
-                Hediff w = p.health.hediffSet.hediffs.FirstOrDefault(h => h.def == FireDefOf.Avir_FireWard || h.def == WaterDefOf.Avir_WaterWard || h.def == EarthAirDefOf.Avir_EarthWard || h.def == EarthAirDefOf.Avir_AirWard || ComboWard(h.def) || h.def == MagicSpellDefOf.Avir_ArcaneWard);
+                Hediff_SpellWard w = SpellWards.On(p);
                 if (w == null) continue;
-                p.health.RemoveHediff(w);
-                FleckMaker.ThrowLightningGlow(p.DrawPos, map, 1.2f);
-                FleckMaker.ThrowMicroSparks(p.DrawPos, map);
-                MoteMaker.ThrowText(p.DrawPos, map, "Ward spent", 3f);
-                return true;
+                RuneKind[] inc = Elements(spell), mine = w.Parts;
+                if (mine.Length > 0 && inc.Length > 0 && inc.All(k => mine.Contains(k)))
+                {
+                    if (!(w.Fiery && inc.Contains(RuneKind.Fire))) return false;   // its own element: through, stronger on landing
+                    w.Fall("Ward and spell put out");
+                    return true;
+                }
+                float need = 12f * power;
+                if (w.energy >= need) { w.Spend(need); Spark(p, map, "Spell put out"); return true; }
+                w.Fall("Ward broken");
+                return false;
             }
             return false;
+        }
+
+        private static RuneKind[] Elements(RitualSchema s)
+        {
+            if (s == null) return new RuneKind[0];
+            if (s.weave != null)
+            {
+                SpellCircle first = MapComponent_SpellChain.Order(s.weave).FirstOrDefault();
+                ComboKind k = Combos.Of(s.weave, first);
+                if (k != ComboKind.None) return Combos.Parts(k);
+                return first?.element != null ? new[] { first.element.kind } : new RuneKind[0];
+            }
+            RuneDef el = Spells.Element(s);
+            return el != null ? new[] { el.kind } : new RuneKind[0];
+        }
+
+        private static void Spark(Pawn p, Map map, string text)
+        {
+            FleckMaker.ThrowLightningGlow(p.DrawPos, map, 1.2f);
+            FleckMaker.ThrowMicroSparks(p.DrawPos, map);
+            MoteMaker.ThrowText(p.DrawPos, map, text, 3f);
         }
     }
 
@@ -108,7 +134,7 @@ namespace Avir.Magic
             base.TickInterval(delta);
             if (!Spawned) return;
             // a ward in its way puts it out: the spell is spent, the ward is gone, nothing passes and nothing grows
-            if (Position != mage?.Position && Ward.Quench(Position, Map, mage)) { Destroy(); return; }
+            if (Position != mage?.Position && Ward.Quench(Position, Map, mage, spell, power)) { Destroy(); return; }
             // a trail behind it, of its own element: embers for fire, spray for water, a faint haze of its colour for the rest
             RuneDef el = spell != null ? Spells.Element(spell) : null;
             if (!this.IsHashIntervalTick(Beam ? 1 : 2, delta)) return;

@@ -34,6 +34,21 @@ namespace Avir.Magic
 
         public static SpellEffect ExplainSchema(RitualSchema s) => ExplainCore(s);
 
+        /// <summary>Two or more forms or verbs in one circle: in what order they act. Forms go one after another, as
+        /// their runes are written from the centre outward; each carries every verb of the circle, in the same order.</summary>
+        public static string Turns(RitualSchema s)
+        {
+            RitualReading r = RitualEvaluator.Read(s);
+            var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
+            if (forms.Count + verbs.Count < 2) return null;
+            string list(List<RuneDef> l) => string.Join(", then ", l.Select(x => x.label));
+            if (forms.Count == 0) return "At the target, in turn: " + list(verbs) + ".";
+            if (verbs.Count == 0) return "In turn: " + list(forms) + ".";
+            return (forms.Count > 1 ? "The forms in turn: " + list(forms) + "; each carries" : forms[0].LabelCap + " carries") + " the verbs in turn: " + list(verbs) + "."
+                + (forms.Any(f => f.kind == RuneKind.Step) ? " (A step: its verbs strike where the mage comes out.)" : "");
+        }
+
         /// <summary>The reading is heavy (the chain, what met, where each modifier sits) and lists and the codex ask
         /// for it every frame: it is kept half a second per spell, and each caller gets its own copy to write on.</summary>
         private static readonly Dictionary<RitualSchema, KeyValuePair<float, SpellEffect>> read = new Dictionary<RitualSchema, KeyValuePair<float, SpellEffect>>();
@@ -57,6 +72,8 @@ namespace Avir.Magic
         private static SpellEffect ExplainCore(RitualSchema s)
         {
             SpellEffect e = ExplainPlain(s);
+            string turns = Turns(s);
+            if (turns != null) e.extras.Insert(0, new KeyValuePair<string, string>("In turn", "Runes of one circle act one after another, as they are written from the centre outward.\n" + turns));
             List<string> by = SpellMods.Bindings(s);
             if (by.Count > 0) e.extras.Insert(0, new KeyValuePair<string, string>("By their place", "A modifier works on the verb or form just inward of it; next to the element - on the whole circle.\n" + string.Join("\n", by.Select(x => "• " + x))));
             return e;
@@ -126,7 +143,7 @@ namespace Avir.Magic
             }
             if (forms.Count > 1) e.Add("Several forms", "Each form works on its own: the spell happens once for each.");
             Repeats(e, verbs);
-            if (r.barrier > 0) e.Add("Ward of flame", "Friends at the target (the mage, if cast around them) get a ward: fire and burns do not pass it, and flames on the body go out.");
+            if (r.barrier > 0) e.Add("Ward of flame", SpellWards.Note("flame", true, null, "Flames on the body go out.", r.amplify));
             if (r.amplify > 0 && verbs.Any(v => v.kind == RuneKind.Release)) e.Add("Explosion", "Amplified release bursts: a flame explosion of radius " + (1.9f + r.amplify).ToString("0.#") + ".");
             else if (r.amplify > 0) e.Add("Stronger", "Amplification: +" + (30 * r.amplify) + "% power.");
             if (verbs.Any(v => v.kind == RuneKind.Purge) && (form?.kind == RuneKind.Aura || r.anchor > 0))
@@ -166,7 +183,7 @@ namespace Avir.Magic
                     break;
             }
             Repeats(e, verbs);
-            if (r.barrier > 0) e.Add("Ward of water", "Friends there get a ward of water: magic and fire bite less, and every fire within three cells of them goes out.");
+            if (r.barrier > 0) e.Add("Ward of water", SpellWards.Note("water", false, "being soaked", "Every fire within three cells of the wearer goes out.", r.amplify));
             if (verbs.Any(v => v.kind == RuneKind.Release) && r.amplify > 0) e.Add("Further back", "Amplified, the burst throws foes further.");
             if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the water", DrainNote(verbs, "water", "water"));
             if (r.breadth > 0) e.Add("Wider", "Breadth: a wider area or a broader jet - and each one makes the cast 8% longer.");
@@ -201,7 +218,7 @@ namespace Avir.Magic
             }
             if (forms.Count > 1) e.Add("Several forms", "Each form works on its own: the spell happens once for each.");
             Repeats(e, verbs);
-            if (r.barrier > 0) e.Add("Ward of earth", "Friends there get a ward of earth: magic cannot throw them off their feet or stun them, and blunt blows bite less.");
+            if (r.barrier > 0) e.Add("Ward of earth", SpellWards.Note("earth", false, "being rooted", null, r.amplify));
             if (r.amplify > 0) e.Add("Heavier", "Amplification: the blows of stone are harder.");
             if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the weight", DrainNote(verbs, "weight", "earth"));
             if (form?.kind == RuneKind.Shape && (r.anchor > 0 || verbs.Any(v => v.kind == RuneKind.Hold))) e.Add("Stands longer", "Holding and anchors keep the stone up longer.");
@@ -256,7 +273,7 @@ namespace Avir.Magic
             }
             if (forms.Count > 1) e.Add("Several forms", "Each form works on its own: the spell happens once for each.");
             Repeats(e, verbs);
-            if (r.barrier > 0) e.Add("Ward of air", "Friends there get a ward of air: whoever strikes them in close combat is thrown back.");
+            if (r.barrier > 0) e.Add("Ward of air", SpellWards.Note("air", false, "dizziness", "Whoever strikes the wearer in close combat is thrown back.", r.amplify));
             if (verbs.Any(v => v.kind == RuneKind.Release) && r.amplify > 0) e.Add("Further back", "Amplified, the gust throws foes further.");
             if (verbs.Any(v => v.kind == RuneKind.Release)) e.Add("Feeds fire", "Fires the gust passes over flare up - careful near your own walls.");
             if (verbs.Any(v => v.kind == RuneKind.Drain)) e.Add("Keeps the breath", DrainNote(verbs, "breath", "air"));
