@@ -140,7 +140,7 @@ namespace Avir.Magic
 
         public static bool AtWork => element.HasValue || combo != ComboKind.None;
 
-        private static RuneKind[] Incoming => combo != ComboKind.None ? Combos.Parts(combo) : element.HasValue ? new[] { element.Value } : new RuneKind[0];
+        internal static RuneKind[] Incoming => combo != ComboKind.None ? Combos.Parts(combo) : element.HasValue ? new[] { element.Value } : new RuneKind[0];
 
         public static Hediff_SpellWard On(Pawn p) => p?.health?.hediffSet?.hediffs.OfType<Hediff_SpellWard>().FirstOrDefault();
 
@@ -470,6 +470,41 @@ namespace Avir.Magic
                 tip = () => d.Name.CapitalizeFirst() + " - the outer layer: a blow meets the dome first, and what it lets through meets the ward on the body."
                     + "\nShots: " + d.ranged.ToStringPercent() + " held · melee: " + d.melee.ToStringPercent() + " held."
             };
+        }
+    }
+
+    /// <summary>Magic's blows go through armour by their own measure (Магия-правила.md): blunt by element - water and bog,
+    /// earth and magma, air and the rest - and cutting ones alike; heat by the game's own rules. With Combat Extended the
+    /// measures are its own (MPa, mm), set apart in the settings. Grows with the blow: a blow of 10 is the base.</summary>
+    [HarmonyPatch(typeof(Pawn), nameof(Pawn.PreApplyDamage))]
+    public static class Patch_SpellPenetration
+    {
+        private static readonly System.Reflection.FieldInfo Pen = AccessTools.Field(typeof(DamageInfo), "armorPenetrationInt");
+        private static bool? ce;
+
+        [HarmonyPriority(Priority.First)]
+        public static void Prefix(ref DamageInfo __0)
+        {
+            if (!AvirMagic.On || !SpellWards.AtWork || Pen == null) return;
+            DamageDef d = __0.Def;
+            if (d?.armorCategory == null || __0.ArmorPenetrationInt > 0f) return;
+            bool sharp = d.armorCategory == DamageArmorCategoryDefOf.Sharp, blunt = d.armorCategory.defName == "Blunt";
+            if (!sharp && !blunt) return;   // heat and the rest: by the game's own rules
+            if (ce == null) ce = ModsConfig.IsActive("CETeam.CombatExtended");
+            AvirSettings o = AvirMod.Settings;
+            RuneKind[] inc = SpellWards.Incoming;
+            bool water = inc.Contains(RuneKind.Water) && !inc.Contains(RuneKind.Fire) && !inc.Contains(RuneKind.Air);
+            bool earth = inc.Contains(RuneKind.Earth) && !water && !inc.Contains(RuneKind.Air);
+            float pen = sharp ? (ce.Value ? o.magicPenSharpCE : o.magicPenSharp)
+                : water ? (ce.Value ? o.magicPenWaterCE : o.magicPenWater)
+                : earth ? (ce.Value ? o.magicPenEarthCE : o.magicPenEarth)
+                : (ce.Value ? o.magicPenAirCE : o.magicPenAir);
+            pen *= Mathf.Clamp(__0.Amount / 10f, 0.5f, 2.5f);
+            if (pen <= 0f) return;
+            SpellWards.Note("penetration " + d.defName + " " + __0.Amount.ToString("0.#") + ": " + pen.ToString("0.##") + (ce.Value ? (sharp ? " mm" : " MPa") : " (share)"));
+            object box = __0;
+            Pen.SetValue(box, pen);
+            __0 = (DamageInfo)box;
         }
     }
 }

@@ -83,6 +83,10 @@ namespace Avir
         public int airMomentumStages = 3;
         // earth (and magma, bog) casts slower by this much
         public float earthCastFactor = 1.5f;
+        // armour penetration of magic's blows, at a blow of 10 (it grows with the blow): with Combat Extended - MPa (blunt) and
+        // mm (sharp); without it - the game's own share of armour pierced
+        public float magicPenWaterCE = 8f, magicPenEarthCE = 12f, magicPenAirCE = 5f, magicPenSharpCE = 2f;
+        public float magicPenWater = 0.2f, magicPenEarth = 0.3f, magicPenAir = 0.1f, magicPenSharp = 0.1f;
         public float mageFlowWeight = 3f;
         /// <summary>Where a kept spell goes: 0 the colony's book, 1 files beside the mod (every game), 2 both.</summary>
         public int spellKeep = 0;
@@ -142,6 +146,10 @@ namespace Avir
             Scribe_Values.Look(ref airMomentumStep, "airMomentumStep", 0.15f);
             Scribe_Values.Look(ref airMomentumStages, "airMomentumStages", 3);
             Scribe_Values.Look(ref earthCastFactor, "earthCastFactor", 1.5f);
+            Scribe_Values.Look(ref magicPenWaterCE, "magicPenWaterCE", 8f); Scribe_Values.Look(ref magicPenEarthCE, "magicPenEarthCE", 12f);
+            Scribe_Values.Look(ref magicPenAirCE, "magicPenAirCE", 5f); Scribe_Values.Look(ref magicPenSharpCE, "magicPenSharpCE", 2f);
+            Scribe_Values.Look(ref magicPenWater, "magicPenWater", 0.2f); Scribe_Values.Look(ref magicPenEarth, "magicPenEarth", 0.3f);
+            Scribe_Values.Look(ref magicPenAir, "magicPenAir", 0.1f); Scribe_Values.Look(ref magicPenSharp, "magicPenSharp", 0.1f);
             Scribe_Values.Look(ref mageFlowWeight, "mageFlowWeight", 3f);
             Scribe_Values.Look(ref spellKeep, "spellKeep", 0);
             Scribe_Values.Look(ref arliaIntroBook, "arliaIntroBook");
@@ -215,6 +223,25 @@ namespace Avir
             list.Label("Earth casts slower: ×" + o.earthCastFactor.ToString("0.0#"), -1f,
                 new TipSignal("Earth is heavy: spells of earth, and of magma and bog, take this much longer to cast."));
             o.earthCastFactor = Mathf.Round(list.Slider(o.earthCastFactor, 1f, 2.5f) * 10f) / 10f;
+            list.Gap();
+            // how magic's blows go through armour: the measures of Combat Extended when it is on, the game's own otherwise
+            bool ce = ModsConfig.IsActive("CETeam.CombatExtended");
+            list.Label(ce ? "Armour penetration of spells (Combat Extended found) - at a blow of 10, grows with the blow:" : "Armour penetration of spells - at a blow of 10, grows with the blow:", -1f,
+                new TipSignal("Fire, steam, haze and lightning burn: they meet armour as heat, by the game's own rules, and are not set here."));
+            if (ce)
+            {
+                list.Label("  water, bog: " + o.magicPenWaterCE.ToString("0.#") + " MPa"); o.magicPenWaterCE = Mathf.Round(list.Slider(o.magicPenWaterCE, 0f, 40f) * 2f) / 2f;
+                list.Label("  earth, magma: " + o.magicPenEarthCE.ToString("0.#") + " MPa"); o.magicPenEarthCE = Mathf.Round(list.Slider(o.magicPenEarthCE, 0f, 40f) * 2f) / 2f;
+                list.Label("  air and the rest: " + o.magicPenAirCE.ToString("0.#") + " MPa"); o.magicPenAirCE = Mathf.Round(list.Slider(o.magicPenAirCE, 0f, 40f) * 2f) / 2f;
+                list.Label("  cutting blows (sand, shards): " + o.magicPenSharpCE.ToString("0.#") + " mm"); o.magicPenSharpCE = Mathf.Round(list.Slider(o.magicPenSharpCE, 0f, 20f) * 2f) / 2f;
+            }
+            else
+            {
+                list.Label("  water, bog: " + o.magicPenWater.ToStringPercent()); o.magicPenWater = Mathf.Round(list.Slider(o.magicPenWater, 0f, 1f) * 20f) / 20f;
+                list.Label("  earth, magma: " + o.magicPenEarth.ToStringPercent()); o.magicPenEarth = Mathf.Round(list.Slider(o.magicPenEarth, 0f, 1f) * 20f) / 20f;
+                list.Label("  air and the rest: " + o.magicPenAir.ToStringPercent()); o.magicPenAir = Mathf.Round(list.Slider(o.magicPenAir, 0f, 1f) * 20f) / 20f;
+                list.Label("  cutting blows (sand, shards): " + o.magicPenSharp.ToStringPercent()); o.magicPenSharp = Mathf.Round(list.Slider(o.magicPenSharp, 0f, 1f) * 20f) / 20f;
+            }
             list.Gap();
             list.Label("Where a kept spell goes:");
             if (list.RadioButton("The colony's book (this game)", o.spellKeep == 0)) o.spellKeep = 0;
