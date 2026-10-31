@@ -136,6 +136,15 @@ namespace Avir.Magic
     {
         private static bool storming;
 
+        /// <summary>The mage's own mirages within twelve cells of a point, up to four.</summary>
+        private static List<Building_ShadowDecoy> Mirages(Pawn caster, Map map, IntVec3 at)
+        {
+            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_ShadowDecoy");
+            if (def == null) return new List<Building_ShadowDecoy>();
+            return map.listerThings.ThingsOfDef(def).OfType<Building_ShadowDecoy>()
+                .Where(d => d.her == caster && d.Position.InHorDistOf(at, 12f)).Take(4).ToList();
+        }
+
         /// <summary>The foes a storm strikes besides its target: the nearest round it, within eight cells, in sight of the sky's reach.</summary>
         private static List<Pawn> StormTargets(Pawn caster, Map map, IntVec3 at, int count) =>
             GenRadial.RadialDistinctThingsAround(at, map, 8f, true).OfType<Pawn>()
@@ -151,6 +160,12 @@ namespace Avir.Magic
             IntVec3 at = target.Cell;
             // magma, bog and dust take up their own ground at hand, as earth takes up stone
             if (EarthStone.Heavy(k) && !storming) power *= EarthStone.Gather(map, at, k);
+            // steam and storm take water's rule: the wet ground round the target feeds them (+4% a wet cell, up to +40%);
+            // steam drinks the pools there and they boil off as scalding clouds
+            if (k == ComboKind.Steam || k == ComboKind.Storm) power *= 1f + Reactions.WaterAround(at, map);
+            if (k == ComboKind.Steam && !storming)
+                foreach (IntVec3 c in FireMagic.Point(at, map, 2.5f))
+                    foreach (Thing pool in Reactions.Pools(c, map).Where(t => !(t is MirePatch)).ToList()) { pool.Destroy(); Gas_ScaldingSteam.Release(c, map, 1); }
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             float radius = FireMagic.PointRadius(r);
@@ -176,6 +191,10 @@ namespace Avir.Magic
                 }
                 finally { storming = false; }
             }
+            // haze takes air's many targets through its mirages: every false shape of the mage near the target lets the
+            // verbs out where it stands too, at half strength
+            if (k == ComboKind.Haze && verbs.Count > 0)
+                foreach (Building_ShadowDecoy d in Mirages(caster, map, at)) Apply(k, caster, map, verbs, FireMagic.Point(d.Position, map, 1.5f), d.Position, power * 0.5f, r);
             if (forms.Count == 0) { Apply(k, caster, map, verbs, FireMagic.Point(at, map, radius), at, power, r); return; }
             foreach (RuneDef f in forms)
             {
@@ -193,7 +212,7 @@ namespace Avir.Magic
                         Apply(k, caster, map, verbs, line, caster.Position, power, rf);
                         break;
                     case RuneKind.Shape:
-                        var wall = FireMagic.WallTo.IsValid ? FireMagic.WallLine(at, FireMagic.WallTo, map, FireMagic.WallMax(rf)) : FireMagic.Wall(caster.Position, at, map, 5 + 2 * rf.breadth);
+                        var wall = FireMagic.ShapeCells(caster, at, map, rf, forms);
                         Wall(k, caster, map, wall, power, rf, verbs.Any(v => v.kind == RuneKind.Hold));
                         Apply(k, caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, rf);
                         break;
@@ -271,7 +290,8 @@ namespace Avir.Magic
                 case ComboKind.Storm:
                     // a bolt falls on the point, and leaps on
                     Pawn first = foes.OrderBy(p => p.Position.DistanceToSquared(Center(cells))).FirstOrDefault();
-                    if (first != null) AirMagic.Chain(caster, new List<IntVec3> { first.Position }, map, 1 + r.breadth, power, true);
+                    // on wet ground the bolt finds more to leap to: +1 jump for every tenth of the water round
+                    if (first != null) AirMagic.Chain(caster, new List<IntVec3> { first.Position }, map, 1 + r.breadth + Mathf.FloorToInt(Reactions.WaterAround(Center(cells), map) * 10f), power, true);
                     foreach (Pawn p in foes) WaterMagic.Soak(p, power);
                     FleckMaker.Static(Center(cells).ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 4f);
                     MapComponent_SpellSprites.Put(map, "Storm/Bolt_Fork", Center(cells).ToVector3Shifted(), 3.5f, 22);

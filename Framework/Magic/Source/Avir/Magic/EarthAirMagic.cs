@@ -51,7 +51,7 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Shape:
                         // a wall of stone rises between the two chosen points; with holding or an anchor it stands longer
-                        var wall = FireMagic.WallTo.IsValid ? FireMagic.WallLine(at, FireMagic.WallTo, map, FireMagic.WallMax(rf)) : FireMagic.Wall(caster.Position, at, map, 5 + 2 * rf.breadth);
+                        var wall = FireMagic.ShapeCells(caster, at, map, rf, forms);
                         int life = Mathf.RoundToInt(GenDate.TicksPerHour * 3f * power * (1 + rf.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0)));
                         foreach (IntVec3 c in wall) EarthWall.Raise(c, map, life);
                         Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, rf);
@@ -214,7 +214,7 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Shape:
                         // a wall of wind between the two chosen points: foes who try to cross are thrown back
-                        var wall = FireMagic.WallTo.IsValid ? FireMagic.WallLine(at, FireMagic.WallTo, map, FireMagic.WallMax(rf)) : FireMagic.Wall(caster.Position, at, map, 5 + 2 * rf.breadth);
+                        var wall = FireMagic.ShapeCells(caster, at, map, rf, forms);
                         int life = Mathf.RoundToInt(GenDate.TicksPerHour * 2f * power * (1 + rf.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0)));
                         foreach (IntVec3 c in wall) AirWall.Place(c, map, caster, life);
                         Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, rf);

@@ -53,7 +53,7 @@ namespace Avir.Magic
                         Apply(caster, map, verbs, Beam(caster.Position, at, map, rf.breadth), at, power, rf, false);
                         break;
                     case RuneKind.Shape:
-                        Apply(caster, map, verbs, WallTo.IsValid ? WallLine(at, WallTo, map, WallMax(rf)) : Wall(caster.Position, at, map, 5 + 2 * rf.breadth), at, power, rf, false);
+                        Apply(caster, map, verbs, ShapeCells(caster, at, map, rf, forms), at, power, rf, false);
                         break;
                     case RuneKind.Step:
                         var path = GenSight.BresenhamCellsBetween(caster.Position, at).Where(c => c.InBounds(map) && c != caster.Position).ToList();
@@ -117,6 +117,20 @@ namespace Avir.Magic
             }
             return cells.ToList();
         }
+
+        /// <summary>Where a shaped wall stands. Between two chosen points - a line; struck at the mage (after a step, from
+        /// an aura, or cast at their own feet) - a ring round them, three cells out and one more for each Breadth: whoever
+        /// stands inside is shut in with the mage. Otherwise a short wall across the line of the cast.</summary>
+        public static List<IntVec3> ShapeCells(Pawn caster, IntVec3 at, Map map, RitualReading rf, List<RuneDef> forms)
+        {
+            bool round = forms.Any(f => f.kind == RuneKind.Aura) || (caster != null && caster.Spawned && at == caster.Position);
+            if (round) return Ring(caster.Position, map, 3f + rf.breadth);
+            return WallTo.IsValid ? WallLine(at, WallTo, map, WallMax(rf)) : Wall(caster.Position, at, map, 5 + 2 * rf.breadth);
+        }
+
+        /// <summary>The cells of a ring round a point: one cell thick, unbroken.</summary>
+        public static List<IntVec3> Ring(IntVec3 at, Map map, float radius) =>
+            GenRadial.RadialCellsAround(at, radius + 0.5f, true).Where(c => c.InBounds(map) && c.DistanceTo(at) > radius - 0.5f).ToList();
 
         public static List<IntVec3> Wall(IntVec3 from, IntVec3 at, Map map, int length)
         {

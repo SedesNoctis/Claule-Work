@@ -62,6 +62,19 @@ namespace Avir.Magic
                 e0.details = Details(s);
                 if (SpellCasting.OfAir(s)) e0.Add("Momentum", "A spell of the air: cast on the move. Cast another of the air within " + AvirMod.Settings.airMomentumSeconds.ToString("0") + " seconds and it comes "
                     + AvirMod.Settings.airMomentumStep.ToStringPercent() + " quicker and cheaper - up to " + AirMomentum.MaxStage + " stages; a pause lets the wind drop.");
+                if (s.weave != null)
+                    foreach (ComboKind ck in Combos.Pairs(s.weave).Values.Distinct())
+                    {
+                        string inh = ck == ComboKind.Steam ? "From water: the wet ground round the target feeds it (+4% a wet cell, up to +40%), and the pools there boil off as scalding clouds. From fire: a lost hold scalds everyone round."
+                            : ck == ComboKind.Storm ? "From water: wet ground feeds it, and on it the bolt leaps further. From air: cast on the move, momentum, many targets. A lost hold: bolts strike at random round the mage."
+                            : ck == ComboKind.Magma ? "From earth: it takes up the magma and basalt at hand - stronger, cheaper - and casts slowly. From fire: a lost hold opens lava all round."
+                            : ck == ComboKind.Haze ? "From air: cast on the move, momentum; every mirage of the mage near the target lets the verbs out too, at half strength. From fire: a lost hold dazzles everyone round."
+                            : ck == ComboKind.Bog ? "From earth: it takes up the mire and pools at hand - stronger, cheaper - and casts slowly. From water: it lies long. A lost hold: a masterless mire round the mage."
+                            : "From earth: it lifts the rubble, chunks and shards at hand - stronger, cheaper. From air: cast on the move, momentum. A lost hold: a dust storm round the mage.";
+                        e0.Add(Combos.Label(ck).CapitalizeFirst() + ": inherited", inh);
+                    }
+                bool shaped = s.weave != null ? s.weave.All().Any(c => c.OwnRunes.Any(x => x.kind == RuneKind.Shape)) : RitualEvaluator.Read(s).verbs.Any(v => v.kind == RuneKind.Shape);
+                if (shaped) e0.Add("Ring", "Shaping struck at the mage - after a step, from an aura, or cast at their own feet - raises the wall as a ring round them, three cells out (+1 for each Breadth): whoever is inside is shut in with the mage. Between two chosen points it stands as a line.");
                 ComboKind? stone = EarthStone.KindOf(s);
                 if (stone.HasValue) e0.Add("Stone at hand", "Earth's rule - stone remains. At its target the spell takes up the " + EarthStone.Ground(stone.Value) + " lying within three cells: +5% strength and 3% less Arcana for each, up to +50% and -30%. Loose stone is flung and gone; rock, basalt and walls stay and give half.");
                 if ((s.weave != null && WeaveSpell.Heavy(s.weave)) || (s.weave == null && EarthMagic.Is(Spells.Element(s)))) e0.Add("Heavy", "Earth is heavy: this spell takes ×" + AvirMod.Settings.earthCastFactor.ToString("0.0#") + " as long to cast.");

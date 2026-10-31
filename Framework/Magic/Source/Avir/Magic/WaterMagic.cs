@@ -55,7 +55,7 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Shape:
                         // the ground itself turns to shallow water for a while: a moat that slows everyone and takes no fire
-                        var wall = FireMagic.WallTo.IsValid ? FireMagic.WallLine(at, FireMagic.WallTo, map, FireMagic.WallMax(rf)) : FireMagic.Wall(caster.Position, at, map, 5 + 2 * rf.breadth);
+                        var wall = FireMagic.ShapeCells(caster, at, map, rf, forms);
                         int life = Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power * (1 + rf.anchor + (verbs.Any(v => v.kind == RuneKind.Hold) ? 1 : 0)));
                         foreach (IntVec3 c in wall) { map.GetComponent<MapComponent_RaisedWater>()?.Raise(c, life); FireMagic.Extinguish(c, map); FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.4f); }
                         Apply(caster, map, verbs.Where(v => v.kind != RuneKind.Hold).ToList(), wall, at, power, rf);
