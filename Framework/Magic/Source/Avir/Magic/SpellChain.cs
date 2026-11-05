@@ -94,9 +94,28 @@ namespace Avir.Magic
         {
             if (!root.binding) return WeaveSpell.Small(root);
             bool back = Widdershins(root);
-            var list = Turn(root.inner, back).Where(c => !c.Great).ToList();
-            foreach (SpellCircle g in Turn(root.inner, back).Where(c => c.Great)) list.AddRange(Turn(g.inner, back).Where(c => !c.Great));
-            return list.Where(c => c.element != null).ToList();
+            var list = new List<SpellCircle>();
+            Walk(root.inner, back, null, list);
+            return list;
+        }
+
+        /// <summary>The reading of a spell (the author's rule, Fix129): one queue, from the heart outward and clockwise from
+        /// the top. A great circle in it is a box: when the queue reaches it, the small circles inside it act first, in
+        /// their own order; then the great circle's own runes, where the last of them ended (at once, if it holds none).
+        /// A small circle with no element inside a great one is a small circle of that great element (of Life now).</summary>
+        private static void Walk(List<SpellCircle> ring, bool back, SpellCircle box, List<SpellCircle> list)
+        {
+            foreach (SpellCircle c in Turn(ring, back))
+            {
+                if (c.Great)
+                {
+                    Walk(c.inner, back, c, list);
+                    if (LifeMagic.Is(c.element) && c.OwnRunes.Any()) list.Add(c);
+                    continue;
+                }
+                if (c.element != null) list.Add(c);
+                else if (box != null && LifeMagic.Is(box.element) && c.OwnRunes.Any()) list.Add(c);
+            }
         }
 
         /// <summary>The circles of a ring from the top: clockwise as they stand, or counter-clockwise (the top one
@@ -115,6 +134,7 @@ namespace Avir.Magic
                 storm = false, wallTo = FireMagic.WallTo, combos = Combos.Pairs(root), origin = caster.Position,
                 hops = SpellHops.Take(caster)
             };
+            LifeMagic.BeginSpell(caster);
             // the map is taken before the first circle: a step may carry the mage off it (under the ground, in the air)
             Map map = caster.Map;
             // the first circle at once - a spell of one circle is over in this very moment
@@ -131,6 +151,15 @@ namespace Avir.Magic
             SpellCircle circle = c.links[c.next++];
             Pawn caster = c.caster;
             if (caster == null || caster.Dead || !caster.Spawned) return;
+            // a circle of Life (a great one's own runes, or a small one with no element in it): Life's own grammar
+            if (LifeMagic.IsLink(c.root, circle))
+            {
+                LifeMagic.CastCircle(caster, circle, c.target.Cell, c.power, caster.Map);
+                c.target = new LocalTargetInfo(c.target.Cell);
+                c.waitCaster = false; c.waitFor = null; c.endByMage = false;
+                int t0 = Find.TickManager.TicksGame; c.giveUp = t0 + Patience; c.at = t0 + Gap;
+                return;
+            }
             float p = c.power * WeaveSpell.ResonanceFactor(WeaveSpell.Resonance(c.root, circle.element)) * Combos.FocusBoost(circle, caster.Map);
             RitualSchema one = circle.AsSchema();
             // two Barriers in the outermost section: the blow is shaped round the caster's own people (weaker for it)
@@ -182,6 +211,9 @@ namespace Avir.Magic
                     SpellDash.Last = null;
                     SpellDash.Hang(leap, met, caster, c.target, p);
                 }
+            // Life round it: the friends this circle touched are mended now, out of the flow and the store
+            SpellCircle box = c.root.ParentOf(circle);
+            if (box != null && box != c.root && LifeMagic.Is(box.element)) LifeMagic.Wrap(caster, box, c.target.Cell, 2f + 1.5f * circle.OwnRunes.Count(x => x.kind == RuneKind.Breadth) + 1f, c.power, caster.Map);
             // where this circle ends, the next one strikes
             bool step = r.verbs.Any(v => v.kind == RuneKind.Step);
             bool aura = r.verbs.Any(v => v.kind == RuneKind.Aura);
@@ -209,6 +241,7 @@ namespace Avir.Magic
 
         private static void Finish(Chain c)
         {
+            LifeMagic.EndSpell(c.caster);
             if (c.caster == null || c.caster.Dead || !c.caster.Spawned) return;
             WeaveSpell.AfterCircles(c.caster, c.root, c.target, c.power, c.caster.Map);
         }
@@ -273,7 +306,7 @@ namespace Avir.Magic
             // air alone, or air in its meetings (storm, haze, dust): every circle of the spell is of the air
             var pairs = Combos.Pairs(s.weave);
             var circles = MapComponent_SpellChain.Order(s.weave);
-            return circles.Count > 0 && circles.All(c => c.element.kind == RuneKind.Air || (pairs.TryGetValue(c, out ComboKind k) && Combos.WithAir(k)));
+            return circles.Count > 0 && circles.All(c => c.element?.kind == RuneKind.Air || (pairs.TryGetValue(c, out ComboKind k) && Combos.WithAir(k)));
         }
 
         /// <summary>Earth is unwieldy (the author, Nov 2026): a spell with earth in it strikes the place it was aimed at,
@@ -459,7 +492,7 @@ namespace Avir.Magic
         {
             if (s.weave == null) { RuneDef e = Spells.Element(s); return e != null ? e.LabelCap.ToString() : "No element"; }
             var pairs = Combos.Pairs(s.weave);
-            var names = MapComponent_SpellChain.Order(s.weave).Select(c => pairs.TryGetValue(c, out ComboKind k) ? Combos.Label(k).CapitalizeFirst() : c.element.LabelCap.ToString()).Distinct().ToList();
+            var names = MapComponent_SpellChain.Order(s.weave).Select(c => pairs.TryGetValue(c, out ComboKind k) ? Combos.Label(k).CapitalizeFirst() : c.element != null ? c.element.LabelCap.ToString() : "Life").Distinct().ToList();
             return names.Count == 0 ? "No element" : names.Count == 1 ? names[0] : "Mixed";
         }
 

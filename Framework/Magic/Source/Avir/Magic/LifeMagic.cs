@@ -23,6 +23,18 @@ namespace Avir.Magic
 
         public static bool Is(RuneDef e) => e != null && e.kind == RuneKind.Life;
         public static IEnumerable<SpellCircle> Circles(SpellCircle root) => WeaveSpell.Greats(root).Where(g => Is(g.element));
+        /// <summary>Is this circle of the queue one of Life: a great circle of Life (its own runes), or a small circle with
+        /// no element inside one (a small circle of Life - the author's rule).</summary>
+        public static bool IsLink(SpellCircle root, SpellCircle c)
+        {
+            if (c == null) return false;
+            if (c.Great) return Is(c.element);
+            if (c.element != null) return false;
+            SpellCircle box = root?.ParentOf(c);
+            return box != null && box.Great && Is(box.element);
+        }
+        /// <summary>Every circle of Life in a spell that acts on its own: the great ones' own runes and the small ones inside them.</summary>
+        public static IEnumerable<SpellCircle> Links(SpellCircle root) => root == null ? Enumerable.Empty<SpellCircle>() : root.Working.Where(c => IsLink(root, c) && c.OwnRunes.Any());
         private static bool Friend(Pawn p, Pawn caster) => p != null && !p.Dead && !p.HostileTo(caster) && (p.Faction == caster.Faction || p.HostFaction == caster.Faction || p == caster);
         private static bool Living(Pawn p) => p != null && p.RaceProps != null && !p.RaceProps.IsMechanoid && p.RaceProps.IsFlesh;
         public static float Radius(SpellCircle g) => 2.5f + 1.5f * g.OwnRunes.Count(x => x.kind == RuneKind.Breadth);
@@ -83,10 +95,24 @@ namespace Avir.Magic
         /// <summary>The energy just taken, not yet in the store: what a Restoration further on spends first; what is left
         /// goes into the store at the end. A Restoration that finds too little takes the rest from the store.</summary>
         private static float flow;
+        private static readonly Dictionary<int, float> flows = new Dictionary<int, float>();
         /// <summary>One spell's energy lives through all its Life circles: taken in one, it is there for the next; what is
-        /// left goes into the store when the spell is over.</summary>
-        public static void BeginSpell() => flow = 0f;
-        public static void EndSpell(Pawn caster) { Hediff_ArcaneCore core = Mages.Core(caster); if (core != null && flow > 0f) core.AddVita(flow); flow = 0f; }
+        /// left goes into the store when the spell is over. Kept for each caster, so two spells at once do not mix.</summary>
+        public static void BeginSpell(Pawn caster) { if (caster != null) flows[caster.thingIDNumber] = 0f; }
+        public static void EndSpell(Pawn caster)
+        {
+            if (caster == null || !flows.TryGetValue(caster.thingIDNumber, out float f)) return;
+            flows.Remove(caster.thingIDNumber);
+            Hediff_ArcaneCore core = Mages.Core(caster);
+            if (core != null && f > 0f) core.AddVita(f);
+        }
+        /// <summary>A circle of Life in its turn in the queue.</summary>
+        public static void CastCircle(Pawn caster, SpellCircle g, IntVec3 at, float power, Map map)
+        {
+            flows.TryGetValue(caster.thingIDNumber, out flow);
+            try { Cast(caster, g, at, power, map); }
+            finally { flows[caster.thingIDNumber] = flow; flow = 0f; }
+        }
 
         public static void Cast(Pawn caster, SpellCircle g, IntVec3 at, float power, Map map)
         {
@@ -121,6 +147,13 @@ namespace Avir.Magic
 
         /// <summary>Round small circles: the friends the spell touched are mended - out of the store.</summary>
         public static void Wrap(Pawn caster, SpellCircle g, IntVec3 at, float radius, float power, Map map)
+        {
+            flows.TryGetValue(caster.thingIDNumber, out flow);
+            try { WrapNow(caster, g, at, radius, power, map); }
+            finally { if (flows.ContainsKey(caster.thingIDNumber)) flows[caster.thingIDNumber] = flow; flow = 0f; }
+        }
+
+        private static void WrapNow(Pawn caster, SpellCircle g, IntVec3 at, float radius, float power, Map map)
         {
             Hediff_ArcaneCore core = Mages.Core(caster);
             if (core == null) return;
@@ -262,9 +295,10 @@ namespace Avir.Magic
             if (s?.weave == null || caster?.Map == null) return null;
             Hediff_ArcaneCore core = Mages.Core(caster);
             if (core == null) return null;
-            var lifes = Circles(s.weave).ToList();
-            if (lifes.Count == 0) return null;
-            bool gives = lifes.Any(g => Read(g, out _).Any(a => a.side == RuneKind.Restore)) || lifes.Any(g => g.inner.Count > 0);
+            var lifes = Links(s.weave).ToList();
+            bool wraps = Circles(s.weave).Any(g => g.inner.Any(k => k.element != null));
+            if (lifes.Count == 0 && !wraps) return null;
+            bool gives = lifes.Any(g => Read(g, out _).Any(a => a.side == RuneKind.Restore)) || wraps;
             if (!gives) return null;
             bool takes = lifes.Any(g => Read(g, out _).Any(a => a.side == RuneKind.Drain));
             if (core.vita > 0.5f) return null;
@@ -290,7 +324,7 @@ namespace Avir.Magic
         public static IEnumerable<KeyValuePair<string, string>> Warnings(SpellCircle root)
         {
             if (root == null) yield break;
-            var untied = Circles(root).SelectMany(g => { Read(g, out var u); return u; }).Distinct().ToList();
+            var untied = Links(root).SelectMany(g => { Read(g, out var u); return u; }).Distinct().ToList();
             if (untied.Count > 0)
                 yield return new KeyValuePair<string, string>("Untied verb of Life", "Arlie: \"" + Quip(root) + "\"\n"
                     + string.Join(", ", untied.Select(k => k.ToString())) + " here is not tied to Withering or Restoration, and does nothing. In Life every verb and every beam is written with one of the two: Release + Withering, Beam + Restoration.");
@@ -300,10 +334,11 @@ namespace Avir.Magic
 
         public static void Slip(Pawn caster, SpellCircle root)
         {
-            var lifes = Circles(root).ToList();
-            if (lifes.Count == 0 || caster == null || !caster.Spawned) return;
+            var lifes = Links(root).ToList();
+            bool wraps = Circles(root).Any(g => g.inner.Any(k => k.element != null));
+            if ((lifes.Count == 0 && !wraps) || caster == null || !caster.Spawned) return;
             bool death = lifes.Any(g => Read(g, out _).Any(a => a.side == RuneKind.Drain));
-            bool life = lifes.Any(g => g.inner.Count > 0 || Read(g, out _).Any(a => a.side == RuneKind.Restore));
+            bool life = wraps || lifes.Any(g => Read(g, out _).Any(a => a.side == RuneKind.Restore));
             Map map = caster.Map;
             if (death)
             {
@@ -622,6 +657,8 @@ namespace Avir.Magic
                 Spell("TEST Life: draw from the green only", "Growth,Drain,Breadth"),
                 Spell("TEST Life: untied Release (Arlie)", "Release,Breadth"),
                 Spell("TEST Life round fire (mends whom it touches)", "", "Fire:Release"),
+                Spell("TEST Life box: beam drinks the foes, then a burst mends own", "", "None:Beam,Drain|Barrier,Barrier", "None:Release,Restore,Breadth|Barrier,Barrier,Thread"),
+                Spell("TEST Life box: fire inside first, then Life's own runes", "Release,Drain,Breadth|Barrier,Barrier", "Fire:Release"),
             };
             foreach (RitualSchema s in list) core.Book.spells.Add(s);
             Messages.Message(list.Count + " test spells of Life written into " + p.LabelShort + "'s book.", MessageTypeDefOf.NeutralEvent, false);

@@ -1171,7 +1171,7 @@ namespace Avir.Magic
             if (all.Count == 0) return "no circle - add one round the heart";
             if (all.All(c => c.element == null)) return "no element";
             if (all.Any(c => c.Great && c.element == null)) return "a great circle has no seal";
-            if (all.Any(c => c.element == null)) return "a circle has no element";
+            if (all.Any(c => c.element == null && !(!c.Great && s.weave.ParentOf(c) is SpellCircle box && box.Great && LifeMagic.Is(box.element)))) return "a circle has no element";
             if (all.Where(c => !c.Great).All(c => !c.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form || x.kind == RuneKind.Barrier))
                 && !all.Any(c => c.Great && c.OwnRunes.Any()))
                 return "nothing to do - add a verb or a form";

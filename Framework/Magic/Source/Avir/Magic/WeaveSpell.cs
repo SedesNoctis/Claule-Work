@@ -106,6 +106,11 @@ namespace Avir.Magic
             for (int k = 0; k < order.Count; k++)
             {
                 SpellCircle c = order[k];
+                if (LifeMagic.IsLink(root, c))
+                {
+                    parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + (k > 0 ? "then: " : "") + (c.Great ? "" : "a small circle of ") + LifeText(c));
+                    continue;
+                }
                 bool met = pairs.TryGetValue(c, out ComboKind ck);
                 SpellEffect one = met ? ComboText.Explain(ck, c.AsSchema()) : SpellText.ExplainSchema(c.AsSchema());
                 string where = "";
@@ -126,7 +131,7 @@ namespace Avir.Magic
             foreach (SpellCircle g in greats)
             {
                 if (g.element == null) { parts.Add("a great circle with no element yet"); continue; }
-                if (g.element.kind == RuneKind.Life) parts.Add(LifeText(g));
+                if (g.element.kind == RuneKind.Life) { if (g.inner.Count > 0) parts.Add("Life round its circles: every friend they touch is mended from the store as each strikes"); }
                 else parts.Add(g.element.LabelCap + (g.inner.Count > 0 ? " round it" : "") + " (not made yet)");
             }
             e.main = string.Join(order.Count > 1 ? "\n" : "; ", parts) + ".";
@@ -138,7 +143,7 @@ namespace Avir.Magic
             if (LifeMagic.Circles(root).Any())
             {
                 e.extras.Insert(0, new KeyValuePair<string, string>("Symbiosis", "Life makes nothing; it only moves. Withering fills the store of life, the other verbs give it away - with the store empty they give nothing."));
-                if (!LifeMagic.Circles(root).Any(g => g.OwnRunes.Any(x => x.kind == RuneKind.Drain))) e.extras.Insert(0, new KeyValuePair<string, string>("Gives from the store", "No Withering here: this spell only spends the store of life a former spell filled."));
+                if (!LifeMagic.Links(root).Any(g => g.OwnRunes.Any(x => x.kind == RuneKind.Drain))) e.extras.Insert(0, new KeyValuePair<string, string>("Gives from the store", "No Withering here: this spell only spends the store of life a former spell filled."));
             }
             // the price chip last, once
             var price = e.extras.Where(x => x.Key.StartsWith("Price")).ToList();
@@ -169,14 +174,7 @@ namespace Avir.Magic
             }
             // Life (LifeMagic): its own runes where the spell ended; round small circles it mends whom the spell touched -
             // both out of the store of life, never for nothing
-            LifeMagic.BeginSpell();
-            foreach (SpellCircle g in Greats(root))
-            {
-                if (!LifeMagic.Is(g.element)) continue;
-                if (g.OwnRunes.Any()) LifeMagic.Cast(caster, g, target.Cell, power, map);
-                if (g.inner.Count > 0) LifeMagic.Wrap(caster, g, target.Cell, radius + 1f, power, map);
-            }
-            LifeMagic.EndSpell(caster);
+            // Life acts in the queue now (MapComponent_SpellChain.Walk), each circle of it in its turn
         }
 
         /// <summary>A lost hold: every element's price - fire's raging flame among them.</summary>
