@@ -169,12 +169,14 @@ namespace Avir.Magic
             }
             // Life (LifeMagic): its own runes where the spell ended; round small circles it mends whom the spell touched -
             // both out of the store of life, never for nothing
+            LifeMagic.BeginSpell();
             foreach (SpellCircle g in Greats(root))
             {
                 if (!LifeMagic.Is(g.element)) continue;
                 if (g.OwnRunes.Any()) LifeMagic.Cast(caster, g, target.Cell, power, map);
                 if (g.inner.Count > 0) LifeMagic.Wrap(caster, g, target.Cell, radius + 1f, power, map);
             }
+            LifeMagic.EndSpell(caster);
         }
 
         /// <summary>A lost hold: every element's price - fire's raging flame among them.</summary>

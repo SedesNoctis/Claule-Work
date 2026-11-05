@@ -83,6 +83,10 @@ namespace Avir.Magic
         /// <summary>The energy just taken, not yet in the store: what a Restoration further on spends first; what is left
         /// goes into the store at the end. A Restoration that finds too little takes the rest from the store.</summary>
         private static float flow;
+        /// <summary>One spell's energy lives through all its Life circles: taken in one, it is there for the next; what is
+        /// left goes into the store when the spell is over.</summary>
+        public static void BeginSpell() => flow = 0f;
+        public static void EndSpell(Pawn caster) { Hediff_ArcaneCore core = Mages.Core(caster); if (core != null && flow > 0f) core.AddVita(flow); flow = 0f; }
 
         public static void Cast(Pawn caster, SpellCircle g, IntVec3 at, float power, Map map)
         {
@@ -90,7 +94,6 @@ namespace Avir.Magic
             if (core == null || map == null || !at.InBounds(map)) return;
             if (SpellSculpt.Of(g)) power *= SpellSculpt.Keeps;
             float r = Radius(g);
-            flow = 0f;
             IntVec3 last = at;
             bool gaveNothing = false;
             foreach (Act act in Read(g, out _))
@@ -107,8 +110,6 @@ namespace Avir.Magic
                 else gaveNothing |= !Give(caster, core, g, act, where, r, power, map);
                 last = where;
             }
-            if (flow > 0f) core.AddVita(flow);
-            flow = 0f;
             if (gaveNothing) MoteMaker.ThrowText(at.ToVector3Shifted(), map, "No life to give", Necrotic, 3f);
         }
 
@@ -276,13 +277,22 @@ namespace Avir.Magic
             return "the store of life is empty and there is nothing here to wither - Life cannot give what it has not taken.";
         }
 
+        // the author's three lines; one is chosen by the spell, so the same spell always says the same
+        private static readonly string[] Quips =
+        {
+            "So, does it eat or does it get eaten?",
+            "Life isn't a vegetarian, you know. Well, it could be, but not here.",
+            "Oh, that's some good waste of logic there! Did you forget how life works? Go and read about it before you realise you're too are alive.",
+        };
+        private static string Quip(SpellCircle root) => Quips[(int)((uint)root.All().Sum(c => c.OwnRunes.Count() * 7 + (c.element?.shortHash ?? 0)) % Quips.Length)];
+
         /// <summary>Arlie on the grammar of Life: a verb or a beam not tied to Withering or Restoration.</summary>
         public static IEnumerable<KeyValuePair<string, string>> Warnings(SpellCircle root)
         {
             if (root == null) yield break;
             var untied = Circles(root).SelectMany(g => { Read(g, out var u); return u; }).Distinct().ToList();
             if (untied.Count > 0)
-                yield return new KeyValuePair<string, string>("Untied verb of Life", "Arlie: \"And what is that one supposed to take - or to give? Life does not do things for nothing, dear.\"\n"
+                yield return new KeyValuePair<string, string>("Untied verb of Life", "Arlie: \"" + Quip(root) + "\"\n"
                     + string.Join(", ", untied.Select(k => k.ToString())) + " here is not tied to Withering or Restoration, and does nothing. In Life every verb and every beam is written with one of the two: Release + Withering, Beam + Restoration.");
         }
 
