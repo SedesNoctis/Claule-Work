@@ -123,6 +123,17 @@ namespace Avir.Magic
         public const float LevelStep = 0.075f, LevelMax = 0.75f;
         public static float LevelShare(int lvl) => Mathf.Min(LevelMax, LevelStep * (lvl - 1));
         public float arcana;
+        /// <summary>The store of life (LifeMagic): filled by Withering, given by Life's other verbs.</summary>
+        public float vita;
+        public float VitaMax => 0.5f * Capacity * (1f + 0.1f * MageClass.Stage(MageClass.XpIn(this, RuneKind.Life)));
+        public bool KnowsLife => vita > 0.01f || MageClass.XpIn(this, RuneKind.Life) > 0f;
+        /// <summary>Into the store; what it cannot hold spills over (Overflow).</summary>
+        public void AddVita(float amount)
+        {
+            vita += amount;
+            float max = VitaMax;
+            if (vita > max) { float over = vita - max; vita = max; LifeMagic.Overflow(pawn, over); }
+        }
         public int outsideTicks;     // how long the Arcana has stood outside its band, above or below
         public float target = 0.5f;  // where the mage keeps it: past this, the excess is let out (vent)
         public bool vent = true;
@@ -192,6 +203,7 @@ namespace Avir.Magic
             base.ExposeData();
             Scribe_Values.Look(ref level, "level", 1);
             Scribe_Values.Look(ref arcana, "arcana");
+            Scribe_Values.Look(ref vita, "vita");
             Scribe_Values.Look(ref outsideTicks, "outsideTicks");
             Scribe_Values.Look(ref target, "target", 0.5f);
             Scribe_Values.Look(ref vent, "vent", true);
@@ -229,6 +241,7 @@ namespace Avir.Magic
             dayAcc += hours / 24f;
             if (dayAcc >= 1f) { MageClass.Days(this, dayAcc); dayAcc = 0f; }
             MagicWork.Tick(this, hours);
+            if (vita > 0f || pawn.health.hediffSet.HasHediff(DefDatabase<HediffDef>.GetNamedSilentFail("Avir_VitaFlow") ?? MagicDefOf.Avir_ArcaneGreatness)) LifeMagic.Fade(this, hours);
             // the map's stream seeps into a mage a little on its own
             Map m = pawn.MapHeld;
             if (m != null)
@@ -305,6 +318,7 @@ namespace Avir.Magic
             foreach (Gizmo g in base.GetGizmos()) yield return g;
             if (!AvirMagic.On || pawn.Faction != Faction.OfPlayer) yield break;
             if (Find.Selector.NumSelected == 1) yield return new Gizmo_Arcana { core = this };
+            if (Find.Selector.NumSelected == 1 && KnowsLife) yield return new Gizmo_Vita { core = this };
             {
                 float held = ArcanaIntake.Held(pawn);
                 var draw = new Command_Action

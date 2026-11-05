@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- LIFE, the first great circle (Source/Avir/Magic/LifeMagic.cs; Магия-правила.md 0.28). -->
+
+  <DamageDef>
+    <defName>Avir_Withering</defName>
+    <label>withering</label>
+    <workerClass>DamageWorker_AddInjury</workerClass>
+    <externalViolence>true</externalViolence>
+    <deathMessage>{0} has withered away.</deathMessage>
+    <hediff>Avir_Withered</hediff>
+    <harmAllLayersUntilOutside>true</harmAllLayersUntilOutside>
+    <armorCategory>Heat</armorCategory>
+    <defaultArmorPenetration>0.6</defaultArmorPenetration>
+  </DamageDef>
+
+  <HediffDef ParentName="InjuryBase">
+    <defName>Avir_Withered</defName>
+    <label>withered</label>
+    <labelNoun>a withered wound</labelNoun>
+    <description>Flesh drained grey and dry by Life's Withering. What it held went into someone's store of life.</description>
+    <comps>
+      <li Class="HediffCompProperties_TendDuration">
+        <labelTendedWell>bandaged</labelTendedWell>
+        <labelTendedWellInner>sutured</labelTendedWellInner>
+        <labelSolidTendedWell>set</labelSolidTendedWell>
+      </li>
+      <li Class="HediffCompProperties_Infecter">
+        <infectionChancePerHourUntended>0.01</infectionChancePerHourUntended>
+      </li>
+      <li Class="HediffCompProperties_GetsPermanent">
+        <permanentLabel>withered scar</permanentLabel>
+      </li>
+    </comps>
+    <injuryProps>
+      <painPerSeverity>0.0125</painPerSeverity>
+      <averagePainPerSeverityPermanent>0.00625</averagePainPerSeverityPermanent>
+      <bleedRate>0.02</bleedRate>
+      <canMerge>true</canMerge>
+      <destroyedLabel>Withered away</destroyedLabel>
+    </injuryProps>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_Entangled</defName>
+    <label>entangled</label>
+    <description>Pale vines have grown round the legs: every step tears at them.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.66, 0.82, 0.55)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>480~480</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods>
+          <li><capacity>Moving</capacity><offset>-0.6</offset></li>
+        </capMods>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_LifeRegen</defName>
+    <label>life's regrowth</label>
+    <description>What Life's mending leaves behind. Every mending deepens it, and it fades by a quarter a day. Light, it quickens healing; deep, it walks old scars down to nothing; saturated, it grows back what was lost - a limb a layer at a time, the organs on a long clock, chronic ailments on a shorter one. It asks nothing of the healed.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.66, 0.82, 0.55)</defaultLabelColor>
+    <isBad>false</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>1.5</maxSeverity>
+    <comps>
+      <li Class="Avir.Magic.HediffCompProperties_LifeRegen" />
+    </comps>
+    <stages>
+      <li>
+        <label>quickened</label>
+        <statFactors><InjuryHealingFactor>1.6</InjuryHealingFactor></statFactors>
+      </li>
+      <li>
+        <minSeverity>0.5</minSeverity>
+        <label>deep</label>
+        <statFactors><InjuryHealingFactor>2.2</InjuryHealingFactor></statFactors>
+      </li>
+      <li>
+        <minSeverity>1</minSeverity>
+        <label>saturated</label>
+        <statFactors><InjuryHealingFactor>3</InjuryHealingFactor></statFactors>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_VitaFlow</defName>
+    <label>store of life</label>
+    <description>A store of life held in the core. It fades slowly, and what fades goes out of the mage: wounds close faster, and with the store above half the body fights sickness quicker.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.66, 0.82, 0.55)</defaultLabelColor>
+    <isBad>false</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <stages>
+      <li>
+        <label>low</label>
+        <statFactors><InjuryHealingFactor>1.2</InjuryHealingFactor></statFactors>
+      </li>
+      <li>
+        <minSeverity>0.5</minSeverity>
+        <label>full</label>
+        <statFactors>
+          <InjuryHealingFactor>1.4</InjuryHealingFactor>
+          <ImmunityGainSpeed>1.15</ImmunityGainSpeed>
+        </statFactors>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_LifeOverflow</defName>
+    <label>bark and moss</label>
+    <description>The store of life spilled over: bark and moss have crept over the hands. They fall away in a day or two.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.55, 0.62, 0.42)</defaultLabelColor>
+    <isBad>true</isBad>
+    <initialSeverity>0.05</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay">
+        <severityPerDay>-0.5</severityPerDay>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods>
+          <li><capacity>Manipulation</capacity><offset>-0.05</offset></li>
+        </capMods>
+      </li>
+      <li>
+        <minSeverity>0.5</minSeverity>
+        <label>thick</label>
+        <capMods>
+          <li><capacity>Manipulation</capacity><offset>-0.15</offset></li>
+        </capMods>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <!-- Dead ground: Withering greys the soil for three days (MapComponent_TempTerrain). Placeholder: vanilla soil, greyed. -->
+  <TerrainDef ParentName="NaturalTerrainBase">
+    <defName>Avir_DeadGround</defName>
+    <label>dead ground</label>
+    <description>Soil Life has been drawn out of: grey, dry and crumbling. It comes back on its own in a few days.</description>
+    <texturePath>Terrain/Surfaces/Soil</texturePath>
+    <pollutedTexturePath>Terrain/Surfaces/SoilPolluted</pollutedTexturePath>
+    <color>(0.62, 0.6, 0.56)</color>
+    <edgeType>FadeRough</edgeType>
+    <categoryType>Soil</categoryType>
+    <renderPrecedence>342</renderPrecedence>
+    <pathCost>2</pathCost>
+    <fertility>0.2</fertility>
+    <takeFootprints>true</takeFootprints>
+    <generatedFilth>Filth_Dirt</generatedFilth>
+    <statBases>
+      <Beauty>-1</Beauty>
+      <Cleanliness>-1.5</Cleanliness>
+    </statBases>
+    <affordances><li>Light</li><li>Medium</li><li>Heavy</li><li>GrowSoil</li><li>Diggable</li></affordances>
+    <tags><li>Soil</li></tags>
+  </TerrainDef>
+</Defs>

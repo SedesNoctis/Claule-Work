@@ -98,7 +98,7 @@ namespace Avir.Magic
         /// <summary>The elements a spell is cast in: one share for each circle (a meeting of two circles gives one to each).</summary>
         public static List<RuneKind> Shares(RitualSchema s)
         {
-            if (s.weave != null) return WeaveSpell.Small(s.weave).Where(k => k.element != null).Select(k => k.element.kind).ToList();
+            if (s.weave != null) return WeaveSpell.Small(s.weave).Where(k => k.element != null).Select(k => k.element.kind).Concat(LifeMagic.Circles(s.weave).Select(g => RuneKind.Life)).ToList();
             return RitualEvaluator.Read(s).elements.Select(e => e.kind).ToList();
         }
 

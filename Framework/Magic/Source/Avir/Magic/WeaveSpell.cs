@@ -64,6 +64,26 @@ namespace Avir.Magic
         /// <summary>Water and air together: a storm - the wind's chained strike turns to lightning.</summary>
         public static bool Storm(SpellCircle root) => Combos.Pairs(root).ContainsValue(ComboKind.Storm);
 
+        /// <summary>A Life circle in words: its own verbs in their order.</summary>
+        public static string LifeText(SpellCircle g)
+        {
+            var bits = new List<string>();
+            foreach (RuneDef rn in g.OwnRunes)
+                switch (rn.kind)
+                {
+                    case RuneKind.Drain: bits.Add("withers the grass, the foes and the fresh dead into the store"); break;
+                    case RuneKind.Release: bits.Add("a pulse: wounds the foes, mends the friends"); break;
+                    case RuneKind.Restore: bits.Add("mends the friends and leaves a regrowth"); break;
+                    case RuneKind.Growth: bits.Add("quickens the plants and deepens the regrowth"); break;
+                    case RuneKind.Hold: bits.Add("vines hold the foes"); break;
+                    case RuneKind.Purge: bits.Add("draws out poison and withering"); break;
+                    default: if (rn.role == RuneRole.Verb || rn.role == RuneRole.Form) bits.Add(rn.label + " (not made for Life yet)"); break;
+                }
+            string own = bits.Count > 0 ? string.Join(", then ", bits) : null;
+            if (g.inner.Count > 0) return "and Life round it: " + (own != null ? own + "; and " : "") + "every friend the spell touches is mended from the store";
+            return "Life: " + (own ?? "nothing written yet");
+        }
+
         public static bool Wraps(SpellCircle root, RuneKind k) => Greats(root).Any(c => c.element?.kind == k && c.inner.Count > 0);
 
         // ------------------------------------------------------------------------------ the effect, in words
@@ -101,7 +121,7 @@ namespace Avir.Magic
             foreach (SpellCircle g in greats)
             {
                 if (g.element == null) { parts.Add("a great circle with no element yet"); continue; }
-                if (g.element.kind == RuneKind.Life) parts.Add(g.inner.Count > 0 ? "and Life round it: every friend the spell touches is healed" : "Life alone: it heals friends at the point");
+                if (g.element.kind == RuneKind.Life) parts.Add(LifeText(g));
                 else parts.Add(g.element.LabelCap + (g.inner.Count > 0 ? " round it" : "") + " (not made yet)");
             }
             e.main = string.Join(order.Count > 1 ? "\n" : "; ", parts) + ".";
@@ -109,7 +129,12 @@ namespace Avir.Magic
             foreach (var g in smalls.GroupBy(c => c.element).Where(g => g.Key != null && g.Count() > 1))
                 e.extras.Insert(0, new KeyValuePair<string, string>(g.Key.LabelCap + " ×" + g.Count() + ": resonance", "Circles of the same element strengthen each other: +" + (25 * (g.Count() - 1)) + "% to each."));
             foreach (ComboKind ck in pairs.Values.Distinct()) e.extras.Insert(0, new KeyValuePair<string, string>(Combos.Label(ck).CapitalizeFirst() + ": two elements met", ComboText.Short(ck)));
-            if (Wraps(root, RuneKind.Life)) e.extras.Insert(0, new KeyValuePair<string, string>("Life wraps", "Friends within the spell's reach are healed as it strikes."));
+            if (Wraps(root, RuneKind.Life)) e.extras.Insert(0, new KeyValuePair<string, string>("Life wraps", "Friends within the spell's reach are mended as it strikes - out of the store of life."));
+            if (LifeMagic.Circles(root).Any())
+            {
+                e.extras.Insert(0, new KeyValuePair<string, string>("Symbiosis", "Life makes nothing; it only moves. Withering fills the store of life, the other verbs give it away - with the store empty they give nothing."));
+                if (!LifeMagic.Circles(root).Any(g => g.OwnRunes.Any(x => x.kind == RuneKind.Drain))) e.extras.Insert(0, new KeyValuePair<string, string>("Gives from the store", "No Withering here: this spell only spends the store of life a former spell filled."));
+            }
             // the price chip last, once
             var price = e.extras.Where(x => x.Key.StartsWith("Price")).ToList();
             e.extras.RemoveAll(x => x.Key.StartsWith("Price"));
@@ -137,21 +162,13 @@ namespace Avir.Magic
                     if (MagicFx.Foe(q, caster)) q.TakeDamage(new DamageInfo(DamageDefOf.Burn, 5f * power, 0f, -1f, caster));
                 for (int i = 0; i < 6; i++) FleckMaker.ThrowSmoke(target.Cell.ToVector3Shifted() + new Vector3(Rand.Range(-radius, radius), 0f, Rand.Range(-radius, radius)), map, 2f);
             }
+            // Life (LifeMagic): its own runes where the spell ended; round small circles it mends whom the spell touched -
+            // both out of the store of life, never for nothing
             foreach (SpellCircle g in Greats(root))
             {
-                if (g.element?.kind != RuneKind.Life) continue;
-                float heal = (6f + 3f * g.OwnRunes.Count(x => x.kind == RuneKind.Restore || x.kind == RuneKind.Growth)) * power;
-                foreach (Pawn q in GenRadial.RadialDistinctThingsAround(target.Cell, map, radius + (g.inner.Count > 0 ? 1f : 0f), true).OfType<Pawn>().ToList())
-                {
-                    if (q.Dead || q.HostileTo(caster)) continue;
-                    float left = heal;
-                    foreach (Hediff_Injury inj in q.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => i.CanHealNaturally() || i.CanHealFromTending()).ToList())
-                    {
-                        if (left <= 0f) break;
-                        float h = Mathf.Min(left, inj.Severity); inj.Heal(h); left -= h;
-                    }
-                    FleckMaker.ThrowMetaIcon(q.Position, map, FleckDefOf.HealingCross);
-                }
+                if (!LifeMagic.Is(g.element)) continue;
+                if (g.OwnRunes.Any()) LifeMagic.Cast(caster, g, target.Cell, power, map);
+                if (g.inner.Count > 0) LifeMagic.Wrap(caster, g, target.Cell, radius + 1f, power, map);
             }
         }
 
