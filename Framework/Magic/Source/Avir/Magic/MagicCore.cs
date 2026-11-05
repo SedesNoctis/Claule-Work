@@ -885,6 +885,7 @@ namespace Avir.Magic
                 Spell("TEST Healing burst (water: Release + Thread + Restore)", "Water:Release,Thread,Restore"),
                 Spell("TEST Heal own, then blast foes (two circles)", "Fire:Release,Thread,Restore|Barrier,Barrier,Thread", "Fire:Release|Barrier,Barrier"),
                 Spell("TEST Gentle lift (air: Lift + Thread + Restore)", "Air:Lift,Thread,Restore"),
+                Spell("TEST Built wrong: heal and blast own (Aid on the whole circle)", "Water:Release,Thread,Restore,Release|Barrier,Barrier,Thread"),
                 Spell("TEST Restoration of earth (mends things too)", "Earth:Restore,Breadth"),
                 Spell("TEST Restoration of air (second wind)", "Air:Restore"),
             };

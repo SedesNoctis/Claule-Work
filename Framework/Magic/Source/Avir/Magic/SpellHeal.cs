@@ -51,13 +51,16 @@ namespace Avir.Magic
         /// <summary>Does any verb of this circle (or of any circle of the spell) turn to healing?</summary>
         public static bool Turns(RitualSchema s) => s?.weave != null ? s.weave.Working.Any(k => Bound(k.AsSchema()).Count > 0) : Bound(s).Count > 0;
 
-        /// <summary>What a Restoration form carries in a healing turn: the verbs tied to it - when no other form carries
-        /// them already (they would strike twice).</summary>
+        /// <summary>What a Restoration form carries, like any form: the verbs of its circle - the tied ones heal, the rest
+        /// strike as written (the author: "Release + Thread + Restore + Release" - the second Release strikes; with Selective
+        /// Aid on the circle it strikes the caster's own - a badly built spell is the player's to answer for). Growth and
+        /// Purge, when not tied, are Restoration's own helpers (deeper sealing, burnt infection) and are not cast. Nothing
+        /// when another form carries the verbs already (they would strike twice).</summary>
         public static List<RuneDef> Carried(RitualSchema s, List<RuneDef> forms, List<RuneDef> verbs)
         {
             if (forms.Any(f => f.kind != RuneKind.Restore)) return new List<RuneDef>();
             HashSet<RuneDef> b = Bound(s);
-            return verbs.Where(b.Contains).ToList();
+            return verbs.Where(v => b.Contains(v) || (v.kind != RuneKind.Growth && v.kind != RuneKind.Purge)).ToList();
         }
 
         public static bool Living(Pawn p) => p != null && !p.Dead && p.RaceProps.IsFlesh;
