@@ -158,6 +158,7 @@ namespace Avir.Magic
         /// <summary>A lost hold: every element's price - fire's raging flame among them.</summary>
         public static void Slip(Pawn caster, SpellCircle root)
         {
+            SpellLore.Slipped(root);   // the price is known now
             if (Small(root).Any(c => FireMagic.Is(c.element))) FireMagic.Raging(caster);
             if (Small(root).Any(c => WaterMagic.Is(c.element))) WaterMagic.Chilled(caster);
             if (Small(root).Any(c => EarthMagic.Is(c.element))) EarthMagic.Petrified(caster);

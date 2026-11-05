@@ -358,7 +358,7 @@ namespace Avir.Magic
                 case RuneKind.Breadth: return "wider";
                 case RuneKind.Reach: return "further (+5% cast)";
                 case RuneKind.Anchor: return "stone stands longer";
-                case RuneKind.Thread: return "with a step - drags one to the caster, stunned";
+                case RuneKind.Thread: return SpellLore.Known("Thread:Step") ? "with a step - drags one to the caster, stunned" : "turns something round - not yet known";
                 default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
             }
         }
@@ -388,7 +388,7 @@ namespace Avir.Magic
                 case RuneKind.Breadth: return "wider; the blow leaps further";
                 case RuneKind.Reach: return "further (+5% cast)";
                 case RuneKind.Anchor: return "the wind blows longer";
-                case RuneKind.Thread: return "with a step - snatches one to the caster, reeling";
+                case RuneKind.Thread: return SpellLore.Known("Thread:Step") ? "with a step - snatches one to the caster, reeling" : "turns something round - not yet known";
                 default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
             }
         }
@@ -422,7 +422,7 @@ namespace Avir.Magic
                 case RuneKind.Breadth: return "wider";
                 case RuneKind.Reach: return "further (+5% cast)";
                 case RuneKind.Anchor: return "the water stands longer";
-                case RuneKind.Thread: return "with a step - sweeps foes to the caster";
+                case RuneKind.Thread: return SpellLore.Known("Thread:Step") ? "with a step - sweeps foes to the caster" : "turns something round - not yet known";
                 default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
             }
         }
@@ -453,7 +453,7 @@ namespace Avir.Magic
                 case RuneKind.Breadth: return "wider";
                 case RuneKind.Reach: return "further (+5% cast)";
                 case RuneKind.Anchor: return "purged ground lasts longer";
-                case RuneKind.Thread: return "with a step - draws one through flame";
+                case RuneKind.Thread: return SpellLore.Known("Thread:Step") ? "with a step - draws one through flame" : "turns something round - not yet known";
                 default: return SpellCircle.GreatElement(r) ? "wraps it (see the effect)" : "their meeting is not made yet";
             }
         }

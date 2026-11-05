@@ -90,6 +90,7 @@ namespace Avir
         // how far penetration grows with the craft of the blow (Amplify on its verb, a great circle), and no further
         public float magicPenDepthMax = 8f;
         public bool magicStrictMods = false;
+        public bool magicHiddenTerms = true;
         public float mageFlowWeight = 3f;
         /// <summary>Where a kept spell goes: 0 the colony's book, 1 files beside the mod (every game), 2 both.</summary>
         public int spellKeep = 0;
@@ -155,6 +156,7 @@ namespace Avir
             Scribe_Values.Look(ref magicPenAir, "magicPenAir2", 0.05f); Scribe_Values.Look(ref magicPenSharp, "magicPenSharp2", 0.05f);
             Scribe_Values.Look(ref magicPenDepthMax, "magicPenDepthMax3", 8f);
             Scribe_Values.Look(ref magicStrictMods, "magicStrictMods", false);
+            Scribe_Values.Look(ref magicHiddenTerms, "magicHiddenTerms", true);
             Scribe_Values.Look(ref mageFlowWeight, "mageFlowWeight", 3f);
             Scribe_Values.Look(ref spellKeep, "spellKeep", 0);
             Scribe_Values.Look(ref arliaIntroBook, "arliaIntroBook");
@@ -213,6 +215,8 @@ namespace Avir
                 + "no traits, no implants, no spells, no new runes; the rest of the mod (artifacts, ritualistics, the Song) works as before. "
                 + "Left off while the system is being built. Takes effect after a restart.");
             list.Gap();
+            list.CheckboxLabeled("Hidden terms", ref o.magicHiddenTerms,
+                "On: the codex keeps some things back until they are found in play - the price of a slipped hold until the first slip of that element, and what the Thread does after a Step, a Lift, a Shaping, a Reach or a pair of Barriers until it is first cast so. What a verb does, and what a sequence of runes comes to, is always told. Off: everything is told from the start.");
             list.CheckboxLabeled("Strict modifiers (test)", ref o.magicStrictMods,
                 "The author's rule, on trial. Modifiers beside the element work on the whole circle; modifiers after a verb or a form work on that one only, up to the next verb or form - and nothing of them leaks to the rest: Amplify on one verb no longer drives the others deeper through armour. "
                 + "A verb written again later in the circle is its own act with its own modifiers; and it hears an echo of the copy before it - half of what that copy came to, its own modifiers and its echo together - so echoes build up: four Releases, each with a Breadth, burst each wider than the last. Reach is the cast's, never echoed.");

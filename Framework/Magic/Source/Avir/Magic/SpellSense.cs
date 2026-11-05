@@ -30,7 +30,7 @@ namespace Avir.Magic
         public static void Begin(Pawn caster, Map map, IntVec3 target, float radius, float power, RuneKind el, ComboKind k, int anchor)
         {
             if (caster == null || map == null) return;
-            var s = new MapComponent_Sensing.Sense { caster = caster, el = el, combo = k, radius = radius, at = caster.Position,
+            var s = new MapComponent_Sensing.Sense { caster = caster, el = el, combo = k, radius = radius, at = caster.Position, power = power,
                 until = Find.TickManager.TicksGame + Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power * (1 + anchor)) };
             switch (k)
             {
@@ -46,7 +46,7 @@ namespace Avir.Magic
                     break;
                 case ComboKind.Bog: s.at = target; s.unseen = true; s.until += (s.until - Find.TickManager.TicksGame) * 2; break;
                 case ComboKind.Magma: s.at = target; s.unseen = true; Deep(caster, map, target, radius, power); break;
-                case ComboKind.Dust: s.at = target; s.unseen = true; Deep(caster, map, target, radius, power); break;
+                case ComboKind.Dust: s.at = target; s.unseen = true; Deep(caster, map, target, radius * 0.5f, power, false); break;   // dust: half as wide, and it draws no new ore up
                 case ComboKind.Steam: s.follow = true; s.unseen = true; s.warn = true; break;
                 default: s.follow = true; s.unseen = true; s.indoors = true; break;   // haze, storm
             }
@@ -110,6 +110,11 @@ namespace Avir.Magic
 
         private static readonly AccessTools.FieldRef<HediffComp_Discoverable, bool> discovered = AccessTools.FieldRefAccess<HediffComp_Discoverable, bool>("discovered");
 
+        /// <summary>How likely a sense is to find one who hides: with strength; a Singer (Linarian) hides from it far
+        /// better - the simplest sense does not find her.</summary>
+        public static float UnveilChance(Pawn p, float power) =>
+            UnityEngine.Mathf.Clamp(0.25f + 0.25f * power, 0f, 0.95f) * (Linarian.Linarian.Is(p) ? 0.2f : 1f);
+
         /// <summary>The unseen made seen.</summary>
         public static bool Unveil(Pawn p)
         {
@@ -127,12 +132,12 @@ namespace Avir.Magic
         /// <summary>The ore deep below round a point becomes known to the caster for good - select them to see it; a strong
         /// cast also draws new ore up from the depths (more of it, and dearer, the stronger). The ground it was drawn from
         /// rests a day.</summary>
-        public static void Deep(Pawn caster, Map map, IntVec3 at, float radius, float power)
+        public static void Deep(Pawn caster, Map map, IntVec3 at, float radius, float power, bool canRaise = true)
         {
             if (caster == null || map?.deepResourceGrid == null) return;
             var c = map.GetComponent<MapComponent_DeepSense>();
             if (c == null) return;
-            string raised = power >= DrawFrom ? Raise(map, at, radius, power, c) : "";
+            string raised = canRaise && power >= DrawFrom ? Raise(map, at, radius, power, c) : "";
             int known = c.Learn(caster, GenRadial.RadialCellsAround(at, Mathf.Min(radius, GenRadial.MaxRadialPatternRadius - 1f), true)
                 .Where(x => x.InBounds(map) && map.deepResourceGrid.ThingDefAt(x) != null && map.deepResourceGrid.CountAt(x) > 0));
             Messages.Message("The ground answers " + caster.LabelShortCap + ": " + (known > 0 ? known + " cells with ore deep below" : "nothing deep below") + "." + raised
@@ -175,12 +180,16 @@ namespace Avir.Magic
         {
             public Pawn caster; public RuneKind el; public ComboKind combo; public IntVec3 at; public float radius; public int until;
             public bool follow, whole, unseen, warn, indoors;
+            public float power = 1f;
+            public HashSet<int> tried = new HashSet<int>();   // each hidden one is tried once per sense, not every look
             public void ExposeData()
             {
                 Scribe_References.Look(ref caster, "caster"); Scribe_Values.Look(ref el, "el"); Scribe_Values.Look(ref combo, "combo");
                 Scribe_Values.Look(ref at, "at"); Scribe_Values.Look(ref radius, "radius"); Scribe_Values.Look(ref until, "until");
                 Scribe_Values.Look(ref follow, "follow"); Scribe_Values.Look(ref whole, "whole"); Scribe_Values.Look(ref unseen, "unseen");
                 Scribe_Values.Look(ref warn, "warn"); Scribe_Values.Look(ref indoors, "indoors");
+                Scribe_Values.Look(ref power, "power", 1f);
+                if (tried == null) tried = new HashSet<int>();
             }
         }
 
@@ -215,6 +224,8 @@ namespace Avir.Magic
             foreach (Sense s in all) Look(s, now);
         }
 
+        private static bool Hidden(Pawn p) => p.health.hediffSet.hediffs.OfType<HediffWithComps>().Any(h => h.comps.OfType<HediffComp_Invisibility>().Any(i => !i.PsychologicallyVisible));
+
         private void Look(Sense s, int now)
         {
             IntVec3 c = s.follow && s.caster.Spawned ? s.caster.Position : s.at;
@@ -229,7 +240,7 @@ namespace Avir.Magic
                 if (!SpellSense.Feels(p, by)) continue;
                 if (!s.whole && !s.indoors && s.combo != ComboKind.None && p.Position.Roofed(map) && s.combo != ComboKind.Bog && s.combo != ComboKind.Magma && s.combo != ComboKind.Dust && s.combo != ComboKind.Steam) continue;
                 found.Add(p);
-                if (s.unseen && SpellSense.Unveil(p) && s.warn && warned.Add(p.thingIDNumber))
+                if (s.unseen && Hidden(p) && s.tried.Add(p.thingIDNumber) && Rand.Chance(SpellSense.UnveilChance(p, s.power)) && SpellSense.Unveil(p) && s.warn && warned.Add(p.thingIDNumber))
                     Messages.Message("Something unseen moves near " + s.caster.LabelShort + "!", p, MessageTypeDefOf.ThreatSmall, false);
                 if (by == SpellSense.By.Blood) SpellSense.Blood(p);
             }

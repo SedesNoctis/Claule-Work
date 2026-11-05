@@ -135,6 +135,7 @@ namespace Avir.Magic
             RitualSchema one = circle.AsSchema();
             // two Barriers in the outermost section: the blow is shaped round the caster's own people (weaker for it)
             bool shaped = SpellSculpt.Take(one, out bool aid);   // with a Thread: Selective Aid - to the caster's own only
+            SpellLore.Cast(one, aid);   // what of the Thread this circle shows, found in play
             // Reach and Thread: what is outward of the pair leaps on to the next place named
             List<RitualSchema> leaps = SpellHops.Cut(ref one);
             // outward of a step: cut off, to act where the caster comes out

@@ -154,7 +154,7 @@ namespace Avir.Magic
             GUI.color = FlowStyle.Ink; Text.Font = GameFont.Small;
             Widgets.Label(new Rect(r.x, y, r.width, 24f), "Examples");
             y += 26f;
-            foreach (string[] ex in Examples)
+            foreach (string[] ex in Examples.Where(x => !x[2].Contains("Thread") || SpellLore.Known("Thread:Step")))
             {
                 Rect b = new Rect(r.x, y, r.width, 28f);
                 if (RitualUI.Button(b, ex[0], true))

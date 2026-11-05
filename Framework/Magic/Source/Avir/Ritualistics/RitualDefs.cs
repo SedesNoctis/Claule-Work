@@ -314,6 +314,12 @@ namespace Avir.Ritualistics
         public static string Desc(Verse.Def d)
         {
             string s = d?.description ?? "";
+            // what the Thread does in a spell is found in play, not read (hidden terms)
+            if (d is RuneDef rd && rd.kind == RuneKind.Thread && !Magic.SpellLore.Known("Thread:Step"))
+            {
+                int cut = s.IndexOf("In a spell");
+                if (cut >= 0) s = s.Substring(0, cut) + "In a spell it does something too - what, is found by casting. (Some of its uses are hidden.)";
+            }
             string mod = d?.modContentPack?.Name;
             if (mod.NullOrEmpty()) return s;
             var lines = new System.Collections.Generic.List<string>(s.Split('\n'));

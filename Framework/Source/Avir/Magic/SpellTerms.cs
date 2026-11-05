@@ -95,13 +95,18 @@ namespace Avir.Magic
             for (int i = 0; i < e.extras.Count; i++)
             {
                 var kv = e.extras[i];
+                // hidden until found in play (SpellLore)
+                string hk = SpellLore.KeyOfPlaque(kv.Key);
+                if (hk != null && !SpellLore.Known(hk)) { e.extras[i] = new KeyValuePair<string, string>("Something hidden", SpellLore.Unknown); continue; }
                 foreach (Term t in Terms)
                 {
                     Match m = t.match.Match(kv.Key);
                     if (!m.Success) continue;
                     string here = kv.Value;
-                    if (here != null && here.StartsWith(t.entry)) break;   // named already (a copy of a reading)
-                    string body = here.NullOrEmpty() || here == t.entry ? t.entry : t.entry + "\n\nHere: " + here;
+                    string entry = t.entry;
+                    if (kv.Key == "The Thread") entry = SpellLore.ThreadEntry(entry);   // only what has been found of it
+                    if (here != null && here.StartsWith(entry)) break;   // named already (a copy of a reading)
+                    string body = here.NullOrEmpty() || here == entry ? entry : entry + "\n\nHere: " + here;
                     e.extras[i] = new KeyValuePair<string, string>(t.name(m), body);
                     break;
                 }
@@ -168,20 +173,34 @@ namespace Avir.Magic
         {
             if (s == null) return null;
             IEnumerable<RitualSchema> circles = s.weave != null ? s.weave.Working.Select(c => c.AsSchema()) : new[] { s };
-            bool any = false;
+            var aids = s.weave != null ? new HashSet<RitualSchema>() : null;
+            if (s.weave != null) { circles = circles.ToList(); int ix = 0; foreach (SpellCircle k in s.weave.Working) { if (SpellSculpt.AidOf(k)) aids.Add(((List<RitualSchema>)circles)[ix]); ix++; } }
+            bool any = false, hiddenAny = false;
             var said = new List<string>();
             foreach (RitualSchema c in circles)
             {
                 if (!c.rings.SelectMany(g => g.runes).Any(x => x != null && x.kind == RuneKind.Thread)) continue;
                 any = true;
-                if (SpellMods.Pulls(c)) said.Add("Outward of a Step: the step turns round - whoever stands at the target is drawn to the caster.");
-                if (SpellMods.Squeezes(c)) said.Add("Outward of a Shaping: the wall does not stand - a ring of stone rises round the target and closes a cell at a time; whoever is caught in the middle is crushed.");
+                bool hidden = false;
+                if (SpellMods.Pulls(c) && !SpellLore.Known("Thread:Step")) hidden = true;
+                else if (SpellMods.Pulls(c)) said.Add("Outward of a Step: the step turns round - whoever stands at the target is drawn to the caster.");
+                if (SpellMods.Squeezes(c) && !SpellLore.Known("Thread:Shape")) hidden = true;
+                else if (SpellMods.Squeezes(c)) said.Add("Outward of a Shaping: the wall does not stand - a ring of stone rises round the target and closes a cell at a time; whoever is caught in the middle is crushed.");
                 SpellMods.Own(c, RuneKind.Lift, out _, out _, out _, out int lt);
                 int leaps = SpellHops.Pairs(c.rings.SelectMany(g => g.runes).Where(x => x != null).ToList()).Count;
-                if (leaps > 0) said.Add("Right after a Reach (" + leaps + "x): the pair does not lengthen the cast - what is written outward of it leaps on from where the spell struck to another place you name, within the spell's reach of it.");
-                if (lt > 0) said.Add("Outward of a Lift: the lift turns round - the body is pressed into the ground by its own weight instead of thrown up.");
+                if (leaps > 0 && !SpellLore.Known("Thread:Reach")) hidden = true;
+                else if (leaps > 0) said.Add("Right after a Reach (" + leaps + "x): the pair does not lengthen the cast - what is written outward of it leaps on from where the spell struck to another place you name, within the spell's reach of it.");
+                if (lt > 0 && !SpellLore.Known("Thread:Lift")) hidden = true;
+                else if (lt > 0) said.Add("Outward of a Lift: the lift turns round - the body is pressed into the ground by its own weight instead of thrown up.");
+                if (aids != null && aids.Contains(c))
+                {
+                    if (!SpellLore.Known("Thread:Aid")) hidden = true;
+                    else said.Add("Beside two Barriers on the outer edge: the blow goes to the caster's own (Selective Aid).");
+                }
+                if (hidden) hiddenAny = true;
             }
             if (!any) return null;
+            if (hiddenAny) said.Add(SpellLore.Unknown);
             return said.Count > 0 ? string.Join("\n", said.Distinct())
                 : "Not outward of a Step, a Lift or a Shaping here: it ties nothing and does nothing. Write it right after one of them to turn it round.";
         }

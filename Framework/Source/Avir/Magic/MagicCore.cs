@@ -883,6 +883,12 @@ namespace Avir.Magic
         [DebugAction(Cat, "Release of fire here (burning ground flares)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevFlares() { Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell(); FireMagic.Flares(null, map, c, new List<IntVec3> { c }, 6.4f, 1f); }
 
+        [DebugAction(Cat, "Hidden terms: forget all found", allowedGameStates = AllowedGameStates.Playing)]
+        private static void DevLoreForget() { GameComponent_SpellLore.Get?.known.Clear(); Messages.Message("Every hidden term is hidden again.", MessageTypeDefOf.NeutralEvent, false); }
+
+        [DebugAction(Cat, "Hidden terms: find all", allowedGameStates = AllowedGameStates.Playing)]
+        private static void DevLoreAll() { foreach (string k in new[] { "Thread:Step", "Thread:Lift", "Thread:Shape", "Thread:Reach", "Thread:Aid", "Price:raging flame", "Price:chilled", "Price:stone-bound", "Price:winded" }) SpellLore.Learn(k); }
+
         [DebugAction(Cat, "Sense the deep here (earth, strength 3)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevSenseDeep(Pawn p) => SpellSense.Deep(p, p.Map, p.Position, 35f, 3f);
 
