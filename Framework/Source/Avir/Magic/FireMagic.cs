@@ -71,6 +71,8 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Restore:
                         Cauterize(caster, at, map, fradius, power, verbs);
+                        // the healing turn: the verbs tied to the mending strike, and their blow heals (SpellHeal)
+                        if (SpellHeal.Turns(s) && verbs.Count > 0) Apply(caster, map, verbs, Point(at, map, fradius), at, power, rf, false);
                         break;
                     case RuneKind.Enchant:
                         Enchant(caster, at, map, power);
@@ -325,6 +327,8 @@ namespace Avir.Magic
                 foreach (Hediff_Injury inj in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => i.Bleeding).ToList())
                     inj.Tended(q, 1f);
                 if (verbs.Any(v => v.kind == RuneKind.Purge)) BurnAwayInfection(p, power);
+                // fire's gift: the body burns hot against sickness for a while
+                SpellRestore.Gift(p, SpellRestore.Kindled, power);
                 FleckMaker.ThrowFireGlow(p.DrawPos, map, 0.7f);
             }
         }

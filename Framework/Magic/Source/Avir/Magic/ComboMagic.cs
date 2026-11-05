@@ -243,7 +243,10 @@ namespace Avir.Magic
                         if (k == ComboKind.Haze) Decoys(caster, map, new List<IntVec3> { caster.Position }, Mathf.RoundToInt(600f * power));   // a shape left where they stood
                         SpellDash.Travel(caster, at, k, power);
                         break;
-                    case RuneKind.Restore: Restore(k, caster, map, FireMagic.Point(at, map, Mathf.Max(0.9f, fr - 1f)), power); break;
+                    case RuneKind.Restore:
+                        Restore(k, caster, map, FireMagic.Point(at, map, Mathf.Max(0.9f, fr - 1f)), power);
+                        if (SpellHeal.Turns(s) && verbs.Count > 0) Apply(k, caster, map, verbs, FireMagic.Point(at, map, fr), at, power, rf);
+                        break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, ComboDefOf.Enchant(k)); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
                     case RuneKind.Sense:

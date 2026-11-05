@@ -76,7 +76,10 @@ namespace Avir.Magic
                         SpellDash.Carry(caster, at, RuneKind.Water);
                         if (verbs.Count > 0) Apply(caster, map, verbs, path, at, power, rf);
                         break;
-                    case RuneKind.Restore: Wash(caster, at, map, Mathf.Max(0.9f, fradius - 1f), power); break;
+                    case RuneKind.Restore:
+                        Wash(caster, at, map, Mathf.Max(0.9f, fradius - 1f), power);
+                        if (SpellHeal.Turns(s) && verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf);
+                        break;
                     case RuneKind.Enchant: Enchant(caster, at, map, power); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
                     case RuneKind.Sense: SpellSense.Begin(caster, map, at, 25f + 10f * rf.reach, power, RuneKind.Water, ComboKind.None, rf.anchor); break;
@@ -245,6 +248,8 @@ namespace Avir.Magic
                 if (p.Dead || p.HostileTo(caster)) continue;
                 foreach (Hediff_Injury inj in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => i.Bleeding || !i.IsTended()).Take(6).ToList())
                     inj.Tended(q, 1f);
+                // water's gift: cool on the wounds, the pain dulled
+                SpellRestore.Gift(p, SpellRestore.Cooled, power);
                 FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 1f);
             }
         }

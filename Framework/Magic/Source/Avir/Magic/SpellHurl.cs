@@ -34,6 +34,7 @@ namespace Avir.Magic
         /// <summary>Thrown back from a point (a negative distance pulls toward it); lie &gt; 0 - and left lying.</summary>
         public static void Throw(Pawn p, IntVec3 from, int dist, Map map, Pawn by = null, float power = 1f, int lie = 0)
         {
+            if (SpellHeal.Spares(p)) return;
             if (Unmoved(p) || map == null) return;
             float size = Mathf.Max(1f, p.BodySize);
             int d = Mathf.RoundToInt(Mathf.Abs(dist) / Mathf.Sqrt(size));
@@ -63,6 +64,7 @@ namespace Avir.Magic
         /// <summary>Knocked off their feet: thrown a little and left lying for a while.</summary>
         public static void Fell(Pawn p, IntVec3 from, int dist, Map map, Pawn by, float power, int ticks)
         {
+            if (SpellHeal.Spares(p)) return;
             if (Unmoved(p)) return;
             if (dist > 0) Throw(p, from, dist, map, by, power, ticks);
             else Fell(p, ticks, by);
@@ -71,6 +73,7 @@ namespace Avir.Magic
         /// <summary>Thrown up into the air; they come down where they were and the fall hurts.</summary>
         public static void Lift(Pawn p, Pawn by, float power)
         {
+            if (SpellHeal.Spares(p)) { SpellHeal.Mend(p, 5f * power); return; }
             if (Unmoved(p)) return;
             // the updraft is the spell's strength: the heavier the body with all it wears, the lower it goes up - and the
             // fall is that weight on the ground from that height, through any plate (Магия-правила.md, "Тело и стихии")
@@ -85,6 +88,7 @@ namespace Avir.Magic
         /// holds the feet in the ground after.</summary>
         public static void Press(Pawn p, Pawn by, float power, bool earth)
         {
+            if (SpellHeal.Spares(p)) { SpellHeal.Mend(p, 5f * power); return; }
             if (p == null || p.Dead || !p.Spawned) return;
             var b = SpellBody.Of(p);
             Strike(p, by, power, 2 + Mathf.RoundToInt(power), 3f, 6f, SpellBody.Heavy(p) * b.legsLand * (earth ? 1.5f : 1f), 0.15f);
@@ -100,6 +104,7 @@ namespace Avir.Magic
         /// plate. full: the walls have met (several blows, then they lie); otherwise one grinding blow.</summary>
         public static void Squash(Pawn p, Pawn by, float power, int extra, bool full)
         {
+            if (SpellHeal.Spares(p)) return;
             if (p == null || p.Dead || !p.Spawned) return;
             float w = Mathf.Sqrt(SpellBody.Heavy(p) * Mathf.Clamp(p.BodySize, 0.5f, 4f));
             Strike(p, by, power, full ? extra + Mathf.RoundToInt(power) : 1, full ? 5f : 2f, full ? 9f : 4f, w, 0.25f);
@@ -120,6 +125,7 @@ namespace Avir.Magic
         /// the ground - through any plate, the heavier the harder.</summary>
         public static void Topple(Pawn p, Pawn by, float power)
         {
+            if (SpellHeal.Spares(p)) return;
             if (p == null || p.Dead) return;
             var b = SpellBody.Of(p);
             float w = SpellBody.Heavy(p) * b.legsLand;

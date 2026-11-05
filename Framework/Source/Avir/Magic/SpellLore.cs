@@ -38,6 +38,7 @@ namespace Avir.Magic
                 case "Walls close in": return "Thread:Shape";
                 case "Turned to its own": return "Thread:Aid";
                 case "The step turned round": return "Thread:Step";
+                case "Turned to mending": return "Thread:Heal";
             }
             return null;
         }
@@ -51,6 +52,7 @@ namespace Avir.Magic
                 case "Thread:Shape": return "the Thread turns a Shaping round - the walls close in";
                 case "Thread:Reach": return "Reach and Thread - the spell leaps on to another place";
                 case "Thread:Aid": return "two Barriers and a Thread - the blow goes to one's own (Selective Aid)";
+                case "Thread:Heal": return "a Thread on a verb, with Restoration in the circle - the blow mends instead of wounding";
             }
             return key.StartsWith("Price:") ? "the price of a slipped hold - " + key.Substring(6) : key;
         }
@@ -64,6 +66,7 @@ namespace Avir.Magic
                 case "Thread:Shape": return "Walls that walk inward. Whoever is inside won't like the next part.";
                 case "Thread:Reach": return "So now it hops. Like a flea. A very hot flea.";
                 case "Thread:Aid": return "Two barriers and a thread, and the blow forgets your enemies. Rude to them, kind to yours.";
+                case "Thread:Heal": return "You hit them and they got better. I've seen surgeons with worse manners. And worse results.";
             }
             return key.StartsWith("Price:") ? "That's what a slipped hold costs. Now you know. Now you'll remember." : null;
         }
@@ -76,7 +79,8 @@ namespace Avir.Magic
             if (SpellMods.Pulls(circle)) Learn("Thread:Step");
             if (SpellMods.Squeezes(circle)) Learn("Thread:Shape");
             SpellMods.Own(circle, RuneKind.Lift, out _, out _, out _, out int lt);
-            if (lt > 0) Learn("Thread:Lift");
+            if (SpellHeal.Turns(circle)) Learn("Thread:Heal");
+            else if (lt > 0) Learn("Thread:Lift");
             if (SpellHops.Pairs(circle.rings.SelectMany(g => g.runes).Where(x => x != null).ToList()).Count > 0) Learn("Thread:Reach");
         }
 
@@ -103,7 +107,8 @@ namespace Avir.Magic
             if (Known("Thread:Shape")) parts.Add("After a Shaping the wall does not stand but closes on the target, a cell nearer at each step.");
             if (Known("Thread:Reach")) parts.Add("Right after a Reach it ties the spell on to a further place: what is outward of it leaps on.");
             if (Known("Thread:Aid")) parts.Add("Beside two Barriers on the outer edge it turns the blow to the caster's own.");
-            parts.Add(parts.Count < 6 ? "What else it turns is found by casting." : "Anywhere else it ties nothing and does nothing.");
+            if (Known("Thread:Heal")) parts.Add("Right after a verb, in a circle that holds Restoration, it ties the blow to the mending: what would wound the living heals it.");
+            parts.Add(parts.Count < 7 ? "What else it turns is found by casting." : "Anywhere else it ties nothing and does nothing.");
             return string.Join(" ", parts);
         }
 

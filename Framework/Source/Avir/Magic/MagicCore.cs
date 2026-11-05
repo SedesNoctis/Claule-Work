@@ -882,6 +882,11 @@ namespace Avir.Magic
                 Spell("TEST Sense: the wind over the land (air)", "Air:Sense"),
                 Spell("TEST Sense: a watcher on a place (bog)", "Water:Sense", "Earth:Sense"),
                 Spell("TEST Moving dome (Barrier, then Aura)", "Water:Barrier|Aura"),
+                Spell("TEST Healing burst (water: Release + Thread, Restore)", "Water:Restore|Release,Thread"),
+                Spell("TEST Healing burst, own only (fire, Selective Aid)", "Fire:Restore|Release,Thread|Barrier,Barrier,Thread"),
+                Spell("TEST Gentle lift (air: Lift + Thread, Restore)", "Air:Restore|Lift,Thread"),
+                Spell("TEST Restoration of earth (mends things too)", "Earth:Restore,Breadth"),
+                Spell("TEST Restoration of air (second wind)", "Air:Restore"),
             };
             foreach (RitualSchema s in list) core.Book.spells.Add(s);
             Messages.Message(list.Count + " test spells written into " + p.LabelShort + "'s book.", MessageTypeDefOf.NeutralEvent, false);
@@ -896,8 +901,25 @@ namespace Avir.Magic
         [DebugAction(Cat, "Hidden terms: forget all found", allowedGameStates = AllowedGameStates.Playing)]
         private static void DevLoreForget() { GameComponent_SpellLore.Get?.known.Clear(); Messages.Message("Every hidden term is hidden again.", MessageTypeDefOf.NeutralEvent, false); }
 
+        [DebugAction(Cat, "Healing burst here (a turned blow of water)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevHealBurst()
+        {
+            Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell();
+            using (SpellWards.Of(RuneKind.Water, ComboKind.None, false))
+            using (SpellHeal.In(true))
+                GenExplosion.DoExplosion(c, map, 3.9f, DamageDefOf.Bomb, null, 20);
+        }
+
+        [DebugAction(Cat, "Restoration of earth here (mend things)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevRepair()
+        {
+            Map map = Find.CurrentMap;
+            int n = SpellRestore.Repair(map, GenRadial.RadialCellsAround(Verse.UI.MouseCell(), 4.9f, true), 2f);
+            Messages.Message(n + " thing(s) made whole.", MessageTypeDefOf.NeutralEvent, false);
+        }
+
         [DebugAction(Cat, "Hidden terms: find all", allowedGameStates = AllowedGameStates.Playing)]
-        private static void DevLoreAll() { foreach (string k in new[] { "Thread:Step", "Thread:Lift", "Thread:Shape", "Thread:Reach", "Thread:Aid", "Price:raging flame", "Price:chilled", "Price:stone-bound", "Price:winded" }) SpellLore.Learn(k); }
+        private static void DevLoreAll() { foreach (string k in new[] { "Thread:Step", "Thread:Lift", "Thread:Shape", "Thread:Reach", "Thread:Aid", "Thread:Heal", "Price:raging flame", "Price:chilled", "Price:stone-bound", "Price:winded" }) SpellLore.Learn(k); }
 
         [DebugAction(Cat, "Sense the deep here (earth, strength 3)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevSenseDeep(Pawn p) => SpellSense.Deep(p, p.Map, p.Position, 35f, 3f);

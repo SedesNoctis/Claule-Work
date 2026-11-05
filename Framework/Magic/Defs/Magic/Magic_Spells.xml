@@ -527,6 +527,66 @@
     </pawnFlyer>
   </ThingDef>
   <HediffDef>
+    <defName>Avir_RestoreKindled</defName>
+    <label>kindled</label>
+    <description>Fire that sealed the wounds left a heat in the blood. Sickness has a harder time of it.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.95, 0.55, 0.3)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>5000~5000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <statOffsets><ImmunityGainSpeed>0.12</ImmunityGainSpeed></statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_RestoreCooled</defName>
+    <label>cooled</label>
+    <description>Water that washed the wounds left them cool. The pain is duller than it should be.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.45, 0.7, 0.95)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>5000~5000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <painFactor>0.85</painFactor>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_RestoreSecondWind</defName>
+    <label>second wind</label>
+    <description>Air that came back into the chest stayed a little longer. Breathing is easy, the head is clear.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.75, 0.88, 0.95)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>5000~5000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Breathing</capacity><offset>0.15</offset></li><li><capacity>Consciousness</capacity><offset>0.05</offset></li></capMods>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
     <defName>Avir_StoneSkin</defName>
     <label>skin of stone</label>
     <description>Stone grown over the skin by an earth caster. Blows and cuts bite less; it is heavy to carry.</description>

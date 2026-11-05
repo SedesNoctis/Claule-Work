@@ -70,6 +70,8 @@ namespace Avir.Magic
                         if (rf.thread > 0) SpellDash.Pull(caster, target, RuneKind.Earth, power, fradius); else SpellDash.Carry(caster, at, RuneKind.Earth, power, verbs, rf);
                         break;
                     case RuneKind.Restore:
+                        // earth makes whole the things in its reach, too: tools, walls, furniture
+                        SpellRestore.Repair(map, FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)), power);
                         foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)), map))
                         {
                             if (p.HostileTo(caster)) continue;
@@ -77,6 +79,7 @@ namespace Avir.Magic
                             MagicFx.Give(p, EarthAirDefOf.Avir_StoneSkin, Mathf.RoundToInt(GenDate.TicksPerHour * power));
                             FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 1.2f, MagicFx.EarthDust);
                         }
+                        if (SpellHeal.Turns(s) && verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf);
                         break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, EarthAirDefOf.Avir_EarthEnchant); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
@@ -244,8 +247,11 @@ namespace Avir.Magic
                             foreach (Hediff h in p.health.hediffSet.hediffs.Where(x => x.def == EarthAirDefOf.Avir_Breathless || x.def == EarthAirDefOf.Avir_Winded).ToList()) p.health.RemoveHediff(h);
                             Hediff tox = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.ToxicBuildup);
                             if (tox != null) { tox.Severity -= 0.1f * power; if (tox.Severity <= 0f) p.health.RemoveHediff(tox); }
+                            // air's gift: the chest opens, the head clears
+                            SpellRestore.Gift(p, SpellRestore.SecondWind, power);
                             FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 1.2f, MagicFx.AirDust);
                         }
+                        if (SpellHeal.Turns(s) && verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf);
                         break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, EarthAirDefOf.Avir_AirEnchant); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
