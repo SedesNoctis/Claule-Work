@@ -144,16 +144,14 @@ namespace Avir.Magic
 
         /// <summary>Stone water (the author's idea): the bog turns shallow water, marsh and mud into stone water - it looks
         /// like still water, but it bears building like ground: no bridge needed. For good.</summary>
-        public static TerrainDef StoneWater => DefDatabase<TerrainDef>.GetNamedSilentFail("Avir_StoneWater");
-
-        public static bool Petrifies(TerrainDef t) => t != null && t != StoneWater && t.passability != Traversability.Impassable
+        public static bool Petrifies(TerrainDef t) => t != null && t.passability != Traversability.Impassable
             && (t.IsWater || t.defName == "Marsh" || t.defName == "Mud" || t.defName.Contains("Marsh"));
 
         private static int Petrify(Map map, IntVec3 c)
         {
-            TerrainDef t = map.terrainGrid.TerrainAt(c);
-            if (StoneWater == null || !Petrifies(t)) return 0;
-            map.terrainGrid.SetTerrain(c, StoneWater);
+            var sw = MapComponent_StoneWater.Of(map);
+            if (sw == null || !Petrifies(map.terrainGrid.TerrainAt(c)) || !sw.cells.Add(c)) return 0;
+            FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 0.6f);
             return 1;
         }
 

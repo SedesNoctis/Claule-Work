@@ -145,8 +145,17 @@ namespace Avir.Magic
             bool earthen = k != ComboKind.None ? EarthStone.Heavy(k) : EarthMagic.Is(el);
             SpellDepth.Stone = earthen && caster.Map != null && EarthStone.Units(caster.Map, target.Cell, k) >= 1f ? 1.2f : 1f;
             // plain transmutation: the element works on matter where the spell lands (SpellTransmute)
-            if (caster.Map != null && SpellTransmute.Of(part, k) == SpellTransmute.Mode.Plain)
+            SpellTransmute.Mode tmode = caster.Map != null ? SpellTransmute.Of(part, k) : SpellTransmute.Mode.None;
+            if (tmode == SpellTransmute.Mode.Plain)
+            {
                 SpellTransmute.Plain(caster, caster.Map, target.Cell, FireMagic.PointRadius(r), power, el, k);
+                // in battle: a Release changes the ground under the foes for a while; an Aura leaves a short trail round the caster
+                bool aura = r.verbs.Any(v => v.kind == RuneKind.Aura);
+                if (aura) SpellBattleGround.Change(caster, caster.Map, caster.Position, SpellAura.Pulsing ? SpellAura.PulseRadius : FireMagic.PointRadius(r) + 1.5f, power, el, k, true);
+                else if (r.verbs.Any(v => v.kind == RuneKind.Release)) SpellBattleGround.Change(caster, caster.Map, target.Cell, FireMagic.PointRadius(r), power, el, k, false);
+            }
+            else if (tmode == SpellTransmute.Mode.Path)
+                SpellPaths.Cast(caster, caster.Map, r.verbs.Any(v => v.kind == RuneKind.Aura) ? caster.Position : target.Cell, FireMagic.PointRadius(r), power, k);
             try
             {
                 // a verb written over and over wears out (Магия-правила.md): the part acts once with each verb, then the

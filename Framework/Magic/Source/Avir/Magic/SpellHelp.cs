@@ -66,7 +66,15 @@ namespace Avir.Magic
         /// for it every frame: it is kept half a second per spell, and each caller gets its own copy to write on.</summary>
         private static readonly Dictionary<RitualSchema, KeyValuePair<float, SpellEffect>> read = new Dictionary<RitualSchema, KeyValuePair<float, SpellEffect>>();
 
-        private const string PlainText = "Plain transmutation: where the spell lands, its element works on matter - fire smelts slag, melts snow and dries the wet; water washes and puts fires out; earth cuts chunks into blocks and smooths rough stone ground; air clears gas and blows the snow off. A meeting does both; storm charges batteries, haze warms a room, bog enriches the soil for a while and turns shallow water, marsh and mud into stone water that bears building.";
+        private const string PlainText = "Plain transmutation: where the spell lands, its element works on matter - fire smelts slag, melts snow and dries the wet; water washes and puts fires out; earth cuts chunks into blocks and smooths rough stone ground; air clears gas and blows the snow off. A meeting does both; storm charges batteries, haze warms a room, bog enriches the soil for a while and makes shallow water, marsh and mud bear building like ground (still water to the eye - no bridge needed). With a Release it changes the ground under the foes for a while (mud, rubble, glass, magma, mire, sand, steam; thin air chokes them); with an Aura it leaves a short trail round the caster.";
+
+        private static string PathText(ComboKind k) =>
+            k == ComboKind.Bog ? "Moss: a living carpet over the ground for about a day - the caster's own mend on it, foes sink, fire does not take."
+            : k == ComboKind.Magma ? "Hot Metal: metal on the foes turns red-hot - they drop metal weapons and burn their hands, metal armour scorches its wearer, machines overheat and stall."
+            : k == ComboKind.Storm ? "Current: the wet ground in reach is charged for hours - foes stepping on it are struck and stunned, machines take an EMP. The caster carries the current: an electric bench they work at needs no power line."
+            : k == ComboKind.Haze ? "Glass: the heat turns the ground to glass - shards everywhere in reach, cutting and slippery."
+            : k == ComboKind.Dust ? "Sand: the ground turns to sand for about a day, and what stands on it is worn away."
+            : k == ComboKind.Steam ? "Mist: a standing mist for hours - inside it no shot reaches past " + Mist.Reach.ToString("0") + " cells, and the further a shot goes, the worse it hits. It puts fires out." : "";
 
         public static SpellEffect Explain(RitualSchema s)
         {
@@ -148,7 +156,9 @@ namespace Avir.Magic
                         if (SpellTransmute.IsPath(s.weave, k, ck2)) path = true; else plain = true;
                     }
                     if (plain) e0.Add("Transmutation", PlainText);
-                    if (path) e0.Add("Arlie", "Arlie: \"Both edges turned inward, both circles changing what they are... That meeting wants to become something else. I wouldn't know what. I'd cast it and see.\"");
+                    var foundPaths = s.weave.Working.Where(k => SpellTransmute.IsPath(s.weave, k, Combos.Of(s.weave, k))).Select(k => Combos.Of(s.weave, k)).Distinct().Where(k => SpellLore.Known(SpellPaths.Key(k))).ToList();
+                    foreach (ComboKind fk in foundPaths) e0.Add("Secret path: " + SpellPaths.Name(fk), PathText(fk));
+                    if (path && foundPaths.Count == 0) e0.Add("Arlie", "Arlie: \"Both edges turned inward, both circles changing what they are... That meeting wants to become something else. I wouldn't know what. I'd cast it and see.\"");
                 }
                 else if (RitualEvaluator.Read(s).verbs.Any(v => v.kind == RuneKind.Transmute)) e0.Add("Transmutation", PlainText);
                 bool focused = s.weave != null ? s.weave.All().Any(c => c.OwnRunes.Any(x => x.kind == RuneKind.Focus)) : RitualEvaluator.Read(s).focus > 0;

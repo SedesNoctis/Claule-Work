@@ -1000,10 +1000,17 @@ namespace Avir.Magic
                 Spell("TEST Healing burst (water: Release + Thread + Restore)", "Water:Release,Thread,Restore"),
                 Spell("TEST Heal own, then blast foes (two circles)", "Fire:Release,Thread,Restore|Barrier,Barrier,Thread", "Fire:Release|Barrier,Barrier"),
                 Spell("TEST Gentle lift (air: Lift + Thread + Restore)", "Air:Lift,Thread,Restore"),
+                Spell("TEST Battle transmutation: mud under the foes (water)", "Water:Release,Transmute,Breadth|Barrier,Barrier"),
+                Spell("TEST Aura trail of magma, spares own", "Fire:Aura,Anchor,Anchor|Release,Transmute,Closing|Barrier,Barrier", "Earth:Aura,Anchor|Release,Transmute,Closing|Barrier,Barrier"),
+                Spell("TEST Path: Moss (bog)", "Water:Release|Transmute", "Earth:Release|Transmute"),
+                Spell("TEST Path: Hot Metal (magma)", "Fire:Release|Transmute", "Earth:Release|Transmute"),
+                Spell("TEST Path: Current (storm)", "Water:Release|Transmute", "Air:Release|Transmute"),
+                Spell("TEST Path: Glass (haze)", "Fire:Release|Transmute", "Air:Release|Transmute"),
+                Spell("TEST Path: Sand (dust)", "Earth:Release|Transmute", "Air:Release|Transmute"),
+                Spell("TEST Path: Mist (steam)", "Fire:Release|Transmute", "Water:Release|Transmute"),
                 Spell("TEST Plain transmutation (fire: smelt slag, melt snow, dry)", "Fire:Transmute,Breadth"),
                 Spell("TEST Plain transmutation (earth: chunks to blocks, smooth ground)", "Earth:Transmute,Breadth,Breadth"),
                 Spell("TEST Stone water: bog with plain transmutation (Transmute, Closing)", "Water:Release,Transmute,Closing,Breadth", "Earth:Release"),
-                Spell("TEST Secret path of the bog (Transmute in both outer sections)", "Water:Release|Transmute", "Earth:Release|Transmute"),
                 Spell("TEST Closing between circles: fire stays fire beside water", "Fire:Release|Closing", "Water:Release"),
                 Spell("TEST Magma on foes, then magma wards on own (four circles)", "Fire:Release|Barrier,Barrier", "Earth:Release|Barrier,Barrier", "Fire:Barrier,Amplify|Barrier,Barrier,Thread", "Earth:Barrier,Amplify|Barrier,Barrier,Thread"),
                 Spell("TEST Built wrong: wards the foes (Arlie)", "Fire:Release,Barrier,Amplify|Barrier,Barrier"),
@@ -1049,7 +1056,7 @@ namespace Avir.Magic
         }
 
         [DebugAction(Cat, "Hidden terms: find all", allowedGameStates = AllowedGameStates.Playing)]
-        private static void DevLoreAll() { foreach (string k in new[] { "Thread:Step", "Thread:Lift", "Thread:Shape", "Thread:Reach", "Thread:Aid", "Thread:Heal", "Thread:Implode", "Price:raging flame", "Price:chilled", "Price:stone-bound", "Price:winded" }) SpellLore.Learn(k); }
+        private static void DevLoreAll() { foreach (string k in new[] { "Thread:Step", "Thread:Lift", "Thread:Shape", "Thread:Reach", "Thread:Aid", "Thread:Heal", "Thread:Implode", "Path:Bog", "Path:Magma", "Path:Storm", "Path:Haze", "Path:Dust", "Path:Steam", "Price:raging flame", "Price:chilled", "Price:stone-bound", "Price:winded" }) SpellLore.Learn(k); }
 
         [DebugAction(Cat, "Sense the deep here (earth, strength 3)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevSenseDeep(Pawn p) => SpellSense.Deep(p, p.Map, p.Position, 35f, 3f);
