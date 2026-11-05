@@ -372,7 +372,9 @@ namespace Avir.Magic
 
         public override void MapComponentUpdate()
         {
-            if (!AvirMagic.On || JobDriver_CastSpell.Casting.Count == 0) return;
+            if (!AvirMagic.On) return;
+            ArcaneChannel.Draw(map);
+            if (JobDriver_CastSpell.Casting.Count == 0) return;
             foreach (JobDriver_CastSpell d in JobDriver_CastSpell.Casting)
             {
                 if (d.pawn?.Map != map || d.spell == null) continue;

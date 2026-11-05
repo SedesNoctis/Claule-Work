@@ -198,7 +198,7 @@ namespace Avir.Magic
         public Designator_ArcaneEnrich()
         {
             defaultLabel = "Enrich soil (bog)";
-            defaultDesc = "Mark ground for a caster of the bog (water and earth) to enrich: sand, gravel and poor ground become soil, soil becomes rich soil - for " + ArcaneWorks.EnrichDays + " days (two quadrums), then it goes back to what it was.";
+            defaultDesc = "Mark ground for a caster of the bog (water and earth) to enrich: sand, gravel and poor ground become arcane soil, soil and arcane soil - rich arcane soil, damp and dark, better than any plain soil - for " + ArcaneWorks.EnrichDays + " days (two quadrums), then it goes back to what it was.";
             icon = ContentFinder<Texture2D>.Get("UI/Designators/PlantsHarvest", false) ?? BaseContent.BadTex;
         }
         protected override DesignationDef Designation => Arcane.Enrich;
@@ -258,6 +258,18 @@ namespace Avir.Magic
             map.designationManager.TryRemoveDesignation(at, Arcane.RaiseRock);
             comp.rock.Remove(at);
             FleckMaker.ThrowDustPuffThick(at.ToVector3Shifted(), map, 2f, MagicFx.EarthDust);
+            // a household spell with Breadth raises the marked cells round it in the same casting
+            if (WorkSpells.Now.breadth > 0)
+                foreach (IntVec3 cell in GenRadial.RadialCellsAround(at, 1.5f * WorkSpells.Now.breadth, false).Where(x => x.InBounds(map) && map.designationManager.DesignationAt(x, Arcane.RaiseRock) != null && Clear(map, x)).ToList())
+                {
+                    ThingDef r2 = comp.rock.TryGetValue(cell, out ThingDef rr) ? rr : MagicWorkDefOf.Rock(map);
+                    if (!Arcane.RockNeeds(r2).All(k => MagicWork.Knows(c, k))) continue;
+                    foreach (Thing x in cell.GetThingList(map).Where(x => x is Plant || x is Filth).ToList()) x.Destroy();
+                    GenSpawn.Spawn(r2, cell, map);
+                    map.designationManager.TryRemoveDesignation(cell, Arcane.RaiseRock);
+                    comp.rock.Remove(cell);
+                    FleckMaker.ThrowDustPuffThick(cell.ToVector3Shifted(), map, 1.5f, MagicFx.EarthDust);
+                }
             return true;
         }
 
@@ -280,7 +292,7 @@ namespace Avir.Magic
             if (ore == null) { map.designationManager.TryRemoveDesignation(at, Arcane.Drill); return false; }
             int left = map.deepResourceGrid.CountAt(at);
             // one portion a cast - a vein is not emptied by one spell, nor by many mages at once
-            int portion = Mathf.Min(left, Mathf.Max(1, Mathf.RoundToInt((ore.deepCountPerPortion > 0 ? ore.deepCountPerPortion : 10) * more)));
+            int portion = Mathf.Min(left, Mathf.Max(1, Mathf.RoundToInt((ore.deepCountPerPortion > 0 ? ore.deepCountPerPortion : 10) * more * WorkSpells.Now.S)));
             map.deepResourceGrid.SetAt(at, portion >= left ? null : ore, left - portion);
             if (portion >= left) map.designationManager.TryRemoveDesignation(at, Arcane.Drill);
             ThingDef what = ore;
@@ -306,9 +318,9 @@ namespace Avir.Magic
             if (k == null) return false;
             // water quickens more and cures blight, close round the spot; earth less, but over a wider ground
             bool water = k[0] == RuneKind.Water;
-            float add = (water ? 0.15f : 0.1f) + 0.03f * Arcane.Stage(c, k);
+            float add = ((water ? 0.15f : 0.1f) + 0.03f * Arcane.Stage(c, k)) * WorkSpells.Now.S;
             int now = Find.TickManager.TicksGame, n = 0;
-            foreach (IntVec3 cell in GenRadial.RadialCellsAround(t.Cell, water ? 3.9f : 5.9f, true))
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(t.Cell, WorkSpells.Now.R(water ? 3.9f : 5.9f), true))
             {
                 if (!cell.InBounds(map) || map.designationManager.DesignationAt(cell, Arcane.Growth) == null) continue;
                 if (comp.grownAt.TryGetValue(cell, out int last) && now - last < GrowEvery) continue;
@@ -323,9 +335,24 @@ namespace Avir.Magic
             return n > 0;
         }
 
+        /// <summary>The thing worked on, and - with Breadth - its kind lying round it too.</summary>
+        private static List<Thing> WithNeighbours(Thing first, System.Func<Thing, bool> same, Pawn p)
+        {
+            var list = new List<Thing> { first };
+            if (first == null || WorkSpells.Now.breadth <= 0) return list;
+            list.AddRange(GenRadial.RadialDistinctThingsAround(first.Position, first.Map, 1.5f * WorkSpells.Now.breadth, true).Where(x => x != first && same(x) && !x.IsForbidden(p)).Take(WorkSpells.Now.N(1)));
+            return list;
+        }
+
         private static bool Smelt(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c)
         {
-            Thing slag = t.Thing;
+            bool any = false;
+            foreach (Thing x in WithNeighbours(t.Thing, y => y.def == ThingDefOf.ChunkSlagSteel, p)) any |= SmeltOne(x);
+            return any;
+        }
+
+        private static bool SmeltOne(Thing slag)
+        {
             if (slag == null || slag.Destroyed || slag.def.smeltProducts.NullOrEmpty()) return false;
             IntVec3 at = slag.Position; Map map = slag.Map;
             foreach (ThingDefCountClass pr in slag.def.smeltProducts)
@@ -341,7 +368,13 @@ namespace Avir.Magic
 
         private static bool Cut(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c)
         {
-            Thing chunk = t.Thing;
+            bool any = false;
+            foreach (Thing x in WithNeighbours(t.Thing, y => !y.def.butcherProducts.NullOrEmpty() && y.def.thingCategories?.Contains(ThingCategoryDefOf.StoneChunks) == true, p)) any |= CutOne(x);
+            return any;
+        }
+
+        private static bool CutOne(Thing chunk)
+        {
             if (chunk == null || chunk.Destroyed || chunk.def.butcherProducts.NullOrEmpty()) return false;
             IntVec3 at = chunk.Position; Map map = chunk.Map;
             foreach (ThingDefCountClass pr in chunk.def.butcherProducts)
@@ -358,11 +391,19 @@ namespace Avir.Magic
         public const int EnrichDays = 30;
 
         /// <summary>What the bog makes of this ground: poor ground - soil, soil - rich soil; nothing of water, rock or floors.</summary>
+        /// <summary>The arcane soil (the author): the bog makes its own ground, not plain soil - in two looks each, chosen at
+        /// random so a field is not one flat colour.</summary>
+        public static TerrainDef ArcaneSoil => DefDatabase<TerrainDef>.GetNamedSilentFail(Rand.Bool ? "Avir_ArcaneSoil" : "Avir_ArcaneSoil_B");
+        public static TerrainDef ArcaneSoilRich => DefDatabase<TerrainDef>.GetNamedSilentFail(Rand.Bool ? "Avir_ArcaneSoilRich" : "Avir_ArcaneSoilRich_B");
+        public static bool IsArcane(TerrainDef t) => t != null && t.defName.StartsWith("Avir_ArcaneSoil");
+        public static bool IsArcaneRich(TerrainDef t) => t != null && t.defName.StartsWith("Avir_ArcaneSoilRich");
+
         public static TerrainDef Richer(TerrainDef t)
         {
-            if (t == null || t.IsWater || t.fertility <= 0f || t.layerable || t.IsFloor) return null;
-            if (t == TerrainDefOf.Soil) return TerrainDefOf.SoilRich;
-            return t.fertility < TerrainDefOf.Soil.fertility ? TerrainDefOf.Soil : null;
+            if (t == null || t.IsWater || t.fertility <= 0f || t.layerable || t.IsFloor || IsArcaneRich(t)) return null;
+            // plain soil, rich soil and arcane soil - rich arcane soil; anything poorer - arcane soil
+            if (IsArcane(t) || t.fertility >= TerrainDefOf.Soil.fertility) return ArcaneSoilRich;
+            return ArcaneSoil;
         }
 
         private static bool Enrich(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c)
@@ -370,7 +411,7 @@ namespace Avir.Magic
             Map map = p.Map;
             var comp = MapComponent_ArcaneOrders.Of(map);
             int until = Find.TickManager.TicksGame + EnrichDays * GenDate.TicksPerDay, n = 0;
-            foreach (IntVec3 cell in GenRadial.RadialCellsAround(t.Cell, 2.9f, true))
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(t.Cell, WorkSpells.Now.R(2.9f), true))
             {
                 if (!cell.InBounds(map) || map.designationManager.DesignationAt(cell, Arcane.Enrich) == null) continue;
                 TerrainDef was = map.terrainGrid.TerrainAt(cell), to = Richer(was);
@@ -392,7 +433,7 @@ namespace Avir.Magic
         {
             Room room = t.Cell.GetRoom(p.Map);
             if (room == null || room.UsesOutdoorTemperature) return false;
-            room.Temperature = Mathf.Min(21f, room.Temperature + 10f + 2f * Arcane.Stage(c, RuneKind.Fire, RuneKind.Air));
+            room.Temperature = Mathf.Min(21f, room.Temperature + (10f + 2f * Arcane.Stage(c, RuneKind.Fire, RuneKind.Air)) * WorkSpells.Now.S);
             FleckMaker.ThrowHeatGlow(t.Cell, p.Map, 2f);
             return true;
         }
@@ -400,7 +441,7 @@ namespace Avir.Magic
         private static bool Melt(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c)
         {
             Map map = p.Map; int n = 0;
-            foreach (IntVec3 cell in GenRadial.RadialCellsAround(t.Cell, 5.9f, true))
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(t.Cell, WorkSpells.Now.R(5.9f), true))
             {
                 if (!cell.InBounds(map) || map.snowGrid.GetDepth(cell) <= 0.01f) continue;
                 map.snowGrid.SetDepth(cell, 0f);
@@ -425,7 +466,7 @@ namespace Avir.Magic
         {
             CompPowerBattery b = t.Thing?.TryGetComp<CompPowerBattery>();
             if (b == null || b.StoredEnergyPct >= 0.999f) return false;
-            b.AddEnergy(200f + 100f * Arcane.Stage(c, RuneKind.Water, RuneKind.Air));
+            b.AddEnergy((200f + 100f * Arcane.Stage(c, RuneKind.Water, RuneKind.Air)) * WorkSpells.Now.S);
             FleckMaker.ThrowLightningGlow(t.Thing.DrawPos, p.Map, 1.5f);
             FleckMaker.ThrowMicroSparks(t.Thing.DrawPos, p.Map);
             return true;
@@ -439,27 +480,36 @@ namespace Avir.Magic
 
         public override bool TryMakePreToilReservations(bool errorOnFailed) => pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
 
+        private RuneKind[] KindsNow()
+        {
+            if (job.def.defName == "Avir_ArcaneRaiseRock")
+                return Arcane.RockNeeds(MapComponent_ArcaneOrders.Of(pawn.Map).rock.TryGetValue(job.targetA.Cell, out ThingDef r) ? r : null);
+            return ArcaneWorks.Needs(job.def.defName, pawn);
+        }
+
         protected override IEnumerable<Toil> MakeNewToils()
         {
             ArcaneSpec spec = Spec;
             if (spec == null) yield break;
-            if (job.targetA.HasThing) { this.FailOnDespawnedNullOrForbidden(TargetIndex.A); yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch); }
-            else yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.Touch);
-            Toil channel = Toils_General.Wait(spec.ticks).WithProgressBarToilDelay(TargetIndex.A);
-            channel.tickIntervalAction = delta => { if (pawn.IsHashIntervalTick(40, delta)) FleckMaker.ThrowDustPuffThick(job.targetA.Cell.ToVector3Shifted(), pawn.Map, 1f, spec.tint); };
-            yield return channel;
+            RuneKind[] kinds = KindsNow() ?? spec.kinds;
+            WorkCast wc = WorkSpells.Make(Mages.Core(pawn), job.def.defName, kinds, spec.cost);
+            // earth works from afar (magma, bog, stone); the rest round the caster, at the work itself
+            bool far = kinds.Contains(RuneKind.Earth);
+            if (job.targetA.HasThing) this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
+            yield return WorkSpells.GoTo(this, far, wc.Range);
+            yield return ArcaneChannel.Channel(this, wc.FromBook ? spec.ticks * 3 / 4 : spec.ticks, wc.spell ?? WorkSpells.Charm(job.def.defName, kinds), far, spec.tint);
             Toil done = ToilMaker.MakeToil("ArcaneWork");
             done.initAction = () =>
             {
-                RuneKind[] kinds = ArcaneWorks.Needs(job.def.defName, pawn);
-                if (job.def.defName == "Avir_ArcaneRaiseRock")
-                {
-                    var comp = MapComponent_ArcaneOrders.Of(pawn.Map);
-                    kinds = Arcane.RockNeeds(comp.rock.TryGetValue(job.targetA.Cell, out ThingDef r) ? r : null);
-                }
-                if (kinds == null) return;
-                Hediff_ArcaneCore c = Arcane.Able(pawn, spec.cost, kinds);
-                if (c != null && spec.effect(pawn, job.targetA, c)) Arcane.Done(c, spec.cost, spec.xp, kinds);
+                RuneKind[] k = KindsNow();
+                if (k == null) return;
+                Hediff_ArcaneCore c = Arcane.Able(pawn, wc.cost, k);
+                if (c == null) return;
+                WorkSpells.Now = wc;
+                bool ok;
+                try { ok = spec.effect(pawn, job.targetA, c); }
+                finally { WorkSpells.Now = new WorkCast(); }
+                if (ok) Arcane.Done(c, wc.cost, spec.xp * (wc.FromBook ? 1.5f : 1f), k);
             };
             done.defaultCompleteMode = ToilCompleteMode.Instant;
             yield return done;
@@ -615,19 +665,22 @@ namespace Avir.Magic
 
         protected override IEnumerable<Toil> MakeNewToils()
         {
-            yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.Touch);
-            yield return Toils_General.Wait(150).WithProgressBarToilDelay(TargetIndex.A);
+            WorkCast wc = WorkSpells.Make(Mages.Core(pawn), "Avir_MagicSmooth", new[] { RuneKind.Earth }, WorkGiver_MagicSmooth.CostPer);
+            yield return WorkSpells.GoTo(this, true, wc.Range);
+            yield return ArcaneChannel.Channel(this, wc.FromBook ? 110 : 150, wc.spell ?? WorkSpells.Charm("Avir_MagicSmooth", new[] { RuneKind.Earth }), true, MagicFx.EarthDust);
             Toil smooth = ToilMaker.MakeToil("MagicSmooth");
             smooth.initAction = () =>
             {
                 Map map = pawn.Map;
                 Hediff_ArcaneCore c = Mages.Core(pawn);
                 if (c == null) return;
-                int max = 4 + 2 * MageClass.Stage(MageClass.XpIn(c, RuneKind.Earth)), n = 0;
+                int max = wc.N(4 + 2 * MageClass.Stage(MageClass.XpIn(c, RuneKind.Earth))), n = 0;
+                // a household spell pays its own Arcana once; a plain charm, a little for each cell
+                if (wc.FromBook) { if (c.arcana < wc.cost) return; c.Add(-wc.cost); }
                 DesignationManager dm = map.designationManager;
-                foreach (IntVec3 cell in GenRadial.RadialCellsAround(TargetA.Cell, WorkGiver_MagicSmooth.Radius, true))
+                foreach (IntVec3 cell in GenRadial.RadialCellsAround(TargetA.Cell, wc.R(WorkGiver_MagicSmooth.Radius), true))
                 {
-                    if (n >= max || c.arcana < WorkGiver_MagicSmooth.CostPer) break;
+                    if (n >= max || (!wc.FromBook && c.arcana < WorkGiver_MagicSmooth.CostPer)) break;
                     if (!cell.InBounds(map) || !WorkGiver_MagicSmooth.Marked(map, cell)) continue;
                     Thing wall = cell.GetEdifice(map);
                     if (wall != null && wall.def.building?.smoothedThing != null) SmoothableWallUtility.SmoothWall(wall, pawn);
@@ -637,7 +690,7 @@ namespace Avir.Magic
                     dm.TryRemoveDesignation(cell, DesignationDefOf.SmoothFloor);
                     if (Arcane.Smooth != null) dm.TryRemoveDesignation(cell, Arcane.Smooth);
                     FleckMaker.ThrowDustPuffThick(cell.ToVector3Shifted(), map, 0.8f, MagicFx.EarthDust);
-                    MagicWork.Done(c, RuneKind.Earth, WorkGiver_MagicSmooth.CostPer, WorkGiver_MagicSmooth.XpPer);
+                    MagicWork.Done(c, RuneKind.Earth, wc.FromBook ? 0f : WorkGiver_MagicSmooth.CostPer, WorkGiver_MagicSmooth.XpPer * (wc.FromBook ? 1.5f : 1f));
                     n++;
                 }
             };

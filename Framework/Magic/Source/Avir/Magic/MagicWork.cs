@@ -159,23 +159,24 @@ namespace Avir.Magic
         protected override IEnumerable<Toil> MakeNewToils()
         {
             this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
-            yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
-            yield return Toils_General.Wait(90).WithProgressBarToilDelay(TargetIndex.A).FailOnDespawnedOrNull(TargetIndex.A);
+            WorkCast wc = WorkSpells.Make(Mages.Core(pawn), "Avir_MagicClean", new[] { RuneKind.Water }, WorkGiver_MagicClean.Cost);
+            yield return WorkSpells.GoTo(this, false, 0f);
+            yield return ArcaneChannel.Channel(this, wc.FromBook ? 70 : 90, wc.spell ?? WorkSpells.Charm("Avir_MagicClean", new[] { RuneKind.Water }), false, new Color(0.5f, 0.7f, 1f, 0.5f));
             Toil wash = ToilMaker.MakeToil("MagicClean");
             wash.initAction = () =>
             {
-                Hediff_ArcaneCore c = MagicWork.Able(pawn, RuneKind.Water, WorkGiver_MagicClean.Cost);
+                Hediff_ArcaneCore c = MagicWork.Able(pawn, RuneKind.Water, wc.cost);
                 if (c == null) return;
                 Map map = pawn.Map;
                 IntVec3 at = TargetA.Cell;
                 int n = 0;
-                foreach (IntVec3 cell in GenRadial.RadialCellsAround(at, WorkGiver_MagicClean.Radius, true))
+                foreach (IntVec3 cell in GenRadial.RadialCellsAround(at, wc.R(WorkGiver_MagicClean.Radius), true))
                 {
                     if (!cell.InBounds(map) || !map.areaManager.Home[cell]) continue;
                     foreach (Filth f in cell.GetThingList(map).OfType<Filth>().ToList()) { f.Destroy(); n++; }
                     if (Rand.Chance(0.3f)) FleckMaker.Static(cell, map, FleckDefOf.WaterSplash, 0.8f);
                 }
-                MagicWork.Done(c, RuneKind.Water, WorkGiver_MagicClean.Cost, WorkGiver_MagicClean.Xp);
+                MagicWork.Done(c, RuneKind.Water, wc.cost, WorkGiver_MagicClean.Xp * (wc.FromBook ? 1.5f : 1f));
             };
             wash.defaultCompleteMode = ToilCompleteMode.Instant;
             yield return wash;
@@ -217,8 +218,9 @@ namespace Avir.Magic
         protected override IEnumerable<Toil> MakeNewToils()
         {
             this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
-            yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
-            yield return Toils_General.Wait(60).WithProgressBarToilDelay(TargetIndex.A).FailOnDespawnedOrNull(TargetIndex.A);
+            WorkCast wc = WorkSpells.Make(Mages.Core(pawn), "Avir_MagicHaul", new[] { RuneKind.Air }, WorkGiver_MagicHaul.CostPer);
+            yield return WorkSpells.GoTo(this, false, 0f);
+            yield return ArcaneChannel.Channel(this, wc.FromBook ? 45 : 60, wc.spell ?? WorkSpells.Charm("Avir_MagicHaul", new[] { RuneKind.Air }), false, MagicFx.AirDust);
             Toil carry = ToilMaker.MakeToil("MagicHaul");
             carry.initAction = () =>
             {
@@ -226,17 +228,19 @@ namespace Avir.Magic
                 if (c == null) return;
                 Map map = pawn.Map;
                 IntVec3 at = TargetA.Cell;
-                int max = 4 + MageClass.Stage(MageClass.XpIn(c, RuneKind.Air)) * 2, n = 0;
-                foreach (Thing t in GenRadial.RadialDistinctThingsAround(at, map, WorkGiver_MagicHaul.Radius, true).Where(x => x.def.EverHaulable).ToList())
+                int max = wc.N(4 + MageClass.Stage(MageClass.XpIn(c, RuneKind.Air)) * 2), n = 0;
+                // a household spell pays its own Arcana once; a plain charm, one for each thing carried
+                if (wc.FromBook) { if (c.arcana < wc.cost) return; c.Add(-wc.cost); }
+                foreach (Thing t in GenRadial.RadialDistinctThingsAround(at, map, wc.R(WorkGiver_MagicHaul.Radius), true).Where(x => x.def.EverHaulable).ToList())
                 {
-                    if (n >= max || c.arcana < WorkGiver_MagicHaul.CostPer) break;
+                    if (n >= max || (!wc.FromBook && c.arcana < WorkGiver_MagicHaul.CostPer)) break;
                     if (!WorkGiver_MagicHaul.Store(t, pawn, out IntVec3 cell)) continue;
                     Vector3 from = t.DrawPos;
                     t.DeSpawn();
                     if (!GenPlace.TryPlaceThing(t, cell, map, ThingPlaceMode.Direct) && !GenPlace.TryPlaceThing(t, cell, map, ThingPlaceMode.Near)) continue;
                     FleckMaker.ThrowDustPuffThick(from, map, 0.9f, MagicFx.AirDust);
                     FleckMaker.ThrowDustPuffThick(cell.ToVector3Shifted(), map, 0.9f, MagicFx.AirDust);
-                    MagicWork.Done(c, RuneKind.Air, WorkGiver_MagicHaul.CostPer, WorkGiver_MagicHaul.XpPer);
+                    MagicWork.Done(c, RuneKind.Air, wc.FromBook ? 0f : WorkGiver_MagicHaul.CostPer, WorkGiver_MagicHaul.XpPer * (wc.FromBook ? 1.5f : 1f));
                     n++;
                 }
             };
@@ -273,22 +277,22 @@ namespace Avir.Magic
         protected override IEnumerable<Toil> MakeNewToils()
         {
             this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
-            yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
-            Toil work = Toils_General.Wait(300).WithProgressBarToilDelay(TargetIndex.A).FailOnDespawnedOrNull(TargetIndex.A);
-            work.tickIntervalAction = delta => { if (pawn.IsHashIntervalTick(60, delta)) FleckMaker.Static(TargetA.Cell, pawn.Map, FleckDefOf.WaterSplash, 0.7f); };
-            yield return work;
+            WorkCast wc = WorkSpells.Make(Mages.Core(pawn), "Avir_MagicTend", new[] { RuneKind.Water }, WorkGiver_MagicTend.Cost);
+            yield return WorkSpells.GoTo(this, false, 0f);
+            yield return ArcaneChannel.Channel(this, wc.FromBook ? 225 : 300, wc.spell ?? WorkSpells.Charm("Avir_MagicTend", new[] { RuneKind.Water }), false, new Color(0.5f, 0.7f, 1f, 0.5f));
             Toil done = ToilMaker.MakeToil("MagicTend");
             done.initAction = () =>
             {
                 Pawn patient = TargetA.Thing as Pawn;
-                Hediff_ArcaneCore c = MagicWork.Able(pawn, RuneKind.Water, WorkGiver_MagicTend.Cost);
+                Hediff_ArcaneCore c = MagicWork.Able(pawn, RuneKind.Water, wc.cost);
                 if (patient == null || c == null) return;
                 tend.Clear(); order.Clear();
                 TendUtility.GetOptimalHediffsToTendWithSingleTreatment(patient, false, tend, null);
-                float q = WorkGiver_MagicTend.Quality(c);
+                // a household spell of mending tends better: +10% for each Amplify (never past 98%)
+                float q = Mathf.Min(0.98f, WorkGiver_MagicTend.Quality(c) * (1f + 0.1f * wc.amplify));
                 for (int i = 0; i < tend.Count; i++) tend[i].Tended(Mathf.Clamp01(q * Rand.Range(0.9f, 1.1f)), 1f, i);
                 FleckMaker.ThrowMetaIcon(patient.Position, patient.Map, FleckDefOf.HealingCross);
-                MagicWork.Done(c, RuneKind.Water, WorkGiver_MagicTend.Cost, WorkGiver_MagicTend.Xp);
+                MagicWork.Done(c, RuneKind.Water, wc.cost, WorkGiver_MagicTend.Xp * (wc.FromBook ? 1.5f : 1f));
             };
             done.defaultCompleteMode = ToilCompleteMode.Instant;
             yield return done;
