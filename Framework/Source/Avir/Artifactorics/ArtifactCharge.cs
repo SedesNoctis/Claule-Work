@@ -115,9 +115,32 @@ namespace Avir.Artifactorics
             allowed = Mathf.Max(0f, sens - own * S.rechargeSensitivityFloor);
         }
 
+        /// <summary>A mage pours their Arcana in first (the author, Nov 2026); only what it does not cover is taken from
+        /// psychic sensitivity. Returns the Arcana spent.</summary>
+        private static float FromArcana(Pawn p)
+        {
+            Magic.Hediff_ArcaneCore core = Magic.AvirMagic.On ? Magic.Mages.Core(p) : null;
+            if (core == null || core.arcana <= 0.01f) return 0f;
+            float spent = 0f;
+            foreach (CompArtifactSocket s in ArtifactWearCache.Worn(p))
+            {
+                ArtifactState st = s.inlaid;
+                if (st == null || !st.HasHeart || st.charge >= 0.999f || core.arcana <= 0.01f) continue;
+                float cap = Mathf.Max(1f, Capacity(st, p));
+                float g = Mathf.Min(core.arcana, (1f - st.charge) * cap);
+                st.charge = Mathf.Min(1f, st.charge + g / cap);
+                core.arcana -= g; spent += g;
+            }
+            return spent;
+        }
+
         public static void DoRecharge(Pawn p)
         {
+            float arc = FromArcana(p);
+            if (arc > 0f && p.Faction == Faction.OfPlayer)
+                Messages.Message(p.LabelShort + " poured " + Mathf.RoundToInt(arc) + " Arcana into " + p.Possessive() + " artifacts.", p, MessageTypeDefOf.TaskCompletion, false);
             RechargeCost(p, out float wanted, out float allowed);
+            if (wanted <= 0.0001f) { GameComponent_ArtifactCharge.Get?.MarkRecharged(p); ArtifactMilestones.Invalidate(p); ArtifactBonusCache.Invalidate(p); return; }
             if (wanted <= 0.0001f) return;
             float give = Mathf.Min(wanted, allowed);
             float share = wanted > 0f ? give / wanted : 0f;
@@ -156,7 +179,8 @@ namespace Avir.Artifactorics
             if (left > 0) { why = "ready in " + left.ToStringTicksToPeriod(); return false; }
             if (LowestCharge(p) >= 0.999f) { why = "the artifacts are full"; return false; }
             RechargeCost(p, out _, out float allowed);
-            if (allowed <= 0.001f) { why = "too little psychic sensitivity left to give"; return false; }
+            bool arcana = Magic.AvirMagic.On && (Magic.Mages.Core(p)?.arcana ?? 0f) > 0.5f;
+            if (allowed <= 0.001f && !arcana) { why = "too little psychic sensitivity left to give"; return false; }
             return true;
         }
 

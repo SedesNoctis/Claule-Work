@@ -89,7 +89,20 @@ namespace Avir.Magic
         }
 
         /// <summary>What the core can hold, against a mage with no conductor at all.</summary>
-        public static float CapacityFactor(Pawn p) => Mathf.Max(0.4f, (Horned(p) ? 0.7f : 1f) * Mathf.Pow(0.85f, Artifacts(p)));
+        /// <summary>Conductors carry part of the Arcana outside the body, so the core holds more (the author, Nov 2026: there
+        /// is no ceiling, so holding less would mean nothing): horns +30%, each worn or held artifact +10% (up to +40%).</summary>
+        public static float CapacityFactor(Pawn p) => (Horned(p) ? 1.3f : 1f) * (1f + Mathf.Min(0.4f, 0.1f * Artifacts(p)));
+
+        /// <summary>The price of it: while the Arcana has not passed the upper edge of the band, what goes through a
+        /// conductor comes out weaker - horns -15%, each artifact -5% (at most -35%). Past the edge, full strength (and
+        /// greatness then is the mage's composure's business).</summary>
+        public static float PowerFactor(Pawn p, Hediff_ArcaneCore c)
+        {
+            if (c == null) return 1f;
+            c.Band(out _, out float hi);
+            if (c.Fill >= hi) return 1f;
+            return 1f - Mathf.Min(0.35f, (Horned(p) ? 0.15f : 0f) + 0.05f * Artifacts(p));
+        }
 
         /// <summary>Physical conductors carry part of the Arcana outside the body: the feeling of greatness swells slower
         /// (horns -15%, each worn or held artifact -15%, never below half).</summary>
@@ -401,7 +414,7 @@ namespace Avir.Magic
             sb.AppendLine("Arcana: " + Mathf.FloorToInt(core.arcana) + " of " + Mathf.FloorToInt(core.Capacity) + " (core level " + core.level + ").");
             sb.AppendLine("Safe between " + lo.ToStringPercent() + " and " + hi.ToStringPercent() + " (the marks) - wider with composure ("
                           + core.Composure.ToStringPercent() + ") and with what steadies the " + (core.Sorcerer ? "sorcerer" : "wizard") + ".");
-            if (core.vent) sb.AppendLine("Kept at " + core.target.ToStringPercent() + " (the white mark): the excess goes into worn artifacts, then artifacts nearby, else into the air.");
+            if (core.vent) sb.AppendLine("Kept at " + core.target.ToStringPercent() + " (the white mark): the excess goes into worn artifacts, then artifacts nearby; with none, it stays in the mage (cast it out).");
             sb.AppendLine("Click the bar to set where it is kept.");
             if (MagicConductors.Horned(p)) sb.AppendLine("Horns: natural composure +" + MagicConductors.HornComposure.ToStringPercent() + ", but the core holds less.");
             int a = MagicConductors.Artifacts(p);
@@ -437,11 +450,8 @@ namespace Avir.Magic
                 c.ventedToArtifacts += g;
             }
             if (c.ventedToArtifacts >= 10f) { c.Note("Let " + Mathf.FloorToInt(c.ventedToArtifacts) + " Arcana out into artifacts."); c.ventedToArtifacts = 0f; }
-            if (give > 0.001f)
-            {
-                c.arcana -= give;   // into the air
-                if (p.Spawned && Rand.Chance(0.3f)) FleckMaker.ThrowDustPuffThick(p.DrawPos, p.Map, 1.2f, new Color(0.7f, 0.65f, 1f, 0.5f));
-            }
+            // nothing goes into the air any more (the author, Nov 2026): Arcana is let out by casting or into artifacts -
+            // what finds no artifact stays in the mage, and greatness grows on it
             c.arcana = Mathf.Max(0f, c.arcana);
         }
 

@@ -84,7 +84,8 @@ namespace Avir.Magic
             if (Mages.Core(p)?.Sorcerer == true) comp *= 1.3f;
             return risk > comp ? Mathf.Clamp01(1f - (risk - comp) * 0.4f) : 1f;
         }
-        public static int Cooldown(RitualSchema s) => Mathf.RoundToInt(GenDate.TicksPerHour * 0.25f * (1f + (int)s.size));
+        /// <summary>No rest between casts (the author, Nov 2026): what limits a mage is Arcana, the hold and the cast time.</summary>
+        public static int Cooldown(RitualSchema s) => 0;
         public static float Range(RitualSchema s) => s.weave != null && WeaveSpell.Burrows(s.weave) ? 30f + 10f * WeaveSpell.Reach(s.weave) : 16f + 10f * (s.weave != null ? WeaveSpell.Reach(s.weave) : RitualEvaluator.Read(s).reach);
         public static float Power(RitualSchema s) => RitualCircles.PowerFactor(s.size) * (1f + 0.3f * RitualEvaluator.Read(s).amplify);
         public static RuneDef Element(RitualSchema s) => s.weave != null ? (s.weave.element ?? s.weave.All().Select(c => c.element).FirstOrDefault(e => e != null)) : RitualEvaluator.Read(s).elements.FirstOrDefault();
@@ -148,7 +149,7 @@ namespace Avir.Magic
             GameComponent_AvirComposure.Performed(caster, cost, risk, comp, GameComponent_AvirComposure.KeyOf(s));
             AirMomentum.Note(caster, s);
             core.Note("Cast " + s.name + " (" + cost.ToString("0.#") + " Arcana).");
-            float power = Power(s);
+            float power = Power(s) * MagicConductors.PowerFactor(caster, core);
             // a spell of one circle: the focus rune draws the stream into it (a woven spell does it circle by circle)
             if (s.weave == null && r.focus > 0) power *= 1f + r.focus * (0.2f + 0.1f * FlowTierAny(map));
             int tier = FlowTier(map);
