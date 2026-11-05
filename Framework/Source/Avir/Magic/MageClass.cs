@@ -118,18 +118,22 @@ namespace Avir.Magic
             foreach (RuneKind k in sh) Gain(c, k, each);
         }
 
-        /// <summary>What the experience does to a spell: the average over its circles' elements.</summary>
-        private static float Over(Hediff_ArcaneCore c, RitualSchema s, float[] table)
+        /// <summary>What the experience does to a spell: every element in it adds its own good and its own bad
+        /// (the author, Fix118) - not an average. Each distinct element brings its stage's departure from 1; an element
+        /// the mage has never touched (no experience at all) weighs a little worse than a novice's. Clamped.</summary>
+        private static float Over(Hediff_ArcaneCore c, RitualSchema s, float[] table, float unknown, float min, float max)
         {
             if (c == null || s == null) return 1f;
-            List<RuneKind> sh = Shares(s);
+            List<RuneKind> sh = Shares(s).Distinct().ToList();
             if (sh.Count == 0) return 1f;
-            return sh.Average(k => table[Stage(XpIn(c, k))]);
+            float f = 1f;
+            foreach (RuneKind k in sh) { float xp = XpIn(c, k); f += table[Stage(xp)] - 1f + (xp <= 0f ? unknown : 0f); }
+            return Mathf.Clamp(f, min, max);
         }
 
-        public static float PowerFactor(Hediff_ArcaneCore c, RitualSchema s) => Over(c, s, PowerAt);
-        public static float SlipFactor(Hediff_ArcaneCore c, RitualSchema s) => Over(c, s, SlipAt);
-        public static float CastFactor(Hediff_ArcaneCore c, RitualSchema s) => Over(c, s, CastAt);
+        public static float PowerFactor(Hediff_ArcaneCore c, RitualSchema s) => Over(c, s, PowerAt, -0.05f, 0.4f, 2.2f);
+        public static float SlipFactor(Hediff_ArcaneCore c, RitualSchema s) => Over(c, s, SlipAt, 0.15f, 0.4f, 3f);
+        public static float CastFactor(Hediff_ArcaneCore c, RitualSchema s) => Over(c, s, CastAt, 0.1f, 0.5f, 2.5f);
 
         /// <summary>Time: a mage keeps thinking in their own element - a little each day.</summary>
         public static void Days(Hediff_ArcaneCore c, float days)
