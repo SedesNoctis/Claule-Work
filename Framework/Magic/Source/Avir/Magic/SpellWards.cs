@@ -314,6 +314,25 @@ namespace Avir.Magic
                 Hediff_WardCharm.Weave(who, el, k, power, amplify);
                 return;
             }
+            // a circle that knows sides (the author): its Barrier lays no dome - a dome guards whoever stands in it - but a
+            // ward on each one the circle reaches: under Selective Aid the caster's own (the caster too); under Selective
+            // Protection the foes - a spell built wrong wards the enemy (Arlie has a word for it in the codex)
+            if (!onCaster && SpellSculpt.Active)
+            {
+                RitualReading rr = RitualEvaluator.Read(s);
+                IntVec3 wat = rr.verbs.Any(v => v.kind == RuneKind.Aura) ? caster.Position : target.Cell;
+                float wr = Mathf.Max(1.4f, FireMagic.PointRadius(rr) - 0.5f);
+                int n = 0;
+                foreach (Pawn p in FireMagic.Point(wat, caster.Map, wr).Where(c => c.InBounds(caster.Map)).SelectMany(c => c.GetThingList(caster.Map).OfType<Pawn>()).Distinct().ToList())
+                {
+                    if (p.Dead || !SpellSculpt.Struck(p, caster)) continue;
+                    Lay(p, WardDef(el, k), power, amplify, ticks);
+                    if (k == ComboKind.None && el?.kind == RuneKind.Fire && p.GetAttachment(ThingDefOf.Fire) is Fire f1) f1.Destroy();
+                    n++;
+                }
+                Note("a Barrier in a circle that knows sides: wards on " + n + (SpellSculpt.Allies ? " of the caster's own" : " foes") + ", no dome");
+                return;
+            }
             // a Barrier with nothing that acts, aimed at a body - the caster's own or another's: the ward goes on that body
             if (!onCaster && s?.rings != null && !s.rings.SelectMany(g => g.runes).Any(x => x != null && Acts(x)))
             {
@@ -336,22 +355,6 @@ namespace Avir.Magic
             bool aura = r.verbs.Any(v => v.kind == RuneKind.Aura);
             IntVec3 at = aura ? caster.Position : target.Cell;
             float radius = Mathf.Max(1.4f, FireMagic.PointRadius(r) - 0.5f);
-            // a circle that knows its own (Selective Protection or Aid): its Barrier lays no dome - a dome would guard the
-            // foes as well - but a ward on each of the caster's own in its reach, the caster too (the author's question:
-            // magma on the foes, and its own kept from the magma left on the ground)
-            if (SpellSculpt.Active)
-            {
-                int n = 0;
-                foreach (Pawn p in FireMagic.Point(at, caster.Map, radius).Where(c => c.InBounds(caster.Map)).SelectMany(c => c.GetThingList(caster.Map).OfType<Pawn>()).Distinct().ToList())
-                {
-                    if (p.Dead || (p != caster && p.HostileTo(caster))) continue;
-                    Lay(p, WardDef(el, k), power, amplify, ticks);
-                    if (k == ComboKind.None && el?.kind == RuneKind.Fire && p.GetAttachment(ThingDefOf.Fire) is Fire f1) f1.Destroy();
-                    n++;
-                }
-                Note("a Barrier in a circle that knows its own: wards on " + n + " of the caster's own, no dome");
-                return;
-            }
             MapComponent_WardsDrawn.Dome d = MapComponent_WardsDrawn.RaiseWard(caster.Map, at, radius, el, k, caster, ticks, power, amplify);
             // Aura and Barrier: the dome goes with the caster - a moving dome; whoever walks with them stays under it
             if (aura && d != null) { d.follow = caster; Note("the dome of " + d.Name + " goes with " + caster.LabelShort); }

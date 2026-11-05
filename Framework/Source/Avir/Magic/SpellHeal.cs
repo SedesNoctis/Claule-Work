@@ -140,6 +140,22 @@ namespace Avir.Magic
             }
         }
 
+        /// <summary>Does a circle under Selective Protection hold a Barrier in its body (not the shaping pair, not the last
+        /// rune) - one that will ward the foes?</summary>
+        public static bool WardsFoes(RitualSchema s)
+        {
+            IEnumerable<RitualSchema> circles = s?.weave != null ? s.weave.Working.Select(k => k.AsSchema()) : (s != null ? new[] { s } : new RitualSchema[0]);
+            foreach (RitualSchema c0 in circles)
+            {
+                RitualSchema body = c0?.Copy();
+                if (body == null || !SpellSculpt.Take(body, out bool aid) || aid) continue;
+                List<RuneDef> seq = body.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
+                for (int i = 0; i < seq.Count; i++)
+                    if (seq[i].kind == RuneKind.Barrier && !(i == seq.Count - 1 && seq.Take(i).Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form))) return true;
+            }
+            return false;
+        }
+
         /// <summary>The codex's warnings on a spell that heals and wounds the same people - or heals the foes and wounds
         /// one's own (Arlie's words, the author's).</summary>
         public static IEnumerable<KeyValuePair<string, string>> Warnings(RitualSchema s)
@@ -147,6 +163,8 @@ namespace Avir.Magic
             var c = Circles(s).ToList();
             bool healOwn = c.Any(x => x.heals && x.side != Side.Foes), healFoes = c.Any(x => x.heals && x.side == Side.Foes);
             bool harmOwn = c.Any(x => x.harms && x.side == Side.Own);
+            if (WardsFoes(s))
+                yield return new KeyValuePair<string, string>("Wards the foes", "Arlie: \"Oh, you actually aim to PRESERVE your enemies? So.. I suppose you do have other plans? Right?\"\nA Barrier in a circle under Selective Protection wards the foes it reaches. To ward one's own, write it in a circle under Selective Aid (two Barriers and a Thread).");
             if (harmOwn && healFoes)
                 yield return new KeyValuePair<string, string>("Mends foes, strikes own", "Arlie: \"I see you intend to confuse your enemies?\"\nThe healing here goes to the foes (Selective Protection), and a blow goes to the caster's own (Selective Aid).");
             else if (harmOwn && healOwn)
