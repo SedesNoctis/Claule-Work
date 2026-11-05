@@ -39,6 +39,7 @@ namespace Avir.Magic
                 case "Turned to its own": return "Thread:Aid";
                 case "The step turned round": return "Thread:Step";
                 case "Turned to mending": return "Thread:Heal";
+                case "Mends and strikes own": case "Mends foes, strikes own": return "Thread:Heal";
             }
             return null;
         }

@@ -63,7 +63,7 @@ namespace Avir.Magic
         /// <summary>The start of a circle's cast: its reading with only the modifiers that work on the whole circle.</summary>
         public static RitualReading Begin(RitualSchema s, RitualReading r)
         {
-            now = s; cur = ReadOf(s); SpellHeal.Now = false;
+            now = s; cur = ReadOf(s); SpellHeal.Now = false; SpellHeal.Start(s);
             return With(r, cur.wide, true);
         }
 
@@ -72,7 +72,7 @@ namespace Avir.Magic
         {
             RitualReading c = VerbCore(r, v);
             // the healing turn: verb + Thread + Restoration turns this verb's blow to healing (SpellHeal)
-            SpellHeal.Now = v != null && v.role == RuneRole.Verb && SpellHeal.Bound(now).Contains(v);
+            SpellHeal.Now = SpellHeal.Tied(v);
             // strict modifiers (the author's rule, on trial): the depth of the blow is this verb's own, not the circle's
             if (Strict && c != null && SpellWards.AtWork) SpellDepth.Amplify = c.amplify;
             return c;

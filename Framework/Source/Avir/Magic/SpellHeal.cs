@@ -45,11 +45,83 @@ namespace Avir.Magic
             return bound;
         }
 
-        /// <summary>Is this Restoration only the knot of a healing turn (right after "verb + Thread")?</summary>
-        public static bool Knot(RitualSchema s) => Bound(s).Count > 0;
+        /// <summary>Each copy of each verb in a circle, in order: tied to the mending or not. The same verb may be written
+        /// tied once and plain once ("Release + Thread + Restore | Release"): only the tied copy heals.</summary>
+        public static Dictionary<RuneKind, List<bool>> Copies(RitualSchema s)
+        {
+            var copies = new Dictionary<RuneKind, List<bool>>();
+            if (s?.rings == null) return copies;
+            List<RuneDef> seq = s.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
+            int verbAt = -1;
+            for (int i = 0; i < seq.Count; i++)
+            {
+                RuneDef x = seq[i];
+                if (x.role == RuneRole.Form && x.kind == RuneKind.Restore && verbAt >= 0 && i > 0 && seq[i - 1].kind == RuneKind.Thread)
+                { List<bool> l = copies[seq[verbAt].kind]; l[l.Count - 1] = true; }
+                if (x.role == RuneRole.Verb)
+                {
+                    verbAt = i;
+                    if (!copies.TryGetValue(x.kind, out List<bool> l)) copies[x.kind] = l = new List<bool>();
+                    l.Add(false);
+                }
+                else if (x.role == RuneRole.Form) verbAt = -1;
+            }
+            return copies;
+        }
+
+        // the part being cast: its copies, and how many times each verb has been applied so far (a verb goes through
+        // Verb once per copy, in the order written - and again in the same order for every form that carries it)
+        private static Dictionary<RuneKind, List<bool>> part = new Dictionary<RuneKind, List<bool>>();
+        private static readonly Dictionary<RuneKind, int> calls = new Dictionary<RuneKind, int>();
+        public static void Start(RitualSchema s) { part = Copies(s); calls.Clear(); }
+
+        /// <summary>Is this application of the verb its tied copy?</summary>
+        public static bool Tied(RuneDef v)
+        {
+            if (v == null || v.role != RuneRole.Verb || !part.TryGetValue(v.kind, out List<bool> l) || l.Count == 0) return false;
+            calls.TryGetValue(v.kind, out int n);
+            calls[v.kind] = n + 1;
+            return l[n % l.Count];
+        }
+
+        /// <summary>Who a circle's blow reaches: everyone, only foes (Selective Protection), only one's own (Selective Aid).</summary>
+        public enum Side { All, Foes, Own }
+
+        /// <summary>The spell's circles as the codex sees them: whom each reaches, whether it heals, whether it wounds.</summary>
+        public static IEnumerable<(Side side, bool heals, bool harms)> Circles(RitualSchema s)
+        {
+            var list = new List<(RitualSchema, Side)>();
+            if (s?.weave != null)
+                foreach (SpellCircle k in s.weave.Working) list.Add((k.AsSchema(), SpellSculpt.AidOf(k) ? Side.Own : SpellSculpt.Of(k) ? Side.Foes : Side.All));
+            else if (s != null)
+            {
+                SpellSculpt.Stripped(s, out int shaped, out _, out int aid);
+                list.Add((s, aid > 0 ? Side.Own : shaped > 0 ? Side.Foes : Side.All));
+            }
+            foreach (var (c, side) in list)
+            {
+                var copies = Copies(c);
+                bool heals = copies.Values.Any(l => l.Any(t => t));
+                bool harms = copies.Any(kv => kv.Key != RuneKind.Growth && kv.Key != RuneKind.Purge && kv.Value.Any(t => !t));
+                yield return (side, heals, harms);
+            }
+        }
+
+        /// <summary>The codex's warnings on a spell that heals and wounds the same people - or heals the foes and wounds
+        /// one's own (Arlie's words, the author's).</summary>
+        public static IEnumerable<KeyValuePair<string, string>> Warnings(RitualSchema s)
+        {
+            var c = Circles(s).ToList();
+            bool healOwn = c.Any(x => x.heals && x.side != Side.Foes), healFoes = c.Any(x => x.heals && x.side == Side.Foes);
+            bool harmOwn = c.Any(x => x.harms && x.side == Side.Own);
+            if (harmOwn && healFoes)
+                yield return new KeyValuePair<string, string>("Mends foes, strikes own", "Arlie: \"I see you intend to confuse your enemies?\"\nThe healing here goes to the foes (Selective Protection), and a blow goes to the caster's own (Selective Aid).");
+            else if (harmOwn && healOwn)
+                yield return new KeyValuePair<string, string>("Mends and strikes own", "Arlie: \"Blueberry and a Poison, huh?\"\nThis spell heals the caster's own and strikes them too: a plain verb in a circle under Selective Aid goes to one's own like the healing.");
+        }
 
         /// <summary>Does any verb of this circle (or of any circle of the spell) turn to healing?</summary>
-        public static bool Turns(RitualSchema s) => s?.weave != null ? s.weave.Working.Any(k => Bound(k.AsSchema()).Count > 0) : Bound(s).Count > 0;
+        public static bool Turns(RitualSchema s) => Circles(s).Any(c => c.heals);
 
         /// <summary>What a Restoration form carries, like any form: the verbs of its circle - the tied ones heal, the rest
         /// strike as written (the author: "Release + Thread + Restore + Release" - the second Release strikes; with Selective
@@ -60,7 +132,8 @@ namespace Avir.Magic
         {
             if (forms.Any(f => f.kind != RuneKind.Restore)) return new List<RuneDef>();
             HashSet<RuneDef> b = Bound(s);
-            return verbs.Where(v => b.Contains(v) || (v.kind != RuneKind.Growth && v.kind != RuneKind.Purge)).ToList();
+            // Growth and Purge stay Restoration's helpers unless tied
+            return verbs.Where(v => (v.kind != RuneKind.Growth && v.kind != RuneKind.Purge) || b.Contains(v)).ToList();
         }
 
         public static bool Living(Pawn p) => p != null && !p.Dead && p.RaceProps.IsFlesh;

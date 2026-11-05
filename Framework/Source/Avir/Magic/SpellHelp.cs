@@ -79,6 +79,7 @@ namespace Avir.Magic
                     + " What is left on the ground (magma, mire, held fields) does not know its own.");
                 if (nAid > 0) e0.Add("Turned to its own", "Two Barriers and a Thread in the outermost section of a circle turn its blow to the caster's own people - the caster among them - and past the foes; "
                     + (1f - SpellSculpt.Keeps).ToStringPercent() + " weaker for it. For mending, warding and strengthening one's own from the circle.");
+                foreach (var w in SpellHeal.Warnings(s)) e0.Add(w.Key, w.Value);
                 if (SpellHeal.Turns(s)) e0.Add("Turned to mending", "A verb, a Thread right after it and Restoration right after the Thread tie that verb to the mending: on the living its blow heals instead of wounding - a release becomes a burst of healing, a lift lifts gently. "
                     + "It sets nothing alight, breaks nothing, knocks no one down. Machines have no life to mend and take it as a blow. Only that verb is turned; the others, and the other circles, strike as written. Whom it reaches is the circle's rule: everyone; with Selective Protection, foes; with Selective Aid, one's own.");
                 if (SpellMods.Strict && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Where(x => x.role == RuneRole.Verb).GroupBy(x => x.kind).Any(g => g.Count() > 1)))
