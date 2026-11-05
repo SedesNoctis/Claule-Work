@@ -20,7 +20,8 @@ namespace Avir.Magic
     /// same spell, with an Aura of its own, does not raise a second aura: it widens the first (and slows it) and adds its
     /// verbs to its strikes. It ends when its strikes are spent, or when the caster falls, dies or leaves the map; a new
     /// living aura of the same element raised by another spell takes the old one's place.
-    /// Made for fire first - the other elements keep their own fields until they are put on it.</summary>
+    /// Made for fire first; since Fix105 every element and every meeting of two lives so (with an Anchor) - without an
+    /// Anchor each keeps its old field (water's tide, earth's and air's, the meetings' fields).</summary>
     public static class SpellAura
     {
         public const float PulseShare = 0.5f;
@@ -43,8 +44,18 @@ namespace Avir.Magic
         /// <summary>The spell being cast (its weave), so the circles of one spell feed one aura.</summary>
         public static object Spell;
 
-        /// <summary>The elements whose aura lives (fire for now).</summary>
-        public static bool Lives(RuneDef el, ComboKind k) => k == ComboKind.None && el != null && el.kind == RuneKind.Fire;
+        /// <summary>The elements whose aura lives: all of them, and every meeting of two.</summary>
+        public static bool Lives(RuneDef el, ComboKind k) => k != ComboKind.None || el != null;
+
+        /// <summary>A part's aura in the living way (pulsing now, or raising one): its radius; false - the old field.</summary>
+        public static bool Living(RitualSchema part, RuneDef el, ComboKind k, out float radius)
+        {
+            radius = PulseRadius;
+            if (Pulsing) return true;
+            if (!Raises(part, el, k, out int b, out _)) return false;
+            radius = Radius(b);
+            return true;
+        }
 
         public static float Radius(int breadth) => Mathf.Min(SmallMax, BaseRadius + breadth);
         public static int Interval(int breadth) => Mathf.RoundToInt(BaseInterval * Mathf.Pow(1.5f, breadth));
@@ -77,7 +88,7 @@ namespace Avir.Magic
             var c = caster.Map.GetComponent<MapComponent_Auras>();
             if (c == null) return;
             int now = Find.TickManager.TicksGame;
-            MapComponent_Auras.Aura old = c.all.FirstOrDefault(a => a.caster == caster && a.el == el && a.combo == k);
+            MapComponent_Auras.Aura old = c.all.FirstOrDefault(a => !a.beam && a.caster == caster && a.el == el && a.combo == k);
             if (old != null && old.spell != null && old.spell == Spell)
             {
                 // a further circle of the same spell: the aura widens - and strikes more rarely for it
@@ -104,8 +115,48 @@ namespace Avir.Magic
             Hediff_LivingAura.Show(caster);
         }
 
+        /// <summary>The streaming beam (the author's concept): a Beam with an Anchor of its own is not one stroke - it holds
+        /// on its target and strikes along the line again every second, four times for each Anchor, each at half strength;
+        /// it breaks when the target falls, goes out of sight or out of reach, or the caster falls. A healing thread so
+        /// written is a stream of healing.</summary>
+        public const int BeamInterval = 60, BeamPerAnchor = 4;
+
+        public static void NoteBeam(Pawn caster, RitualSchema part, ComboKind k, RuneDef el, float power, LocalTargetInfo target)
+        {
+            if (Pulsing || caster?.Map == null || part?.rings == null || !target.IsValid) return;
+            var runes = part.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
+            if (!runes.Any(x => x.kind == RuneKind.Beam) || runes.Any(x => x.kind == RuneKind.Aura || x.kind == RuneKind.Step)) return;
+            SpellMods.Own(part, RuneKind.Beam, out _, out _, out int anchor, out _);
+            // the Anchor must be the beam's own (written after it), not the whole circle's
+            SpellMods.Own(part, (RuneKind)(-1), out _, out _, out int wide, out _);   // no rune of that kind: the circle-wide only
+            anchor -= wide;
+            if (anchor <= 0) return;
+            var c = caster.Map.GetComponent<MapComponent_Auras>();
+            if (c == null) return;
+            c.all.RemoveAll(a => a.beam && a.caster == caster);
+            var b = new MapComponent_Auras.Aura
+            {
+                caster = caster, el = el, combo = k, spell = Spell, beam = true, target = target, left = BeamPerAnchor * anchor,
+                power = power, interval = BeamInterval, shaped = SpellSculpt.Active, aid = SpellSculpt.Allies
+            };
+            b.parts.Add(part.Copy());
+            b.next = Find.TickManager.TicksGame + b.interval;
+            c.all.Add(b);
+            if (caster.Spawned) MoteMaker.ThrowText(caster.DrawPos, caster.Map, "Stream", 2f);
+        }
+
+        public static bool BeamHolds(MapComponent_Auras.Aura a)
+        {
+            if (!a.beam) return true;
+            LocalTargetInfo t = a.target;
+            if (t.HasThing && (t.Thing.Destroyed || !t.Thing.Spawned || t.Thing.Map != a.caster.Map || (t.Thing is Pawn tp && tp.Dead))) return false;
+            IntVec3 at = t.Cell;
+            if (!at.InBounds(a.caster.Map) || a.caster.Position.DistanceTo(at) > 40f) return false;
+            return GenSight.LineOfSight(a.caster.Position, at, a.caster.Map, true);
+        }
+
         /// <summary>The living aura round this pawn, if any.</summary>
-        public static MapComponent_Auras.Aura Of(Pawn p) => p?.MapHeld?.GetComponent<MapComponent_Auras>()?.all.FirstOrDefault(a => a.caster == p);
+        public static MapComponent_Auras.Aura Of(Pawn p) => p?.MapHeld?.GetComponent<MapComponent_Auras>()?.all.FirstOrDefault(a => a.caster == p && !a.beam);
 
         public static Color ColorOf(MapComponent_Auras.Aura a) =>
             a == null ? Color.white : a.combo != ComboKind.None ? Combos.ColorOf(a.combo) : a.el != null ? a.el.color : Color.white;
@@ -175,6 +226,9 @@ namespace Avir.Magic
             public int breadth, left, interval, next;
             public float power, radius;
             public bool shaped, aid;
+            /// <summary>A streaming beam: it holds on its target instead of standing round the caster.</summary>
+            public bool beam;
+            public LocalTargetInfo target;
             public float flash;   // when it last struck (real time), for the flare of the ring
             public float seed = Rand.Range(0f, 360f);
         }
@@ -204,7 +258,7 @@ namespace Avir.Magic
             float t = Time.realtimeSinceStartup;
             foreach (Aura a in all)
             {
-                if (a.caster == null || !a.caster.Spawned) continue;
+                if (a.caster == null || !a.caster.Spawned || a.beam) continue;
                 Vector3 pos = a.caster.DrawPos;
                 pos.y = AltitudeLayer.MoteLow.AltitudeFor();
                 // breathing gently; it flares as it strikes
@@ -225,11 +279,11 @@ namespace Avir.Magic
         {
             if (all.Count == 0) return;
             int now = Find.TickManager.TicksGame;
-            all.RemoveAll(a => a.left <= 0 || a.caster == null || a.caster.Dead || a.caster.Downed || !a.caster.Spawned || a.caster.Map != map);
+            all.RemoveAll(a => a.left <= 0 || a.caster == null || a.caster.Dead || a.caster.Downed || !a.caster.Spawned || a.caster.Map != map || !SpellAura.BeamHolds(a));
             for (int i = all.Count - 1; i >= 0; i--)
             {
                 Aura a = all[i];
-                if (now % 30 == 0) Glow(a, 3);
+                if (now % 30 == 0 && !a.beam) Glow(a, 3);
                 if (now < a.next) continue;
                 a.next = now + a.interval;
                 a.left--;
@@ -237,33 +291,38 @@ namespace Avir.Magic
             }
         }
 
-        /// <summary>The fire that stays round the caster: embers on its edge.</summary>
+        /// <summary>What stays round the caster shows on its edge: embers of fire (and of magma, of haze); spray, dust,
+        /// wind of the others, in their colour.</summary>
         private void Glow(Aura a, int n)
         {
             Vector3 c = a.caster.DrawPos;
+            bool fiery = a.combo == ComboKind.Magma || a.combo == ComboKind.Haze || (a.combo == ComboKind.None && a.el?.kind == RuneKind.Fire);
+            Color col = SpellAura.ColorOf(a); col.a = 0.5f;
             for (int i = 0; i < n; i++)
             {
                 float ang = Rand.Range(0f, 360f) * Mathf.Deg2Rad;
                 Vector3 p = c + new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang)) * a.radius * Rand.Range(0.85f, 1f);
-                if (p.ToIntVec3().InBounds(map)) FleckMaker.ThrowFireGlow(p, map, 0.6f);
+                if (!p.ToIntVec3().InBounds(map)) continue;
+                if (fiery) FleckMaker.ThrowFireGlow(p, map, 0.6f);
+                else FleckMaker.ThrowDustPuffThick(p, map, 0.7f, col);
             }
         }
 
         private void Pulse(Aura a)
         {
-            Glow(a, 12);
+            if (!a.beam) Glow(a, 12);
             a.flash = Time.realtimeSinceStartup;
             bool keep = SpellAura.Pulsing; float keepR = SpellAura.PulseRadius;
             SpellAura.Pulsing = true; SpellAura.PulseRadius = a.radius;
-            using (SpellAura.InField())
+            using (SpellAura.InField(!a.beam))   // a stream is a blow thrown, not a field
             try
             {
-                using (SpellWards.Of(a.combo == ComboKind.None ? a.el?.kind : null, a.combo, false))   // a field round the caster, not a blow thrown: it meets wards as the ground does
+                using (SpellWards.Of(a.combo == ComboKind.None ? a.el?.kind : null, a.combo, a.beam))   // a field round the caster, not a blow thrown: it meets wards as the ground does
                 using (a.shaped ? SpellSculpt.Spare(a.aid) : null)
                     foreach (RitualSchema part in a.parts)
                     {
                         if (a.caster.Dead || !a.caster.Spawned) break;
-                        SpellDash.CastPart(a.caster, part.Copy(), a.combo, a.el, new LocalTargetInfo(a.caster.Position), a.power * SpellAura.PulseShare);
+                        SpellDash.CastPart(a.caster, part.Copy(), a.combo, a.el, a.beam ? a.target : new LocalTargetInfo(a.caster.Position), a.power * SpellAura.PulseShare);
                     }
             }
             catch (System.Exception e) { Log.ErrorOnce("[Avir] living aura: " + e, 0x5A17A0); a.left = 0; }

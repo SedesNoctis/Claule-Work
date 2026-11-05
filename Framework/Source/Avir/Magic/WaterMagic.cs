@@ -46,11 +46,19 @@ namespace Avir.Magic
                 {
                     case RuneKind.Aura:
                         // the tide: a field of mist round the mage for a while; its verbs work at once, then again and again
+                        if (SpellAura.Living(s, r.elements.FirstOrDefault(), ComboKind.None, out float wr))
+                        {
+                            using (SpellWards.Of(RuneKind.Water, ComboKind.None, false))
+                            using (SpellAura.InField())
+                                Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, wr), caster.Position, power, rf);
+                            break;
+                        }
                         Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, fradius + 1.5f), caster.Position, power, rf);
                         MapComponent_Tides.Raise(caster, fradius + 1.5f, power, verbs);
                         break;
                     case RuneKind.Beam:
                         var line = FireMagic.Beam(caster.Position, at, map, rf.breadth);
+                        SpellHeal.Beam(caster, s, line, map, power, rf);
                         Apply(caster, map, verbs, line, caster.Position, power, rf);
                         break;
                     case RuneKind.Shape:
@@ -77,7 +85,7 @@ namespace Avir.Magic
                         if (verbs.Count > 0) Apply(caster, map, verbs, path, at, power, rf);
                         break;
                     case RuneKind.Restore:
-                        Wash(caster, at, map, Mathf.Max(0.9f, fradius - 1f), power);
+                        Wash(caster, at, map, Mathf.Max(0.9f, fradius - 1f), power * SpellHeal.WidthShare(rf.breadth));
                         { var hv = SpellHeal.Carried(s, forms, verbs); if (hv.Count > 0) Apply(caster, map, hv, FireMagic.Point(at, map, fradius), at, power, rf); }
                         break;
                     case RuneKind.Enchant: Enchant(caster, at, map, power); break;
@@ -496,12 +504,14 @@ namespace Avir.Magic
 
         /// <summary>A foe's spell flying into a dome meets it by the ward's rules (SpellWards.Meets): put out at the cost
         /// of charge, or through it. A dome that is only a picture stops nothing.</summary>
-        public bool Quench(IntVec3 c, Pawn caster, RuneKind[] inc, float power)
+        public bool Quench(IntVec3 c, Pawn caster, RuneKind[] inc, ref float power)
         {
             int now = Find.TickManager.TicksGame;
             Dome d = domes.LastOrDefault(x => x.zone && x.until > now && caster != null && x.owner != null && caster.Faction != null && x.owner.HostileTo(caster.Faction) && (c - x.at).LengthHorizontal <= x.radius);
             if (d == null) return false;
-            return SpellWards.Meets(d, inc, power, map, c, out _);
+            bool stop = SpellWards.Meets(d, inc, power, map, c, out float boost);
+            if (!stop && boost < 1f) power *= boost;   // its own element is strengthened on landing, not here
+            return stop;
         }
 
         private static readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();

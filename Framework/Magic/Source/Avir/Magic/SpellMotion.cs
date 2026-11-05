@@ -135,6 +135,7 @@ namespace Avir.Magic
             if (caster == null || caster.Dead) return;
             // an Aura with an Anchor lives on round the caster and strikes again (Магия-правила.md, "Аура")
             SpellAura.Note(caster, part, k, el, power);
+            SpellAura.NoteBeam(caster, part, k, el, power, target);
             RitualReading r = RitualEvaluator.Read(part);
             int keepAmp = SpellDepth.Amplify; IntVec3 keepHeart = SpellDepth.Heart; float keepReach = SpellDepth.Reach, keepStone = SpellDepth.Stone;
             SpellDepth.Amplify = SpellMods.Strict ? SpellMods.WideAmplify(part) : r.amplify;

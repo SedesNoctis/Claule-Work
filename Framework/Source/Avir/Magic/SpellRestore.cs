@@ -23,17 +23,27 @@ namespace Avir.Magic
             MagicFx.Give(p, def, Mathf.RoundToInt(GenDate.TicksPerHour * Mathf.Clamp(2f * power, 1f, 8f)));
         }
 
+        /// <summary>How much strength one cast of earth gives back to things in all (the author: one geomancer must not
+        /// raise a whole base from splinters): 150 x power, spent on the most worn first.</summary>
+        public const float BudgetPerPower = 150f;
+
         /// <summary>Earth makes whole what lies and stands in its reach: a share of each thing's strength comes back,
-        /// the most worn first; the stone does not mend the living (that is the tending) nor the wild ground.</summary>
+        /// the most worn first, until the cast's strength is spent; the stone does not mend the living (that is the
+        /// tending) nor the wild ground.</summary>
         public static int Repair(Map map, IEnumerable<IntVec3> cells, float power)
         {
             float share = Mathf.Clamp(0.15f + 0.1f * power, 0.1f, 0.6f);
+            float budget = BudgetPerPower * power;
             int n = 0;
-            foreach (Thing t in cells.Where(c => c.InBounds(map)).SelectMany(c => c.GetThingList(map)).Distinct().ToList())
+            var worn = cells.Where(c => c.InBounds(map)).SelectMany(c => c.GetThingList(map)).Distinct()
+                .Where(t => !(t is Pawn) && !(t is Plant) && !(t is Filth) && t.def.useHitPoints && t.HitPoints < t.MaxHitPoints && !(t is Building b0 && b0.Faction == null))
+                .OrderBy(t => t.HitPoints / (float)t.MaxHitPoints).ToList();
+            foreach (Thing t in worn)
             {
-                if (t is Pawn || t is Plant || t is Filth || !t.def.useHitPoints || t.HitPoints >= t.MaxHitPoints) continue;
-                if (t is Building b && b.Faction == null) continue;
-                t.HitPoints = Mathf.Min(t.MaxHitPoints, t.HitPoints + Mathf.Max(1, Mathf.RoundToInt(t.MaxHitPoints * share)));
+                if (budget < 1f) break;
+                int give = Mathf.Min(t.MaxHitPoints - t.HitPoints, Mathf.Max(1, Mathf.RoundToInt(t.MaxHitPoints * share)), Mathf.FloorToInt(budget));
+                budget -= give;
+                t.HitPoints += give;
                 if (t.Spawned) { FleckMaker.ThrowDustPuffThick(t.DrawPos, map, 0.8f, MagicFx.EarthDust); }
                 n++;
             }

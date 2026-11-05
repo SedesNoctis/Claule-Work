@@ -135,7 +135,7 @@ namespace Avir.Magic
         public bool shared;
         /// <summary>Experience in each element (MageClass), and the points of the path not spent yet.</summary>
         public Dictionary<RuneKind, float> xp = new Dictionary<RuneKind, float>();
-        public int points;
+        public int points, reservePoints;
         private float dayAcc;
 
         public void Note(string text)
@@ -150,7 +150,7 @@ namespace Avir.Magic
         /// <summary>The core's calm reserve - not a ceiling: Arcana can be held past it, and then greatness grows.
         /// A sorcerer's reserve is half again as deep. Each level of the core deepens it by a quarter of the first (MageClass: the level grows from experience now -
         /// a whole first reserve per level would make a grandmaster's tenfold).</summary>
-        public float Capacity => 100f * (1f + 0.25f * (level - 1)) * MagicConductors.CapacityFactor(pawn) * (Sorcerer ? 1.5f : 1f);
+        public float Capacity => 100f * (1f + 0.25f * (level - 1) + ArcanaIntake.PerPoint * reservePoints) * MagicConductors.CapacityFactor(pawn) * (Sorcerer ? 1.5f : 1f);
         public float Fill => Capacity <= 0f ? 0f : arcana / Capacity;
 
         public float Composure => pawn.GetStatValue(RitualDefOf.Avir_Composure);
@@ -192,6 +192,7 @@ namespace Avir.Magic
             Scribe_Values.Look(ref shared, "shared");
             Scribe_Collections.Look(ref xp, "xp", LookMode.Value, LookMode.Value);
             Scribe_Values.Look(ref points, "points");
+            Scribe_Values.Look(ref reservePoints, "reservePoints");
             Scribe_Values.Look(ref dayAcc, "dayAcc");
             if (log == null) log = new List<string>();
             if (xp == null) xp = new Dictionary<RuneKind, float>();
@@ -266,6 +267,29 @@ namespace Avir.Magic
             foreach (Gizmo g in base.GetGizmos()) yield return g;
             if (!AvirMagic.On || pawn.Faction != Faction.OfPlayer) yield break;
             if (Find.Selector.NumSelected == 1) yield return new Gizmo_Arcana { core = this };
+            {
+                float held = ArcanaIntake.Held(pawn);
+                var draw = new Command_Action
+                {
+                    defaultLabel = "Draw from artifacts",
+                    defaultDesc = "Take the charge of the artifacts worn back into the core - half of it comes as Arcana. "
+                        + (ArcanaIntake.Avir(pawn) ? "The core fills to its edge; the rest goes into the essence." : "Only up to the edge of the reserve: what is past it stays in the artifacts.")
+                        + "\nHeld in the artifacts now: " + held.ToString("0") + " (" + (held * ArcanaIntake.FromArtifact).ToString("0") + " Arcana).",
+                    icon = ContentFinder<Texture2D>.Get("UI/Magic/ArcanaMage", false) ?? BaseContent.BadTex,
+                    action = () => { float g = ArcanaIntake.Absorb(pawn); Messages.Message(pawn.LabelShortCap + " drew " + g.ToString("0") + " Arcana from the artifacts.", pawn, MessageTypeDefOf.NeutralEvent, false); }
+                };
+                if (held < 1f) draw.Disable("No charge in the artifacts worn.");
+                else if (!ArcanaIntake.Avir(pawn) && arcana >= Capacity) draw.Disable("The reserve is full.");
+                yield return draw;
+            }
+            if (pawn.MapHeld?.GetComponent<MapComponent_Auras>()?.all.Any(a => a.beam && a.caster == pawn) == true)
+                yield return new Command_Action
+                {
+                    defaultLabel = "Break off the stream",
+                    defaultDesc = "Let the streaming beam go before its strokes are spent.",
+                    icon = ContentFinder<Texture2D>.Get("UI/Designators/Cancel", false) ?? BaseContent.BadTex,
+                    action = () => pawn.MapHeld.GetComponent<MapComponent_Auras>().all.RemoveAll(a => a.beam && a.caster == pawn)
+                };
             if (SpellCasting.Busy(pawn))
                 yield return new Command_Action
                 {
@@ -920,6 +944,11 @@ namespace Avir.Magic
                 Spell("TEST Healing burst (water: Release + Thread + Restore)", "Water:Release,Thread,Restore"),
                 Spell("TEST Heal own, then blast foes (two circles)", "Fire:Release,Thread,Restore|Barrier,Barrier,Thread", "Fire:Release|Barrier,Barrier"),
                 Spell("TEST Gentle lift (air: Lift + Thread + Restore)", "Air:Lift,Thread,Restore"),
+                Spell("TEST Healing thread (water: Beam + Thread + Restore)", "Water:Beam,Thread,Restore"),
+                Spell("TEST Streaming beam of fire (Beam + Anchor)", "Fire:Beam,Anchor|Release"),
+                Spell("TEST Stream of healing (Beam + Anchor + Thread + Restore, own only)", "Water:Beam,Anchor,Thread,Restore|Barrier,Barrier,Thread"),
+                Spell("TEST Living aura of water (spares own)", "Water:Aura,Anchor|Release|Barrier,Barrier"),
+                Spell("TEST Living aura of storm", "Water:Aura,Anchor|Release|Barrier,Barrier", "Air:Aura,Anchor|Release|Barrier,Barrier"),
                 Spell("TEST Built wrong: heal and blast own (Aid on the whole circle)", "Water:Release,Thread,Restore,Release|Barrier,Barrier,Thread"),
                 Spell("TEST Restoration of earth (mends things too)", "Earth:Restore,Breadth"),
                 Spell("TEST Restoration of air (second wind)", "Air:Restore"),
@@ -1022,7 +1051,7 @@ namespace Avir.Magic
             // beside a lit sanctuary: three times as fast, drawn from its store
             CompSanctuary s = CompSanctuary.Near(p);
             if (s != null) add += s.Draw(add * 2f);
-            c.Add(add);
+            ArcanaIntake.Take(c, add);
         }
     }
 }

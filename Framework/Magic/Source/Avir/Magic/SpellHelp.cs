@@ -80,6 +80,15 @@ namespace Avir.Magic
                 if (nAid > 0) e0.Add("Turned to its own", "Two Barriers and a Thread in the outermost section of a circle turn its blow to the caster's own people - the caster among them - and past the foes; "
                     + (1f - SpellSculpt.Keeps).ToStringPercent() + " weaker for it. For mending, warding and strengthening one's own from the circle.");
                 foreach (var w in SpellHeal.Warnings(s)) e0.Add(w.Key, w.Value);
+                bool healThread = s.weave != null ? s.weave.Working.Any(k => SpellHeal.BeamTied(k.AsSchema())) : SpellHeal.BeamTied(s);
+                if (healThread) e0.Add("Healing thread", "A Beam with a Thread and Restoration right after it: the beam itself mends whoever it passes through - by the circle's rule of whom. Thinner with its Breadth.");
+                bool stream = (s.weave != null ? s.weave.Working.Select(k => k.AsSchema()) : new[] { s }).Any(k =>
+                {
+                    if (k?.rings == null || !k.rings.SelectMany(g => g.runes).Any(x => x != null && x.kind == RuneKind.Beam)) return false;
+                    SpellMods.Own(k, RuneKind.Beam, out _, out _, out int an, out _); SpellMods.Own(k, (RuneKind)(-1), out _, out _, out int wa, out _);
+                    return an - wa > 0;
+                });
+                if (stream) e0.Add("Streaming beam", "An Anchor on the Beam: it holds on its target and strikes along the line every second, " + SpellAura.BeamPerAnchor + " times for each Anchor, each at half strength. It breaks when the target falls, goes out of sight or past 40 cells, or the caster falls.");
                 if (SpellHeal.Turns(s)) e0.Add("Turned to mending", "A verb, a Thread right after it and Restoration right after the Thread tie that verb to the mending: on the living its blow heals instead of wounding - a release becomes a burst of healing, a lift lifts gently. "
                     + "It sets nothing alight, breaks nothing, knocks no one down. Machines have no life to mend and take it as a blow. Only that verb is turned; the others, and the other circles, strike as written. Whom it reaches is the circle's rule: everyone; with Selective Protection, foes; with Selective Aid, one's own.");
                 if (SpellMods.Strict && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Where(x => x.role == RuneRole.Verb).GroupBy(x => x.kind).Any(g => g.Count() > 1)))

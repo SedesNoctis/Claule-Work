@@ -57,7 +57,7 @@ namespace Avir.Magic
                             Apply(caster, map, verbs, Point(caster.Position, map, ar), caster.Position, power, rf, true);
                         break;
                     case RuneKind.Beam:
-                        Apply(caster, map, verbs, Beam(caster.Position, at, map, rf.breadth), at, power, rf, false);
+                        { var fl = Beam(caster.Position, at, map, rf.breadth); SpellHeal.Beam(caster, s, fl, map, power, rf); Apply(caster, map, verbs, fl, at, power, rf, false); }
                         break;
                     case RuneKind.Shape:
                         Apply(caster, map, verbs, ShapeCells(caster, at, map, rf, forms), at, power, rf, false);
@@ -70,7 +70,7 @@ namespace Avir.Magic
                         Apply(caster, map, verbs.Count > 0 ? verbs : new List<RuneDef> { RuneDefOfFire.Hold }, path, at, power, rf, false);
                         break;
                     case RuneKind.Restore:
-                        Cauterize(caster, at, map, fradius, power, verbs);
+                        Cauterize(caster, at, map, fradius, power * SpellHeal.WidthShare(rf.breadth), verbs);
                         // the healing turn: the verbs tied to the mending strike, and their blow heals (SpellHeal)
                         { var hv = SpellHeal.Carried(s, forms, verbs); if (hv.Count > 0) Apply(caster, map, hv, Point(at, map, fradius), at, power, rf, false); }
                         break;

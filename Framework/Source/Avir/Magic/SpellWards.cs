@@ -196,6 +196,8 @@ namespace Avir.Magic
                 if (map != null) MoteMaker.ThrowText(at.ToVector3Shifted(), map, steam ? "Put out - steam" : "Spell put out", 3f);
                 return true;
             }
+            // too strong: the ward breaks - and what it held is taken off the spell, which goes on weaker
+            boost = Mathf.Clamp01(1f - d.Energy / Mathf.Max(0.01f, need));
             d.Fall("Ward broken");
             return false;
         }
@@ -478,7 +480,7 @@ namespace Avir.Magic
         internal static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Explosion, object[]> of = new System.Runtime.CompilerServices.ConditionalWeakTable<Explosion, object[]>();
         public static void Postfix(Explosion __instance)
         {
-            if (SpellWards.AtWork) of.Add(__instance, new object[] { SpellWards.element, SpellWards.combo, SpellWards.direct, SpellAura.Field, SpellHeal.Active });
+            if (SpellWards.AtWork) of.Add(__instance, new object[] { SpellWards.element, SpellWards.combo, SpellWards.direct, SpellAura.Field, SpellHeal.Active ? SpellHeal.CurShare : 0f });
         }
     }
 
@@ -488,7 +490,7 @@ namespace Avir.Magic
         public static void Prefix(Explosion __instance, out IDisposable[] __state)
         {
             __state = Patch_SpellWardsBlastBorn.of.TryGetValue(__instance, out object[] e)
-                ? new[] { SpellWards.Of((RuneKind?)e[0], (ComboKind)e[1], (bool)e[2]), SpellAura.InField(e.Length > 3 && (bool)e[3]), SpellHeal.In(e.Length > 4 && (bool)e[4]) } : null;
+                ? new[] { SpellWards.Of((RuneKind?)e[0], (ComboKind)e[1], (bool)e[2]), SpellAura.InField(e.Length > 3 && (bool)e[3]), SpellHeal.In(e.Length > 4 && (float)e[4] > 0f, e.Length > 4 ? (float)e[4] : 1f) } : null;
         }
         public static void Postfix(IDisposable[] __state) { if (__state != null) for (int i = __state.Length - 1; i >= 0; i--) __state[i]?.Dispose(); }
     }

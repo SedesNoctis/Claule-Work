@@ -126,7 +126,16 @@ namespace Avir.Magic
             GUI.color = Ink; Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(r.x, r.y, r.width, 34f), "The path of " + pawn.LabelShort);
             Text.Font = GameFont.Small; GUI.color = InkSoft;
-            Widgets.Label(new Rect(r.x, r.y + 40f, r.width, r.height - 40f), core == null ? "No arcane core." : MageClass.Explain(core));
+            Widgets.Label(new Rect(r.x, r.y + 40f, r.width, r.height - 90f), core == null ? "No arcane core." : MageClass.Explain(core));
+            if (core == null) return;
+            GUI.color = Color.white;
+            Rect b = new Rect(r.x, r.yMax - 40f, 320f, 34f);
+            if (core.points > 0)
+            {
+                if (Widgets.ButtonText(b, "Put a point into the reserve (+" + (100f * ArcanaIntake.PerPoint).ToString("0") + "%)")) ArcanaIntake.Invest(core);
+            }
+            else { GUI.color = InkSoft; Widgets.Label(b, "No free point of the path."); }
+            if (core.reservePoints > 0) { GUI.color = InkSoft; Widgets.Label(new Rect(b.xMax + 12f, b.y + 7f, r.width - b.width - 12f, 24f), "In the reserve: " + core.reservePoints + " point(s)."); }
         }
 
         private void DrawMage(Rect r, Hediff_ArcaneCore core)

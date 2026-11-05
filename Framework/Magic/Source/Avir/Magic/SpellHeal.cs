@@ -25,8 +25,20 @@ namespace Avir.Magic
         private static int at = -1, depth;
         public static bool Active => Now || depth > 0;
 
-        private sealed class Scope : IDisposable { public void Dispose() { if (depth > 0) depth--; } }
-        public static IDisposable In(bool on) { if (!on) return null; depth++; return new Scope(); }
+        /// <summary>The wider the mending, the thinner it is spread (the author, Fix105): x1 / (1 + 0.5 per Breadth) - one
+        /// Breadth two thirds, two a half, four a third. Set with the tied verb (SpellMods.Verb).</summary>
+        public static float WidthShare(float breadth) => 1f / (1f + 0.5f * Mathf.Max(0f, breadth));
+        public static float Share = 1f;
+        private static float shareIn = 1f;
+        public static float CurShare => depth > 0 ? shareIn : Share;
+
+        private sealed class Scope : IDisposable
+        {
+            private readonly float keep;
+            public Scope(float keep) { this.keep = keep; }
+            public void Dispose() { if (depth > 0) depth--; shareIn = keep; }
+        }
+        public static IDisposable In(bool on, float share = 1f) { if (!on) return null; depth++; var s = new Scope(shareIn); shareIn = share; return s; }
 
         /// <summary>The verbs of this circle tied to the mending: each followed (its own modifiers between allowed) by a
         /// Thread, and that Thread at once by Restoration.</summary>
@@ -138,6 +150,32 @@ namespace Avir.Magic
 
         public static bool Living(Pawn p) => p != null && !p.Dead && p.RaceProps.IsFlesh;
 
+        /// <summary>The healing thread (the author's concept): a Beam with a Thread right after it and Restoration right
+        /// after the Thread - the beam itself is tied to the mending, and whoever it passes through is healed (whom - by the
+        /// circle's rule, as any blow). Its verbs are its own business: tied, they heal; plain, they strike.</summary>
+        public static bool BeamTied(RitualSchema s)
+        {
+            if (s?.rings == null) return false;
+            List<RuneDef> seq = s.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
+            for (int i = 0; i + 2 < seq.Count; i++)
+                if (seq[i].kind == RuneKind.Beam && seq[i + 1].kind == RuneKind.Thread && seq[i + 2].kind == RuneKind.Restore) return true;
+            return false;
+        }
+
+        /// <summary>The healing thread along its line: a mending of 8 x power on everyone it reaches, spread thinner with
+        /// its Breadth.</summary>
+        public static void Beam(Pawn caster, RitualSchema s, List<IntVec3> line, Map map, float power, RitualReading rf)
+        {
+            if (!BeamTied(s) || line == null) return;
+            float share = WidthShare(rf?.breadth ?? 0);
+            foreach (Pawn p in line.Where(c => c.InBounds(map)).SelectMany(c => c.GetThingList(map).OfType<Pawn>()).Distinct().ToList())
+            {
+                if (!Living(p) || !MagicFx.Foe(p, caster)) continue;
+                using (In(true, share)) Mend(p, 8f * power / 0.7f);
+            }
+            foreach (IntVec3 c in line) if (c.InBounds(map) && Rand.Chance(0.35f)) FleckMaker.ThrowMetaIcon(c, map, FleckDefOf.HealingCross);
+        }
+
         /// <summary>Is this body under a turned blow just now - to be spared every harm of it?</summary>
         public static bool Spares(Pawn p) => Active && SpellWards.AtWork && Living(p);
 
@@ -145,7 +183,7 @@ namespace Avir.Magic
         public static void Mend(Pawn p, float amount)
         {
             if (!Living(p) || amount <= 0f) return;
-            float left = amount * 0.7f;
+            float left = amount * 0.7f * CurShare;
             foreach (Hediff_Injury inj in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => !i.IsPermanent()).OrderByDescending(i => i.Severity).ToList())
             {
                 if (left <= 0.01f) break;

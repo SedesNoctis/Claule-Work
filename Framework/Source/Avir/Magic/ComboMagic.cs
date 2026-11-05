@@ -216,11 +216,19 @@ namespace Avir.Magic
                 switch (f.kind)
                 {
                     case RuneKind.Aura:
+                        if (SpellAura.Living(s, null, k, out float cr))
+                        {
+                            using (SpellWards.Of(null, k, false))
+                            using (SpellAura.InField())
+                                Apply(k, caster, map, verbs, FireMagic.Point(caster.Position, map, cr), caster.Position, power, rf);
+                            break;
+                        }
                         Apply(k, caster, map, verbs, FireMagic.Point(caster.Position, map, fr + 1.5f), caster.Position, power, rf);
                         MapComponent_ComboFields.Raise(map, k, caster, caster.Position, fr + 1.5f, power, Mathf.RoundToInt(2500f * power), true);
                         break;
                     case RuneKind.Beam:
                         var line = FireMagic.Beam(caster.Position, at, map, rf.breadth);
+                        SpellHeal.Beam(caster, s, line, map, power, rf);
                         Beam(k, caster, map, line, power, rf);
                         Apply(k, caster, map, verbs, line, caster.Position, power, rf);
                         break;
@@ -244,7 +252,7 @@ namespace Avir.Magic
                         SpellDash.Travel(caster, at, k, power);
                         break;
                     case RuneKind.Restore:
-                        Restore(k, caster, map, FireMagic.Point(at, map, Mathf.Max(0.9f, fr - 1f)), power);
+                        Restore(k, caster, map, FireMagic.Point(at, map, Mathf.Max(0.9f, fr - 1f)), power * SpellHeal.WidthShare(rf.breadth));
                         { var hv = SpellHeal.Carried(s, forms, verbs); if (hv.Count > 0) Apply(k, caster, map, hv, FireMagic.Point(at, map, fr), at, power, rf); }
                         break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, ComboDefOf.Enchant(k)); break;

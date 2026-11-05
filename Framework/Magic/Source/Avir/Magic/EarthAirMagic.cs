@@ -40,12 +40,20 @@ namespace Avir.Magic
                 switch (f.kind)
                 {
                     case RuneKind.Aura:
+                        if (SpellAura.Living(s, r.elements.FirstOrDefault(), ComboKind.None, out float lr))
+                        {
+                            using (SpellWards.Of(RuneKind.Earth, ComboKind.None, false))
+                            using (SpellAura.InField())
+                                Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, lr), caster.Position, power, rf);
+                            break;
+                        }
                         Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, fradius + 1.5f), caster.Position, power, rf);
                         MapComponent_Tides.Raise(caster, fradius + 1.5f, power, verbs, RuneKind.Earth);
                         break;
                     case RuneKind.Beam:
                         // a fissure runs along the line: the ground cracks under whoever stands on it
                         var line = FireMagic.Beam(caster.Position, at, map, rf.breadth);
+                        SpellHeal.Beam(caster, s, line, map, power, rf);
                         foreach (IntVec3 c in line) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.4f, MagicFx.EarthDust);
                         foreach (Pawn p in MagicFx.PawnsIn(line, map)) if (MagicFx.Foe(p, caster)) MagicFx.Fell(p, p.Position, 0, map, caster, power, Mathf.RoundToInt(80f * power));
                         Apply(caster, map, verbs, line, caster.Position, power, rf);
@@ -71,16 +79,19 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Restore:
                         // earth makes whole the things in its reach, too: tools, walls, furniture
-                        SpellRestore.Repair(map, FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)), power);
+                    {
+                        float rp = power * SpellHeal.WidthShare(rf.breadth);
+                        SpellRestore.Repair(map, FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)), rp);
                         foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)), map))
                         {
                             if (p.HostileTo(caster)) continue;
-                            foreach (Hediff_Injury inj in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => !i.IsTended()).Take(6).ToList()) inj.Tended(Mathf.Clamp01(0.4f + 0.15f * power), 1f);
-                            MagicFx.Give(p, EarthAirDefOf.Avir_StoneSkin, Mathf.RoundToInt(GenDate.TicksPerHour * power));
+                            foreach (Hediff_Injury inj in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => !i.IsTended()).Take(6).ToList()) inj.Tended(Mathf.Clamp01(0.4f + 0.15f * rp), 1f);
+                            MagicFx.Give(p, EarthAirDefOf.Avir_StoneSkin, Mathf.RoundToInt(GenDate.TicksPerHour * rp));
                             FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 1.2f, MagicFx.EarthDust);
                         }
                         { var hv = SpellHeal.Carried(s, forms, verbs); if (hv.Count > 0) Apply(caster, map, hv, FireMagic.Point(at, map, fradius), at, power, rf); }
                         break;
+                    }
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, EarthAirDefOf.Avir_EarthEnchant); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
                     case RuneKind.Sense: SpellSense.Begin(caster, map, at, 35f + 10f * rf.reach, power, RuneKind.Earth, ComboKind.None, rf.anchor); break;
@@ -217,6 +228,13 @@ namespace Avir.Magic
                 switch (f.kind)
                 {
                     case RuneKind.Aura:
+                        if (SpellAura.Living(s, r.elements.FirstOrDefault(), ComboKind.None, out float lr))
+                        {
+                            using (SpellWards.Of(RuneKind.Air, ComboKind.None, false))
+                            using (SpellAura.InField())
+                                Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, lr), caster.Position, power, rf);
+                            break;
+                        }
                         Apply(caster, map, verbs, FireMagic.Point(caster.Position, map, fradius + 1.5f), caster.Position, power, rf);
                         MapComponent_Tides.Raise(caster, fradius + 1.5f, power, verbs, RuneKind.Air);
                         break;
@@ -224,6 +242,7 @@ namespace Avir.Magic
                         // a chained strike: it hits the first foe on the line and leaps on to the next, and the next -
                         // the wind's blow; in a storm (water with it) a bolt of lightning
                         var line = FireMagic.Beam(caster.Position, at, map, rf.breadth);
+                        SpellHeal.Beam(caster, s, line, map, power, rf);
                         Chain(caster, line, map, 1 + rf.breadth + rf.amplify, power, Storm);
                         Apply(caster, map, verbs, line, caster.Position, power, rf);
                         break;
@@ -239,16 +258,17 @@ namespace Avir.Magic
                         if (rf.thread > 0) SpellDash.Pull(caster, target, RuneKind.Air, power, fradius); else SpellDash.Carry(caster, at, RuneKind.Air, power, verbs, rf);
                         break;
                     case RuneKind.Restore:
-                        // a second wind: breath back, tiredness lifted
+                        // a second wind: breath back, tiredness lifted - the wider, the thinner
+                        float ap = power * SpellHeal.WidthShare(rf.breadth);
                         foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)), map))
                         {
                             if (p.HostileTo(caster)) continue;
-                            if (p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Min(1f, p.needs.rest.CurLevel + 0.25f * power);
+                            if (p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Min(1f, p.needs.rest.CurLevel + 0.25f * ap);
                             foreach (Hediff h in p.health.hediffSet.hediffs.Where(x => x.def == EarthAirDefOf.Avir_Breathless || x.def == EarthAirDefOf.Avir_Winded).ToList()) p.health.RemoveHediff(h);
                             Hediff tox = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.ToxicBuildup);
-                            if (tox != null) { tox.Severity -= 0.1f * power; if (tox.Severity <= 0f) p.health.RemoveHediff(tox); }
+                            if (tox != null) { tox.Severity -= 0.1f * ap; if (tox.Severity <= 0f) p.health.RemoveHediff(tox); }
                             // air's gift: the chest opens, the head clears
-                            SpellRestore.Gift(p, SpellRestore.SecondWind, power);
+                            SpellRestore.Gift(p, SpellRestore.SecondWind, ap);
                             FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 1.2f, MagicFx.AirDust);
                         }
                         { var hv = SpellHeal.Carried(s, forms, verbs); if (hv.Count > 0) Apply(caster, map, hv, FireMagic.Point(at, map, fradius), at, power, rf); }

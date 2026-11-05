@@ -54,10 +54,11 @@ namespace Avir.Magic
     /// the spell back.</summary>
     public static class Ward
     {
-        public static bool Quench(IntVec3 c, Map map, Pawn caster, RitualSchema spell, float power)
+        /// <summary>True - the spell is put out here. A ward too weak breaks, and the spell flies on weaker by what it held.</summary>
+        public static bool Quench(IntVec3 c, Map map, Pawn caster, RitualSchema spell, ref float power)
         {
             if (map == null || !c.InBounds(map)) return false;
-            if (map.GetComponent<MapComponent_WardsDrawn>()?.Quench(c, caster, Elements(spell), power) == true) return true;
+            if (map.GetComponent<MapComponent_WardsDrawn>()?.Quench(c, caster, Elements(spell), ref power) == true) return true;
             foreach (Pawn p in c.GetThingList(map).OfType<Pawn>())
             {
                 // the caster's own side is flown over, as any shot is; a foe's ward stands in the way
@@ -73,6 +74,7 @@ namespace Avir.Magic
                 }
                 float need = 12f * power;
                 if (w.energy >= need) { w.Spend(need); Spark(p, map, "Spell put out"); return true; }
+                power *= Mathf.Clamp01(1f - w.energy / Mathf.Max(0.01f, need));
                 w.Fall("Ward broken");
                 return false;
             }
@@ -139,7 +141,7 @@ namespace Avir.Magic
             base.TickInterval(delta);
             if (!Spawned) return;
             // a ward in its way puts it out: the spell is spent, the ward is gone, nothing passes and nothing grows
-            if (Position != mage?.Position && Ward.Quench(Position, Map, mage, spell, power)) { Destroy(); return; }
+            if (Position != mage?.Position && Ward.Quench(Position, Map, mage, spell, ref power)) { Destroy(); return; }
             // a trail behind it, of its own element: embers for fire, spray for water, a faint haze of its colour for the rest
             RuneDef el = spell != null ? Spells.Element(spell) : null;
             if (!this.IsHashIntervalTick(Beam ? 1 : 2, delta)) return;

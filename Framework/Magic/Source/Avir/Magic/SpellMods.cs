@@ -73,6 +73,7 @@ namespace Avir.Magic
             RitualReading c = VerbCore(r, v);
             // the healing turn: verb + Thread + Restoration turns this verb's blow to healing (SpellHeal)
             SpellHeal.Now = SpellHeal.Tied(v);
+            if (SpellHeal.Now && c != null) SpellHeal.Share = SpellHeal.WidthShare(c.breadth + (c.schema?.echoBreadth ?? 0f));
             // strict modifiers (the author's rule, on trial): the depth of the blow is this verb's own, not the circle's
             if (Strict && c != null && SpellWards.AtWork) SpellDepth.Amplify = c.amplify;
             return c;
