@@ -1,0 +1,243 @@
+using System;
+using System.Collections.Generic;
+using RimWorld;
+using Verse;
+
+namespace Avir
+{
+    /// <summary>
+    /// Tuning for the pair bond, kept on the gene so it can be changed without a compile.
+    ///
+    /// THE ACQUAINTANCE THRESHOLD IS THE REASON THIS EXISTS. Thirty days is the intended figure and
+    /// thirty days is close to untestable by hand - Maximus would have to sit through a month of
+    /// game time for every single check. It ships at ONE so the behaviour can be exercised in an
+    /// afternoon, and moving it back is editing one number in XML.
+    /// </summary>
+    public class AvirPairBondExtension : DefModExtension
+    {
+        /// <summary>
+        /// How long two pawns must have known each other before either will court the other.
+        ///
+        /// SHIPPED AT 1 FOR TESTING. The design value is 30.
+        /// </summary>
+        public float daysBeforeRomance = 1f;
+
+        /// <summary>Days at the full weight of grief before it settles to the permanent floor.</summary>
+        public float griefAcuteDays = 15f;
+    }
+
+    [DefOf]
+    public static class AvirPairBondDefOf
+    {
+        public static GeneDef Avir_PairBond;
+
+        /// <summary>Carried by anyone an Avir has already driven off. They do not try twice.</summary>
+        public static HediffDef Avir_RomanceRebuffed;
+
+        /// <summary>The permanent grief. Two stages: acute, then the floor it never leaves.</summary>
+        public static HediffDef Avir_BondSevered;
+
+        static AvirPairBondDefOf()
+        {
+            DefOfHelper.EnsureInitializedInCtor(typeof(AvirPairBondDefOf));
+        }
+    }
+
+    /// <summary>
+    /// WHO AN AVIR WILL COURT, AND WHAT HAPPENS TO ANYONE WHO GETS IT WRONG.
+    ///
+    /// The rules Maximus specified, stated once here so that the romance patch, the bond formation
+    /// and the fidelity lock cannot drift apart:
+    ///
+    ///   - AN AVIR WILL NOT COURT A STRANGER. Below the acquaintance threshold there is no
+    ///     courtship, in either direction, at any odds.
+    ///   - PAST THE THRESHOLD, BETWEEN TWO FREE PAWNS, IT ALWAYS WORKS. Not a high chance. A
+    ///     certainty. An Avir that has decided is not refused.
+    ///   - ONCE BONDED, NEVER AGAIN. No second courtship is attempted, ever, under any
+    ///     circumstance.
+    ///   - COURT ONE WRONGLY AND YOU ARE ATTACKED. By the Avir, and by its mate as well if it has
+    ///     one. The attacker learns: nobody who has been driven off ever tries again.
+    ///
+    /// WHY THAT LAST RULE MAKES THE REST COHERENT. Two Avir past the threshold have a certainty, so
+    /// they never fail and therefore never fight each other. An outsider, who almost never clears
+    /// the threshold, is the only one who can trip it. The violence is not a random hazard - it is
+    /// the exact price of approaching this species as if it were another.
+    /// </summary>
+    public static class AvirPairBond
+    {
+        private static TraitDef splinterHearted;
+        private static bool splinterResolved;
+
+        /// <summary>
+        /// SPLINTER-HEARTED: THE ONE AVIR THE BOND DOES NOT HOLD.
+        ///
+        /// The trait already existed and already said this: "wants more than one mate anyway, and
+        /// has never managed to want otherwise no matter how the Circle looks at her for it." What
+        /// it did not do was make the rules let go of her.
+        ///
+        /// She is exempt from every restriction this system imposes on HER OWN behaviour - she
+        /// courts strangers, she courts while bonded, she can bond more than once, and losing a
+        /// mate does not end her. She is not exempt from anybody ELSE'S restrictions: a proper Avir
+        /// she approaches still refuses her, still fights her for it, and still holds the -40 that
+        /// every Fearborn already holds about her kind.
+        ///
+        /// That asymmetry is the whole character of the trait. The species does not stop being what
+        /// it is because one of them cannot manage it; she simply spends her life throwing herself
+        /// at a wall that everyone else finds load-bearing.
+        /// </summary>
+        public static bool IsSplinterHearted(Pawn pawn)
+        {
+            if (!splinterResolved)
+            {
+                splinterResolved = true;
+                splinterHearted = DefDatabase<TraitDef>.GetNamedSilentFail("Avir_ManyMated");
+            }
+
+            if (splinterHearted == null || pawn?.story?.traits == null) return false;
+            return pawn.story.traits.HasTrait(splinterHearted);
+        }
+
+        /// <summary>
+        /// Whether the bond's rules apply to this pawn at all.
+        ///
+        /// The gene is what makes an Avir bond for life; the splinter-hearted trait is what stops
+        /// that being true of one particular Avir. Everything downstream asks this rather than the
+        /// gene directly, so the exemption cannot be forgotten in one place and honoured in another.
+        /// </summary>
+        public static bool HasBondGene(Pawn pawn)
+        {
+            if (pawn?.genes == null || AvirPairBondDefOf.Avir_PairBond == null) return false;
+            if (!pawn.genes.HasActiveGene(AvirPairBondDefOf.Avir_PairBond)) return false;
+
+            return !IsSplinterHearted(pawn);
+        }
+
+        private static AvirPairBondExtension Settings
+        {
+            get
+            {
+                GeneDef def = AvirPairBondDefOf.Avir_PairBond;
+                AvirPairBondExtension ext = def?.GetModExtension<AvirPairBondExtension>();
+                return ext ?? DefaultSettings;
+            }
+        }
+
+        private static readonly AvirPairBondExtension DefaultSettings = new AvirPairBondExtension();
+
+        public static float DaysBeforeRomance => Settings.daysBeforeRomance;
+        public static float GriefAcuteDays => Settings.griefAcuteDays;
+
+        /// <summary>
+        /// Already spoken for. Checked through the love-partner relations rather than through our
+        /// own bookkeeping, so a bond formed before this system existed - or by another mod - still
+        /// counts as taken.
+        /// </summary>
+        public static bool IsBonded(Pawn pawn)
+        {
+            if (pawn?.relations == null) return false;
+            // allowDead: false. A widow is not "already spoken for" - she is exactly the pawn the
+            // fidelity rule has to keep from being courted again, and counting her as taken here
+            // would let the courtship checks treat her as unavailable for the wrong reason.
+            // Her refusal comes from the grief hediff and from never initiating, not from this.
+            return LovePartnerRelationUtility.HasAnyLovePartner(pawn, false);
+        }
+
+        /// <summary>
+        /// Has this Avir already lost the one they bonded to? Then there is no second one.
+        /// </summary>
+        public static bool HasLostAMate(Pawn pawn)
+        {
+            if (pawn?.health?.hediffSet == null || AvirPairBondDefOf.Avir_BondSevered == null)
+            {
+                return false;
+            }
+
+            return pawn.health.hediffSet.HasHediff(AvirPairBondDefOf.Avir_BondSevered);
+        }
+
+        /// <summary>
+        /// Has this pawn already been driven off by an Avir? They never try again.
+        /// </summary>
+        public static bool WasRebuffed(Pawn pawn)
+        {
+            if (pawn?.health?.hediffSet == null || AvirPairBondDefOf.Avir_RomanceRebuffed == null)
+            {
+                return false;
+            }
+
+            return pawn.health.hediffSet.HasHediff(AvirPairBondDefOf.Avir_RomanceRebuffed);
+        }
+
+        /// <summary>
+        /// Whether a courtship between these two is permitted at all.
+        ///
+        /// Evaluated for the PAIR rather than the initiator: the rule is about the Avir, and it
+        /// holds whichever of the two happens to speak first.
+        /// </summary>
+        public static bool CourtshipAllowed(Pawn a, Pawn b)
+        {
+            if (a == null || b == null || a == b) return false;
+
+            // Anyone already driven off is finished with the species.
+            if (WasRebuffed(a) || WasRebuffed(b)) return false;
+
+            bool aBond = HasBondGene(a);
+            bool bBond = HasBondGene(b);
+
+            // Neither carries the gene. Not our business at all.
+            if (!aBond && !bBond) return true;
+
+            // A bonded Avir is not available, and that is the end of it.
+            if (aBond && IsBonded(a)) return false;
+            if (bBond && IsBonded(b)) return false;
+
+            // AND NEITHER IS A WIDOW. This is the hole the fidelity rule would otherwise have:
+            // once the partner is dead, HasAnyLovePartner goes false and the Avir looks free again,
+            // so a suitor could court her thirty days later and she would accept with certainty.
+            //
+            // "Never bonds with anyone else, under any circumstance" has to include the
+            // circumstance where the first one is gone - that IS the circumstance. The grief
+            // hediff is permanent precisely so that it can carry this refusal for the rest of her
+            // life.
+            if (aBond && HasLostAMate(a)) return false;
+            if (bBond && HasLostAMate(b)) return false;
+
+            // Chicks do not court.
+            if (a.DevelopmentalStage.Juvenile() || b.DevelopmentalStage.Juvenile()) return false;
+
+            return KnownLongEnough(a, b);
+        }
+
+        public static bool KnownLongEnough(Pawn a, Pawn b)
+        {
+            int ticks = AvirAcquaintance.TicksKnown(a, b);
+            if (ticks < 0) return false;
+
+            return ticks >= Mathf_DaysToTicks(DaysBeforeRomance);
+        }
+
+        private static int Mathf_DaysToTicks(float days)
+        {
+            return (int)(days * 60000f);
+        }
+
+        /// <summary>
+        /// Everyone who should come at the one who tried it: the Avir, and its mate if it has one.
+        ///
+        /// The mate is included even when the mate is not an Avir. Maximus's rule is that BOTH
+        /// partners answer, and a bond that only one side defends is not the bond being described.
+        /// </summary>
+        public static List<Pawn> DefendersOf(Pawn avir)
+        {
+            List<Pawn> defenders = new List<Pawn> { avir };
+
+            Pawn mate = LovePartnerRelationUtility.ExistingMostLikedLovePartner(avir, false);
+            if (mate != null && mate.Spawned && !mate.Dead && mate.Map == avir.Map)
+            {
+                defenders.Add(mate);
+            }
+
+            return defenders;
+        }
+    }
+}

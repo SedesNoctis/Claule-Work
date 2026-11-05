@@ -1,0 +1,224 @@
+using System.Collections.Generic;
+using System.Reflection;
+using HarmonyLib;
+using RimWorld;
+using Verse;
+
+namespace Avir
+{
+    /// <summary>
+    /// Makes pawns with the Avir_ClutchLaying gene lay a clutch (2 eggs @66%, 3 @33%) instead
+    /// of one, on top of Alpha Genes' oviparous gene.
+    ///
+    /// Hooks VEF's VEF.Genes.HediffComp_HumanEggLayer.LayEgg entirely by reflection - no
+    /// compile-time reference to VEF - and self-guards: if VEF isn't loaded, or the gene isn't
+    /// present, it does nothing. Only fertilized eggs are cloned. Each clone copies the laid
+    /// egg's CompHumanHatcher state (parents/faction), and since VEF rolls the baby's genes at
+    /// hatch time, every egg hatches its own properly-inherited child.
+    /// </summary>
+    [StaticConstructorOnStartup]
+    public static class ClutchLayingPatch
+    {
+        private const string HumanLayerType  = "VEF.Genes.HediffComp_HumanEggLayer";
+        private const string HatcherCompType = "VEF.Genes.CompHumanHatcher";
+        private const string GeneDefName     = "Avir_EggLaying";   // clutch merged into egg laying
+
+        private static GeneDef clutchGene;
+        private static bool geneResolved;
+
+        static ClutchLayingPatch()
+        {
+            System.Type layerType = AccessTools.TypeByName(HumanLayerType);
+            if (layerType == null)
+            {
+                return; // VEF (or this VEF version) not present -> no-op.
+            }
+
+            MethodInfo lay = AccessTools.Method(layerType, "LayEgg")
+                             ?? AccessTools.Method(layerType, "ProduceEgg");
+            if (lay == null)
+            {
+                Log.Warning("[Avir] Could not find the human egg-lay method on " + HumanLayerType + "; clutch gene inactive.");
+                return;
+            }
+
+            new Harmony("avir.clutchlaying").Patch(lay,
+                prefix:  new HarmonyMethod(typeof(ClutchLayingPatch), nameof(LayPrefix)),
+                postfix: new HarmonyMethod(typeof(ClutchLayingPatch), nameof(LayPostfix)));
+        }
+
+        private static GeneDef ClutchGene
+        {
+            get
+            {
+                if (!geneResolved)
+                {
+                    geneResolved = true;
+                    clutchGene = DefDatabase<GeneDef>.GetNamedSilentFail(GeneDefName);
+                }
+                return clutchGene;
+            }
+        }
+
+        // Before laying: if this pawn has the gene, snapshot fertilized eggs already around it.
+        public static void LayPrefix(HediffComp __instance, ref List<Thing> __state)
+        {
+            __state = null;
+
+            Pawn pawn = __instance != null ? __instance.Pawn : null;
+            if (pawn == null || !pawn.Spawned || pawn.Map == null)
+            {
+                return;
+            }
+            if (ClutchGene == null || pawn.genes == null || !pawn.genes.HasActiveGene(ClutchGene))
+            {
+                return;
+            }
+
+            ThingDef fert = FertilizedDefOf(__instance);
+            if (fert == null)
+            {
+                return;
+            }
+            __state = SnapshotEggs(pawn, fert);
+        }
+
+        // After laying: any newly-present fertilized egg gets cloned up to the clutch size.
+        public static void LayPostfix(HediffComp __instance, List<Thing> __state)
+        {
+            if (__state == null)
+            {
+                return; // prefix bailed (no gene / not applicable)
+            }
+
+            Pawn pawn = __instance != null ? __instance.Pawn : null;
+            if (pawn == null || !pawn.Spawned || pawn.Map == null)
+            {
+                return;
+            }
+
+            ThingDef fert = FertilizedDefOf(__instance);
+            if (fert == null)
+            {
+                return;
+            }
+
+            List<Thing> after = SnapshotEggs(pawn, fert);
+            for (int i = 0; i < after.Count; i++)
+            {
+                Thing egg = after[i];
+                if (__state.Contains(egg))
+                {
+                    continue; // already there before laying
+                }
+
+                int desiredTotal = Rand.Chance(0.33f) ? 3 : 2; // 33% three, 66% two
+                // CASTES: the egg just laid is the first - the elder; the last is the younger; a clutch of
+                // three has a middle egg, the central. The mother knows which is which, so it is written now.
+                // The clutch is remembered as one: a chick that hatches alone misses the ones that did not.
+                int clutch = GameComponent_AvirClutch.Instance != null ? GameComponent_AvirClutch.Instance.NewClutch(desiredTotal) : 0;
+                CompAvirEggCaste.Mark(egg, AvirCaste.Elder);
+                CompAvirEggCaste.SetClutch(egg, clutch);
+                for (int k = 0; k < desiredTotal - 1; k++)       // one was just laid
+                {
+                    Thing clone = SpawnClone(egg, pawn.Map);
+                    CompAvirEggCaste.Mark(clone, k == desiredTotal - 2 ? AvirCaste.Younger : AvirCaste.Central);
+                    CompAvirEggCaste.SetClutch(clone, clutch);
+                }
+            }
+        }
+
+        private static ThingDef FertilizedDefOf(HediffComp comp)
+        {
+            object props = comp != null ? comp.props : null;
+            if (props == null)
+            {
+                return null;
+            }
+            FieldInfo f = props.GetType().GetField("eggFertilizedDef",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            return f != null ? f.GetValue(props) as ThingDef : null;
+        }
+
+        private static List<Thing> SnapshotEggs(Pawn pawn, ThingDef fert)
+        {
+            List<Thing> found = new List<Thing>();
+            Map map = pawn.Map;
+
+            AddEggsAt(pawn.Position, map, fert, found);
+            for (int i = 0; i < GenAdj.AdjacentCells.Length; i++)
+            {
+                IntVec3 c = pawn.Position + GenAdj.AdjacentCells[i];
+                if (c.InBounds(map))
+                {
+                    AddEggsAt(c, map, fert, found);
+                }
+            }
+            return found;
+        }
+
+        private static void AddEggsAt(IntVec3 c, Map map, ThingDef fert, List<Thing> found)
+        {
+            List<Thing> list = c.GetThingList(map);
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].def == fert)
+                {
+                    found.Add(list[i]);
+                }
+            }
+        }
+
+        private static Thing SpawnClone(Thing srcEgg, Map map)
+        {
+            Thing copy = ThingMaker.MakeThing(srcEgg.def, srcEgg.Stuff);
+            copy.stackCount = 1;
+            CopyHatcher(srcEgg, copy);
+            GenPlace.TryPlaceThing(copy, srcEgg.Position, map, ThingPlaceMode.Near);
+            return copy;
+        }
+
+        // Copy the VEF hatcher's saved state (parents, faction, progress) from one egg to another.
+        // Skip only ThingComp.parent (each comp must point at its own egg).
+        private static void CopyHatcher(Thing src, Thing dst)
+        {
+            object srcComp = FindComp(src, HatcherCompType);
+            object dstComp = FindComp(dst, HatcherCompType);
+            if (srcComp == null || dstComp == null)
+            {
+                return;
+            }
+
+            FieldInfo[] fields = srcComp.GetType().GetFields(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo fi = fields[i];
+                if (fi.Name == "parent")
+                {
+                    continue;
+                }
+                try { fi.SetValue(dstComp, fi.GetValue(srcComp)); }
+                catch { /* ignore any field that won't copy cleanly */ }
+            }
+        }
+
+        private static object FindComp(Thing t, string typeName)
+        {
+            ThingWithComps twc = t as ThingWithComps;
+            if (twc == null)
+            {
+                return null;
+            }
+            List<ThingComp> comps = twc.AllComps;
+            for (int i = 0; i < comps.Count; i++)
+            {
+                if (comps[i].GetType().FullName == typeName)
+                {
+                    return comps[i];
+                }
+            }
+            return null;
+        }
+    }
+}

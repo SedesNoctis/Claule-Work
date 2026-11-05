@@ -1,0 +1,138 @@
+using System;
+using System.Reflection;
+using HarmonyLib;
+using RimWorld;
+using Verse;
+
+namespace Avir
+{
+    [DefOf]
+    public static class AvirEarlyHatchDefOf
+    {
+        public static GeneDef Avir_EarlyHatch;
+
+        static AvirEarlyHatchDefOf()
+        {
+            DefOfHelper.EnsureInitializedInCtor(typeof(AvirEarlyHatchDefOf));
+        }
+    }
+
+    /// <summary>
+    /// Avir hatchlings arrive finished. A newborn carrying Avir_EarlyHatch is advanced to 45 days
+    /// of BIOLOGICAL age at the moment of generation, while its CHRONOLOGICAL age stays at zero -
+    /// it is a genuine newborn that simply skips the helpless-infant stretch a human must crawl
+    /// through.
+    ///
+    /// This mirrors Big and Small's babyStartAge (which is measured in years - 45 days is 0.75)
+    /// but is implemented natively, so it needs no dependency and won't fight B&S if both are
+    /// present: the gene carries the BS_Maturity exclusion tag, so it can't stack with their
+    /// maturity genes.
+    /// </summary>
+    [HarmonyPatch(typeof(PawnGenerator), nameof(PawnGenerator.GeneratePawn), new Type[] { typeof(PawnGenerationRequest) })]
+    public static class Patch_AvirEarlyHatch
+    {
+        /// 45 days. RimWorld runs 60,000 ticks to a day.
+        public const int HatchAgeDays = 45;
+        private const long HatchAgeTicks = HatchAgeDays * 60000L;
+
+        /// A pawn younger than this is treated as freshly born.
+        private const float NewbornThresholdYears = 0.02f;
+
+        public static void Postfix(Pawn __result)
+        {
+            try
+            {
+                Pawn pawn = __result;
+                if (pawn == null || pawn.Dead || pawn.ageTracker == null || pawn.genes == null) return;
+                if (!pawn.genes.HasActiveGene(AvirEarlyHatchDefOf.Avir_EarlyHatch)) return;
+
+                // Only ever touch an actual newborn. A grown Avir generated normally is left alone.
+                if (pawn.ageTracker.AgeBiologicalYearsFloat >= NewbornThresholdYears) return;
+                if (pawn.ageTracker.AgeBiologicalTicks >= HatchAgeTicks) return;
+
+                pawn.ageTracker.AgeBiologicalTicks = HatchAgeTicks;
+                // Chronological age is deliberately NOT touched - the hatchling is still 0 days old.
+
+                RefreshLifeStage(pawn);
+                CoinFlipGender(pawn);
+            }
+            catch (Exception e)
+            {
+                Log.WarningOnce("[Avir] Early-hatch age adjustment failed: " + e, 0x4A51B7);
+            }
+        }
+
+        /// <summary>
+        /// AN HONEST COIN, BECAUSE SOMETHING UPSTREAM IS NOT TOSSING ONE.
+        ///
+        /// TWELVE EGGS, TWELVE MALES. That is one chance in 4096. Maximus reported it three times
+        /// across two clutches before this was written, and he was right every time - the first
+        /// time I told him it was probably coincidence, and it was not.
+        ///
+        /// WHAT I COULD AND COULD NOT ESTABLISH. Nothing in this mod assigns a gender at hatching.
+        /// The caste table in Patch_AvirGenderRequest maps Avir_Hatchling to Gender.None, which
+        /// means "not my decision", and it stands aside as designed. The egg is hatched by VEF,
+        /// which I do not have here to read.
+        ///
+        /// The likeliest explanation - and it stays a hypothesis, because I could not open the
+        /// code that would confirm it - is that VEF builds the chick from a template that carries
+        /// a gender, and the only template on hand is the father. One father, twelve sons.
+        ///
+        /// WHY THIS IS A COIN AND NOT A FIX TO THE CAUSE. The cause is in somebody else's mod.
+        /// Patch_AvirGenderRequest cannot reach it either: that patch only fills in a gender the
+        /// caller LEFT BLANK, and it must keep doing so - standing aside for a caller who demands
+        /// a specific gender is what stops raids collapsing when the game builds a father. Read
+        /// the long comment there before touching it. So the correction has to come after the
+        /// pawn exists, and this is the last point where that is safe.
+        ///
+        /// SAFE HERE, SPECIFICALLY. Rewriting gender after generation is dangerous in general -
+        /// the same file says so about parents - because family trees get built around it. A
+        /// just-hatched chick has no tree yet: it has a mother and a father, and neither of those
+        /// relations cares which sex the child is. Nothing else has looked at it yet.
+        ///
+        /// Runs AFTER the age fix on purpose, so the graphics refresh already queued below picks
+        /// up the new body type rather than needing a second one.
+        /// </summary>
+        private static void CoinFlipGender(Pawn pawn)
+        {
+            try
+            {
+                // A harpy's sex is decided by descent and Patch_AvirHarpyBirth owns that decision.
+                // This must not overrule it, so anything already carrying a harpy xenotype is left
+                // exactly as it is.
+                XenotypeDef xeno = pawn.genes.Xenotype;
+                if (xeno != null
+                    && (xeno == Patch_AvirHarpyBirth.Wild || xeno == Patch_AvirHarpyBirth.Calm))
+                {
+                    return;
+                }
+
+                Gender rolled = Rand.Bool ? Gender.Male : Gender.Female;
+                if (pawn.gender == rolled) return;
+
+                pawn.gender = rolled;
+
+                if (pawn.Drawer != null && pawn.Drawer.renderer != null)
+                {
+                    pawn.Drawer.renderer.SetAllGraphicsDirty();
+                }
+            }
+            catch (Exception e)
+            {
+                Log.WarningOnce("[Avir] hatchling gender coin flip failed: " + e, 0x4A51C3);
+            }
+        }
+
+        /// The life-stage index and body graphics are cached, so nudge them after moving the age.
+        private static void RefreshLifeStage(Pawn pawn)
+        {
+            MethodInfo recalc = AccessTools.Method(typeof(Pawn_AgeTracker), "RecalculateLifeStageIndex");
+            if (recalc != null) recalc.Invoke(pawn.ageTracker, null);
+
+            if (pawn.Drawer != null && pawn.Drawer.renderer != null)
+            {
+                pawn.Drawer.renderer.SetAllGraphicsDirty();
+            }
+        }
+    }
+}

@@ -1,0 +1,107 @@
+--- NorthPlants.orig.cs	2026-10-10 16:31:13.461377962 +0000
++++ avir/Avir/North/NorthPlants.cs	2026-10-10 16:31:13.497266440 +0000
+@@ -296,15 +296,75 @@
+             Scribe_Values.Look(ref groveCleared, "avirGroveCleared", false);
+         }
+ 
+-        /// <summary>What may grow under a shelter tree's canopy: small plants that live by night (or bear the shade) -
+-        /// no other trees, nothing that needs the day.</summary>
++        /// <summary>What may grow under a shelter tree's canopy. The wings let slivers of light through: enough for grass,
++        /// herbs, shrubs and the night plants, not enough for trees - only the glowing night trees (and the shelter
++        /// trees themselves) may stand under it. Other mods' grasses and herbs are allowed too: no flag needed.</summary>
+         public static bool AllowedUnderCanopy(ThingDef plant)
+         {
+             if (plant?.plant == null) return true;
+             if (typeof(Plant_ShelterTree).IsAssignableFrom(plant.thingClass)) return true;
++            if (!plant.plant.IsTree) return true;                           // grass, herbs, bushes, night plants
+             NorthPlant e = NorthPlant.Of(plant);
+-            if (plant.plant.IsTree) return e != null && e.nightGrowth;      // only the glowing night trees
+-            return e != null && (e.nightGrowth || e.shadeTolerant);
++            return e != null && e.nightGrowth;                              // only the glowing night trees
++        }
++
++        // ---------------------------------------------------------------- the undergrowth
++        /// <summary>Share of the canopy's cells that carries low plants (grass, herbs) when it is full.</summary>
++        private const float UndergrowthShare = 0.4f;
++
++        /// <summary>The biome's own low wild plants that may grow in the shade (weighted by the biome's commonality).</summary>
++        private List<ThingDef> UndergrowthPool()
++        {
++            var pool = new List<ThingDef>();
++            if (map.Biome == null) return pool;
++            foreach (ThingDef d in map.Biome.AllWildPlants)
++                if (d?.plant != null && !d.plant.IsTree && !d.plant.cavePlant && AllowedUnderCanopy(d) && map.Biome.CommonalityOfPlant(d) > 0f)
++                    pool.Add(d);
++            return pool;
++        }
++
++        private bool SpawnUndergrowth(IntVec3 c, List<ThingDef> pool, Plant_ShelterTree tree, float growth)
++        {
++            if (!c.InBounds(map) || (c - tree.Position).LengthHorizontal < 1.2f) return false;
++            ThingDef d = pool.RandomElementByWeight(x => map.Biome.CommonalityOfPlant(x));
++            if (c.GetPlant(map) != null || c.GetEdifice(map) != null || c.GetTerrain(map).IsWater) return false;
++            if (!d.CanEverPlantAt(c, map) || !PlantUtility.SnowAllowsPlanting(c, map)) return false;
++            Plant p = (Plant)ThingMaker.MakeThing(d);
++            p.Growth = growth;
++            GenSpawn.Spawn(p, c, map);
++            return true;
++        }
++
++        /// <summary>A new map: every grown shelter tree gets its undergrowth at once (grass and herbs in patches).</summary>
++        private void SeedUndergrowth(Plant_ShelterTree t, List<IntVec3> cells, List<ThingDef> pool)
++        {
++            if (pool.Count == 0) return;
++            int want = Mathf.RoundToInt(cells.Count * UndergrowthShare * Rand.Range(0.6f, 1f));
++            for (int k = 0; k < want * 3 && want > 0; k++)
++                if (SpawnUndergrowth(cells.RandomElement(), pool, t, Rand.Range(0.3f, 1f))) want--;
++        }
++
++        /// <summary>Now and then: a shelter tree whose canopy is thin gets a young plant under it (so the undergrowth also
++        /// returns after a fire, a grazing herd or on a map made before this was added).</summary>
++        private void Undergrow()
++        {
++            if (trees.Count == 0) return;
++            List<ThingDef> pool = UndergrowthPool();
++            if (pool.Count == 0) return;
++            foreach (Plant_ShelterTree t in trees)
++            {
++                if (!t.Spawned || !t.CastsShade) continue;
++                var cells = new List<IntVec3>(t.CanopyCells());
++                int low = 0;
++                foreach (IntVec3 c in cells)
++                {
++                    Plant p = c.GetPlant(map);
++                    if (p != null && !p.def.plant.IsTree) low++;
++                }
++                if (low >= cells.Count * UndergrowthShare) continue;
++                for (int k = 0; k < 6; k++)
++                    if (SpawnUndergrowth(cells.RandomElement(), pool, t, 0.05f)) break;
++            }
+         }
+ 
+         private bool PlantAt(IntVec3 c, string defName, Plant_ShelterTree tree, float minFromTrunk)
+@@ -332,11 +392,14 @@
+             // and the groves get their glow: night plants around every grown shelter tree, now and then a night tree
+             string[] small = { "Avir_PlantRimebloom", "Avir_PlantMoonshard", "Avir_PlantStarbell", "Avir_PlantSnowbalm" };
+             string[] big = { "Avir_TreeFrostglass", "Avir_TreeRimecrown" };
++            List<ThingDef> pool = UndergrowthPool();
+             foreach (Plant_ShelterTree t in trees)
+             {
+-                if (!t.Spawned || !t.CastsShade || t.Shelter?.seasonalTexPath != null) continue;   // not the great one of the warm lands
+-                if (map.Biome?.workerClass != typeof(BiomeWorker_AvirNorth)) continue;
++                if (!t.Spawned || !t.CastsShade) continue;
+                 var cells = new List<IntVec3>(t.CanopyCells());
++                SeedUndergrowth(t, cells, pool);                                   // grass and herbs - the great one too
++                if (t.Shelter?.seasonalTexPath != null) continue;                  // the glow is for the northern groves
++                if (map.Biome?.workerClass != typeof(BiomeWorker_AvirNorth)) continue;
+                 int want = Rand.RangeInclusive(2, 4);
+                 for (int k = 0; k < 40 && want > 0; k++)
+                     if (PlantAt(cells.RandomElement(), small.RandomElement(), t, 1.2f)) want--;
+@@ -419,6 +482,7 @@
+             if (dirty) Rebuild();
+             if (!groveCleared && grove != null) { groveCleared = true; ClearUnderCanopies(); }
+             if (d != day || roofStale) { roofStale = false; SyncCanopyRoof(d); }
++            if (now % 1500 == 77) Undergrow();
+             if (d != day)
+             {
+                 day = d;

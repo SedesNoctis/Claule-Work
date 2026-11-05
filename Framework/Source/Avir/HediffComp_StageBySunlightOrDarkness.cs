@@ -1,0 +1,137 @@
+using System.Collections.Generic;
+using RimWorld;
+using Verse;
+
+namespace QuadrupedeGene
+{
+    /// <summary>
+    /// Shared test for "is the quadrupede gait currently engaged". Pulled out of the comp so
+    /// HediffComp_SensesByLight can drive the quadrupede hediff from its own tick pass without
+    /// duplicating the rule - see the comment there for why that pass was merged.
+    /// </summary>
+    public static class QuadrupedeStance
+    {
+        /// <summary>
+        /// Active exactly when any of the avian frame gene's conditional stat affecters
+        /// (in-sunlight / darkness) currently applies to this pawn. (The quadrupede gene was
+        /// merged into Avir_AvianFrame; the affecters moved with it.) The gene's own affecters
+        /// stay the single source of truth - nothing here re-implements what counts as sunlight
+        /// or as darkness, so this can never drift from what the gene actually grants.
+        /// </summary>
+        public static bool ShouldBeActive(Pawn pawn)
+        {
+            if (pawn == null || !pawn.Spawned || pawn.Map == null)
+            {
+                return false;
+            }
+
+            List<ConditionalStatAffecter> affecters = QuadrupedeDefOf.Avir_AvianFrame?.conditionalStatAffecters;
+            if (affecters == null)
+            {
+                return false;
+            }
+
+            StatRequest req = StatRequest.For(pawn);
+            for (int i = 0; i < affecters.Count; i++)
+            {
+                if (affecters[i] != null && affecters[i].Applies(req))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Flips the hediff between its "inactive" stage (severity 0.1) and its "active" stage
+    /// (severity 1.0) depending on whether the avian frame gene's own conditionalStatAffecters
+    /// (the Move-speed ones) currently apply. Crucially it never sets severity to 0, so the
+    /// hediff is never auto-removed and the penalty can always come back.
+    ///
+    /// NO LONGER ATTACHED TO QuadrupedeManipulationPenalty. That hediff's stage is now driven by
+    /// HediffComp_SensesByLight, which already ticks on every Avir - one comp doing two jobs
+    /// instead of two comps each paying their own CompPostTick call every tick. The class is kept
+    /// intact and working so the comp can be put back on any hediff that needs it standalone
+    /// (a pawn with the avian frame but no fearborn root, which the gene's own prerequisite
+    /// currently makes impossible).
+    /// </summary>
+    public class HediffCompProperties_StageBySunlightOrDarkness : HediffCompProperties
+    {
+        /// <summary>Severity used for the inactive stage. Must be > 0 so the hediff persists.</summary>
+        public float inactiveSeverity = 0.1f;
+
+        /// <summary>How often (in ticks) to re-check. Doesn't need to be every tick.</summary>
+        public int checkIntervalTicks = 120;
+
+        public HediffCompProperties_StageBySunlightOrDarkness()
+        {
+            compClass = typeof(HediffComp_StageBySunlightOrDarkness);
+        }
+    }
+
+    public class HediffComp_StageBySunlightOrDarkness : HediffComp
+    {
+        public HediffCompProperties_StageBySunlightOrDarkness Props =>
+            (HediffCompProperties_StageBySunlightOrDarkness)props;
+
+        // null = not yet checked; true/false = last applied state.
+        private bool? lastKnownActive;
+
+        // Hysteresis: a changed reading waits for the next check to agree with it before being
+        // committed, so a pawn crossing a lit doorway doesn't write severity twice for nothing.
+        private int pending = -1; // -1 none, 0 inactive, 1 active
+
+        public override void CompPostTick(ref float severityAdjustment)
+        {
+            base.CompPostTick(ref severityAdjustment);
+
+            // Cheapest possible gate FIRST: on the ~119 of every 120 ticks where this comp does
+            // nothing, we pay only a modulo and return - no Props-driven work, no stat lookups.
+            // Staggered per-pawn so carriers don't all recompute on the same tick.
+            Pawn pawn = parent.pawn;
+            if (pawn == null || pawn.Dead)
+            {
+                return;
+            }
+
+            int interval = Props.checkIntervalTicks > 0 ? Props.checkIntervalTicks : 120;
+            if ((Find.TickManager.TicksGame + pawn.thingIDNumber) % interval != 0)
+            {
+                return;
+            }
+
+            bool shouldBeActive = QuadrupedeStance.ShouldBeActive(pawn);
+            int reading = shouldBeActive ? 1 : 0;
+
+            if (lastKnownActive.HasValue && lastKnownActive.Value == shouldBeActive)
+            {
+                pending = -1;
+                return;
+            }
+
+            // First evaluation commits at once; later changes must be confirmed by a second
+            // consecutive check before the severity write happens.
+            if (lastKnownActive.HasValue && pending != reading)
+            {
+                pending = reading;
+                return;
+            }
+
+            pending = -1;
+            lastKnownActive = shouldBeActive;
+
+            // Active -> stage 1 (on all fours). Inactive -> stage 0, but NEVER 0 severity,
+            // or RimWorld would delete the hediff and it could never reactivate.
+            float inactive = Props.inactiveSeverity > 0f ? Props.inactiveSeverity : 0.1f;
+            parent.Severity = shouldBeActive ? 1f : inactive;
+        }
+
+        public override void CompExposeData()
+        {
+            base.CompExposeData();
+            Scribe_Values.Look(ref lastKnownActive, "stageBySunlightOrDarknessActive", null);
+        }
+    }
+}

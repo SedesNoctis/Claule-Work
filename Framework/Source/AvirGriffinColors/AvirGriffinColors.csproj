@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+
+  <PropertyGroup>
+    <!-- Your RimWorld Managed folder (unchanged). -->
+    <RimWorldManaged>D:\SteamNew\steamapps\common\RimWorld\RimWorldWin64_Data\Managed</RimWorldManaged>
+    <!-- Path to 0Harmony.dll, from the Harmony mod. Same one Avir.csproj uses. -->
+    <HarmonyDll>D:\SteamNew\steamapps\workshop\content\294100\2009463077\1.6\Assemblies\0Harmony.dll</HarmonyDll>
+    <!-- Path to Anthrosonae.dll. The mod folder itself has no flat Assemblies\ -
+         it's under the version-specific 1.6\Assemblies\ subfolder. -->
+    <AnthrosonaeDll>D:\SteamNew\steamapps\workshop\content\294100\2902258418\1.6\Assemblies\Anthrosonae.dll</AnthrosonaeDll>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <RootNamespace>AvirColors</RootNamespace>
+    <AssemblyName>AvirGriffinColors</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <LangVersion>latest</LangVersion>
+    <OutputPath>..\..\Compat\Anthrosonae\Assemblies\</OutputPath>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <Optimize>true</Optimize>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(RimWorldManaged)\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(RimWorldManaged)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(RimWorldManaged)\UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <!-- Needed by anything that draws UI: GUIContent, GUI, GUIStyle all live here, and
+         Widgets.Label/FillableBar resolve through them. -->
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(RimWorldManaged)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(RimWorldManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(HarmonyDll)</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <!-- Anthrosonae itself - we subclass FurColorDef and patch FurGene. -->
+    <Reference Include="Anthrosonae">
+      <HintPath>$(AnthrosonaeDll)</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+
+  <!-- Auto-include every .cs file in this folder (and subfolders), so the list never has to be
+       maintained by hand again. obj/ and bin/ are excluded so generated files don't sneak in. -->
+  <ItemGroup>
+    <Compile Include="**\*.cs" Exclude="obj\**\*.cs;bin\**\*.cs" />
+  </ItemGroup>
+
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

@@ -1,0 +1,60 @@
+using HarmonyLib;
+using rjw;
+using Verse;
+
+namespace AvirRJW
+{
+    // Intercept RJW's adders. For a MALE with the gene, we assign our set and skip RJW's own
+    // (so no vanilla part stacks). For females (and non-gene pawns) we let RJW proceed normally.
+
+    [HarmonyPatch(typeof(SexPartAdder), nameof(SexPartAdder.add_genitals))]
+    public static class Patch_add_genitals
+    {
+        public static bool Prefix(Pawn pawn)
+        {
+            bool take = pawn?.genes != null && pawn.gender == Gender.Male
+                        && AvirRjwDefOf.Avir_Anatomy != null
+                        && pawn.genes.HasActiveGene(AvirRjwDefOf.Avir_Anatomy);
+            Log.Message($"[AvirRJW] add_genitals prefix {pawn?.LabelShort} gender={pawn?.gender} take={take}");
+            if (take)
+            {
+                RjwPartEnforcer.EnforceMaleGenitals(pawn);
+                return false;
+            }
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(SexPartAdder), nameof(SexPartAdder.add_breasts))]
+    public static class Patch_add_breasts
+    {
+        public static bool Prefix(Pawn pawn)
+        {
+            bool take = pawn?.genes != null && pawn.gender == Gender.Male
+                        && AvirRjwDefOf.Avir_Anatomy != null
+                        && pawn.genes.HasActiveGene(AvirRjwDefOf.Avir_Anatomy);
+            Log.Message($"[AvirRJW] add_breasts prefix {pawn?.LabelShort} gender={pawn?.gender} take={take}");
+            if (take)
+            {
+                RjwPartEnforcer.EnforceMaleChest(pawn);
+                return false;
+            }
+            return true;
+        }
+    }
+
+    // Safety net: reconcile again after a full sexualization pass (idempotent).
+    [HarmonyPatch(typeof(Sexualizer), nameof(Sexualizer.sexualize_pawn))]
+    public static class Patch_Sexualizer_sexualize_pawn
+    {
+        public static void Postfix(Pawn pawn)
+        {
+            if (pawn == null || pawn.genes == null) return;
+            if (AvirRjwDefOf.Avir_Anatomy != null && pawn.genes.HasActiveGene(AvirRjwDefOf.Avir_Anatomy))
+            {
+                Log.Message($"[AvirRJW] sexualize_pawn postfix {pawn.LabelShort} gender={pawn.gender}");
+                RjwPartEnforcer.EnforceAvir(pawn);
+            }
+        }
+    }
+}

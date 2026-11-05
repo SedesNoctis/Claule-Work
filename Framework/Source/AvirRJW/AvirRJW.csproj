@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- RimWorld 1.7 (Waylith engine, .NET 10). SDK-style replacement for the old net48 / Unity project.
+       Unity DLLs are gone: UnityStubs.dll and Waylith.dll take their place. -->
+
+  <PropertyGroup>
+    <!-- EDIT: the folder that holds Assembly-CSharp.dll, UnityStubs.dll and Waylith.dll (the game's own). -->
+    <RimWorldAssemblies>D:\SteamNew\steamapps\common\RimWorld</RimWorldAssemblies>
+    <!-- EDIT: Harmony 3 (the 1.7 folder of the Harmony mod). -->
+    <HarmonyDll>D:\SteamNew\steamapps\workshop\content\294100\2009463077\1.7\Assemblies\0Harmony.dll</HarmonyDll>
+    <!-- EDIT: RJW.dll for 1.7 -->
+    <RjwDll>D:\SteamNew\steamapps\common\RimWorld\Mods\rjw-master\1.7\Assemblies\RJW.dll</RjwDll>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>AvirRJW</AssemblyName>
+    <RootNamespace>AvirRJW</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <OutputPath>..\..\Compat\RJW\Assemblies\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(RimWorldAssemblies)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityStubs">
+      <HintPath>$(RimWorldAssemblies)\UnityStubs.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Waylith">
+      <HintPath>$(RimWorldAssemblies)\Waylith.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(HarmonyDll)</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="RJW">
+      <HintPath>$(RjwDll)</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,60 @@
+using RimWorld;
+using Verse;
+
+namespace QuadrupedeGene
+{
+    [DefOf]
+    public static class QuadrupedeDefOf
+    {
+        public static GeneDef Quadrupede;
+        public static HediffDef QuadrupedeManipulationPenalty;
+
+        static QuadrupedeDefOf()
+        {
+            DefOfHelper.EnsureInitializedInCtor(typeof(QuadrupedeDefOf));
+        }
+    }
+
+    /// <summary>
+    /// Grants the QuadrupedeManipulationPenalty hediff the same reliable way the Flight
+    /// gene's hediff is granted: added from code when the gene is present, removed when the
+    /// gene is removed. The hediff then stays on the pawn permanently; its own comp only
+    /// switches it between the "inactive" and "active" stages, never deleting it.
+    /// </summary>
+    public class Gene_Quadrupede : Gene
+    {
+        public override void PostAdd()
+        {
+            base.PostAdd();
+            EnsureHediff();
+        }
+
+        public override void PostRemove()
+        {
+            base.PostRemove();
+            if (pawn?.health == null)
+            {
+                return;
+            }
+
+            Hediff existing = pawn.health.hediffSet.GetFirstHediffOfDef(QuadrupedeDefOf.QuadrupedeManipulationPenalty);
+            if (existing != null)
+            {
+                pawn.health.RemoveHediff(existing);
+            }
+        }
+
+        private void EnsureHediff()
+        {
+            if (pawn?.health == null)
+            {
+                return;
+            }
+
+            if (!pawn.health.hediffSet.HasHediff(QuadrupedeDefOf.QuadrupedeManipulationPenalty))
+            {
+                pawn.health.AddHediff(QuadrupedeDefOf.QuadrupedeManipulationPenalty);
+            }
+        }
+    }
+}
