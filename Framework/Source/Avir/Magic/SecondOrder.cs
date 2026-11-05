@@ -385,7 +385,7 @@ namespace Avir.Magic
                         MagicFx.Give(p, H(c.hold ? "Avir_SiltBound" : "Avir_Silted"), Ticks(c.hold ? 0.25f : 1f, c.power));
                         // silt in the action: a ranged weapon up to industrial make jams (not a spacer's, not ultratech)
                         ThingWithComps gun = p.equipment?.Primary;
-                        if (gun != null && gun.def.IsRangedWeapon && gun.def.techLevel <= TechLevel.Industrial) MagicFx.Give(p, H("Avir_SiltJammed"), Ticks(0.5f, c.power));
+                        if (Patch_SiltJams.Jams(gun?.def)) MagicFx.Give(p, H("Avir_SiltJammed"), Ticks(0.5f, c.power));
                     }
                     foreach (Building b in c.cells.Select(x => x.GetEdifice(c.map)).Where(b => b is Building_Turret).Distinct().ToList())
                         b.TakeDamage(new DamageInfo(DamageDefOf.EMP, 20f * c.power, 0f, -1f, by));
@@ -579,12 +579,20 @@ namespace Avir.Magic
     public static class Patch_SiltJams
     {
         private static HediffDef jam;
+        /// <summary>Silt jams an action, not a string: a firearm (a gun that shoots bullets) of industrial make or older.
+        /// Bows, crossbows, slings and thrown things have nothing for it to choke; spacer and ultratech arms shrug it off.</summary>
+        public static bool Jams(ThingDef d)
+        {
+            if (d == null || !d.IsRangedWeapon || d.techLevel > TechLevel.Industrial) return false;
+            DamageDef dmg = d.Verbs?.FirstOrDefault(v => !v.IsMeleeAttack)?.defaultProjectile?.projectile?.damageDef;
+            return dmg != null && (dmg == DamageDefOf.Bullet || dmg.defName.IndexOf("Bullet", System.StringComparison.OrdinalIgnoreCase) >= 0);
+        }
         public static void Postfix(Verb __instance, ref bool __result)
         {
             if (!__result || __instance?.verbProps == null || __instance.verbProps.IsMeleeAttack) return;
             Pawn p = __instance.CasterPawn;
             ThingWithComps gun = __instance.EquipmentSource;
-            if (p?.health?.hediffSet == null || gun == null || gun.def.techLevel > TechLevel.Industrial) return;
+            if (p?.health?.hediffSet == null || !Jams(gun?.def)) return;
             jam = jam ?? DefDatabase<HediffDef>.GetNamedSilentFail("Avir_SiltJammed");
             if (jam != null && p.health.hediffSet.HasHediff(jam)) __result = false;
         }
