@@ -213,6 +213,12 @@ namespace Avir
                 new StatPart_PsychicNature { asFactor = true, perStep = 0.015f, effectLabel = "Psychic nature (carry)" });
             InjectPsychicPart("MassCarryCapacity",
                 new StatPart_PsychicNature { asFactor = true, perStep = 0.015f, effectLabel = "Psychic nature (carry)" });
+            // Combat Extended keeps its own load: weight and bulk on the body (the author, Nov 2026: the Avir could haul
+            // more but still carry little on the map) - the same psychic nature lifts them too
+            InjectPsychicPart("CarryWeight",
+                new StatPart_PsychicNature { asFactor = true, perStep = 0.015f, effectLabel = "Psychic nature (carry weight)" });
+            InjectPsychicPart("CarryBulk",
+                new StatPart_PsychicNature { asFactor = true, perStep = 0.015f, effectLabel = "Psychic nature (carry bulk)" });
 
             // Global learning factor: +0.5% per step.
             InjectPsychicPart("GlobalLearningFactor",

@@ -199,7 +199,7 @@ namespace Avir.Magic
                 case RuneKind.Restore: e.main = "Cauterizes: bleeding wounds of friends at the target are seared shut, as if tended."; break;
                 case RuneKind.Enchant: e.main = "Sets a friend's weapon burning (the caster's, if no friend stands there): blows add flame, shots may set foes alight."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
-                case RuneKind.Sense: e.main = "The caster feels every warm body within " + (25 + 10 * r.reach) + " cells - through walls and darkness - for a while."; break;
+                case RuneKind.Sense: e.main = "The caster feels every warm body within " + (25 + 10 * r.reach) + " cells - through walls and darkness, the machines too, for they run hot - for a while."; break;
                 case RuneKind.Step: e.main = "The caster leaps to the target; along the way the fire " + (verbs.Count > 0 ? what : "stays held on the trail") + "."; break;
                 default:
                     if (verbs.Count == 0) { e.main = r.barrier > 0 ? "Aimed at someone - yourself or another - a ward of flame on them; aimed at the ground - a dome of flame there: whoever stands inside is warded, spells landing in it are put out." : "Fire with nothing to do: add a verb (release, hold, drain, lift, growth, purge) or a form."; break; }
@@ -243,7 +243,7 @@ namespace Avir.Magic
                 case RuneKind.Restore: e.main = "Washes the wounds of friends at the target and binds them - the bleeding stops."; break;
                 case RuneKind.Enchant: e.main = "Wraps a friend's weapon in water (the caster's, if no friend stands there): blows soak the foe, and every blow on a soaked one weakens them further."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
-                case RuneKind.Sense: e.main = "There is water in every living thing: the caster feels them all within " + (25 + 10 * r.reach) + " cells, through walls - the unseen too, a ripple where they stand."; break;
+                case RuneKind.Sense: e.main = "There is blood in every living thing: the caster feels them all within " + (25 + 10 * r.reach) + " cells, through walls (machines have none) - and what hides in the blood comes to light: hidden sicknesses, and a metalhorror inside a body."; break;
                 case RuneKind.Step: e.main = "The caster rides a wave to the target: it strikes whoever stands in its way and carries them on - wider and harder with breadth" + (verbs.Count > 0 ? "; and the water " + what : "") + "."; break;
                 case RuneKind.Shape: e.main = "The ground between two chosen points (up to " + FireMagic.WallMax(r) + " cells) turns to shallow water for a few hours: a moat - slow to cross, and fire will not burn there."; break;
                 default:
@@ -277,7 +277,7 @@ namespace Avir.Magic
                 case RuneKind.Restore: e.main = "Binds the wounds of friends at the target in stone, like splints, and covers them in stone skin for an hour."; break;
                 case RuneKind.Enchant: e.main = "Makes a friend's weapon heavy with stone (the caster's, if no friend stands there): blows hit harder and now and then knock the foe senseless."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
-                case RuneKind.Sense: e.main = "Every step is felt through the ground: the caster knows where everyone walks within " + (35 + 10 * r.reach) + " cells, even through walls and the unseen."; break;
+                case RuneKind.Sense: e.main = "Every step is felt through the ground: the caster knows where everyone walks within " + (35 + 10 * r.reach) + " cells - and the ore deep below shows on the map for hours. A strong cast (strength " + SpellSense.DrawFrom.ToString("0.#") + " and more) draws new ore up from the depths: the stronger, the more and the dearer; that ground then rests a day."; break;
                 case RuneKind.Step: e.main = "The caster sinks into the ground and comes up anywhere on the map - only a crack of dust runs above. Where they come out the ground bursts: foes round about are thrown aside and stunned" + (verbs.Count > 0 ? "; and there, round the caster, the earth " + what : "") + "."; break;
                 case RuneKind.Shape: e.main = "Stone walls rise between two chosen points (up to " + FireMagic.WallMax(r) + " cells): they stop feet and shots and crumble after a few hours" + (verbs.Any(v => v.kind != RuneKind.Hold) ? "; and along them the earth " + Verbs(verbs.Where(v => v.kind != RuneKind.Hold).ToList(), EarthVerb) : "") + "."; break;
                 default:

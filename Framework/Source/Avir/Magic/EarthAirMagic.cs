@@ -79,7 +79,7 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, EarthAirDefOf.Avir_EarthEnchant); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
-                    case RuneKind.Sense: FireMagic.Sense(caster, map, 35f + 10f * rf.reach, power); break;
+                    case RuneKind.Sense: SpellSense.Feel(caster, map, 35f + 10f * rf.reach, power, SpellSense.By.Ground); SpellSense.Deep(caster, map, 35f + 10f * rf.reach, power); break;
                     default: if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf); break;
                 }
             }
@@ -248,7 +248,7 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, EarthAirDefOf.Avir_AirEnchant); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
-                    case RuneKind.Sense: FireMagic.Sense(caster, map, 30f + 10f * rf.reach, power); break;
+                    case RuneKind.Sense: SpellSense.Feel(caster, map, 30f + 10f * rf.reach, power, SpellSense.By.Sound); break;
                     default: if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf); break;
                 }
             }

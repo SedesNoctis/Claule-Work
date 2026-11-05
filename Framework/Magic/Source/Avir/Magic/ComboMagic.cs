@@ -246,10 +246,12 @@ namespace Avir.Magic
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, ComboDefOf.Enchant(k)); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
                     case RuneKind.Sense:
-                        FireMagic.Sense(caster, map, 35f + 10f * rf.reach, power);
+                        // by what its parents feel: magma - warmth and the deep; bog and steam - blood; storm - sound; haze - warmth; dust - steps
+                        SpellSense.By by = k == ComboKind.Magma || k == ComboKind.Haze ? SpellSense.By.Warmth : k == ComboKind.Bog || k == ComboKind.Steam ? SpellSense.By.Blood : k == ComboKind.Storm ? SpellSense.By.Sound : SpellSense.By.Ground;
+                        SpellSense.Feel(caster, map, 35f + 10f * rf.reach, power, by);
                         var round = FireMagic.Point(caster.Position, map, Mathf.Min(GenRadial.MaxRadialPatternRadius - 1f, 35f + 10f * rf.reach));
                         if (k == ComboKind.Dust) Reveal(round, map);
-                        if (k == ComboKind.Magma) Veins(round, map);
+                        if (k == ComboKind.Magma) { Veins(round, map); SpellSense.Deep(caster, map, 35f + 10f * rf.reach, power); }
                         break;
                     default: if (verbs.Count > 0) Apply(k, caster, map, verbs, FireMagic.Point(at, map, fr), at, power, rf); break;
                 }
@@ -1140,7 +1142,7 @@ namespace Avir.Magic
                            : "A curtain of " + Combos.Label(k) + " between two points" + (k == ComboKind.Steam ? ": nothing is seen through it" : ": whoever is in it can hardly see") + "."; break;
                 case RuneKind.Sense:
                     e.main = k == ComboKind.Dust ? "Dust settles on everything: the caster feels everyone round about - and the unseen are shown."
-                           : k == ComboKind.Magma ? "The heat in the rock: the caster feels everyone round about - and the veins of ore inside the rock are shown, even in mountains."
+                           : k == ComboKind.Magma ? "The heat in the rock: the caster feels every warm body round about - the veins of ore inside the rock are shown, even in mountains, and the ore deep below; a strong cast draws new ore up."
                            : "The caster feels everyone round about, through walls."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Aura:

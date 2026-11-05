@@ -349,13 +349,8 @@ namespace Avir.Magic
             FleckMaker.ThrowFireGlow(at.ToVector3Shifted(), map, 2f);
         }
 
-        internal static void Sense(Pawn caster, Map map, float radius, float power)
-        {
-            var found = map.mapPawns.AllPawnsSpawned.Where(p => p != caster && !p.Dead && p.Position.DistanceTo(caster.Position) <= radius && p.RaceProps.IsFlesh).ToList();
-            map.GetComponent<MapComponent_FireMagic>()?.AddSense(found, Mathf.RoundToInt(1800f * power));
-            int foes = found.Count(p => p.HostileTo(caster));
-            Messages.Message(caster.LabelShortCap + " feels " + found.Count + " warm bodies around" + (foes > 0 ? " - " + foes + " of them hostile." : "."), caster, MessageTypeDefOf.NeutralEvent, false);
-        }
+        /// <summary>Fire's sense: warmth - the machines too (SpellSense).</summary>
+        internal static void Sense(Pawn caster, Map map, float radius, float power) => SpellSense.Feel(caster, map, radius, power, SpellSense.By.Warmth);
 
         /// <summary>The price of fire: the hold is lost and the fire around the mage slips out of control.</summary>
         public static void Raging(Pawn caster)

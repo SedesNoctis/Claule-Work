@@ -79,7 +79,7 @@ namespace Avir.Magic
                     case RuneKind.Restore: Wash(caster, at, map, Mathf.Max(0.9f, fradius - 1f), power); break;
                     case RuneKind.Enchant: Enchant(caster, at, map, power); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
-                    case RuneKind.Sense: FireMagic.Sense(caster, map, 25f + 10f * rf.reach, power); break;
+                    case RuneKind.Sense: SpellSense.Feel(caster, map, 25f + 10f * rf.reach, power, SpellSense.By.Blood); break;
                     default: if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf); break;
                 }
             }
