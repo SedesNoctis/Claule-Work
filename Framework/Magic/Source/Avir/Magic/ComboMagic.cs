@@ -246,12 +246,10 @@ namespace Avir.Magic
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, ComboDefOf.Enchant(k)); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
                     case RuneKind.Sense:
-                        // by what its parents feel: magma - warmth and the deep; bog and steam - blood; storm - sound; haze - warmth; dust - steps
-                        SpellSense.By by = k == ComboKind.Magma || k == ComboKind.Haze ? SpellSense.By.Warmth : k == ComboKind.Bog || k == ComboKind.Steam ? SpellSense.By.Blood : k == ComboKind.Storm ? SpellSense.By.Sound : SpellSense.By.Ground;
-                        SpellSense.Feel(caster, map, 35f + 10f * rf.reach, power, by);
-                        var round = FireMagic.Point(caster.Position, map, Mathf.Min(GenRadial.MaxRadialPatternRadius - 1f, 35f + 10f * rf.reach));
-                        if (k == ComboKind.Dust) Reveal(round, map);
-                        if (k == ComboKind.Magma) { Veins(round, map); SpellSense.Deep(caster, map, 35f + 10f * rf.reach, power); }
+                        // each meeting senses its own way (SpellSense): bog - a watcher on a place; magma, dust - a place and the
+                        // ore below it; steam - round the caster, machines too; haze, storm - round the caster, under roofs too
+                        SpellSense.Begin(caster, map, at, 25f + 10f * rf.reach, power, RuneKind.Fire, k, rf.anchor);
+                        if (k == ComboKind.Magma) Veins(FireMagic.Point(at, map, Mathf.Min(GenRadial.MaxRadialPatternRadius - 1f, 25f + 10f * rf.reach)), map);
                         break;
                     default: if (verbs.Count > 0) Apply(k, caster, map, verbs, FireMagic.Point(at, map, fr), at, power, rf); break;
                 }

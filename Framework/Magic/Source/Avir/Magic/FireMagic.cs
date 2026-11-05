@@ -79,7 +79,7 @@ namespace Avir.Magic
                         Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false);
                         break;
                     case RuneKind.Sense:
-                        Sense(caster, map, 25f + 10f * rf.reach, power);
+                        SpellSense.Begin(caster, map, at, 25f + 10f * rf.reach, power, RuneKind.Fire, ComboKind.None, rf.anchor);
                         break;
                     default:
                         if (verbs.Count > 0) Apply(caster, map, verbs, Point(at, map, fradius), at, power, rf, false);

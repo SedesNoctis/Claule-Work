@@ -331,9 +331,12 @@ namespace Avir.Magic
                 return;
             }
             RitualReading r = RitualEvaluator.Read(s);
-            IntVec3 at = r.verbs.Any(v => v.kind == RuneKind.Aura) ? caster.Position : target.Cell;
+            bool aura = r.verbs.Any(v => v.kind == RuneKind.Aura);
+            IntVec3 at = aura ? caster.Position : target.Cell;
             float radius = Mathf.Max(1.4f, FireMagic.PointRadius(r) - 0.5f);
-            MapComponent_WardsDrawn.RaiseWard(caster.Map, at, radius, el, k, caster, ticks, power, amplify);
+            MapComponent_WardsDrawn.Dome d = MapComponent_WardsDrawn.RaiseWard(caster.Map, at, radius, el, k, caster, ticks, power, amplify);
+            // Aura and Barrier: the dome goes with the caster - a moving dome; whoever walks with them stays under it
+            if (aura && d != null) { d.follow = caster; Note("the dome of " + d.Name + " goes with " + caster.LabelShort); }
         }
 
         // ------------------------------------------------------------------ laying a ward

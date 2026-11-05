@@ -70,7 +70,7 @@ namespace Avir.Magic
             T("Price: (.+)", m => "Price of Slipping: " + m.Groups[1].Value,
                 "Price of Slipping. Every element takes its toll from a caster who loses the hold: what the spell would have done, it does to them."),
             T("Ward of (.+)", m => "Ward of " + m.Groups[1].Value.CapitalizeFirst(),
-                "Ward. The Barrier rune guards. Alone in a circle, it lays a ward on whoever it is aimed at - yourself or another - or a dome on the ground. Last in a circle, after something that acts, it lays a ward on the caster - after the blow, not before it. Anywhere else, a dome over the place the spell strikes, guarding whoever stands inside."),
+                "Ward. The Barrier rune guards. Alone in a circle, it lays a ward on whoever it is aimed at - yourself or another - or a dome on the ground. Last in a circle, after something that acts, it lays a ward on the caster - after the blow, not before it. Anywhere else, a dome over the place the spell strikes, guarding whoever stands inside. In a circle with an Aura the dome is raised round the caster and goes with them wherever they walk - a moving dome; those who keep beside them stay under it."),
             T("Warms friends", "Hearth Warmth", "Hearth Warmth. Held fire is a hearth as much as a weapon: those of the caster's side who stand by it bear the cold far better for a day."),
             T("Ground that takes no fire", "Burnt Ground", "Burnt Ground. Ground purged by fire has nothing left to burn: for some hours flames that reach it die."),
             T("Burns infection", "Cleansing Fire", "Cleansing Fire. Fire turned to mending burns back infection and what lives in a wound."),

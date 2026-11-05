@@ -79,7 +79,7 @@ namespace Avir.Magic
                     case RuneKind.Restore: Wash(caster, at, map, Mathf.Max(0.9f, fradius - 1f), power); break;
                     case RuneKind.Enchant: Enchant(caster, at, map, power); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
-                    case RuneKind.Sense: SpellSense.Feel(caster, map, 25f + 10f * rf.reach, power, SpellSense.By.Blood); break;
+                    case RuneKind.Sense: SpellSense.Begin(caster, map, at, 25f + 10f * rf.reach, power, RuneKind.Water, ComboKind.None, rf.anchor); break;
                     default: if (verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf); break;
                 }
             }
@@ -377,6 +377,8 @@ namespace Avir.Magic
             public IntVec3 at; public float radius; public RuneDef el; public int until; public Faction owner; public int seed; public Color? tint; public string tex;
             public bool zone; public float energy, energyMax = 1f, ranged = 0.25f, melee = 0.15f; public ComboKind combo;
             public MapComponent_WardsDrawn of;
+            /// <summary>Aura + Barrier: the dome goes with this one (a moving dome round the caster).</summary>
+            public Pawn follow;
 
             public float Energy { get => energy; set => energy = value; }
             public float EnergyMax => energyMax;
@@ -400,12 +402,25 @@ namespace Avir.Magic
                 Scribe_References.Look(ref owner, "owner"); Scribe_Values.Look(ref seed, "seed"); Scribe_Values.Look(ref tex, "tex");
                 Scribe_Values.Look(ref zone, "zone"); Scribe_Values.Look(ref energy, "energy"); Scribe_Values.Look(ref energyMax, "energyMax", 1f);
                 Scribe_Values.Look(ref ranged, "ranged", 0.25f); Scribe_Values.Look(ref melee, "melee", 0.15f); Scribe_Values.Look(ref combo, "combo", ComboKind.None);
+                Scribe_References.Look(ref follow, "follow");
                 bool hasTint = tint.HasValue; Color tc = tint ?? Color.white;
                 Scribe_Values.Look(ref hasTint, "hasTint"); Scribe_Values.Look(ref tc, "tint");
                 if (Scribe.mode == LoadSaveMode.LoadingVars) tint = hasTint ? tc : (Color?)null;
             }
         }
         public List<Dome> domes = new List<Dome>();
+
+        /// <summary>Moving domes keep up with the one they go with; if that one falls or leaves, the dome stays where it was.</summary>
+        public override void MapComponentTick()
+        {
+            if (domes.Count == 0 || Find.TickManager.TicksGame % 10 != 0) return;
+            foreach (Dome d in domes)
+            {
+                if (d.follow == null) continue;
+                if (d.follow.Dead || d.follow.Downed || !d.follow.Spawned || d.follow.Map != map) { d.follow = null; continue; }
+                d.at = d.follow.Position;
+            }
+        }
 
         public override void ExposeData()
         {
@@ -530,7 +545,7 @@ namespace Avir.Magic
                 float breath = 1f + 0.02f * Mathf.Sin(t * 1.7f + d.seed);
                 float a = 0.7f;   // steady: no flicker; it lies under the pawns, never over them
                 if (d.until - now < 300) a *= (d.until - now) / 300f;   // fading in its last seconds
-                Vector3 pos = d.at.ToVector3Shifted(); pos.y = AltitudeLayer.ItemImportant.AltitudeFor();
+                Vector3 pos = d.follow != null && d.follow.Spawned && d.follow.Map == map ? d.follow.DrawPos : d.at.ToVector3Shifted(); pos.y = AltitudeLayer.ItemImportant.AltitudeFor();
                 float s = d.radius * 2f * breath;
                 Material m = Mat(d.el, d.tint, d.tex);
                 Color keep = m.color;

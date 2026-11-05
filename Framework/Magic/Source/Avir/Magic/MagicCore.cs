@@ -869,6 +869,9 @@ namespace Avir.Magic
                 Spell("TEST Sense: the deep (earth, strong)", "Earth:Sense,Amplify,Amplify,Amplify"),
                 Spell("TEST Sense: blood (water)", "Water:Sense"),
                 Spell("TEST Sense: warmth (fire, machines too)", "Fire:Sense"),
+                Spell("TEST Sense: the wind over the land (air)", "Air:Sense"),
+                Spell("TEST Sense: a watcher on a place (bog)", "Water:Sense", "Earth:Sense"),
+                Spell("TEST Moving dome (Barrier, then Aura)", "Water:Barrier|Aura"),
             };
             foreach (RitualSchema s in list) core.Book.spells.Add(s);
             Messages.Message(list.Count + " test spells written into " + p.LabelShort + "'s book.", MessageTypeDefOf.NeutralEvent, false);
@@ -881,7 +884,7 @@ namespace Avir.Magic
         private static void DevFlares() { Map map = Find.CurrentMap; IntVec3 c = Verse.UI.MouseCell(); FireMagic.Flares(null, map, c, new List<IntVec3> { c }, 6.4f, 1f); }
 
         [DebugAction(Cat, "Sense the deep here (earth, strength 3)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-        private static void DevSenseDeep(Pawn p) => SpellSense.Deep(p, p.Map, 35f, 3f);
+        private static void DevSenseDeep(Pawn p) => SpellSense.Deep(p, p.Map, p.Position, 35f, 3f);
 
         [DebugAction(Cat, "Body as magic sees it", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevBody(Pawn p)

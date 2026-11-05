@@ -1715,4 +1715,14 @@
     <isBad>false</isBad>
     <everCurableByItem>false</everCurableByItem>
   </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_Sensing</defName>
+    <label>sensing</label>
+    <description>A sense laid by a spell: the caster feels what their element feels - warmth, blood, the wind over the land, a place watched - for a while.</description>
+    <hediffClass>Avir.Magic.Hediff_Sensing</hediffClass>
+    <defaultLabelColor>(0.75, 0.85, 1)</defaultLabelColor>
+    <isBad>false</isBad>
+    <everCurableByItem>false</everCurableByItem>
+  </HediffDef>
 </Defs>
