@@ -156,6 +156,8 @@ namespace Avir.Magic
                         if (SpellTransmute.IsPath(s.weave, k, ck2)) path = true; else plain = true;
                     }
                     if (plain) e0.Add("Transmutation", PlainText);
+                    foreach (SecondKind y2 in SecondOrder.Of(s.weave).Values.Distinct())
+                        e0.Add("Second meeting: " + SecondOrder.Label(y2), SecondOrder.Text(y2) + " Three circles work as " + Combos.Label(SecondOrder.PairOf(y2)) + ", with this on top of it.");
                     var foundPaths = s.weave.Working.Where(k => SpellTransmute.IsPath(s.weave, k, Combos.Of(s.weave, k))).Select(k => Combos.Of(s.weave, k)).Distinct().Where(k => SpellLore.Known(SpellPaths.Key(k))).ToList();
                     foreach (ComboKind fk in foundPaths) e0.Add("Secret path: " + SpellPaths.Name(fk), PathText(fk));
                     if (path && foundPaths.Count == 0) e0.Add("Arlie", "Arlie: \"Both edges turned inward, both circles changing what they are... That meeting wants to become something else. I wouldn't know what. I'd cast it and see.\"");

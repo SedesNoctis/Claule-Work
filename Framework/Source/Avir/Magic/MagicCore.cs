@@ -1025,6 +1025,21 @@ namespace Avir.Magic
                 Spell("TEST Restoration of earth (mends things too)", "Earth:Restore,Breadth"),
                 Spell("TEST Restoration of air (second wind)", "Air:Restore"),
             };
+            // the second order: each pair with each third element (Release in all three circles)
+            string[] els = { "Fire", "Water", "Earth", "Air" };
+            foreach (ComboKind x in new[] { ComboKind.Steam, ComboKind.Magma, ComboKind.Storm, ComboKind.Haze, ComboKind.Bog, ComboKind.Dust })
+            {
+                RuneKind[] pr = Combos.Parts(x);
+                string A = pr[0].ToString(), B = pr[1].ToString();
+                foreach (string C in els)
+                {
+                    SecondKind y = SecondOrder.Of(x, (RuneKind)System.Enum.Parse(typeof(RuneKind), C));
+                    list.Add(Spell("TEST 2nd: " + SecondOrder.Label(y) + " (" + Combos.Label(x) + " + " + C.ToLower() + ")", A + ":Release", B + ":Release", C + ":Release"));
+                }
+            }
+            list.Add(Spell("TEST 2nd: volcano pillar (Lift)", "Fire:Lift", "Earth:Lift", "Earth:Lift"));
+            list.Add(Spell("TEST 2nd: ball lightning conductor (Beam)", "Water:Beam|Release", "Air:Beam|Release", "Fire:Beam|Release"));
+            list.Add(Spell("TEST 2nd: emery aura hones own (Aura, spares own)", "Earth:Aura,Anchor|Release|Barrier,Barrier", "Air:Aura,Anchor|Release|Barrier,Barrier", "Air:Aura|Release|Barrier,Barrier"));
             foreach (RitualSchema s in list) core.Book.spells.Add(s);
             Messages.Message(list.Count + " test spells written into " + p.LabelShort + "'s book.", MessageTypeDefOf.NeutralEvent, false);
         }

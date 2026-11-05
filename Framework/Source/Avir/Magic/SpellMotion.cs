@@ -164,6 +164,8 @@ namespace Avir.Magic
                 List<KeyValuePair<RitualSchema, float>> repeats = SpellMods.Strict ? SpellMods.Echoes(ref part) : SpellWear.Split(ref part);
                 if (repeats != null) r = RitualEvaluator.Read(part);
                 Dispatch(caster, part, r, k, el, target, power);
+                // a meeting of the second order: what the three circles make, through the runes of this part
+                SecondOrder.Apply(caster, part, r, target, power);
                 if (repeats != null)
                     foreach (var rp in repeats)
                         if (!caster.Dead) Dispatch(caster, rp.Key, RitualEvaluator.Read(rp.Key), k, el, target, power * rp.Value);

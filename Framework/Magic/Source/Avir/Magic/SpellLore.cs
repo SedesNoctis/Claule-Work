@@ -57,6 +57,7 @@ namespace Avir.Magic
                 case "Thread:Heal": return "verb, Thread, Restoration - the blow mends instead of wounding";
                 case "Thread:Implode": return "the Thread turns a Release round - the blast draws bodies in to its heart";
             }
+            if (key.StartsWith("Second:") && System.Enum.TryParse(key.Substring(7), out SecondKind sk)) return "a meeting of the second order - " + SecondOrder.Label(sk);
             if (key.StartsWith("Path:") && System.Enum.TryParse(key.Substring(5), out ComboKind pk)) return "the secret path of " + Combos.Label(pk) + " - " + SpellPaths.Name(pk);
             return key.StartsWith("Price:") ? "the price of a slipped hold - " + key.Substring(6) : key;
         }
@@ -73,6 +74,7 @@ namespace Avir.Magic
                 case "Thread:Implode": return "Everyone into one heap. Tidy. Now drop something heavy on it.";
                 case "Thread:Heal": return "You hit them and they got better. I've seen surgeons with worse manners. And worse results.";
             }
+            if (key.StartsWith("Second:")) return "Three circles, one thing. It used to be two, and two was already plenty. Careful with it.";
             if (key.StartsWith("Path:")) return "There it is. I told you it wanted to be something else. Write it down before you forget how you did it.";
             return key.StartsWith("Price:") ? "That's what a slipped hold costs. Now you know. Now you'll remember." : null;
         }

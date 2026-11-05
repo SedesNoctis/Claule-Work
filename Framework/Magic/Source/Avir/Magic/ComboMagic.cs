@@ -87,7 +87,11 @@ namespace Avir.Magic
 
         /// <summary>Which circles of a spell have met, and what they made. Side by side in the chain and in the same
         /// ring (round the heart, or inside one great circle); paired from the start of the chain, each only once.</summary>
-        public static Dictionary<SpellCircle, ComboKind> Pairs(SpellCircle root)
+        public static Dictionary<SpellCircle, ComboKind> Pairs(SpellCircle root) => Pairs(root, true);
+
+        /// <summary>The pairs - and, withThirds, the third circles that met a pair (second order), put in with their pair's
+        /// kind: they work as the pair, and SecondOrder adds what the three make.</summary>
+        public static Dictionary<SpellCircle, ComboKind> Pairs(SpellCircle root, bool withThirds)
         {
             var map = new Dictionary<SpellCircle, ComboKind>();
             if (root == null) return map;
@@ -104,6 +108,9 @@ namespace Avir.Magic
                 if (k == ComboKind.None) continue;
                 map[a] = k; map[b] = k;
             }
+            if (withThirds)
+                foreach (var kv in SecondOrder.Seconds(root, map).ToList())
+                    if (!map.ContainsKey(kv.Key)) map[kv.Key] = SecondOrder.PairOf(kv.Value);
             return map;
         }
 

@@ -246,6 +246,12 @@ namespace Avir.Magic
         private static Material Mat(Aura a)
         {
             string key = a.combo != ComboKind.None ? a.combo.ToString() : a.el?.kind.ToString() ?? "Fire";
+            // a second-order meeting: its own picture when drawn (Aura_Inferno...), else its pair's
+            if (a.spell is SpellCircle root)
+            {
+                SecondKind y = SecondOrder.Of(root).Values.FirstOrDefault(v => SecondOrder.PairOf(v) == a.combo);
+                if (y != SecondKind.None && ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Aura_" + y, false) != null) key = y.ToString();
+            }
             if (mats.TryGetValue(key, out Material m)) return m;
             string path = "Things/Mote/Avir/Magic/Aura_" + key;
             if (ContentFinder<Texture2D>.Get(path, false) != null) m = MaterialPool.MatFrom(path, ShaderDatabase.MoteGlow, Color.white);
