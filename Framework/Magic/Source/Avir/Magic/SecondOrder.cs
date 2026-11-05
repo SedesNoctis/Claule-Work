@@ -483,8 +483,19 @@ namespace Avir.Magic
         private readonly List<KeyValuePair<int, Action>> later = new List<KeyValuePair<int, Action>>();
         public SecondFields(Map map) : base(map) { }
 
-        public void Add(SecondKind y, List<IntVec3> cells, int ticks, Pawn owner, float power) =>
-            fields.Add(new Fld { y = y, cells = new HashSet<IntVec3>(cells), until = Find.TickManager.TicksGame + ticks, owner = owner, power = power });
+        /// <summary>A field laid where the same caster's field of the same kind already lies is not a second one:
+        /// it renews and widens the first (an aura striking again and again keeps one field, and one sheet on the ground).</summary>
+        public void Add(SecondKind y, List<IntVec3> cells, int ticks, Pawn owner, float power)
+        {
+            int until = Find.TickManager.TicksGame + ticks;
+            Fld same = fields.FirstOrDefault(f => f.y == y && f.owner == owner && f.speed <= 0f && cells.Any(f.cells.Contains));
+            if (same != null)
+            {
+                same.cells.UnionWith(cells); same.until = Mathf.Max(same.until, until); same.power = Mathf.Max(same.power, power); same.rad = 0f;
+                return;
+            }
+            fields.Add(new Fld { y = y, cells = new HashSet<IntVec3>(cells), until = until, owner = owner, power = power });
+        }
 
         public void AddMoving(SecondKind y, IntVec3 at, Vector3 dir, float speed, int ticks, Pawn owner, float power) =>
             fields.Add(new Fld { y = y, center = at.ToVector3Shifted(), dir = dir, speed = speed, cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(at, 2.5f, true)), until = Find.TickManager.TicksGame + ticks, owner = owner, power = power });
