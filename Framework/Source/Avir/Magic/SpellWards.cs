@@ -336,6 +336,22 @@ namespace Avir.Magic
             bool aura = r.verbs.Any(v => v.kind == RuneKind.Aura);
             IntVec3 at = aura ? caster.Position : target.Cell;
             float radius = Mathf.Max(1.4f, FireMagic.PointRadius(r) - 0.5f);
+            // a circle that knows its own (Selective Protection or Aid): its Barrier lays no dome - a dome would guard the
+            // foes as well - but a ward on each of the caster's own in its reach, the caster too (the author's question:
+            // magma on the foes, and its own kept from the magma left on the ground)
+            if (SpellSculpt.Active)
+            {
+                int n = 0;
+                foreach (Pawn p in FireMagic.Point(at, caster.Map, radius).Where(c => c.InBounds(caster.Map)).SelectMany(c => c.GetThingList(caster.Map).OfType<Pawn>()).Distinct().ToList())
+                {
+                    if (p.Dead || (p != caster && p.HostileTo(caster))) continue;
+                    Lay(p, WardDef(el, k), power, amplify, ticks);
+                    if (k == ComboKind.None && el?.kind == RuneKind.Fire && p.GetAttachment(ThingDefOf.Fire) is Fire f1) f1.Destroy();
+                    n++;
+                }
+                Note("a Barrier in a circle that knows its own: wards on " + n + " of the caster's own, no dome");
+                return;
+            }
             MapComponent_WardsDrawn.Dome d = MapComponent_WardsDrawn.RaiseWard(caster.Map, at, radius, el, k, caster, ticks, power, amplify);
             // Aura and Barrier: the dome goes with the caster - a moving dome; whoever walks with them stays under it
             if (aura && d != null) { d.follow = caster; Note("the dome of " + d.Name + " goes with " + caster.LabelShort); }

@@ -990,6 +990,8 @@ namespace Avir.Magic
                 Spell("TEST Healing burst (water: Release + Thread + Restore)", "Water:Release,Thread,Restore"),
                 Spell("TEST Heal own, then blast foes (two circles)", "Fire:Release,Thread,Restore|Barrier,Barrier,Thread", "Fire:Release|Barrier,Barrier"),
                 Spell("TEST Gentle lift (air: Lift + Thread + Restore)", "Air:Lift,Thread,Restore"),
+                Spell("TEST Magma on foes, magma wards on own", "Fire:Release,Barrier,Amplify|Barrier,Barrier", "Earth:Release,Barrier,Amplify|Barrier,Barrier"),
+                Spell("TEST Moving dome slows the cast (water)", "Water:Barrier|Aura,Anchor|Release"),
                 Spell("TEST Implosion, then a blast (air, two sections)", "Air:Release,Thread,Amplify|Release,Amplify"),
                 Spell("TEST Healing thread (water: Beam + Thread + Restore)", "Water:Beam,Thread,Restore"),
                 Spell("TEST Streaming beam of fire (Beam + Anchor)", "Fire:Beam,Anchor|Release"),

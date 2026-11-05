@@ -5,7 +5,7 @@
     <labelShort>magic</labelShort>
     <pawnLabel>Caster</pawnLabel>
     <gerundLabel>working magic</gerundLabel>
-    <description>Work done by magic: water washes the floor round a spot clean, the wind carries a heap of things to the stockpile at once, earth draws ore up from a vein the caster has sensed. Each pays Arcana and teaches its element. Casters only.</description>
+    <description>Work done by magic: water tends the wounded with no medicine and washes the floor round a spot clean, the wind carries a heap of things to the stockpile at once, earth raises rock where it is marked, smooths walls and floors, and draws ore up from a vein the caster has sensed. Each pays Arcana and teaches its element. Casters only.</description>
     <verb>Work magic</verb>
     <naturalPriority>500</naturalPriority>
     <visible>true</visible>
@@ -57,4 +57,55 @@
     <driverClass>Avir.Magic.JobDriver_MagicMine</driverClass>
     <reportString>drawing ore up from the deep.</reportString>
   </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_MagicTend</defName>
+    <label>tend the wounded by water</label>
+    <giverClass>Avir.Magic.WorkGiver_MagicTend</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>tend</verb>
+    <gerund>tending</gerund>
+    <priorityInType>40</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_MagicRaiseRock</defName>
+    <label>raise rock by earth</label>
+    <giverClass>Avir.Magic.WorkGiver_MagicRaiseRock</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>raise rock</verb>
+    <gerund>raising rock</gerund>
+    <priorityInType>15</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_MagicSmooth</defName>
+    <label>smooth by earth</label>
+    <giverClass>Avir.Magic.WorkGiver_MagicSmooth</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>smooth</verb>
+    <gerund>smoothing</gerund>
+    <priorityInType>12</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_MagicTend</defName>
+    <driverClass>Avir.Magic.JobDriver_MagicTend</driverClass>
+    <reportString>tending TargetA by water.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_MagicRaiseRock</defName>
+    <driverClass>Avir.Magic.JobDriver_MagicRaiseRock</driverClass>
+    <reportString>raising rock.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_MagicSmooth</defName>
+    <driverClass>Avir.Magic.JobDriver_MagicSmooth</driverClass>
+    <reportString>smoothing stone by earth.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_RaiseRock</defName>
+    <texturePath>UI/Designators/SmoothSurface</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
 </Defs>

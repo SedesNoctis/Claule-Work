@@ -9,10 +9,12 @@ using Verse.AI;
 
 namespace Avir.Magic
 {
-    /// <summary>Magic work (the author's choice - a mix): some work magic only quickens - a caster of fire cooks faster, one
-    /// of earth builds faster, paying Arcana while at it; some is magic's own, in its own column of the work tab, for
-    /// casters only - water washes the floor clean round a spot, the wind carries a heap of things to the stockpile at
-    /// once, earth draws ore up from a vein the caster has sensed. Each pays Arcana and teaches its element.</summary>
+    /// <summary>Magic work (the author's choice - a mix): some work magic only quickens - a caster of fire cooks faster,
+    /// paying Arcana while at it; some is magic's own, in its own column of the work tab, for casters only - water tends
+    /// the wounded with no medicine (as a doctor would; how well - by the caster's mastery of water) and washes the floor
+    /// clean round a spot, the wind carries a heap of things to the stockpile at once, earth raises plain rock walls where
+    /// they are marked, smooths walls and floors, and draws ore up from a vein the caster has sensed. Each pays Arcana and
+    /// teaches its element.</summary>
     public static class MagicWork
     {
         public static WorkTypeDef Type => DefDatabase<WorkTypeDef>.GetNamedSilentFail("Avir_MagicWork");
@@ -38,7 +40,6 @@ namespace Avir.Magic
             Job j = p?.CurJob;
             if (j == null) return null;
             if (j.bill?.recipe?.workSkill == SkillDefOf.Cooking) return RuneKind.Fire;
-            if (j.workGiverDef?.workType == WorkTypeDefOf.Construction) return RuneKind.Earth;
             return null;
         }
 
@@ -58,7 +59,7 @@ namespace Avir.Magic
         }
     }
 
-    /// <summary>Cooking with fire, building with earth: faster for a caster of it who has Arcana to spend.</summary>
+    /// <summary>Cooking with fire: faster for a caster of it who has Arcana to spend.</summary>
     public class StatPart_MagicWork : StatPart
     {
         public RuneKind element;
@@ -82,7 +83,6 @@ namespace Avir.Magic
         static MagicWorkStatInjector()
         {
             Add(DefDatabase<StatDef>.GetNamedSilentFail("CookSpeed"), RuneKind.Fire);
-            Add(StatDefOf.ConstructionSpeed, RuneKind.Earth);
         }
 
         private static void Add(StatDef stat, RuneKind k)
@@ -271,6 +271,196 @@ namespace Avir.Magic
             };
             draw.defaultCompleteMode = ToilCompleteMode.Instant;
             yield return draw;
+        }
+    }
+
+    // ------------------------------------------------------------------ water: tending the wounded
+
+    public class WorkGiver_MagicTend : WorkGiver_Scanner
+    {
+        public const float Cost = 4f, Xp = 8f;
+        public override PathEndMode PathEndMode => PathEndMode.Touch;
+        public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.Pawn);
+        public override bool ShouldSkip(Pawn pawn, bool forced = false) => MagicWork.Able(pawn, RuneKind.Water, Cost) == null;
+
+        public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false) =>
+            t is Pawn patient && patient != pawn && !patient.Dead && patient.RaceProps.IsFlesh && HealthAIUtility.ShouldBeTendedNowByPlayer(patient)
+            && WorkGiver_Tend.GoodLayingStatusForTend(patient, pawn) && !patient.IsForbidden(pawn) && pawn.CanReserve(patient, 1, -1, null, forced)
+            && MagicWork.Able(pawn, RuneKind.Water, Cost) != null;
+
+        public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false) => JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("Avir_MagicTend"), t);
+
+        /// <summary>How well water tends: by the caster's mastery - a novice 30%, each stage +12% (a grandmaster 90%).</summary>
+        public static float Quality(Hediff_ArcaneCore c) => Mathf.Clamp(0.3f + 0.12f * MageClass.Stage(MageClass.XpIn(c, RuneKind.Water)), 0.2f, 0.95f);
+    }
+
+    public class JobDriver_MagicTend : JobDriver
+    {
+        private static readonly List<Hediff> tend = new List<Hediff>(), order = new List<Hediff>();
+        public override bool TryMakePreToilReservations(bool errorOnFailed) => pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
+
+        protected override IEnumerable<Toil> MakeNewToils()
+        {
+            this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
+            yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
+            Toil work = Toils_General.Wait(300).WithProgressBarToilDelay(TargetIndex.A).FailOnDespawnedOrNull(TargetIndex.A);
+            work.tickIntervalAction = delta => { if (pawn.IsHashIntervalTick(60, delta)) FleckMaker.Static(TargetA.Cell, pawn.Map, FleckDefOf.WaterSplash, 0.7f); };
+            yield return work;
+            Toil done = ToilMaker.MakeToil("MagicTend");
+            done.initAction = () =>
+            {
+                Pawn patient = TargetA.Thing as Pawn;
+                Hediff_ArcaneCore c = MagicWork.Able(pawn, RuneKind.Water, WorkGiver_MagicTend.Cost);
+                if (patient == null || c == null) return;
+                tend.Clear(); order.Clear();
+                TendUtility.GetOptimalHediffsToTendWithSingleTreatment(patient, false, tend, null);
+                float q = WorkGiver_MagicTend.Quality(c);
+                for (int i = 0; i < tend.Count; i++) tend[i].Tended(Mathf.Clamp01(q * Rand.Range(0.9f, 1.1f)), 1f, i);
+                FleckMaker.ThrowMetaIcon(patient.Position, patient.Map, FleckDefOf.HealingCross);
+                MagicWork.Done(c, RuneKind.Water, WorkGiver_MagicTend.Cost, WorkGiver_MagicTend.Xp);
+            };
+            done.defaultCompleteMode = ToilCompleteMode.Instant;
+            yield return done;
+        }
+    }
+
+    // ------------------------------------------------------------------ earth: rock walls where marked, smoothing
+
+    public static class MagicWorkDefOf
+    {
+        public static DesignationDef RaiseRock => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_RaiseRock");
+        public static ThingDef Rock(Map map) => Find.World.NaturalRockTypesIn(map.Tile).FirstOrDefault() ?? ThingDefOf.Granite;
+    }
+
+    /// <summary>Marks where a caster of earth is to raise a plain rock wall (of the stone of this land).</summary>
+    public class Designator_RaiseRock : Designator_Cells
+    {
+        public Designator_RaiseRock()
+        {
+            defaultLabel = "Raise rock (magic)";
+            defaultDesc = "Mark where a caster of earth is to raise plain rock - the stone of this land, as if it had always stood there. It can be mined or smoothed like any rock. Casters of earth do it in the magic column of the work tab, for Arcana.";
+            icon = ContentFinder<Texture2D>.Get("UI/Designators/SmoothSurface", false) ?? BaseContent.BadTex;
+            useMouseIcon = true;
+            soundDragSustain = SoundDefOf.Designate_DragStandard;
+            soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
+            soundSucceeded = SoundDefOf.Designate_Mine;
+        }
+
+        public override bool Visible => AvirMagic.On;
+        public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
+        protected override DesignationDef Designation => MagicWorkDefOf.RaiseRock;
+
+        public override AcceptanceReport CanDesignateCell(IntVec3 c)
+        {
+            if (!c.InBounds(Map) || c.Fogged(Map)) return false;
+            if (Map.designationManager.DesignationAt(c, Designation) != null) return false;
+            if (c.GetEdifice(Map) != null) return "Something stands there.";
+            if (!c.Walkable(Map)) return false;
+            return true;
+        }
+
+        public override void DesignateSingleCell(IntVec3 c) => Map.designationManager.AddDesignation(new Designation(c, Designation));
+    }
+
+    public class WorkGiver_MagicRaiseRock : WorkGiver_Scanner
+    {
+        public const float Cost = 6f, Xp = 10f;
+        public override PathEndMode PathEndMode => PathEndMode.Touch;
+        public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn) =>
+            MagicWorkDefOf.RaiseRock == null ? Enumerable.Empty<IntVec3>() : pawn.Map.designationManager.SpawnedDesignationsOfDef(MagicWorkDefOf.RaiseRock).Select(d => d.target.Cell).ToList();
+        public override bool ShouldSkip(Pawn pawn, bool forced = false) => MagicWork.Able(pawn, RuneKind.Earth, Cost) == null || MagicWorkDefOf.RaiseRock == null;
+
+        public static bool Clear(Map map, IntVec3 c) => c.GetEdifice(map) == null && c.GetFirstPawn(map) == null && !c.GetThingList(map).Any(t => t.def.category == ThingCategory.Item);
+
+        public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false) =>
+            MagicWork.Able(pawn, RuneKind.Earth, Cost) != null && pawn.Map.designationManager.DesignationAt(c, MagicWorkDefOf.RaiseRock) != null
+            && Clear(pawn.Map, c) && pawn.CanReserve(c, 1, -1, null, forced);
+
+        public override Job JobOnCell(Pawn pawn, IntVec3 cell, bool forced = false) => JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("Avir_MagicRaiseRock"), cell);
+    }
+
+    public class JobDriver_MagicRaiseRock : JobDriver
+    {
+        public override bool TryMakePreToilReservations(bool errorOnFailed) => pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
+
+        protected override IEnumerable<Toil> MakeNewToils()
+        {
+            yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.Touch);
+            Toil channel = Toils_General.Wait(300).WithProgressBarToilDelay(TargetIndex.A);
+            channel.tickIntervalAction = delta => { if (pawn.IsHashIntervalTick(40, delta)) FleckMaker.ThrowDustPuffThick(TargetA.Cell.ToVector3Shifted(), pawn.Map, 1.1f, MagicFx.EarthDust); };
+            yield return channel;
+            Toil raise = ToilMaker.MakeToil("MagicRaiseRock");
+            raise.initAction = () =>
+            {
+                Map map = pawn.Map;
+                IntVec3 c = TargetA.Cell;
+                Hediff_ArcaneCore core = MagicWork.Able(pawn, RuneKind.Earth, WorkGiver_MagicRaiseRock.Cost);
+                if (core == null || !WorkGiver_MagicRaiseRock.Clear(map, c)) return;
+                foreach (Thing t in c.GetThingList(map).Where(t => t is Plant || t is Filth).ToList()) t.Destroy();
+                GenSpawn.Spawn(MagicWorkDefOf.Rock(map), c, map);
+                map.designationManager.TryRemoveDesignation(c, MagicWorkDefOf.RaiseRock);
+                FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 2f, MagicFx.EarthDust);
+                MagicWork.Done(core, RuneKind.Earth, WorkGiver_MagicRaiseRock.Cost, WorkGiver_MagicRaiseRock.Xp);
+            };
+            raise.defaultCompleteMode = ToilCompleteMode.Instant;
+            yield return raise;
+        }
+    }
+
+    /// <summary>Smoothing by earth: the designated walls and floors round the spot, several at once.</summary>
+    public class WorkGiver_MagicSmooth : WorkGiver_Scanner
+    {
+        public const float CostPer = 1f, XpPer = 2f, Radius = 3.9f;
+        public override PathEndMode PathEndMode => PathEndMode.Touch;
+        public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn) =>
+            pawn.Map.designationManager.SpawnedDesignationsOfDef(DesignationDefOf.SmoothFloor).Concat(pawn.Map.designationManager.SpawnedDesignationsOfDef(DesignationDefOf.SmoothWall)).Select(d => d.target.Cell).ToList();
+        public override bool ShouldSkip(Pawn pawn, bool forced = false) => MagicWork.Able(pawn, RuneKind.Earth, CostPer * 2f) == null;
+
+        public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false) =>
+            MagicWork.Able(pawn, RuneKind.Earth, CostPer * 2f) != null && !c.IsForbidden(pawn) && pawn.CanReserve(c, 1, -1, null, forced)
+            && (pawn.Map.designationManager.DesignationAt(c, DesignationDefOf.SmoothFloor) != null || pawn.Map.designationManager.DesignationAt(c, DesignationDefOf.SmoothWall) != null);
+
+        public override Job JobOnCell(Pawn pawn, IntVec3 cell, bool forced = false) => JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("Avir_MagicSmooth"), cell);
+    }
+
+    public class JobDriver_MagicSmooth : JobDriver
+    {
+        public override bool TryMakePreToilReservations(bool errorOnFailed) => pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
+
+        protected override IEnumerable<Toil> MakeNewToils()
+        {
+            yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.Touch);
+            yield return Toils_General.Wait(150).WithProgressBarToilDelay(TargetIndex.A);
+            Toil smooth = ToilMaker.MakeToil("MagicSmooth");
+            smooth.initAction = () =>
+            {
+                Map map = pawn.Map;
+                Hediff_ArcaneCore c = Mages.Core(pawn);
+                if (c == null) return;
+                int max = 4 + 2 * MageClass.Stage(MageClass.XpIn(c, RuneKind.Earth)), n = 0;
+                DesignationManager dm = map.designationManager;
+                foreach (IntVec3 cell in GenRadial.RadialCellsAround(TargetA.Cell, WorkGiver_MagicSmooth.Radius, true))
+                {
+                    if (n >= max || c.arcana < WorkGiver_MagicSmooth.CostPer) break;
+                    if (!cell.InBounds(map)) continue;
+                    if (dm.DesignationAt(cell, DesignationDefOf.SmoothWall) != null && cell.GetEdifice(map) is Thing wall)
+                    {
+                        dm.TryRemoveDesignation(cell, DesignationDefOf.SmoothWall);
+                        SmoothableWallUtility.SmoothWall(wall, pawn);
+                    }
+                    else if (dm.DesignationAt(cell, DesignationDefOf.SmoothFloor) != null && map.terrainGrid.TerrainAt(cell).smoothedTerrain != null)
+                    {
+                        dm.TryRemoveDesignation(cell, DesignationDefOf.SmoothFloor);
+                        map.terrainGrid.SetTerrain(cell, map.terrainGrid.TerrainAt(cell).smoothedTerrain);
+                    }
+                    else continue;
+                    FleckMaker.ThrowDustPuffThick(cell.ToVector3Shifted(), map, 0.8f, MagicFx.EarthDust);
+                    MagicWork.Done(c, RuneKind.Earth, WorkGiver_MagicSmooth.CostPer, WorkGiver_MagicSmooth.XpPer);
+                    n++;
+                }
+            };
+            smooth.defaultCompleteMode = ToilCompleteMode.Instant;
+            yield return smooth;
         }
     }
 }

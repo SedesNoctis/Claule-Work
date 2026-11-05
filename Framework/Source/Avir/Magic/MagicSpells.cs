@@ -66,7 +66,13 @@ namespace Avir.Magic
             return 1f + (g?.Severity ?? 0f);
         }
 
-        public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s) => Mathf.RoundToInt(CastTicks(c.Sorcerer, s) * AirMomentum.Factor(c.pawn, s) * MageClass.CastFactor(c, s));
+        /// <summary>A caster under a dome that goes with them (Barrier, then Aura) casts half again as slowly - the price of
+        /// carrying a great shield on oneself (the author).</summary>
+        public const float UnderOwnDome = 1.5f;
+        public static float DomeFactor(Pawn p) =>
+            p?.Map?.GetComponent<MapComponent_WardsDrawn>()?.domes.Any(d => d.follow == p && d.until > Find.TickManager.TicksGame) == true ? UnderOwnDome : 1f;
+
+        public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s) => Mathf.RoundToInt(CastTicks(c.Sorcerer, s) * AirMomentum.Factor(c.pawn, s) * MageClass.CastFactor(c, s) * DomeFactor(c.pawn));
 
         /// <summary>A far target takes longer: +2% for every cell past twelve - a mage across the map is seen coming.</summary>
         public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s, float distance) => Mathf.RoundToInt(CastTicks(c, s) * (1f + 0.02f * Mathf.Max(0f, distance - 12f)));

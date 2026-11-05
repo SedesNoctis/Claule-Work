@@ -117,8 +117,8 @@ namespace Avir.Magic
 
         /// <summary>The streaming beam (the author's concept): a Beam with an Anchor of its own is not one stroke - it holds
         /// on its target and strikes along the line again every second, four times for each Anchor, each at half strength;
-        /// it breaks when the target falls, goes out of sight or out of reach, or the caster falls. A healing thread so
-        /// written is a stream of healing.</summary>
+        /// it breaks when the target falls, goes out of sight or out of reach, or the caster falls or steps off the spot -
+        /// a stream is held standing (the author). A healing thread so written is a stream of healing.</summary>
         public const int BeamInterval = 60, BeamPerAnchor = 4;
 
         public static void NoteBeam(Pawn caster, RitualSchema part, ComboKind k, RuneDef el, float power, LocalTargetInfo target)
@@ -137,8 +137,12 @@ namespace Avir.Magic
             var b = new MapComponent_Auras.Aura
             {
                 caster = caster, el = el, combo = k, spell = Spell, beam = true, target = target, left = BeamPerAnchor * anchor,
-                power = power, interval = BeamInterval, shaped = SpellSculpt.Active, aid = SpellSculpt.Allies
+                power = power, interval = BeamInterval, shaped = SpellSculpt.Active, aid = SpellSculpt.Allies, stand = caster.Position
             };
+            // the caster stands and holds it (the author): a wait as long as the stream, right after the cast
+            Verse.AI.Job hold = JobMaker.MakeJob(JobDefOf.Wait_MaintainPosture);
+            hold.expiryInterval = b.left * b.interval + 30;
+            caster.jobs?.jobQueue?.EnqueueFirst(hold);
             b.parts.Add(part.Copy());
             b.next = Find.TickManager.TicksGame + b.interval;
             c.all.Add(b);
@@ -148,6 +152,7 @@ namespace Avir.Magic
         public static bool BeamHolds(MapComponent_Auras.Aura a)
         {
             if (!a.beam) return true;
+            if (a.caster.Position != a.stand) return false;
             LocalTargetInfo t = a.target;
             if (t.HasThing && (t.Thing.Destroyed || !t.Thing.Spawned || t.Thing.Map != a.caster.Map || (t.Thing is Pawn tp && tp.Dead))) return false;
             IntVec3 at = t.Cell;
@@ -229,6 +234,7 @@ namespace Avir.Magic
             /// <summary>A streaming beam: it holds on its target instead of standing round the caster.</summary>
             public bool beam;
             public LocalTargetInfo target;
+            public IntVec3 stand;   // a stream is held standing: the caster stepping off it lets it go
             public float flash;   // when it last struck (real time), for the flare of the ring
             public float seed = Rand.Range(0f, 360f);
         }
