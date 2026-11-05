@@ -118,10 +118,10 @@ namespace Avir.Magic
     public class Hediff_ArcaneCore : HediffWithComps
     {
         public int level = 1;
-        /// <summary>The reserve a core level gives (the author, Fix124: the bonus is capped, the levels are not): +25% of the
-        /// first reserve for each level up to the 10th, +5% for each after it.</summary>
-        public const int LevelSoftCap = 10;
-        public static float LevelShare(int lvl) => 0.25f * (Mathf.Min(lvl, LevelSoftCap) - 1) + 0.05f * Mathf.Max(0, lvl - LevelSoftCap);
+        /// <summary>The reserve a core level gives (the author, Fix125: the bonus is capped, the levels are not): +7.5% of the
+        /// first reserve a level, +75% at most (the 11th level); beyond it the constellation - composure or greatness.</summary>
+        public const float LevelStep = 0.075f, LevelMax = 0.75f;
+        public static float LevelShare(int lvl) => Mathf.Min(LevelMax, LevelStep * (lvl - 1));
         public float arcana;
         public int outsideTicks;     // how long the Arcana has stood outside its band, above or below
         public float target = 0.5f;  // where the mage keeps it: past this, the excess is let out (vent)
