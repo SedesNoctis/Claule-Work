@@ -478,7 +478,7 @@ namespace Avir.Magic
     /// <summary>What second-order meetings leave on the ground for a while, and what they do later.</summary>
     public class SecondFields : MapComponent
     {
-        public class Fld { public SecondKind y; public HashSet<IntVec3> cells; public int until; public Pawn owner; public float power; public Vector3 dir; public float speed; public Vector3 center; }
+        public class Fld { public SecondKind y; public HashSet<IntVec3> cells; public int until; public Pawn owner; public float power; public Vector3 dir; public float speed; public Vector3 center; public Vector3 mid; public float rad; }
         public readonly List<Fld> fields = new List<Fld>();
         private readonly List<KeyValuePair<int, Action>> later = new List<KeyValuePair<int, Action>>();
         public SecondFields(Map map) : base(map) { }
@@ -536,6 +536,43 @@ namespace Avir.Magic
                     }
                     if (f.y == SecondKind.Deluge) foreach (Thing t in here.Where(t => t is Fire).ToList()) t.Destroy();
                 }
+            }
+        }
+
+        // a field of the bog lies on the ground as a slow-turning sheet (Field_<Kind>.png), fading as it ends
+        private static readonly Dictionary<SecondKind, Material> fieldMats = new Dictionary<SecondKind, Material>();
+        private static Material FieldMat(SecondKind y)
+        {
+            if (fieldMats.TryGetValue(y, out Material m)) return m;
+            string path = "Things/Mote/Avir/Magic/Field_" + y;
+            m = ContentFinder<Texture2D>.Get(path, false) != null ? MaterialPool.MatFrom(path, ShaderDatabase.Transparent, Color.white) : null;
+            fieldMats[y] = m;
+            return m;
+        }
+
+        public override void MapComponentUpdate()
+        {
+            if (fields.Count == 0 || Find.CurrentMap != map) return;
+            float t = Time.realtimeSinceStartup;
+            int now = Find.TickManager.TicksGame;
+            foreach (Fld f in fields)
+            {
+                if (f.cells == null || f.cells.Count == 0) continue;
+                Material m = FieldMat(f.y);
+                if (m == null) continue;
+                if (f.rad <= 0f || f.speed > 0f)
+                {
+                    Vector3 sum = Vector3.zero; foreach (IntVec3 c in f.cells) sum += c.ToVector3Shifted();
+                    Vector3 mid = sum / f.cells.Count; float r = 0f;
+                    foreach (IntVec3 c in f.cells) r = Mathf.Max(r, (c.ToVector3Shifted() - mid).MagnitudeHorizontal());
+                    f.mid = mid; f.rad = r + 0.8f;
+                }
+                Vector3 pos = f.mid; pos.y = AltitudeLayer.MoteLow.AltitudeFor() - 0.01f;
+                var block = new MaterialPropertyBlock();
+                Color col = Color.white; col.a = 0.55f * Mathf.Clamp01((f.until - now) / 600f) + 0.05f * Mathf.Sin(t * 1.3f);
+                block.SetColor(ShaderPropertyIDs.Color, col);
+                float size = f.rad * 2f;
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis((t * 4f + f.mid.x * 13f) % 360f, Vector3.up), new Vector3(size, 1f, size)), m, 0, null, 0, block);
             }
         }
 
