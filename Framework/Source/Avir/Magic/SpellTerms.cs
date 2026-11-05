@@ -36,6 +36,8 @@ namespace Avir.Magic
                 "Tautology. A verb written twice in one section is the same act said again, and it tires: the second acts at half, the third at a quarter, the rest not at all - yet each still draws its Arcana. In another section the same verb is a new act and does not wear. The old masters spread their verbs; they did not pile them."),
             T("Heavy", "Earthen Slowness",
                 "Earthen Slowness. Earth does not hurry. A circle of earth - and of what earth makes with others, magma and bog - is written into the world slower than any other: the cast takes longer. Dust rides the air and is spared it."),
+            T("Unwieldy", "Unwieldy Stone",
+                "Unwieldy Stone. Earth is not quick to turn. A spell with earth in it strikes the place it was aimed at, not the one who stood there: whoever walks away before the cast is spared. What it lacks in aim it makes up in reach - it is as wide as by one Breadth."),
             T("Stone at hand", "Stone at Hand",
                 "Stone at Hand. Earth's spells take up the stone they find where they strike - rubble, chunks, lumps of basalt, the mire for a bog - and throw it into the work. Stronger, cheaper, and deeper through armour; and the stone so used is gone."),
             T("Momentum", "Air's Momentum",

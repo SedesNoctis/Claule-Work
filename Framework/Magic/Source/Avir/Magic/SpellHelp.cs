@@ -270,7 +270,8 @@ namespace Avir.Magic
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
             RuneDef form = forms.FirstOrDefault();
-            float radius = FireMagic.PointRadius(r);
+            float radius = FireMagic.PointRadius(r) + 1.5f;   // earth is unwieldy and wide for it, as by one Breadth
+            e.Add("Unwieldy", "Earth strikes the place it was aimed at, not the one aimed at: if the foe walks away before the cast, the stone falls where they stood. It is wide for it - as by one Breadth.");
             string what = Verbs(verbs, EarthVerb);
             switch (form?.kind)
             {

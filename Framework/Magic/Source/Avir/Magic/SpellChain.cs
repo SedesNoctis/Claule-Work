@@ -269,8 +269,15 @@ namespace Avir.Magic
             return circles.Count > 0 && circles.All(c => c.element.kind == RuneKind.Air || (pairs.TryGetValue(c, out ComboKind k) && Combos.WithAir(k)));
         }
 
+        /// <summary>Earth is unwieldy (the author, Nov 2026): a spell with earth in it strikes the place it was aimed at,
+        /// not the one aimed at - if the foe has walked away, so be it. A lone ward aimed at someone still goes on them.</summary>
+        public static bool Unwieldy(RitualSchema s) =>
+            s?.weave != null && s.weave.Working.Any(c => c.element != null && c.element.kind == RuneKind.Earth)
+            && s.weave.Working.Any(c => c.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form));
+
         public static void Order(Pawn mage, RitualSchema spell, int slot, LocalTargetInfo target, IntVec3 wallEnd)
         {
+            if (target.HasThing && Unwieldy(spell)) target = new LocalTargetInfo(target.Cell);
             // a step that has nowhere to land is not begun at all: no Arcana is spent on it
             string why = StepBlocked(mage, spell, target);
             if (why != null) { Messages.Message("Cannot cast " + spell.name + ": " + why, mage, MessageTypeDefOf.RejectInput, false); return; }

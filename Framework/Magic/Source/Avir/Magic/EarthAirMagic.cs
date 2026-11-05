@@ -21,6 +21,7 @@ namespace Avir.Magic
         public static void Cast(Pawn caster, RitualSchema s, RitualReading r, LocalTargetInfo target, float power)
         {
             r = SpellMods.Begin(s, r);
+            r.breadth++;   // earth is unwieldy - it strikes where it was aimed, not where the foe went - and wide for it, as by one Breadth
             Map map = caster.Map;
             Hediff kept = caster.health.hediffSet.GetFirstHediffOfDef(EarthAirDefOf.Avir_StoredStone);
             if (kept != null && !r.verbs.Any(v => v.kind == RuneKind.Drain)) { power *= 1f + kept.Severity; caster.health.RemoveHediff(kept); }

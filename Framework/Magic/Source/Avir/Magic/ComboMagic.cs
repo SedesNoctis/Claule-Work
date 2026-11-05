@@ -171,6 +171,7 @@ namespace Avir.Magic
             if (map == null) return;
             GameComponent_Combos.Made(k, caster);
             r = SpellMods.Begin(s, r);
+            if (EarthStone.Heavy(k)) r.breadth++;   // what earth makes is unwieldy too: wide, as by one Breadth
             IntVec3 at = target.Cell;
             // magma, bog and dust take up their own ground at hand, as earth takes up stone
             if (EarthStone.Heavy(k) && !storming) power *= EarthStone.Gather(map, at, k);
