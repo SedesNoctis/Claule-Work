@@ -254,11 +254,15 @@ namespace Avir.Magic
             }
             if (mats.TryGetValue(key, out Material m)) return m;
             string path = "Things/Mote/Avir/Magic/Aura_" + key;
-            if (ContentFinder<Texture2D>.Get(path, false) != null) m = MaterialPool.MatFrom(path, ShaderDatabase.MoteGlow, Color.white);
+            // the rings are painted with their own light and alpha (Fix119): drawn as they are, not as added glow -
+            // under glow the dark stones of earth and the mud of the bog would vanish
+            if (ContentFinder<Texture2D>.Get(path, false) != null) m = MaterialPool.MatFrom(path, ShaderDatabase.Transparent, Color.white);
+            else if (ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Aura_Base", false) != null)
+                m = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Aura_Base", ShaderDatabase.Transparent, SpellAura.ColorOf(a));
             else
             {
                 string parent = a.combo == ComboKind.Magma || a.combo == ComboKind.Haze ? "Fire" : a.combo == ComboKind.Storm || a.combo == ComboKind.Dust ? "Air" : a.combo == ComboKind.Bog ? "Earth" : a.combo == ComboKind.Steam ? "Water" : "Fire";
-                m = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Aura_" + parent, ShaderDatabase.MoteGlow, SpellAura.ColorOf(a));
+                m = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Aura_" + parent, ShaderDatabase.Transparent, SpellAura.ColorOf(a));
             }
             mats[key] = m;
             return m;
