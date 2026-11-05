@@ -133,6 +133,10 @@ namespace Avir.Magic
         public float ventedToArtifacts;
         /// <summary>The mage's spells went into the colony's book when the mage became the colony's.</summary>
         public bool shared;
+        /// <summary>Experience in each element (MageClass), and the points of the path not spent yet.</summary>
+        public Dictionary<RuneKind, float> xp = new Dictionary<RuneKind, float>();
+        public int points;
+        private float dayAcc;
 
         public void Note(string text)
         {
@@ -144,8 +148,9 @@ namespace Avir.Magic
         public bool Sorcerer => pawn.story?.traits?.GetTrait(MagicDefOf.Avir_ArcaneGift)?.Degree == Mages.Born;
 
         /// <summary>The core's calm reserve - not a ceiling: Arcana can be held past it, and then greatness grows.
-        /// A sorcerer's reserve is half again as deep.</summary>
-        public float Capacity => 100f * level * MagicConductors.CapacityFactor(pawn) * (Sorcerer ? 1.5f : 1f);
+        /// A sorcerer's reserve is half again as deep. Each level of the core deepens it by a quarter of the first (MageClass: the level grows from experience now -
+        /// a whole first reserve per level would make a grandmaster's tenfold).</summary>
+        public float Capacity => 100f * (1f + 0.25f * (level - 1)) * MagicConductors.CapacityFactor(pawn) * (Sorcerer ? 1.5f : 1f);
         public float Fill => Capacity <= 0f ? 0f : arcana / Capacity;
 
         public float Composure => pawn.GetStatValue(RitualDefOf.Avir_Composure);
@@ -185,7 +190,11 @@ namespace Avir.Magic
             Scribe_Collections.Look(ref log, "log", LookMode.Value);
             Scribe_Values.Look(ref ventedToArtifacts, "ventedToArtifacts");
             Scribe_Values.Look(ref shared, "shared");
+            Scribe_Collections.Look(ref xp, "xp", LookMode.Value, LookMode.Value);
+            Scribe_Values.Look(ref points, "points");
+            Scribe_Values.Look(ref dayAcc, "dayAcc");
             if (log == null) log = new List<string>();
+            if (xp == null) xp = new Dictionary<RuneKind, float>();
         }
 
         public override void TickInterval(int delta)
@@ -203,6 +212,9 @@ namespace Avir.Magic
                 if (n > 0) Messages.Message(pawn.LabelShortCap + "'s spells (" + n + ") are written into the colony's book.", pawn, MessageTypeDefOf.PositiveEvent, false);
             }
             float hours = dt / (float)GenDate.TicksPerHour;
+            // time: the mage keeps thinking in their own element (MageClass), a day at a time
+            dayAcc += hours / 24f;
+            if (dayAcc >= 1f) { MageClass.Days(this, dayAcc); dayAcc = 0f; }
             // the map's stream seeps into a mage a little on its own
             Map m = pawn.MapHeld;
             if (m != null)
@@ -801,6 +813,29 @@ namespace Avir.Magic
 
         [DebugAction(Cat, "Spell rubble here (stone for earth)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevRubble() { Map map = Find.CurrentMap; foreach (IntVec3 c in FireMagic.Point(Verse.UI.MouseCell(), map, 1.5f)) MagicFx.Rubble(c, map); }
+
+        private static void ForElement(System.Action<Hediff_ArcaneCore, RuneDef> act)
+        {
+            var opts = MagePath.Made.Select(e => new DebugMenuOption(e.LabelCap, DebugMenuOptionMode.Tool, () =>
+            {
+                Pawn p = Verse.UI.MouseCell().GetFirstPawn(Find.CurrentMap);
+                Hediff_ArcaneCore c = Mages.Core(p);
+                if (c != null) act(c, e);
+            })).ToList();
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(opts));
+        }
+
+        [DebugAction(Cat, "Experience: +1000 in an element (choose)", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevXp() => ForElement((c, e) => { c.xp[e.kind] = MageClass.XpIn(c, e.kind) + 1000f; MageClass.Grow(c); Messages.Message(c.pawn.LabelShortCap + ": " + e.label + " " + MageClass.XpIn(c, e.kind).ToString("0") + " (" + MageClass.StageName(MageClass.XpIn(c, e.kind)) + ").", MessageTypeDefOf.NeutralEvent, false); });
+
+        [DebugAction(Cat, "Experience: make main element (choose)", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevMain() => ForElement((c, e) => { c.path = e; Messages.Message(c.pawn.LabelShortCap + "'s main element: " + e.label + ".", MessageTypeDefOf.NeutralEvent, false); });
+
+        [DebugAction(Cat, "Experience: forget all (keeps level)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevXpForget(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) { c.xp.Clear(); c.points = 0; } }
+
+        [DebugAction(Cat, "Experience: show", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevXpShow(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) Log.Message("[Avir class] " + p.LabelShort + "\n" + MageClass.Explain(c)); }
 
         [DebugAction(Cat, "Lost hold on this wizard or sorcerer (choose element)", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevSlip()

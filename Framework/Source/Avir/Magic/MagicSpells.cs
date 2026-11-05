@@ -54,7 +54,7 @@ namespace Avir.Magic
             return (2f + n) * size + 3f * Mathf.Max(0, r.elements.Count - 1);
         }
 
-        public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s) => Mathf.RoundToInt(CastTicks(c.Sorcerer, s) * AirMomentum.Factor(c.pawn, s));
+        public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s) => Mathf.RoundToInt(CastTicks(c.Sorcerer, s) * AirMomentum.Factor(c.pawn, s) * MageClass.CastFactor(c, s));
 
         /// <summary>A far target takes longer: +2% for every cell past twelve - a mage across the map is seen coming.</summary>
         public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s, float distance) => Mathf.RoundToInt(CastTicks(c, s) * (1f + 0.02f * Mathf.Max(0f, distance - 12f)));
@@ -82,7 +82,7 @@ namespace Avir.Magic
             float risk = (s.weave != null ? WeaveSpell.Risk(s.weave) : RitualEvaluator.Read(s).Risk(1f, 1f, 0f)) + FlowUnrest(p.MapHeld);
             float comp = GameComponent_AvirComposure.For(p, s, null);
             if (Mages.Core(p)?.Sorcerer == true) comp *= 1.3f;
-            return risk > comp ? Mathf.Clamp01(1f - (risk - comp) * 0.4f) : 1f;
+            return risk > comp ? Mathf.Clamp01(1f - (risk - comp) * 0.4f * MageClass.SlipFactor(Mages.Core(p), s)) : 1f;
         }
         /// <summary>No rest between casts (the author, Nov 2026): what limits a mage is Arcana, the hold and the cast time.</summary>
         public static int Cooldown(RitualSchema s) => 0;
@@ -130,7 +130,7 @@ namespace Avir.Magic
             float risk = (s.weave != null ? WeaveSpell.Risk(s.weave) : r.Risk(1f, 1f, 0f)) + FlowUnrest(map);
             float comp = GameComponent_AvirComposure.For(caster, s, null);
             if (core.Sorcerer) comp *= 1.3f;   // a sorcerer's composure goes into the hold of a spell
-            bool lost = DevHold == 1 ? false : DevHold == -1 ? true : risk > comp && Rand.Chance((risk - comp) * 0.4f);
+            bool lost = DevHold == 1 ? false : DevHold == -1 ? true : risk > comp && Rand.Chance((risk - comp) * 0.4f * MageClass.SlipFactor(core, s));
             if (lost)
             {
                 // a lost hold burns the mage a little; the element's own price falls on all round. No greatness from it:
@@ -139,6 +139,7 @@ namespace Avir.Magic
                 FleckMaker.ThrowMicroSparks(caster.DrawPos, map);
                 Messages.Message(caster.LabelShortCap + " lost the hold on " + s.name + ": the Arcana burnt through.", caster, MessageTypeDefOf.NegativeEvent, false);
                 core.Note("Lost the hold on " + s.name + ".");
+                MageClass.Cast(core, s, cost, true);
                 if (s.weave != null) WeaveSpell.Slip(caster, s.weave);
                 else if (FireMagic.Is(r.elements.FirstOrDefault())) FireMagic.Raging(caster);
                 else if (WaterMagic.Is(r.elements.FirstOrDefault())) WaterMagic.Chilled(caster);
@@ -149,7 +150,8 @@ namespace Avir.Magic
             GameComponent_AvirComposure.Performed(caster, cost, risk, comp, GameComponent_AvirComposure.KeyOf(s));
             AirMomentum.Note(caster, s);
             core.Note("Cast " + s.name + " (" + cost.ToString("0.#") + " Arcana).");
-            float power = Power(s) * MagicConductors.PowerFactor(caster, core);
+            float power = Power(s) * MagicConductors.PowerFactor(caster, core) * MageClass.PowerFactor(core, s);
+            MageClass.Cast(core, s, cost, false);
             // a spell of one circle: the focus rune draws the stream into it (a woven spell does it circle by circle)
             if (s.weave == null && r.focus > 0) power *= 1f + r.focus * (0.2f + 0.1f * FlowTierAny(map));
             int tier = FlowTier(map);

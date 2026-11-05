@@ -126,8 +126,7 @@ namespace Avir.Magic
             GUI.color = Ink; Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(r.x, r.y, r.width, 34f), "The path of " + pawn.LabelShort);
             Text.Font = GameFont.Small; GUI.color = InkSoft;
-            Widgets.Label(new Rect(r.x, r.y + 40f, r.width, 60f), core == null ? "No arcane core." :
-                "Core level " + core.level + ". How a " + (core.Sorcerer ? "sorcerer" : "wizard") + " grows - and where their path leads - is still to be written here.");
+            Widgets.Label(new Rect(r.x, r.y + 40f, r.width, r.height - 40f), core == null ? "No arcane core." : MageClass.Explain(core));
         }
 
         private void DrawMage(Rect r, Hediff_ArcaneCore core)
