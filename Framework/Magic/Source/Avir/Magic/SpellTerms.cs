@@ -28,6 +28,8 @@ namespace Avir.Magic
                 "Selective Protection. Two Barriers on the outermost section of a circle bend its blow round the caster's people - and round the caster - so that only foes are struck. The blow pays for its care: it is a quarter weaker. Each circle must be bent on its own; a circle left plain strikes everyone in its reach."),
             T("Turned to its own", "Selective Aid",
                 "Selective Aid. Two Barriers and a Thread on the outermost section of a circle turn Selective Protection round: the blow goes to the caster's own people - and to the caster - and passes the foes by. It is a quarter weaker for its care. Made for mending, warding and strengthening one's own from the circle; written on a blast, it is the caster's own business."),
+            T("Drawn in", "Implosion",
+                "Implosion. A Thread written on a Release turns the blast inward: it strikes as it would, but whoever it would throw back is pulled in toward its heart instead, and never past it. The old masters used it to gather a crowd for the circle that came after."),
             T("Healing thread", "Healing Thread",
                 "Healing Thread. A Beam, a Thread written right after it, and Restoration right after the Thread: the line itself is tied to the mending, and whoever it passes through has their wounds closed, the worst first. Whom it reaches is the circle's rule, as for any blow. What the beam carries is its own: a tied verb heals, a plain one strikes. Spread wider with Breadth, it is thinner."),
             T("Streaming beam", "Streaming Beam",

@@ -54,6 +54,18 @@ namespace Avir.Magic
             return (2f + n) * size + 3f * Mathf.Max(0, r.elements.Count - 1);
         }
 
+        /// <summary>What a spell costs this caster: an Avir spends the most (x1.4).</summary>
+        public const float AvirCost = 1.4f;
+        public static float CostFor(Hediff_ArcaneCore c, RitualSchema s) => Cost(s) * (c != null && c.Avir ? AvirCost : 1f);
+
+        /// <summary>An Avir's spell is the stronger the greater they are: up to twice at full greatness.</summary>
+        public static float AvirGreatness(Hediff_ArcaneCore c)
+        {
+            if (c == null || !c.Avir) return 1f;
+            Hediff g = c.pawn.health.hediffSet.GetFirstHediffOfDef(MagicDefOf.Avir_ArcaneGreatness);
+            return 1f + (g?.Severity ?? 0f);
+        }
+
         public static int CastTicks(Hediff_ArcaneCore c, RitualSchema s) => Mathf.RoundToInt(CastTicks(c.Sorcerer, s) * AirMomentum.Factor(c.pawn, s) * MageClass.CastFactor(c, s));
 
         /// <summary>A far target takes longer: +2% for every cell past twelve - a mage across the map is seen coming.</summary>
@@ -81,7 +93,7 @@ namespace Avir.Magic
             if (DevHold != 0) return DevHold > 0 ? 1f : 0f;
             float risk = (s.weave != null ? WeaveSpell.Risk(s.weave) : RitualEvaluator.Read(s).Risk(1f, 1f, 0f)) + FlowUnrest(p.MapHeld);
             float comp = GameComponent_AvirComposure.For(p, s, null);
-            if (Mages.Core(p)?.Sorcerer == true) comp *= 1.3f;
+            if (Mages.Core(p)?.Sorcerer == true && Mages.Core(p)?.Avir != true) comp *= 1.3f;
             return risk > comp ? Mathf.Clamp01(1f - (risk - comp) * 0.4f * MageClass.SlipFactor(Mages.Core(p), s)) : 1f;
         }
         /// <summary>No rest between casts (the author, Nov 2026): what limits a mage is Arcana, the hold and the cast time.</summary>
@@ -123,13 +135,13 @@ namespace Avir.Magic
             // the place a step aims at may have filled up while the spell was cast: then it is not let go, and costs nothing
             string blocked = SpellCasting.StepBlocked(caster, s, target);
             if (blocked != null) { Messages.Message(s.name + " was not let go: " + blocked + " No Arcana spent.", caster, MessageTypeDefOf.RejectInput, false); return; }
-            float cost = Cost(s) * AirMomentum.Factor(caster, s) * EarthStone.CostFactor(map, target.Cell, s);
+            float cost = CostFor(core, s) * AirMomentum.Factor(caster, s) * EarthStone.CostFactor(map, target.Cell, s);
             if (core.arcana < cost) { Messages.Message(caster.LabelShortCap + " has not enough Arcana for " + s.name + ".", caster, MessageTypeDefOf.RejectInput, false); return; }
             core.Add(-cost);
             // the hold: composure against the spell's instability
             float risk = (s.weave != null ? WeaveSpell.Risk(s.weave) : r.Risk(1f, 1f, 0f)) + FlowUnrest(map);
             float comp = GameComponent_AvirComposure.For(caster, s, null);
-            if (core.Sorcerer) comp *= 1.3f;   // a sorcerer's composure goes into the hold of a spell
+            if (core.Sorcerer && !core.Avir) comp *= 1.3f;   // an Avir holds by composure alone   // a sorcerer's composure goes into the hold of a spell
             bool lost = DevHold == 1 ? false : DevHold == -1 ? true : risk > comp && Rand.Chance((risk - comp) * 0.4f * MageClass.SlipFactor(core, s));
             if (lost)
             {
@@ -150,7 +162,7 @@ namespace Avir.Magic
             GameComponent_AvirComposure.Performed(caster, cost, risk, comp, GameComponent_AvirComposure.KeyOf(s));
             AirMomentum.Note(caster, s);
             core.Note("Cast " + s.name + " (" + cost.ToString("0.#") + " Arcana).");
-            float power = Power(s) * MagicConductors.PowerFactor(caster, core) * MageClass.PowerFactor(core, s);
+            float power = Power(s) * MagicConductors.PowerFactor(caster, core) * MageClass.PowerFactor(core, s) * AvirGreatness(core);
             MageClass.Cast(core, s, cost, false);
             // a spell of one circle: the focus rune draws the stream into it (a woven spell does it circle by circle)
             if (s.weave == null && r.focus > 0) power *= 1f + r.focus * (0.2f + 0.1f * FlowTierAny(map));

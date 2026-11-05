@@ -332,7 +332,7 @@ namespace Avir.Magic
         {
             RitualSchema s = (p.jobs?.curDriver as JobDriver_CastSpell)?.spell ?? MapComponent_AirCasts.Of(p)?.spell;
             Hediff_ArcaneCore core = Mages.Core(p);
-            if (s != null && core != null) core.Add(-Spells.Cost(s) * 0.5f);
+            if (s != null && core != null) core.Add(-Spells.CostFor(core, s) * 0.5f);
             if (p.CurJobDef == MagicSpellDefOf.Avir_CastSpell) p.jobs.EndCurrentJob(Verse.AI.JobCondition.InterruptForced);
             MapComponent_AirCasts.Cancel(p);
             Messages.Message(p.LabelShortCap + " lets the spell go - half its Arcana is spent for nothing.", p, MessageTypeDefOf.SilentInput, false);

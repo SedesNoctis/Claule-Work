@@ -80,6 +80,8 @@ namespace Avir.Magic
                 if (nAid > 0) e0.Add("Turned to its own", "Two Barriers and a Thread in the outermost section of a circle turn its blow to the caster's own people - the caster among them - and past the foes; "
                     + (1f - SpellSculpt.Keeps).ToStringPercent() + " weaker for it. For mending, warding and strengthening one's own from the circle.");
                 foreach (var w in SpellHeal.Warnings(s)) e0.Add(w.Key, w.Value);
+                if (s.weave != null ? s.weave.Working.Any(k => SpellHeal.Implodes(k.AsSchema())) : SpellHeal.Implodes(s))
+                    e0.Add("Drawn in", "A Thread on a Release turns the blast round: whoever it would throw out is drawn in to its heart instead - never past it. Good for gathering foes under the next circle.");
                 bool healThread = s.weave != null ? s.weave.Working.Any(k => SpellHeal.BeamTied(k.AsSchema())) : SpellHeal.BeamTied(s);
                 if (healThread) e0.Add("Healing thread", "A Beam with a Thread and Restoration right after it: the beam itself mends whoever it passes through - by the circle's rule of whom. Thinner with its Breadth.");
                 bool stream = (s.weave != null ? s.weave.Working.Select(k => k.AsSchema()) : new[] { s }).Any(k =>

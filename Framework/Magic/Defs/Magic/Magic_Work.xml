@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <WorkTypeDef>
+    <defName>Avir_MagicWork</defName>
+    <labelShort>magic</labelShort>
+    <pawnLabel>Caster</pawnLabel>
+    <gerundLabel>working magic</gerundLabel>
+    <description>Work done by magic: water washes the floor round a spot clean, the wind carries a heap of things to the stockpile at once, earth draws ore up from a vein the caster has sensed. Each pays Arcana and teaches its element. Casters only.</description>
+    <verb>Work magic</verb>
+    <naturalPriority>500</naturalPriority>
+    <visible>true</visible>
+  </WorkTypeDef>
+
+  <WorkGiverDef>
+    <defName>Avir_MagicClean</defName>
+    <label>wash the floor by water</label>
+    <giverClass>Avir.Magic.WorkGiver_MagicClean</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>wash</verb>
+    <gerund>washing</gerund>
+    <priorityInType>30</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_MagicHaul</defName>
+    <label>carry by the wind</label>
+    <giverClass>Avir.Magic.WorkGiver_MagicHaul</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>carry</verb>
+    <gerund>carrying</gerund>
+    <priorityInType>20</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_MagicMine</defName>
+    <label>draw ore up by earth</label>
+    <giverClass>Avir.Magic.WorkGiver_MagicMine</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>draw ore</verb>
+    <gerund>drawing ore up</gerund>
+    <priorityInType>10</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+
+  <JobDef>
+    <defName>Avir_MagicClean</defName>
+    <driverClass>Avir.Magic.JobDriver_MagicClean</driverClass>
+    <reportString>washing the floor by water.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_MagicHaul</defName>
+    <driverClass>Avir.Magic.JobDriver_MagicHaul</driverClass>
+    <reportString>carrying things by the wind.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_MagicMine</defName>
+    <driverClass>Avir.Magic.JobDriver_MagicMine</driverClass>
+    <reportString>drawing ore up from the deep.</reportString>
+  </JobDef>
+</Defs>

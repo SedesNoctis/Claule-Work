@@ -32,10 +32,22 @@ namespace Avir.Magic
         private static bool Unmoved(Pawn p) => p == null || p.Dead || !p.Spawned || MagicFx.Rooted(p) || SpellWards.Stops(p, false);
 
         /// <summary>Thrown back from a point (a negative distance pulls toward it); lie &gt; 0 - and left lying.</summary>
+        /// <summary>The implosion (the author's rule, Fix106): a Release with a Thread on it draws the bodies in to its heart
+        /// instead of throwing them out - never past the heart. Set with the verb (SpellMods.Verb), for its tick only.</summary>
+        public static bool Inward { get => inward && inwardAt == GenTicks.TicksGame; set { inward = value; inwardAt = GenTicks.TicksGame; } }
+        private static bool inward;
+        private static int inwardAt = -1;
+
         public static void Throw(Pawn p, IntVec3 from, int dist, Map map, Pawn by = null, float power = 1f, int lie = 0)
         {
             if (SpellHeal.Spares(p)) return;
             if (Unmoved(p) || map == null) return;
+            if (dist > 0 && Inward && SpellWards.AtWork)
+            {
+                int toHeart = Mathf.FloorToInt((p.Position - from).LengthHorizontal) - 1;
+                if (toHeart <= 0) { if (lie > 0) Fell(p, lie, by); return; }
+                dist = -Mathf.Min(dist, toHeart);
+            }
             float size = Mathf.Max(1f, p.BodySize);
             int d = Mathf.RoundToInt(Mathf.Abs(dist) / Mathf.Sqrt(size));
             Vector3 dir = (p.Position - from).ToVector3();

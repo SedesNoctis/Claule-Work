@@ -47,7 +47,7 @@ namespace Avir.Magic
             if (old != null && old.Degree != degree) { p.story.traits.RemoveTrait(old); old = null; }
             if (old == null) p.story.traits.GainTrait(new Trait(MagicDefOf.Avir_ArcaneGift, degree, true));
             Hediff_ArcaneCore c = Core(p) ?? GrowCore(p, level);
-            if (c != null) { c.level = Mathf.Max(c.level, level); c.arcana = c.Capacity * fill; GameComponent_ArcaneMemory.Remember(p, c.level); }
+            if (c != null) { c.level = Mathf.Max(c.level, level); c.arcana = c.Capacity * fill; GameComponent_ArcaneMemory.Remember(p, c.level); p.Notify_DisabledWorkTypesChanged(); }
             return c;
         }
 
@@ -162,12 +162,18 @@ namespace Avir.Magic
             lo = Mathf.Max(0.06f, 0.25f - 0.15f * Mathf.Clamp01(c) - w);
             // a mage's composure keeps thoughts of their own greatness further and further off - past the reserve, but never
             // all the way; a sorcerer's hardly does (their composure goes into holding spells instead)
-            hi = Sorcerer ? 0.65f + 0.1f * Mathf.Clamp01(c) + w : 0.65f + 0.6f * (1f - Mathf.Exp(-1.3f * c)) + w;
+            hi = Avir ? 0.35f + 0.35f * (1f - Mathf.Exp(-1.3f * c)) + w   // an Avir's safe Arcana is small: greatness comes soon
+               : Sorcerer ? 0.65f + 0.1f * Mathf.Clamp01(c) + w : 0.65f + 0.6f * (1f - Mathf.Exp(-1.3f * c)) + w;
         }
 
         /// <summary>How readily greatness swells past the band: a sorcerer always gives way to it; a mage less and less
-        /// the steadier they are - never not at all.</summary>
-        public float Pride => (Sorcerer ? 1.25f - 0.15f * Mathf.Clamp01(Composure) : 0.15f + 1.35f * Mathf.Exp(-1.5f * Mathf.Max(0f, Composure))) * MagicConductors.PrideFactor(pawn);
+        /// the steadier they are - never not at all. An Avir gives way to it most of all, and only their composure holds it back (the author).</summary>
+        public float Pride => (Avir ? 2f * Mathf.Exp(-0.6f * Mathf.Max(0f, Composure))
+            : Sorcerer ? 1.25f - 0.15f * Mathf.Clamp01(Composure) : 0.15f + 1.35f * Mathf.Exp(-1.5f * Mathf.Max(0f, Composure))) * MagicConductors.PrideFactor(pawn);
+
+        /// <summary>An Avir caster (the race's own way of magic, Магия-правила.md): the smallest safe band, the fastest
+        /// greatness, the dearest spells - and spells the stronger the greater they are.</summary>
+        public bool Avir => ArcanaIntake.Avir(pawn);
 
         /// <summary>No ceiling: Arcana may be held past the reserve (only never below nothing).</summary>
         public void Add(float amount) => arcana = Mathf.Max(0f, arcana + amount);
@@ -193,6 +199,8 @@ namespace Avir.Magic
             Scribe_Collections.Look(ref xp, "xp", LookMode.Value, LookMode.Value);
             Scribe_Values.Look(ref points, "points");
             Scribe_Values.Look(ref reservePoints, "reservePoints");
+            Scribe_Collections.Look(ref heldWork, "heldWork", LookMode.Def, LookMode.Value);
+            if (heldWork == null) heldWork = new Dictionary<WorkTypeDef, int>();
             Scribe_Values.Look(ref dayAcc, "dayAcc");
             if (log == null) log = new List<string>();
             if (xp == null) xp = new Dictionary<RuneKind, float>();
@@ -216,6 +224,7 @@ namespace Avir.Magic
             // time: the mage keeps thinking in their own element (MageClass), a day at a time
             dayAcc += hours / 24f;
             if (dayAcc >= 1f) { MageClass.Days(this, dayAcc); dayAcc = 0f; }
+            MagicWork.Tick(this, hours);
             // the map's stream seeps into a mage a little on its own
             Map m = pawn.MapHeld;
             if (m != null)
@@ -252,13 +261,38 @@ namespace Avir.Magic
             }
             else if (hollow != null) pawn.health.RemoveHediff(hollow);
             int gs = great == null || great.ShouldRemove ? -1 : great.CurStageIndex;
-            if (gs != lastGreatStage) { lastGreatStage = gs; pawn.Notify_DisabledWorkTypesChanged(); }
+            if (gs != lastGreatStage) { lastGreatStage = gs; WorkKept(); }
             if (f >= lo && f <= hi) outsideTicks = Mathf.Max(0, outsideTicks - dt * 2);
             // held above the band too long: it breaks out - outwards, or (a weak hold) into the mind
             if (f > hi && outsideTicks > GenDate.TicksPerDay / 2 && pawn.Spawned && !pawn.InMentalState && !pawn.Downed && Rand.Chance(0.04f))
             {
                 MentalStateDef def = Composure < 0.3f ? MagicDefOf.Avir_ArcaneInflux : MagicDefOf.Avir_ArcaneOverflow;
                 if (pawn.mindState.mentalStateHandler.TryStartMentalState(def, null, true)) outsideTicks = 0;
+            }
+        }
+
+        /// <summary>Greatness takes work away while it lasts - but the game zeroes the priorities of work it disables, and
+        /// the player had to set them again after every bout. The priorities are kept here and given back when the work
+        /// is allowed again (the author's bug report).</summary>
+        private Dictionary<WorkTypeDef, int> heldWork = new Dictionary<WorkTypeDef, int>();
+
+        private void WorkKept()
+        {
+            Pawn_WorkSettings ws = pawn.workSettings;
+            if (ws == null || !ws.EverWork) { pawn.Notify_DisabledWorkTypesChanged(); return; }
+            var before = new Dictionary<WorkTypeDef, int>();
+            foreach (WorkTypeDef w in DefDatabase<WorkTypeDef>.AllDefsListForReading)
+            {
+                int pr = ws.GetPriority(w);
+                if (pr > 0) before[w] = pr;
+            }
+            pawn.Notify_DisabledWorkTypesChanged();
+            foreach (var kv in before) if (pawn.WorkTypeIsDisabled(kv.Key)) heldWork[kv.Key] = kv.Value;
+            foreach (WorkTypeDef w in heldWork.Keys.ToList())
+            {
+                if (pawn.WorkTypeIsDisabled(w)) continue;
+                if (ws.GetPriority(w) == 0) ws.SetPriority(w, heldWork[w]);
+                heldWork.Remove(w);
             }
         }
 
@@ -329,7 +363,7 @@ namespace Avir.Magic
                 };
                 int left = b.cooldown[i] - Find.TickManager.TicksGame;
                 if (left > 0) cmd.Disable("Ready again in " + left.ToStringTicksToPeriod() + ".");
-                else if (arcana < Spells.Cost(s)) cmd.Disable("Not enough Arcana (" + Spells.Cost(s).ToString("0") + ").");
+                else if (arcana < Spells.CostFor(this, s)) cmd.Disable("Not enough Arcana (" + Spells.CostFor(this, s).ToString("0") + ").");
                 else if (!pawn.Spawned || pawn.Downed) cmd.Disable("Cannot cast now.");
                 yield return cmd;
             }
@@ -858,6 +892,18 @@ namespace Avir.Magic
         [DebugAction(Cat, "Experience: forget all (keeps level)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevXpForget(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) { c.xp.Clear(); c.points = 0; } }
 
+        [DebugAction(Cat, "Greatness +0.25 (an Avir casts stronger)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevGreat(Pawn p)
+        {
+            Hediff g = p.health.hediffSet.GetFirstHediffOfDef(MagicDefOf.Avir_ArcaneGreatness) ?? p.health.AddHediff(MagicDefOf.Avir_ArcaneGreatness);
+            g.Severity = Mathf.Min(1f, g.Severity + 0.25f);
+            Hediff_ArcaneCore c = Mages.Core(p);
+            Messages.Message(p.LabelShortCap + ": greatness " + g.Severity.ToStringPercent() + (c != null && c.Avir ? ", spells x" + Spells.AvirGreatness(c).ToString("0.00") : ""), MessageTypeDefOf.NeutralEvent, false);
+        }
+
+        [DebugAction(Cat, "Magic work: sense the deep for this caster (to draw ore)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevWorkDeep(Pawn p) { SpellSense.Deep(p, p.Map, p.Position, 25f, 2f); if (Mages.Core(p) is Hediff_ArcaneCore c && MageClass.XpIn(c, RuneKind.Earth) <= 0f) c.xp[RuneKind.Earth] = 1f; }
+
         [DebugAction(Cat, "Experience: show", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevXpShow(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) Log.Message("[Avir class] " + p.LabelShort + "\n" + MageClass.Explain(c)); }
 
@@ -944,6 +990,7 @@ namespace Avir.Magic
                 Spell("TEST Healing burst (water: Release + Thread + Restore)", "Water:Release,Thread,Restore"),
                 Spell("TEST Heal own, then blast foes (two circles)", "Fire:Release,Thread,Restore|Barrier,Barrier,Thread", "Fire:Release|Barrier,Barrier"),
                 Spell("TEST Gentle lift (air: Lift + Thread + Restore)", "Air:Lift,Thread,Restore"),
+                Spell("TEST Implosion, then a blast (air, two sections)", "Air:Release,Thread,Amplify|Release,Amplify"),
                 Spell("TEST Healing thread (water: Beam + Thread + Restore)", "Water:Beam,Thread,Restore"),
                 Spell("TEST Streaming beam of fire (Beam + Anchor)", "Fire:Beam,Anchor|Release"),
                 Spell("TEST Stream of healing (Beam + Anchor + Thread + Restore, own only)", "Water:Beam,Anchor,Thread,Restore|Barrier,Barrier,Thread"),
@@ -984,7 +1031,7 @@ namespace Avir.Magic
         }
 
         [DebugAction(Cat, "Hidden terms: find all", allowedGameStates = AllowedGameStates.Playing)]
-        private static void DevLoreAll() { foreach (string k in new[] { "Thread:Step", "Thread:Lift", "Thread:Shape", "Thread:Reach", "Thread:Aid", "Thread:Heal", "Price:raging flame", "Price:chilled", "Price:stone-bound", "Price:winded" }) SpellLore.Learn(k); }
+        private static void DevLoreAll() { foreach (string k in new[] { "Thread:Step", "Thread:Lift", "Thread:Shape", "Thread:Reach", "Thread:Aid", "Thread:Heal", "Thread:Implode", "Price:raging flame", "Price:chilled", "Price:stone-bound", "Price:winded" }) SpellLore.Learn(k); }
 
         [DebugAction(Cat, "Sense the deep here (earth, strength 3)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevSenseDeep(Pawn p) => SpellSense.Deep(p, p.Map, p.Position, 35f, 3f);

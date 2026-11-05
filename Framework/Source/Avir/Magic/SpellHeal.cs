@@ -85,15 +85,36 @@ namespace Avir.Magic
         // Verb once per copy, in the order written - and again in the same order for every form that carries it)
         private static Dictionary<RuneKind, List<bool>> part = new Dictionary<RuneKind, List<bool>>();
         private static readonly Dictionary<RuneKind, int> calls = new Dictionary<RuneKind, int>();
-        public static void Start(RitualSchema s) { part = Copies(s); calls.Clear(); }
+        private static List<bool> implodes = new List<bool>();
+        public static void Start(RitualSchema s) { part = Copies(s); implodes = ImplodingCopies(s); calls.Clear(); }
 
-        /// <summary>Is this application of the verb its tied copy?</summary>
-        public static bool Tied(RuneDef v)
+        /// <summary>Is this application of the verb its tied copy? (And, for a Release, does this copy implode?)</summary>
+        public static bool Tied(RuneDef v) => Tied(v, out _);
+        public static bool Tied(RuneDef v, out bool implode)
         {
+            implode = false;
             if (v == null || v.role != RuneRole.Verb || !part.TryGetValue(v.kind, out List<bool> l) || l.Count == 0) return false;
             calls.TryGetValue(v.kind, out int n);
             calls[v.kind] = n + 1;
+            if (v.kind == RuneKind.Release && implodes.Count == l.Count) implode = implodes[n % l.Count];
             return l[n % l.Count];
+        }
+
+        /// <summary>Each Release of a circle, in order: does a Thread of its own (not one tied to Restoration) follow it?</summary>
+        public static List<bool> ImplodingCopies(RitualSchema s)
+        {
+            var res = new List<bool>();
+            if (s?.rings == null) return res;
+            List<RuneDef> seq = s.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
+            for (int i = 0; i < seq.Count; i++)
+            {
+                if (seq[i].kind != RuneKind.Release) continue;
+                int j = i + 1;
+                while (j < seq.Count && seq[j].role == RuneRole.Modifier && seq[j].kind != RuneKind.Thread && seq[j].kind != RuneKind.Barrier) j++;
+                res.Add(j < seq.Count && seq[j].kind == RuneKind.Thread && !(j + 1 < seq.Count && seq[j + 1].kind == RuneKind.Restore)
+                        && !SpellHops.PairThread(seq, j));
+            }
+            return res;
         }
 
         /// <summary>Who a circle's blow reaches: everyone, only foes (Selective Protection), only one's own (Selective Aid).</summary>
@@ -133,6 +154,9 @@ namespace Avir.Magic
         }
 
         /// <summary>Does any verb of this circle (or of any circle of the spell) turn to healing?</summary>
+        /// <summary>Does this circle hold a Release with a Thread of its own that is not tied to the mending (an implosion)?</summary>
+        public static bool Implodes(RitualSchema s) => ImplodingCopies(s).Any(x => x);
+
         public static bool Turns(RitualSchema s) => Circles(s).Any(c => c.heals);
 
         /// <summary>What a Restoration form carries, like any form: the verbs of its circle - the tied ones heal, the rest
