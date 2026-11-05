@@ -103,7 +103,7 @@
     <research>Avir_Ritualism_Basic</research>
     <implemented>true</implemented>
     <magic>true</magic>
-    <color>(0.40, 0.84, 0.34)</color>
+    <color>(0.66, 0.82, 0.55)</color>
     <uiOrder>206</uiOrder>
   </Avir.Ritualistics.RuneDef>
   <Avir.Ritualistics.RuneDef>
@@ -133,7 +133,7 @@
     <research>Avir_Ritualism_Basic</research>
     <implemented>true</implemented>
     <magic>true</magic>
-    <color>(0.62, 0.52, 1.00)</color>
+    <color>(0.48, 0.38, 0.86)</color>
     <uiOrder>208</uiOrder>
   </Avir.Ritualistics.RuneDef>
   <Avir.Ritualistics.RuneDef>
