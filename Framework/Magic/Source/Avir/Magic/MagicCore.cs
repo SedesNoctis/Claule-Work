@@ -904,6 +904,16 @@ namespace Avir.Magic
         [DebugAction(Cat, "Magic work: sense the deep for this caster (to draw ore)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevWorkDeep(Pawn p) { SpellSense.Deep(p, p.Map, p.Position, 25f, 2f); if (Mages.Core(p) is Hediff_ArcaneCore c && MageClass.XpIn(c, RuneKind.Earth) <= 0f) c.xp[RuneKind.Earth] = 1f; }
 
+        [DebugAction(Cat, "Arcane work: this caster knows all four elements", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void DevKnowAll(Pawn p)
+        {
+            Hediff_ArcaneCore c = Mages.Core(p);
+            if (c == null) return;
+            foreach (RuneKind k in new[] { RuneKind.Fire, RuneKind.Water, RuneKind.Earth, RuneKind.Air }) if (MageClass.XpIn(c, k) <= 0f) c.xp[k] = 1f;
+            c.arcana = Mathf.Max(c.arcana, c.Capacity);
+            p.Notify_DisabledWorkTypesChanged();
+        }
+
         [DebugAction(Cat, "Experience: show", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void DevXpShow(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) Log.Message("[Avir class] " + p.LabelShort + "\n" + MageClass.Explain(c)); }
 

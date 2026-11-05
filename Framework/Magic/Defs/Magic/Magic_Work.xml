@@ -5,7 +5,7 @@
     <labelShort>magic</labelShort>
     <pawnLabel>Caster</pawnLabel>
     <gerundLabel>working magic</gerundLabel>
-    <description>Work done by magic: water tends the wounded with no medicine and washes the floor round a spot clean, the wind carries a heap of things to the stockpile at once, earth raises rock where it is marked, smooths walls and floors, and draws ore up from a vein the caster has sensed. Each pays Arcana and teaches its element. Casters only.</description>
+    <description>Work done by magic: water tends the wounded with no medicine and washes the floor round a spot clean, the wind carries a heap of things to the stockpile at once, earth raises rock, smooths, draws ore up and quickens growth where the arcane orders say; the meetings of two elements smelt, cut stone, warm, wash by steam and charge batteries. Each pays Arcana and teaches its element. Casters only.</description>
     <verb>Work magic</verb>
     <naturalPriority>500</naturalPriority>
     <visible>true</visible>
@@ -31,16 +31,6 @@
     <priorityInType>20</priorityInType>
     <requiredCapacities><li>Manipulation</li></requiredCapacities>
   </WorkGiverDef>
-  <WorkGiverDef>
-    <defName>Avir_MagicMine</defName>
-    <label>draw ore up by earth</label>
-    <giverClass>Avir.Magic.WorkGiver_MagicMine</giverClass>
-    <workType>Avir_MagicWork</workType>
-    <verb>draw ore</verb>
-    <gerund>drawing ore up</gerund>
-    <priorityInType>10</priorityInType>
-    <requiredCapacities><li>Manipulation</li></requiredCapacities>
-  </WorkGiverDef>
 
   <JobDef>
     <defName>Avir_MagicClean</defName>
@@ -52,11 +42,6 @@
     <driverClass>Avir.Magic.JobDriver_MagicHaul</driverClass>
     <reportString>carrying things by the wind.</reportString>
   </JobDef>
-  <JobDef>
-    <defName>Avir_MagicMine</defName>
-    <driverClass>Avir.Magic.JobDriver_MagicMine</driverClass>
-    <reportString>drawing ore up from the deep.</reportString>
-  </JobDef>
   <WorkGiverDef>
     <defName>Avir_MagicTend</defName>
     <label>tend the wounded by water</label>
@@ -65,16 +50,6 @@
     <verb>tend</verb>
     <gerund>tending</gerund>
     <priorityInType>40</priorityInType>
-    <requiredCapacities><li>Manipulation</li></requiredCapacities>
-  </WorkGiverDef>
-  <WorkGiverDef>
-    <defName>Avir_MagicRaiseRock</defName>
-    <label>raise rock by earth</label>
-    <giverClass>Avir.Magic.WorkGiver_MagicRaiseRock</giverClass>
-    <workType>Avir_MagicWork</workType>
-    <verb>raise rock</verb>
-    <gerund>raising rock</gerund>
-    <priorityInType>15</priorityInType>
     <requiredCapacities><li>Manipulation</li></requiredCapacities>
   </WorkGiverDef>
   <WorkGiverDef>
@@ -93,11 +68,6 @@
     <reportString>tending TargetA by water.</reportString>
   </JobDef>
   <JobDef>
-    <defName>Avir_MagicRaiseRock</defName>
-    <driverClass>Avir.Magic.JobDriver_MagicRaiseRock</driverClass>
-    <reportString>raising rock.</reportString>
-  </JobDef>
-  <JobDef>
     <defName>Avir_MagicSmooth</defName>
     <driverClass>Avir.Magic.JobDriver_MagicSmooth</driverClass>
     <reportString>smoothing stone by earth.</reportString>
@@ -108,4 +78,170 @@
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneRaiseRock</defName>
+    <label>raise rock by earth</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneRaiseRock</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>raise rock</verb>
+    <gerund>raising rock</gerund>
+    <priorityInType>15</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneDrill</defName>
+    <label>draw ore up by earth</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneDrill</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>draw ore</verb>
+    <gerund>drawing ore up</gerund>
+    <priorityInType>10</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneGrowth</defName>
+    <label>quicken growth</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneGrowth</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>quicken</verb>
+    <gerund>quickening growth</gerund>
+    <priorityInType>8</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneSmelt</defName>
+    <label>smelt slag by magma</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneSmelt</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>smelt</verb>
+    <gerund>smelting by magma</gerund>
+    <priorityInType>7</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneCut</defName>
+    <label>cut stone by dust</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneCut</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>cut</verb>
+    <gerund>cutting stone by dust</gerund>
+    <priorityInType>6</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneWarm</defName>
+    <label>warm a room by haze</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneWarm</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>warm</verb>
+    <gerund>warming</gerund>
+    <priorityInType>5</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneMelt</defName>
+    <label>melt snow by haze</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneMelt</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>melt</verb>
+    <gerund>melting snow</gerund>
+    <priorityInType>4</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneSteam</defName>
+    <label>wash a room by steam</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneSteam</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>wash</verb>
+    <gerund>washing by steam</gerund>
+    <priorityInType>3</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneCharge</defName>
+    <label>charge batteries by storm</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneCharge</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>charge</verb>
+    <gerund>charging</gerund>
+    <priorityInType>2</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_ArcaneRaiseRock</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>raising rock.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_ArcaneDrill</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>drawing ore up from the deep.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_ArcaneGrowth</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>quickening what grows.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_ArcaneSmelt</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>smelting slag by magma.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_ArcaneCut</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>cutting stone by dust.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_ArcaneWarm</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>warming the room by haze.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_ArcaneMelt</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>melting snow by haze.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_ArcaneSteam</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>washing the room by steam.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_ArcaneCharge</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>charging TargetA by storm.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_ArcaneDrill</defName>
+    <texturePath>UI/Designations/Mine</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <DesignationDef>
+    <defName>Avir_ArcaneSmooth</defName>
+    <texturePath>UI/Designations/SmoothSurface</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <DesignationDef>
+    <defName>Avir_ArcaneGrowth</defName>
+    <texturePath>UI/Designations/Harvest</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <DesignationCategoryDef>
+    <defName>Avir_ArcaneOrders</defName>
+    <label>arcane orders</label>
+    <description>Orders for casters: where to raise rock and of which stone, which sensed vein to draw ore from, what to smooth by magic, where to quicken the growing.</description>
+    <order>95</order>
+    <specialDesignatorClasses>
+      <li>Designator_Cancel</li>
+      <li>Avir.Magic.Designator_RaiseRock</li>
+      <li>Avir.Magic.Designator_ArcaneDrill</li>
+      <li>Avir.Magic.Designator_ArcaneSmooth</li>
+      <li>Avir.Magic.Designator_ArcaneGrowth</li>
+    </specialDesignatorClasses>
+  </DesignationCategoryDef>
 </Defs>

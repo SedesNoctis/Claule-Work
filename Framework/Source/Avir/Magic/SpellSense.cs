@@ -291,6 +291,8 @@ namespace Avir.Magic
         public MapComponent_DeepSense(Map map) : base(map) { }
 
         /// <summary>The deep cells this caster has sensed (for drawing ore up - magic work).</summary>
+        public bool KnownByAny(IntVec3 c) => known.Values.Any(s => s.Contains(c));
+
         public IEnumerable<IntVec3> KnownBy(Pawn p) => p != null && known.TryGetValue(p.thingIDNumber, out var set) ? set : Enumerable.Empty<IntVec3>();
 
         public int Learn(Pawn p, IEnumerable<IntVec3> cells)
