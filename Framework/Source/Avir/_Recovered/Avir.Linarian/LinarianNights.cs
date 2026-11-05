@@ -145,7 +145,7 @@ public static class LinarianNights
 			{
 				Gene_ArcaneHunger.Feed(pawn, 0.03f);
 			}
-			if (gene_LinarianSong != null && gene_LinarianSong.Has("C2") && firstHediffOfDef.Severity >= 0.25f && pawn.MapHeld == map && pawn.Spawned && !q.Downed && (pawn.Faction == null || pawn.Faction != q.Faction))
+			if (gene_LinarianSong != null && gene_LinarianSong.Has("C2") && gene_LinarianSong.flockGuards && firstHediffOfDef.Severity >= 0.25f && pawn.MapHeld == map && pawn.Spawned && !q.Downed && (pawn.Faction == null || pawn.Faction != q.Faction))
 			{
 				LinarianMental.Start(q, pawn, LinarianMental.CultGuard, 10000);
 			}

@@ -175,7 +175,7 @@ namespace Avir.Linarian
                     if (g.Has("C3")) Spread(her, g, q);
                 }
                 // the gift of the flock: when she sleeps, some of them ring her
-                if (g.Has("C2") && LinarianTactics.Asleep(her) && her.Spawned)
+                if (g.Has("C2") && g.flockGuards && LinarianTactics.Asleep(her) && her.Spawned)
                 {
                     if (!wardRolled.TryGetValue(her.thingIDNumber, out int t) || now - t > GenDate.TicksPerHour * 6)
                     {
@@ -494,6 +494,10 @@ namespace Avir.Linarian
         {
             if (!__result) return;
             if (a?.Faction == Faction.OfPlayer && b is Pawn pb && LinarianCult.IsCultist(pb) || b?.Faction == Faction.OfPlayer && a is Pawn pa && LinarianCult.IsCultist(pa))
+                __result = false;
+            // one she has sown adoration in - even while it is still only longing - does not raise a hand against her
+            // herself (the colony's other people they may still fight until they are devoted)
+            else if (a is Pawn x && b is Pawn y && (LinarianCult.SingerOf(x) == y || LinarianCult.SingerOf(y) == x))
                 __result = false;
         }
     }

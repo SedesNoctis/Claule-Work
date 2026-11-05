@@ -37,7 +37,7 @@ namespace Avir.Linarian
                 case "C2": if (p.Faction == Faction.OfPlayer) LinarianCult.GuardTheMap(p, g); else GatherFlock(p); break;
                 case "C3": if (p.Faction == Faction.OfPlayer) LinarianCult.Ecstasy(p, g, c, r); else Ecstasy(p, g, c, r); break;
                 case "C4": if (p.Faction == Faction.OfPlayer) LinarianCult.LastOrder(p, g, g.lastOrderMass ? null : q, c, r); else LastOrder(p, q); break;
-                case "C5": if (!Conversion(p)) { Gene_ArcaneHunger.Feed(p, LinarianTactics.Cost("C5", g)); g.Cooldown("C5", 0); } break;   // no one turned: the hunger is given back
+                case "C5": if (!(g.convertOne ? ConvertOne(p, q) : Conversion(p))) { Gene_ArcaneHunger.Feed(p, LinarianTactics.Cost("C5", g)); g.Cooldown("C5", 0); } break;   // no one turned: the hunger is given back
                 // Will
                 case "W1": Call(p, g, c, r); break;
                 case "W2": FalseOrder(p, g, c, r); break;
@@ -295,6 +295,20 @@ namespace Avir.Linarian
             if (q.Spawned) FleckMaker.ThrowSmoke(q.DrawPos, q.Map, 1f);
             q.Kill(null, null);
             Messages.Message(q.LabelShortCap + " took their own life at a Singer's word.", q.Corpse, MessageTypeDefOf.NegativeEvent, false);
+        }
+
+        /// <summary>Conversion of one chosen mind: it must worship her fervently.</summary>
+        public static bool ConvertOne(Pawn p, Pawn q)
+        {
+            if (q == null || p.Faction == null || q.Faction == p.Faction || q.Dead || Worship(q) < 0.5f || LinarianCult.SingerOf(q) != p)
+            {
+                LinarianTactics.Notify(p, "That one does not worship her fervently enough - the hunger comes back to her.");
+                return false;
+            }
+            q.SetFaction(p.Faction);
+            q.mindState?.mentalStateHandler?.Reset();
+            LinarianTactics.Notify(p, q.LabelShortCap + " turns to her side for good.");
+            return true;
         }
 
         public static bool Conversion(Pawn p)

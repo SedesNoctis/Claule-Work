@@ -32,11 +32,8 @@ public static class AvirIdleWatch
 
 	public static bool Watched(Pawn p)
 	{
-		if (p != null && p.Spawned && p.IsColonist && !p.Drafted)
-		{
-			return AvirBody.IsAvir(p);
-		}
-		return false;
+		// every colonist, not only the Avir: those without flight stood idle too (Nov 2026)
+		return p != null && p.Spawned && p.IsColonist && !p.Drafted;
 	}
 
 	public static void NotePather(Pawn p, string text)
@@ -129,6 +126,10 @@ public static class AvirIdleWatch
 	{
 		StringBuilder stringBuilder = new StringBuilder("[Avir idle] ==== " + p.LabelShort + " ====\n");
 		stringBuilder.AppendLine("now: " + Describe(p, p.CurJob) + ", schedule " + p.timetable?.CurrentAssignment?.defName + ", " + FlightState(p));
+		if (AvirWaitWatch.Origin(p) != null)
+		{
+			stringBuilder.AppendLine("this bare Wait was started by: " + AvirWaitWatch.Origin(p));
+		}
 		stringBuilder.AppendLine("roof here: " + (p.Map.roofGrid.RoofAt(p.Position)?.defName ?? "none") + ", standable here: " + p.Position.Standable(p.Map));
 		if (lastPather.TryGetValue(p.thingIDNumber, out var value))
 		{

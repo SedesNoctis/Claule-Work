@@ -112,7 +112,14 @@ namespace Avir
         /// reserve already is, so growth slows continuously and never quite stops:
         ///   at 0.0 a kill gives the full amount; at 1.0 half; at 3.0 a quarter; at 7.0 an eighth.
         /// </summary>
-        public static float Gain(Pawn pawn, float rawAmount)
+        /// <summary>The author's tail (his hotfix of Nov 2026, now in the mod): past about three essence the intake
+        /// falls away steeply - by the cube - to a trickle: 0.5% of a draw for the siphon and the songs, 5% for the
+        /// reaver's killing blow. Without it the reserve ran up far too fast on crowds of victims.</summary>
+        public const float TailKnee = 3f, TailSteepness = 3f, TailSiphon = 0.005f, TailReaver = 0.05f;
+
+        public static float Gain(Pawn pawn, float rawAmount) => Gain(pawn, rawAmount, false);
+
+        public static float Gain(Pawn pawn, float rawAmount, bool reaver)
         {
             Gene_ArcaneEssence gene = GeneOf(pawn);
             if (gene == null || rawAmount <= 0f) return 0f;
@@ -124,7 +131,11 @@ namespace Avir
 
             // the fuller the reserve, the harder it is to add to - by the square, so it never quite stops but slows down hard
             float k = current / falloff;
-            float actual = rawAmount / (1f + k * k);
+            float share = 1f / (1f + k * k);
+            float floor = reaver ? TailReaver : TailSiphon;
+            float tail = 1f / (1f + Mathf.Pow(current / Mathf.Max(0.01f, TailKnee), TailSteepness));
+            share = Mathf.Min(share, floor + (share - floor) * tail);
+            float actual = rawAmount * share;
 
             gene.Value = Mathf.Min(current + actual, Gene_ArcaneEssence.Ceiling);
             return actual;
@@ -249,7 +260,7 @@ namespace Avir
 
                 float raw = 0.02f * AvirEssence.VictimValue(__instance) * (Linarian.Linarian.Is(killer) ? 2f : 1f);   // a Herald draws twice as much
                 AvirEssenceLifetime.Track(killer, raw, "reaver");
-                AvirEssence.Gain(killer, raw);
+                AvirEssence.Gain(killer, raw, true);
                 Gene_ArcaneHunger.Feed(killer, Gene_ArcaneHunger.FillPerKillingBlow);
             }
             catch (Exception e)

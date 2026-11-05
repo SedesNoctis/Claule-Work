@@ -60,6 +60,12 @@ public class Gene_LinarianSong : Gene
 
 	public bool lastOrderMass;
 
+	/// <summary>Gather the flock: her cultists may guard her sleep and the map at night (off - they leave her be: no early war in a foreign settlement).</summary>
+	public bool flockGuards = true;
+
+	/// <summary>Conversion: one chosen worshipper instead of every fervent one round her (cheaper).</summary>
+	public bool convertOne;
+
 	public bool lullSwapped;
 
 	public IntVec3 lastHuntPoint = IntVec3.Invalid;
@@ -102,15 +108,20 @@ public class Gene_LinarianSong : Gene
 
 	public float VoiceWorth => LinarianFeast.Worth(this);
 
+	public const float SoftCap = 8f;
+
 	public float Power
 	{
 		get
 		{
-			float num = (0.5f + (float)Mathf.Min(songLevel, 20) / 10f) * Mathf.Max(0.5f, pawn.GetStatValue(StatDefOf.PsychicSensitivity));
+			// psychic sensitivity counts in full up to x2; past it (the essence of many victims) only by its square root
+			float sens = Mathf.Max(0.5f, pawn.GetStatValue(StatDefOf.PsychicSensitivity));
+			if (sens > 2f) sens = 2f + Mathf.Sqrt(sens - 2f);
+			float num = (0.5f + (float)Mathf.Min(songLevel, 20) / 10f) * sens;
 			if (Has("F1"))
 			{
 				num *= 1f + (Has("F5") ? 0.5f : 0.25f) * (1f - Mathf.Exp((0f - VoiceWorth) / 12f));
-				num *= 1f + 0.12f * (float)(LinarianFeast.Count(this) / 10);
+				num *= 1f + 0.12f * (float)Mathf.Min(3, LinarianFeast.Count(this) / 10);   // at most +36%, however many voices
 			}
 			if (shadow && pawn.MapHeld != null)
 			{
@@ -128,7 +139,11 @@ public class Gene_LinarianSong : Gene
 			{
 				num *= 2f;
 			}
-			return num * (1f + 0.06f * (float)offered) * castScale * AvirWingParts.SongFactor(pawn);
+			num *= (1f + 0.06f * (float)offered) * AvirWingParts.SongFactor(pawn);
+			// a soft ceiling (the author's report, Nov 2026: x30 and climbing from endless voices and essence): up to x8
+			// in full, past it only by the logarithm - x30 becomes about x16, x50 about x18
+			if (num > SoftCap) num = SoftCap + 4f * Mathf.Log(1f + (num - SoftCap) / 4f);
+			return num * castScale;
 		}
 	}
 
@@ -610,6 +625,8 @@ public class Gene_LinarianSong : Gene
 		Scribe_Values.Look(ref lullOwn, "songLullOwn", defaultValue: false);
 		Scribe_Values.Look(ref adoreMass, "songAdoreMass", defaultValue: false);
 		Scribe_Values.Look(ref lastOrderMass, "songLastOrderMass", defaultValue: false);
+		Scribe_Values.Look(ref flockGuards, "songFlockGuards", defaultValue: true);
+		Scribe_Values.Look(ref convertOne, "songConvertOne", defaultValue: false);
 		Scribe_Values.Look(ref lullSwapped, "songLullSwapped", defaultValue: false);
 		Scribe_Values.Look(ref lastHuntPoint, "songHuntPoint", IntVec3.Invalid);
 		Scribe_Values.Look(ref raidArmed, "songRaidArmed", -1);

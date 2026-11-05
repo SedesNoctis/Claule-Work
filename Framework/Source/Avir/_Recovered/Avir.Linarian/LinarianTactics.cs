@@ -148,6 +148,10 @@ public static class LinarianTactics
 		{
 			return Aim.Cell;
 		}
+		if (g != null && t == "C5" && g.convertOne)
+		{
+			return Aim.Pawn;
+		}
 		if (g != null && t == "S1" && g.rendMass)
 		{
 			return Aim.Cell;
@@ -219,6 +223,8 @@ public static class LinarianTactics
 
 	public static float Cost(string t, Gene_LinarianSong g)
 	{
+		if (t == "C5" && g != null && g.convertOne) return 0.15f;   // one chosen mind costs less than the whole flock
+
 		if (t == "D1" && g?.pawn != null && LinarianDream.RetinueActive(g.pawn))
 		{
 			return 0f;

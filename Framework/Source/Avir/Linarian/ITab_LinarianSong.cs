@@ -813,6 +813,24 @@ namespace Avir.Linarian
                         : "Off: one fervent cultist turns maniac among his own - every blow twice as hard, at the neck, his comrades first. On: every fervent cultist round a point (keep a recruit out of it), half again the first blow.");
                     y += 32f;
                 }
+                if (Mine && n.key == "C2")
+                {
+                    bool on = g.flockGuards;
+                    GUI.color = Bright;
+                    Widgets.CheckboxLabeled(new Rect(0f, y, w, 26f), "Her flock guards her sleep", ref on);
+                    g.flockGuards = on;
+                    TooltipHandler.TipRegion(new Rect(0f, y, w, 26f), "On: when she sleeps, her cultists ring her and fall on whoever comes, and by night they guard the land. Off: they leave her be - for when she is among strangers and a fight now would come too early.");
+                    y += 32f;
+                }
+                if (Mine && n.key == "C5")
+                {
+                    bool one = g.convertOne;
+                    GUI.color = Bright;
+                    Widgets.CheckboxLabeled(new Rect(0f, y, w, 26f), "One chosen mind", ref one);
+                    g.convertOne = one;
+                    TooltipHandler.TipRegion(new Rect(0f, y, w, 26f), "Off: every fervent worshipper round her turns to her side (35% hunger). On: only the one she points at, if he is fervent (15% hunger, the same rest).");
+                    y += 32f;
+                }
                 if (Mine && (n.key == "T2" || n.key == "T4"))
                 {
                     bool alt = n.key == "T2" ? g.ageMode : g.flareMode;
