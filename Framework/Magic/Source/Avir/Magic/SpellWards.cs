@@ -173,18 +173,20 @@ namespace Avir.Magic
 
         /// <summary>A spell (its elements) meets a ward or a dome whole - a bolt flying in, a spell landing inside a dome.
         /// Another element: put out at the cost of charge (12 a power) - and fire and water meeting there leave steam -
-        /// or, too strong, it breaks the ward and goes on. Its own fire on a fiery ward: both go out. Its own element (not
-        /// fire): it goes on, stronger by what was left of the ward, and the ward falls. True - the spell is put out.</summary>
+        /// or, too strong, it breaks the ward and goes on. Its own kind exactly (an element on its element's ward, a meeting
+        /// on that meeting's ward): the ward is scattered and the spell goes on stronger. True - the spell is put out.</summary>
         public static bool Meets(IWard d, RuneKind[] inc, float power, Map map, IntVec3 at, out float boost)
         {
             boost = 1f;
             if (d == null || inc == null || inc.Length == 0) return false;
             RuneKind[] mine = d.Parts;
-            bool overlap = mine.Length > 0 && inc.Any(k => mine.Contains(k));
-            bool allOwn = mine.Length > 0 && inc.All(k => mine.Contains(k));
+            // its own kind (the author, Fix124): fire on a ward of fire, magma on a ward of magma - the ward is scattered
+            // and the spell goes on stronger by what was left of it. So a mage who knows no ward of that school still has
+            // an answer to it: strike it with its own. A meeting's ward falls only to that same meeting - a plain element
+            // of it is put out like any other (that ward is for its own ground, not against its parts)
+            bool same = mine.Length > 0 && inc.Length == mine.Length && inc.All(k => mine.Contains(k));
             Note(d.Name + " meets a spell of " + string.Join("+", inc) + " (power " + power.ToString("0.00") + ", charge " + d.Energy.ToString("0") + ")");
-            if (d.Fiery && overlap && inc.Contains(RuneKind.Fire)) { d.Fall("Ward and spell put out"); Puff(map, at, 0.5f); return true; }
-            if (allOwn) { boost = 1f + 0.5f * Mathf.Clamp01(d.Energy / Mathf.Max(1f, d.EnergyMax)); d.Fall("Ward burst"); return false; }
+            if (same) { boost = 1f + 0.5f * Mathf.Clamp01(d.Energy / Mathf.Max(1f, d.EnergyMax)); d.Fall("Ward scattered by its own"); Puff(map, at, 0.6f); return false; }
             float need = 12f * power;
             if (d.Energy >= need)
             {
