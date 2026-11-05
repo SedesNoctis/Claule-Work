@@ -37,7 +37,7 @@ namespace Avir.Magic
             T("Heavy", "Earthen Slowness",
                 "Earthen Slowness. Earth does not hurry. A circle of earth - and of what earth makes with others, magma and bog - is written into the world slower than any other: the cast takes longer. Dust rides the air and is spared it."),
             T("Unwieldy", "Unwieldy Stone",
-                "Unwieldy Stone. Earth is not quick to turn. A spell with earth in it strikes the place it was aimed at, not the one who stood there: whoever walks away before the cast is spared. What it lacks in aim it makes up in reach - it is as wide as by one Breadth."),
+                "Unwieldy Stone. Earth is not quick to turn. A spell with earth in it - earth alone, magma, bog - strikes the place it was aimed at, not the one who stood there: whoever walks away before the cast is spared. Earth and bog make up for it in reach, as wide as by one Breadth; magma does not. Earth that meets the air (dust) rides the wind and follows its target like any other."),
             T("Stone at hand", "Stone at Hand",
                 "Stone at Hand. Earth's spells take up the stone they find where they strike - rubble, chunks, lumps of basalt, the mire for a bog - and throw it into the work. Stronger, cheaper, and deeper through armour; and the stone so used is gone."),
             T("Momentum", "Air's Momentum",

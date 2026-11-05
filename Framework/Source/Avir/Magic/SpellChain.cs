@@ -271,9 +271,14 @@ namespace Avir.Magic
 
         /// <summary>Earth is unwieldy (the author, Nov 2026): a spell with earth in it strikes the place it was aimed at,
         /// not the one aimed at - if the foe has walked away, so be it. A lone ward aimed at someone still goes on them.</summary>
-        public static bool Unwieldy(RitualSchema s) =>
-            s?.weave != null && s.weave.Working.Any(c => c.element != null && c.element.kind == RuneKind.Earth)
-            && s.weave.Working.Any(c => c.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form));
+        public static bool Unwieldy(RitualSchema s)
+        {
+            if (s?.weave == null || !s.weave.Working.Any(c => c.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form))) return false;
+            var pairs = Combos.Pairs(s.weave);
+            // earth alone, or earth in magma or bog; earth with air (dust) rides the wind and follows its target like the rest
+            return s.weave.Working.Any(c => c.element != null && c.element.kind == RuneKind.Earth
+                && (!pairs.TryGetValue(c, out ComboKind k) || k == ComboKind.Magma || k == ComboKind.Bog));
+        }
 
         public static void Order(Pawn mage, RitualSchema spell, int slot, LocalTargetInfo target, IntVec3 wallEnd)
         {
