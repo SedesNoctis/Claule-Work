@@ -91,4 +91,23 @@
     <affordances><li>Light</li><li>Medium</li><li>Heavy</li><li>GrowSoil</li><li>Diggable</li></affordances>
     <tags><li>Soil</li></tags>
   </TerrainDef>
+  <!-- STONE WATER: the bog's plain transmutation of shallow water, marsh and mud (SpellTransmute.Petrify): it still looks
+       like water, but it bears building - no bridge needed. Placeholder look: ice, tinted. -->
+  <TerrainDef ParentName="NaturalTerrainBase">
+    <defName>Avir_StoneWater</defName>
+    <label>stone water</label>
+    <description>Water the bog has turned to stone: it still looks like still water, grey-green and glassy, but it is as hard as rock. It bears walls and floors like solid ground - no bridge is needed. Nothing grows in it.</description>
+    <texturePath>Terrain/Surfaces/Ice</texturePath>
+    <color>(0.6, 0.72, 0.7)</color>
+    <edgeType>FadeRough</edgeType>
+    <renderPrecedence>347</renderPrecedence>
+    <pathCost>1</pathCost>
+    <fertility>0</fertility>
+    <takeFootprints>false</takeFootprints>
+    <statBases>
+      <Beauty>1</Beauty>
+      <Cleanliness>0</Cleanliness>
+    </statBases>
+    <affordances><li>Light</li><li>Medium</li><li>Heavy</li></affordances>
+  </TerrainDef>
 </Defs>

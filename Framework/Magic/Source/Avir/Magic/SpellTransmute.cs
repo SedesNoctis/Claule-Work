@@ -15,8 +15,9 @@ namespace Avir.Magic
     ///     enriches the soil for a while, haze warms a room);
     ///   - "Transmutation, Closing" right after one another is that plain transmutation, and that Closing seals nothing:
     ///     the circle still meets its neighbour;
-    ///   - in a circle that meets its neighbour, with no Closing after it, it turns the meeting onto its secret path - the
-    ///     bog's Moss, magma's Hot Metal (decided); the others proposed, not made yet.
+    ///   - a Transmutation in the outermost section of each of two circles that meet turns the meeting onto its secret path
+    ///     - the bog's Moss, magma's Hot Metal (decided); the others proposed, not made yet. The paths are secret: the
+    ///     codex tells of one only once it is found; till then Arlie may only hint.
     /// And the Closing rune that keeps two circles from meeting must stand between them: in the outermost section of the
     /// first, or in the first section of the second.</summary>
     public static class SpellTransmute
@@ -39,14 +40,37 @@ namespace Avir.Magic
             (a?.sections != null && a.sections.Count > 0 && SealsIn(a.sections[a.sections.Count - 1]))
             || (b?.sections != null && b.sections.Count > 0 && SealsIn(b.sections[0]));
 
+        /// <summary>Set while a circle of a meeting on its secret path is being cast (SpellChain.Run).</summary>
+        public static bool OnPath;
+
+        /// <summary>A Transmutation in the circle's outermost section, not marked plain by a Closing right after it.</summary>
+        public static bool OuterTransmute(SpellCircle c)
+        {
+            if (c?.sections == null || c.sections.Count == 0) return false;
+            var seq = c.sections[c.sections.Count - 1].runes.Where(x => x != null).ToList();
+            for (int i = 0; i < seq.Count; i++)
+                if (seq[i].kind == RuneKind.Transmute && !(i + 1 < seq.Count && seq[i + 1].kind == RuneKind.Closing)) return true;
+            return false;
+        }
+
+        /// <summary>The secret path (the author's rule): a Transmutation in the outermost section of EACH of the two circles
+        /// that meet.</summary>
+        public static bool IsPath(SpellCircle root, SpellCircle c, ComboKind k)
+        {
+            if (root == null || c == null || k == ComboKind.None || !OuterTransmute(c)) return false;
+            List<SpellCircle> order = MapComponent_SpellChain.Order(root);
+            int i = order.IndexOf(c);
+            if (i < 0) return false;
+            foreach (int j in new[] { i - 1, i + 1 })
+                if (j >= 0 && j < order.Count && Combos.Of(root, order[j]) == k && OuterTransmute(order[j])) return true;
+            return false;
+        }
+
         public static Mode Of(RitualSchema part, ComboKind k)
         {
             if (part?.rings == null) return Mode.None;
-            var seq = part.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
-            int i = seq.FindIndex(x => x.kind == RuneKind.Transmute);
-            if (i < 0) return Mode.None;
-            if (k == ComboKind.None) return Mode.Plain;
-            return i + 1 < seq.Count && seq[i + 1].kind == RuneKind.Closing ? Mode.Plain : Mode.Path;
+            if (!part.rings.SelectMany(g => g.runes).Any(x => x != null && x.kind == RuneKind.Transmute)) return Mode.None;
+            return k != ComboKind.None && OnPath ? Mode.Path : Mode.Plain;
         }
 
         /// <summary>The secret path of a meeting (Moss and Hot Metal decided; the rest proposed).</summary>
@@ -94,7 +118,7 @@ namespace Avir.Magic
                         CompPowerBattery b = t.TryGetComp<CompPowerBattery>();
                         if (b != null && b.StoredEnergyPct < 0.999f) { b.AddEnergy(150f * power); FleckMaker.ThrowLightningGlow(t.DrawPos, map, 1.2f); n++; }
                     }
-                if (k == ComboKind.Bog) n += Enrich(map, c);
+                if (k == ComboKind.Bog) n += Enrich(map, c) + Petrify(map, c);
                 if (Rand.Chance(0.25f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 0.7f, Tint(el, k));
             }
             if (k == ComboKind.Haze)
@@ -116,6 +140,21 @@ namespace Avir.Magic
                 GenPlace.TryPlaceThing(got, at, map, ThingPlaceMode.Near);
             }
             t.Destroy();
+        }
+
+        /// <summary>Stone water (the author's idea): the bog turns shallow water, marsh and mud into stone water - it looks
+        /// like still water, but it bears building like ground: no bridge needed. For good.</summary>
+        public static TerrainDef StoneWater => DefDatabase<TerrainDef>.GetNamedSilentFail("Avir_StoneWater");
+
+        public static bool Petrifies(TerrainDef t) => t != null && t != StoneWater && t.passability != Traversability.Impassable
+            && (t.IsWater || t.defName == "Marsh" || t.defName == "Mud" || t.defName.Contains("Marsh"));
+
+        private static int Petrify(Map map, IntVec3 c)
+        {
+            TerrainDef t = map.terrainGrid.TerrainAt(c);
+            if (StoneWater == null || !Petrifies(t)) return 0;
+            map.terrainGrid.SetTerrain(c, StoneWater);
+            return 1;
         }
 
         private static int Enrich(Map map, IntVec3 c)
