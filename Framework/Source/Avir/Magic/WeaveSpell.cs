@@ -64,24 +64,29 @@ namespace Avir.Magic
         /// <summary>Water and air together: a storm - the wind's chained strike turns to lightning.</summary>
         public static bool Storm(SpellCircle root) => Combos.Pairs(root).ContainsValue(ComboKind.Storm);
 
-        /// <summary>A Life circle in words: its own verbs in their order.</summary>
+        /// <summary>A Life circle in words: its acts in their order (a verb tied to Withering or Restoration).</summary>
         public static string LifeText(SpellCircle g)
         {
             var bits = new List<string>();
-            foreach (RuneDef rn in g.OwnRunes)
-                switch (rn.kind)
+            foreach (LifeMagic.Act a in LifeMagic.Read(g, out _))
+            {
+                bool take = a.side == RuneKind.Drain;
+                string t;
+                switch (a.verb)
                 {
-                    case RuneKind.Drain: bits.Add("withers the grass, the foes and the fresh dead into the store"); break;
-                    case RuneKind.Release: bits.Add("a pulse: wounds the foes, mends the friends"); break;
-                    case RuneKind.Restore: bits.Add("mends the friends and leaves a regrowth"); break;
-                    case RuneKind.Growth: bits.Add("quickens the plants and deepens the regrowth"); break;
-                    case RuneKind.Hold: bits.Add("vines hold the foes"); break;
-                    case RuneKind.Purge: bits.Add("draws out poison and withering"); break;
-                    default: if (rn.role == RuneRole.Verb || rn.role == RuneRole.Form) bits.Add(rn.label + " (not made for Life yet)"); break;
+                    case RuneKind.Release: t = take ? "a burst of withering" : "a burst of mending"; break;
+                    case RuneKind.Beam: t = take ? "a withering beam" : "a mending beam"; break;
+                    case RuneKind.Hold: t = take ? "vines that drink while they hold" : "a cocoon: held still and mended deep"; break;
+                    case RuneKind.Growth: t = take ? "life drawn from the green only" : "growth: the plants quicken, the regrowth deepens"; break;
+                    case RuneKind.Purge: t = take ? "poison drawn out into the store" : "poison and withering cleansed"; break;
+                    default: t = take ? "Withering at the point" : "mending at the point"; break;
                 }
+                if (a.hop) t += " - leaping on to the nearest wounded";
+                bits.Add(t + (take ? " (into the store)" : " (from the store)"));
+            }
             string own = bits.Count > 0 ? string.Join(", then ", bits) : null;
             if (g.inner.Count > 0) return "and Life round it: " + (own != null ? own + "; and " : "") + "every friend the spell touches is mended from the store";
-            return "Life: " + (own ?? "nothing written yet");
+            return "Life: " + (own ?? "nothing tied yet - write Withering or Restoration");
         }
 
         public static bool Wraps(SpellCircle root, RuneKind k) => Greats(root).Any(c => c.element?.kind == k && c.inner.Count > 0);
@@ -180,6 +185,7 @@ namespace Avir.Magic
             if (Small(root).Any(c => WaterMagic.Is(c.element))) WaterMagic.Chilled(caster);
             if (Small(root).Any(c => EarthMagic.Is(c.element))) EarthMagic.Petrified(caster);
             foreach (ComboKind k in Combos.Pairs(root).Values.Distinct()) ComboMagic.Price(k, caster);
+            LifeMagic.Slip(caster, root);
             if (Small(root).Any(c => AirMagic.Is(c.element))) AirMagic.Winded(caster);
         }
 
