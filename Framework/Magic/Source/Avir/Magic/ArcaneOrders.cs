@@ -21,6 +21,7 @@ namespace Avir.Magic
         public static DesignationDef Drill => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneDrill");
         public static DesignationDef Smooth => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneSmooth");
         public static DesignationDef Growth => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneGrowth");
+        public static DesignationDef Enrich => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneEnrich");
 
         public static Hediff_ArcaneCore Able(Pawn p, float arcana, params RuneKind[] kinds)
         {
@@ -50,7 +51,22 @@ namespace Avir.Magic
     {
         public Dictionary<IntVec3, ThingDef> rock = new Dictionary<IntVec3, ThingDef>();
         public Dictionary<IntVec3, int> grownAt = new Dictionary<IntVec3, int>();
+        // soil the bog has enriched for a while: what it was, what it became, until when
+        public Dictionary<IntVec3, TerrainDef> enrichFrom = new Dictionary<IntVec3, TerrainDef>(), enrichTo = new Dictionary<IntVec3, TerrainDef>();
+        public Dictionary<IntVec3, int> enrichUntil = new Dictionary<IntVec3, int>();
         public MapComponent_ArcaneOrders(Map map) : base(map) { }
+
+        public override void MapComponentTick()
+        {
+            if (enrichUntil.Count == 0 || Find.TickManager.TicksGame % 2500 != 0) return;
+            int now = Find.TickManager.TicksGame;
+            foreach (IntVec3 c in enrichUntil.Where(kv => kv.Value <= now).Select(kv => kv.Key).ToList())
+            {
+                // the ground goes back to what it was - unless someone has changed it since
+                if (enrichTo.TryGetValue(c, out TerrainDef to) && map.terrainGrid.TerrainAt(c) == to && enrichFrom.TryGetValue(c, out TerrainDef from)) map.terrainGrid.SetTerrain(c, from);
+                enrichUntil.Remove(c); enrichFrom.Remove(c); enrichTo.Remove(c);
+            }
+        }
         public static MapComponent_ArcaneOrders Of(Map m) => m?.GetComponent<MapComponent_ArcaneOrders>();
 
         public override void ExposeData()
@@ -58,6 +74,12 @@ namespace Avir.Magic
             base.ExposeData();
             Scribe_Collections.Look(ref rock, "rock", LookMode.Value, LookMode.Def);
             Scribe_Collections.Look(ref grownAt, "grownAt", LookMode.Value, LookMode.Value);
+            Scribe_Collections.Look(ref enrichFrom, "enrichFrom", LookMode.Value, LookMode.Def);
+            Scribe_Collections.Look(ref enrichTo, "enrichTo", LookMode.Value, LookMode.Def);
+            Scribe_Collections.Look(ref enrichUntil, "enrichUntil", LookMode.Value, LookMode.Value);
+            if (enrichFrom == null) enrichFrom = new Dictionary<IntVec3, TerrainDef>();
+            if (enrichTo == null) enrichTo = new Dictionary<IntVec3, TerrainDef>();
+            if (enrichUntil == null) enrichUntil = new Dictionary<IntVec3, int>();
             if (rock == null) rock = new Dictionary<IntVec3, ThingDef>();
             if (grownAt == null) grownAt = new Dictionary<IntVec3, int>();
         }
@@ -170,6 +192,20 @@ namespace Avir.Magic
         public override AcceptanceReport CanDesignateCell(IntVec3 c) => c.InBounds(Map) && !c.Fogged(Map) && Map.designationManager.DesignationAt(c, Designation) == null && c.GetEdifice(Map) == null;
     }
 
+    /// <summary>Where the bog is to enrich the soil, for a while.</summary>
+    public class Designator_ArcaneEnrich : Designator_Arcane
+    {
+        public Designator_ArcaneEnrich()
+        {
+            defaultLabel = "Enrich soil (bog)";
+            defaultDesc = "Mark ground for a caster of the bog (water and earth) to enrich: sand, gravel and poor ground become soil, soil becomes rich soil - for " + ArcaneWorks.EnrichDays + " days (two quadrums), then it goes back to what it was.";
+            icon = ContentFinder<Texture2D>.Get("UI/Designators/PlantsHarvest", false) ?? BaseContent.BadTex;
+        }
+        protected override DesignationDef Designation => Arcane.Enrich;
+        public override AcceptanceReport CanDesignateCell(IntVec3 c) =>
+            c.InBounds(Map) && !c.Fogged(Map) && Map.designationManager.DesignationAt(c, Designation) == null && ArcaneWorks.Richer(Map.terrainGrid.TerrainAt(c)) != null;
+    }
+
     // ================================================================== the work itself
 
     /// <summary>One kind of arcane work: what it needs, costs and teaches, how long, and what it does at the end.</summary>
@@ -188,6 +224,8 @@ namespace Avir.Magic
         {
             ["Avir_ArcaneRaiseRock"] = new ArcaneSpec { kinds = new[] { RuneKind.Earth }, cost = 6f, xp = 10f, ticks = 300, effect = RaiseRock },
             ["Avir_ArcaneDrill"] = new ArcaneSpec { kinds = new[] { RuneKind.Earth }, cost = 8f, xp = 15f, ticks = 600, effect = Drill },
+            ["Avir_ArcaneDrillMagma"] = new ArcaneSpec { kinds = new[] { RuneKind.Fire, RuneKind.Earth }, cost = 10f, xp = 18f, ticks = 300, effect = DrillMagma, tint = new Color(1f, 0.4f, 0.1f, 0.6f) },
+            ["Avir_ArcaneEnrich"] = new ArcaneSpec { kinds = new[] { RuneKind.Water, RuneKind.Earth }, cost = 5f, xp = 10f, ticks = 200, effect = Enrich, tint = new Color(0.35f, 0.5f, 0.3f, 0.6f) },
             ["Avir_ArcaneGrowth"] = new ArcaneSpec { kinds = new RuneKind[0], cost = 3f, xp = 6f, ticks = 120, effect = Grow, tint = new Color(0.4f, 0.8f, 0.4f, 0.5f) },
             ["Avir_ArcaneSmelt"] = new ArcaneSpec { kinds = new[] { RuneKind.Fire, RuneKind.Earth }, cost = 5f, xp = 10f, ticks = 240, effect = Smelt, tint = new Color(1f, 0.4f, 0.1f, 0.6f) },
             ["Avir_ArcaneCut"] = new ArcaneSpec { kinds = new[] { RuneKind.Earth, RuneKind.Air }, cost = 4f, xp = 8f, ticks = 200, effect = Cut, tint = new Color(0.8f, 0.7f, 0.5f, 0.5f) },
@@ -223,14 +261,26 @@ namespace Avir.Magic
             return true;
         }
 
-        private static bool Drill(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c)
+        private static bool Drill(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c) => DrillCore(p, t, 1f);
+
+        /// <summary>Magma draws ore up faster and more of it - and the vein bleeds molten stone round it.</summary>
+        private static bool DrillMagma(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c)
+        {
+            if (!DrillCore(p, t, 1.5f)) return false;
+            Map map = p.Map;
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(t.Cell, 2.9f, false).Where(x => x.InBounds(map) && x.DistanceTo(t.Cell) >= 1.9f && x != p.Position && !x.AdjacentTo8Way(p.Position)).InRandomOrder().Take(4))
+                MagmaPool.Pour(cell, map, p, 1f, 1500, false);
+            return true;
+        }
+
+        private static bool DrillCore(Pawn p, LocalTargetInfo t, float more)
         {
             Map map = p.Map; IntVec3 at = t.Cell;
             ThingDef ore = map.deepResourceGrid.ThingDefAt(at);
             if (ore == null) { map.designationManager.TryRemoveDesignation(at, Arcane.Drill); return false; }
             int left = map.deepResourceGrid.CountAt(at);
             // one portion a cast - a vein is not emptied by one spell, nor by many mages at once
-            int portion = Mathf.Min(left, Mathf.Max(1, ore.deepCountPerPortion > 0 ? ore.deepCountPerPortion : 10));
+            int portion = Mathf.Min(left, Mathf.Max(1, Mathf.RoundToInt((ore.deepCountPerPortion > 0 ? ore.deepCountPerPortion : 10) * more)));
             map.deepResourceGrid.SetAt(at, portion >= left ? null : ore, left - portion);
             if (portion >= left) map.designationManager.TryRemoveDesignation(at, Arcane.Drill);
             ThingDef what = ore;
@@ -254,15 +304,18 @@ namespace Avir.Magic
             var comp = MapComponent_ArcaneOrders.Of(map);
             RuneKind[] k = Grower(c);
             if (k == null) return false;
-            float add = 0.12f + 0.03f * Arcane.Stage(c, k);
+            // water quickens more and cures blight, close round the spot; earth less, but over a wider ground
+            bool water = k[0] == RuneKind.Water;
+            float add = (water ? 0.15f : 0.1f) + 0.03f * Arcane.Stage(c, k);
             int now = Find.TickManager.TicksGame, n = 0;
-            foreach (IntVec3 cell in GenRadial.RadialCellsAround(t.Cell, 3.9f, true))
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(t.Cell, water ? 3.9f : 5.9f, true))
             {
                 if (!cell.InBounds(map) || map.designationManager.DesignationAt(cell, Arcane.Growth) == null) continue;
                 if (comp.grownAt.TryGetValue(cell, out int last) && now - last < GrowEvery) continue;
                 Plant pl = cell.GetPlant(map);
                 if (pl == null || pl.LifeStage == PlantLifeStage.Mature) continue;
                 pl.Growth = Mathf.Min(1f, pl.Growth + add);
+                if (water && pl.Blighted) pl.Blight?.Destroy();
                 comp.grownAt[cell] = now;
                 if (Rand.Chance(0.4f)) FleckMaker.ThrowDustPuffThick(cell.ToVector3Shifted(), map, 0.6f, new Color(0.4f, 0.8f, 0.4f, 0.5f));
                 n++;
@@ -300,6 +353,37 @@ namespace Avir.Magic
             chunk.Destroy();
             FleckMaker.ThrowDustPuffThick(at.ToVector3Shifted(), map, 1.4f, new Color(0.8f, 0.7f, 0.5f, 0.6f));
             return true;
+        }
+
+        public const int EnrichDays = 30;
+
+        /// <summary>What the bog makes of this ground: poor ground - soil, soil - rich soil; nothing of water, rock or floors.</summary>
+        public static TerrainDef Richer(TerrainDef t)
+        {
+            if (t == null || t.IsWater || t.fertility <= 0f || t.layerable || t.IsFloor) return null;
+            if (t == TerrainDefOf.Soil) return TerrainDefOf.SoilRich;
+            return t.fertility < TerrainDefOf.Soil.fertility ? TerrainDefOf.Soil : null;
+        }
+
+        private static bool Enrich(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c)
+        {
+            Map map = p.Map;
+            var comp = MapComponent_ArcaneOrders.Of(map);
+            int until = Find.TickManager.TicksGame + EnrichDays * GenDate.TicksPerDay, n = 0;
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(t.Cell, 2.9f, true))
+            {
+                if (!cell.InBounds(map) || map.designationManager.DesignationAt(cell, Arcane.Enrich) == null) continue;
+                TerrainDef was = map.terrainGrid.TerrainAt(cell), to = Richer(was);
+                map.designationManager.TryRemoveDesignation(cell, Arcane.Enrich);
+                if (to == null) continue;
+                if (!comp.enrichFrom.ContainsKey(cell)) comp.enrichFrom[cell] = was;   // twice enriched still goes back to the first
+                comp.enrichTo[cell] = to;
+                comp.enrichUntil[cell] = until;
+                map.terrainGrid.SetTerrain(cell, to);
+                if (Rand.Chance(0.4f)) FleckMaker.ThrowDustPuffThick(cell.ToVector3Shifted(), map, 0.7f, new Color(0.35f, 0.5f, 0.3f, 0.6f));
+                n++;
+            }
+            return n > 0;
         }
 
         public const float ColdRoom = 12f;
@@ -419,6 +503,17 @@ namespace Avir.Magic
         protected override string Job => "Avir_ArcaneDrill";
         public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn) => Marked(Arcane.Drill, pawn);
         public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false) => Cells(Arcane.Drill, pawn, c, forced) && pawn.Map.deepResourceGrid.ThingDefAt(c) != null;
+        // a caster of magma (fire and earth) draws it the molten way: faster, more, with magma round the vein
+        public override Job JobOnCell(Pawn pawn, IntVec3 cell, bool forced = false) =>
+            Arcane.Able(pawn, ArcaneWorks.Specs["Avir_ArcaneDrillMagma"].cost, RuneKind.Fire, RuneKind.Earth) != null
+                ? JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("Avir_ArcaneDrillMagma"), cell) : Make(cell);
+    }
+
+    public class WorkGiver_ArcaneEnrich : WorkGiver_Arcane
+    {
+        protected override string Job => "Avir_ArcaneEnrich";
+        public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn) => Marked(Arcane.Enrich, pawn);
+        public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false) => Cells(Arcane.Enrich, pawn, c, forced);
     }
 
     public class WorkGiver_ArcaneGrowth : WorkGiver_Arcane

@@ -242,6 +242,33 @@
       <li>Avir.Magic.Designator_ArcaneDrill</li>
       <li>Avir.Magic.Designator_ArcaneSmooth</li>
       <li>Avir.Magic.Designator_ArcaneGrowth</li>
+      <li>Avir.Magic.Designator_ArcaneEnrich</li>
     </specialDesignatorClasses>
   </DesignationCategoryDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneEnrich</defName>
+    <label>enrich soil by bog</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneEnrich</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>enrich</verb>
+    <gerund>enriching soil</gerund>
+    <priorityInType>9</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_ArcaneEnrich</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>enriching the soil by bog.</reportString>
+  </JobDef>
+  <JobDef>
+    <defName>Avir_ArcaneDrillMagma</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>drawing ore up by magma.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_ArcaneEnrich</defName>
+    <texturePath>UI/Designations/Harvest</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
 </Defs>
