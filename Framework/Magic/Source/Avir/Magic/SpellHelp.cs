@@ -134,7 +134,18 @@ namespace Avir.Magic
                         e0.Add(Combos.Label(ck).CapitalizeFirst() + ": inherited", inh);
                     }
                 if (s.weave != null && s.weave.All().Any(Combos.Closed))
-                    e0.Add("Closed", "A circle with the closing rune keeps its energy in and its element pure: it does not meet its neighbours, whatever they are - fire stays fire beside water. Its neighbours may still meet others.");
+                    e0.Add("Closed", "The closing rune keeps two circles from meeting when it stands between them: in the outermost section of the first, or the first section of the second - fire stays fire beside water. Anywhere else it only keeps the energy in. Written right after a Transmutation it seals nothing: it marks a plain transmutation.");
+                IEnumerable<KeyValuePair<RitualSchema, ComboKind>> tparts = s.weave != null
+                    ? s.weave.Working.Select(k => new KeyValuePair<RitualSchema, ComboKind>(k.AsSchema(), Combos.Of(s.weave, k)))
+                    : new[] { new KeyValuePair<RitualSchema, ComboKind>(s, ComboKind.None) };
+                foreach (var tp in tparts)
+                {
+                    SpellTransmute.Mode tm = SpellTransmute.Of(tp.Key, tp.Value);
+                    if (tm == SpellTransmute.Mode.Plain)
+                        e0.Add("Transmutation", "Plain transmutation: where the spell lands, its element works on matter - fire smelts slag, melts snow and dries the wet; water washes and puts fires out; earth cuts chunks into blocks and smooths rough stone ground; air clears gas and blows the snow off. A meeting does both; storm charges batteries, bog enriches the soil for a while, haze warms a room.");
+                    else if (tm == SpellTransmute.Mode.Path)
+                        e0.Add("Secret path", "Transmutation in a meeting, with no Closing right after it, turns " + Combos.Label(tp.Value) + " onto its secret path: " + SpellTransmute.PathName(tp.Value) + ". Not made yet - for now the meeting acts as it is. (Write Closing right after the Transmutation for plain transmutation.)");
+                }
                 bool focused = s.weave != null ? s.weave.All().Any(c => c.OwnRunes.Any(x => x.kind == RuneKind.Focus)) : RitualEvaluator.Read(s).focus > 0;
                 if (focused) e0.Add("Focus", "The focus rune draws the map's stream into its circle: +20% strength for each, and +10% more for each tier of the stream - but the stream makes it harder to hold.");
                 bool shaped = s.weave != null ? s.weave.All().Any(c => c.OwnRunes.Any(x => x.kind == RuneKind.Shape)) : RitualEvaluator.Read(s).verbs.Any(v => v.kind == RuneKind.Shape);

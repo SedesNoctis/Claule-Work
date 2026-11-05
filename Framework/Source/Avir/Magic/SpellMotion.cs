@@ -144,6 +144,9 @@ namespace Avir.Magic
             SpellDepth.Reach = FireMagic.PointRadius(r);
             bool earthen = k != ComboKind.None ? EarthStone.Heavy(k) : EarthMagic.Is(el);
             SpellDepth.Stone = earthen && caster.Map != null && EarthStone.Units(caster.Map, target.Cell, k) >= 1f ? 1.2f : 1f;
+            // plain transmutation: the element works on matter where the spell lands (SpellTransmute)
+            if (caster.Map != null && SpellTransmute.Of(part, k) == SpellTransmute.Mode.Plain)
+                SpellTransmute.Plain(caster, caster.Map, target.Cell, FireMagic.PointRadius(r), power, el, k);
             try
             {
                 // a verb written over and over wears out (Магия-правила.md): the part acts once with each verb, then the

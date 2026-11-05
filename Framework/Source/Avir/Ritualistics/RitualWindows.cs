@@ -56,6 +56,7 @@ namespace Avir.Ritualistics
                 float size = RitualOrnament.GlyphSize(inner, outer, per, 90f) * 0.8f;
                 for (int k = 0; k < runes.Count && k < per; k++)
                 {
+                    if (runes[k] == null) continue;
                     Rect g = RitualOrnament.GlyphRect(c, mid, RitualOrnament.SlotAngle(i, k, per), size);
                     FlowStyle.Backing(g);
                     GUI.color = Color.white;

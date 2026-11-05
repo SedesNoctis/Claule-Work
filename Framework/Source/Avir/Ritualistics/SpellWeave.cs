@@ -65,7 +65,7 @@ namespace Avir.Ritualistics
             Scribe_Values.Look(ref binding, "binding");
             List<string> packed = null;
             if (Scribe.mode == LoadSaveMode.Saving)
-                packed = sections.Select(r => r.Slots + "|" + string.Join(",", r.runes.Where(x => x != null).Select(x => x.defName))).ToList();
+                packed = sections.Select(r => r.Slots + "|" + string.Join(",", r.runes.Select(x => x?.defName ?? ""))).ToList();
             Scribe_Collections.Look(ref packed, "sections", LookMode.Value);
             if (Scribe.mode == LoadSaveMode.LoadingVars)
             {
@@ -77,7 +77,8 @@ namespace Avir.Ritualistics
                         int slots = 0, bar = line.IndexOf('|');
                         if (bar >= 0) { int.TryParse(line.Substring(0, bar), out slots); line = line.Substring(bar + 1); }
                         var ring = new RitualRing { slots = slots };
-                        foreach (string n in line.Split(',')) { RuneDef d = DefDatabase<RuneDef>.GetNamedSilentFail(n); if (d != null) ring.runes.Add(d); }
+                        if (line.Length > 0) foreach (string n in line.Split(',')) ring.runes.Add(n.NullOrEmpty() ? null : DefDatabase<RuneDef>.GetNamedSilentFail(n));
+                        ring.Trim();
                         sections.Add(ring);
                     }
             }

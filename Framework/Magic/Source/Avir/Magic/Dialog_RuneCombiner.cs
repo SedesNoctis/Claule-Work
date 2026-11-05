@@ -207,6 +207,7 @@ namespace Avir.Magic
                 float mid = heart + step * (i + 0.5f), gs = Mathf.Min(step * 0.8f, 30f);
                 for (int k = 0; k < runes.Count; k++)
                 {
+                    if (runes[k] == null) continue;
                     float a = -Mathf.PI / 2f + 2f * Mathf.PI * k / Mathf.Max(1, runes.Count) + i * 0.4f;
                     Vector2 p = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * mid;
                     Rect g = new Rect(p.x - gs / 2f, p.y - gs / 2f, gs, gs);

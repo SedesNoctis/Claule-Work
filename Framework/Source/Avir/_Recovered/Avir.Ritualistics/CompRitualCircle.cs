@@ -2402,8 +2402,8 @@ public class CompRitualCircle : ThingComp
 					DrawGlyph(At(drawPos, radius, num10), RitualOrnament.ConnectorSize(num7, num8, num6) * 0.85f, RitualOrnament.Connector(j, k, num6, glow: true), color3, num10);
 				}
 				Vector3 pos = At(drawPos, radius, RitualOrnament.SlotAngle(j, k, num6));
-				DrawGlyph(pos, num9, RitualOrnament.FrameGlow, (k < list.Count) ? color3 : new Color(col.r, col.g, col.b, col.a * 0.45f));
-				if (k < list.Count)
+				DrawGlyph(pos, num9, RitualOrnament.FrameGlow, (k < list.Count && list[k] != null) ? color3 : new Color(col.r, col.g, col.b, col.a * 0.45f));
+				if (k < list.Count && list[k] != null)
 				{
 					DrawRune(pos, num9 * 0.66f, list[k], col, flag2, flag);
 				}

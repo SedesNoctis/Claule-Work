@@ -74,6 +74,15 @@ namespace Avir.Ritualistics
         public int slots;
         public int Slots => Mathf.Max(1, Mathf.Max(slots, runes.Count));
         public RitualRing Copy() => new RitualRing { runes = new List<RuneDef>(runes), slots = slots };
+
+        // A rune rubbed out leaves its place empty (a null) - the runes after it keep their places (the author's bug: rubbing
+        // one out used to move the whole rest of the circle back a place). Empty places at the end are trimmed.
+        public bool Empty(int k) => k >= runes.Count || runes[k] == null;
+        public int Filled => runes.Count(x => x != null);
+        public int FirstEmpty() { for (int k = 0; k < Slots; k++) if (Empty(k)) return k; return -1; }
+        public void Trim() { while (runes.Count > 0 && runes[runes.Count - 1] == null) runes.RemoveAt(runes.Count - 1); }
+        public void Rub(int k) { if (k >= 0 && k < runes.Count) runes[k] = null; Trim(); }
+        public void Put(int k, RuneDef r) { while (runes.Count <= k) runes.Add(null); runes[k] = r; Trim(); }
     }
 
     /// <summary>A component circle beside the main circle - a cell of its own, and what lies on it works:
@@ -217,7 +226,7 @@ namespace Avir.Ritualistics
             List<string> packed = null;
             // "slots|rune,rune" per section (older files: just the runes)
             if (Scribe.mode == LoadSaveMode.Saving)
-                packed = rings.Select(r => r.Slots + "|" + string.Join(",", r.runes.Where(x => x != null).Select(x => x.defName))).ToList();
+                packed = rings.Select(r => r.Slots + "|" + string.Join(",", r.runes.Select(x => x?.defName ?? ""))).ToList();
             Scribe_Collections.Look(ref packed, "rings", LookMode.Value);
             List<string> comps = null;
             if (Scribe.mode == LoadSaveMode.Saving) comps = components.Select(k => k.Pack()).ToList();
@@ -235,9 +244,11 @@ namespace Avir.Ritualistics
                         rings.Add(new RitualRing
                         {
                             slots = slots,
-                            runes = line.Split(',').Where(n => !n.NullOrEmpty())
-                                .Select(n => DefDatabase<RuneDef>.GetNamedSilentFail(n)).Where(d => d != null).ToList()
+                            // an empty name is an empty place (kept, so the runes after it keep theirs)
+                            runes = line.Length == 0 ? new List<RuneDef>() : line.Split(',').Select(n => n.NullOrEmpty() ? null : DefDatabase<RuneDef>.GetNamedSilentFail(n)).ToList()
                         });
+                        rings[rings.Count - 1].Trim();
+
                     }
             }
         }

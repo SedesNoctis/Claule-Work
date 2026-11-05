@@ -219,20 +219,25 @@ namespace Avir.Ritualistics
             // a chosen place: a rune there is replaced; an empty one is filled, and the next empty place is chosen
             if (pickRing == ring && pickRune >= 0)
             {
-                if (pickRune < rr.runes.Count) { rr.runes[pickRune] = rune; Arlia.Fresh = false; SoundDefOf.Tick_High.PlayOneShotOnCamera(); return true; }
-                rr.runes.Add(rune);
-                if (rr.runes.Count < rr.Slots) pickRune = rr.runes.Count; else pickRing = pickRune = -1;
+                bool wasEmpty = rr.Empty(pickRune);
+                rr.Put(pickRune, rune);
+                if (!wasEmpty) { Arlia.Fresh = false; SoundDefOf.Tick_High.PlayOneShotOnCamera(); return true; }
+                // an empty place filled: the next empty one is chosen
+                int next = rr.FirstEmpty();
+                if (next >= 0) pickRune = next; else pickRing = pickRune = -1;
                 Arlia.Fresh = false;
                 SoundDefOf.Tick_High.PlayOneShotOnCamera();
                 return true;
             }
-            if (rr.runes.Count >= rr.Slots)
+            int free = rr.FirstEmpty();
+            if (free < 0)
             {
                 if (!grow) { Messages.Message("No empty place in section " + (ring + 1) + " - double-click the rune to add a place.", MessageTypeDefOf.RejectInput, false); return false; }
                 if (rr.Slots >= MaxSlots) { Messages.Message("Section " + (ring + 1) + " is full.", MessageTypeDefOf.RejectInput, false); Arlia.Say("full"); return false; }
                 rr.slots = rr.Slots + 1;
+                free = rr.FirstEmpty();
             }
-            rr.runes.Add(rune);
+            rr.Put(free, rune);
             Arlia.Fresh = false;
             SoundDefOf.Tick_High.PlayOneShotOnCamera();
             return true;
@@ -293,7 +298,7 @@ namespace Avir.Ritualistics
             RitualOrnament.DrawUI(c, R, core, n, i => s.rings[i].Slots, i => s.rings[i].runes.Count, new Color(InkSoft.r, InkSoft.g, InkSoft.b, 0.85f));
 
             // the card of a chosen rune sits over the circle: clicks there are not the circle's
-            Rect cardLocal = pickRing >= 0 && pickRing < s.rings.Count && pickRune < s.rings[pickRing].runes.Count ? new Rect(RitualPick.LastCard.x - area.x, RitualPick.LastCard.y - area.y, RitualPick.LastCard.width, RitualPick.LastCard.height) : Rect.zero;
+            Rect cardLocal = pickRing >= 0 && pickRing < s.rings.Count && !s.rings[pickRing].Empty(pickRune) ? new Rect(RitualPick.LastCard.x - area.x, RitualPick.LastCard.y - area.y, RitualPick.LastCard.width, RitualPick.LastCard.height) : Rect.zero;
             bool glyphClicked = pickRing >= 0 && Mouse.IsOver(cardLocal);
             for (int i = 0; i < n; i++)
             {
@@ -301,8 +306,9 @@ namespace Avir.Ritualistics
                 int per = s.rings[i].Slots;
                 float inner = core + (R - core) * i / n, outer = core + (R - core) * (i + 1) / n;
                 float mid = (inner + outer) / 2f, size = RitualOrnament.GlyphSize(inner, outer, per, 90f);
-                for (int k = runes.Count; k < per; k++)   // Arlia's red ink round every empty place - and each can be chosen
+                for (int k = 0; k < per; k++)   // Arlia's red ink round every empty place - and each can be chosen
                 {
+                    if (!s.rings[i].Empty(k)) continue;
                     Rect eg = RitualOrnament.GlyphRect(c, mid, RitualOrnament.SlotAngle(i, k, per), size * RitualOrnament.RuneInFrame);
                     bool epicked = pickRing == i && pickRune == k;
                     if (epicked) RitualPick.Mark(eg);
@@ -325,6 +331,7 @@ namespace Avir.Ritualistics
                 }
                 for (int k = 0; k < runes.Count; k++)
                 {
+                    if (runes[k] == null) continue;
                     Rect g = RitualOrnament.GlyphRect(c, mid, RitualOrnament.SlotAngle(i, k, per), size * RitualOrnament.RuneInFrame);
                     bool over = Mouse.IsOver(g), picked = pickRing == i && pickRune == k;
                     if (picked) RitualPick.Mark(g);
@@ -337,7 +344,7 @@ namespace Avir.Ritualistics
                     {
                         ring = i;
                         glyphClicked = true;
-                        if (picked) { runes.RemoveAt(k); pickRing = pickRune = -1; SoundDefOf.Tick_Low.PlayOneShotOnCamera(); }
+                        if (picked) { s.rings[i].Rub(k); pickRing = pickRune = -1; SoundDefOf.Tick_Low.PlayOneShotOnCamera(); }
                         else { pickRing = i; pickRune = k; SoundDefOf.Tick_High.PlayOneShotOnCamera(); }
                         break;
                     }
@@ -359,13 +366,13 @@ namespace Avir.Ritualistics
             view.DrawHint(area, InkSoft);
             // the chosen rune: what it is, and a button to rub it out (Delete does the same)
             if (pickRing >= 0 && (pickRing >= s.rings.Count || pickRune >= s.rings[pickRing].Slots)) pickRing = pickRune = -1;
-            if (pickRing >= 0 && pickRune < s.rings[pickRing].runes.Count)
+            if (pickRing >= 0 && pickRune < s.rings[pickRing].runes.Count && s.rings[pickRing].runes[pickRune] != null)
             {
                 RuneDef pr = s.rings[pickRing].runes[pickRune];
                 if (Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Delete || Event.current.keyCode == KeyCode.Backspace) && GUIUtility.keyboardControl == 0)
-                { s.rings[pickRing].runes.RemoveAt(pickRune); pickRing = pickRune = -1; SoundDefOf.Tick_Low.PlayOneShotOnCamera(); Event.current.Use(); }
+                { s.rings[pickRing].Rub(pickRune); pickRing = pickRune = -1; SoundDefOf.Tick_Low.PlayOneShotOnCamera(); Event.current.Use(); }
                 else if (RitualPick.Card(new Rect(area.x + 8f, area.y + 8f, Mathf.Min(320f, area.width - 16f), 0f), pr, "Section " + (pickRing + 1) + ", place " + (pickRune + 1)))
-                { s.rings[pickRing].runes.RemoveAt(pickRune); pickRing = pickRune = -1; SoundDefOf.Tick_Low.PlayOneShotOnCamera(); }
+                { s.rings[pickRing].Rub(pickRune); pickRing = pickRune = -1; SoundDefOf.Tick_Low.PlayOneShotOnCamera(); }
             }
 
             // sections and slots
@@ -375,7 +382,7 @@ namespace Avir.Ritualistics
                 () => { s.rings.Add(new RitualRing { slots = 1 }); ring = s.rings.Count - 1; });
             RitualRing cur = s.rings[ring];
             Stepper(new Rect(r.x + half + 12f, y, half, 30f), "Slots in section " + (ring + 1), cur.Slots, MaxSlots,
-                () => { cur.slots = cur.Slots - 1; if (cur.runes.Count > cur.slots) cur.runes.RemoveAt(cur.runes.Count - 1); },
+                () => { cur.slots = cur.Slots - 1; if (cur.runes.Count > cur.slots) cur.runes.RemoveAt(cur.runes.Count - 1); cur.Trim(); },
                 () => cur.slots = cur.Slots + 1);
             ArliaGuide.Spot("components", new Rect(r.x, y + 34f, half, 30f));
             Stepper(new Rect(r.x, y + 34f, half, 30f), "Component circles", s.components.Count, MaxComponents,
@@ -469,7 +476,7 @@ namespace Avir.Ritualistics
             sb.AppendLine("DETAILS");
             sb.AppendLine(reading.Describe());
             for (int i = 0; i < s.rings.Count; i++)
-                sb.AppendLine("Section " + (i + 1) + " (" + s.rings[i].Slots + " slots): " + (s.rings[i].runes.Count == 0 ? "-" : string.Join(", ", s.rings[i].runes.Select(x => x.label))));
+                sb.AppendLine("Section " + (i + 1) + " (" + s.rings[i].Slots + " slots): " + (s.rings[i].runes.Count == 0 ? "-" : string.Join(", ", s.rings[i].runes.Select(x => x?.label ?? "(empty)"))));
             sb.AppendLine();
             sb.Append("Files are kept in " + RitualFiles.Folder);
             string text = sb.ToString();

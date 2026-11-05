@@ -96,8 +96,9 @@ namespace Avir.Magic
             {
                 SpellCircle a = order[i], b = order[i + 1];
                 if (map.ContainsKey(a) || map.ContainsKey(b) || !Small(a.element) || !Small(b.element)) continue;
-                // a closed circle keeps its element pure: it meets no one
-                if (Closed(a) || Closed(b)) continue;
+                // a Closing between them keeps the elements apart: in the outermost section of the first, or the first
+                // section of the second (the author's rule); a Closing right after a Transmutation is no seal
+                if (SpellTransmute.Seals(a, b)) continue;
                 if (root.ParentOf(a) != root.ParentOf(b)) continue;
                 ComboKind k = Of(a.element.kind, b.element.kind);
                 if (k == ComboKind.None) continue;
@@ -107,7 +108,11 @@ namespace Avir.Magic
         }
 
         /// <summary>A circle with the closing rune in it: its energy kept in, its element stays itself, whatever stands beside it.</summary>
-        public static bool Closed(SpellCircle c) => c != null && c.OwnRunes.Any(x => x.kind == RuneKind.Closing);
+        public static bool Closed(SpellCircle c) => c?.sections != null && c.sections.Any(r =>
+        {
+            var seq = r.runes.Where(x => x != null).ToList();
+            return seq.Where((x, i) => x.kind == RuneKind.Closing && !SpellTransmute.MarkClosing(seq, i)).Any();
+        });
 
         /// <summary>The focus rune draws the map's stream into its circle: +20% strength for each, and +10% more for each
         /// tier of the stream (the stream also makes the circle harder to hold - the ritual's own price of focus).</summary>

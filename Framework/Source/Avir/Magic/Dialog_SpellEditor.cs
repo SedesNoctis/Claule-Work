@@ -490,18 +490,26 @@ namespace Avir.Magic
             bool place = pickC == sel && pickSec >= 0 && pickSec < sel.sections.Count && pickK >= 0;
             int i = place ? pickSec : section < 0 ? 0 : Mathf.Min(section, sel.sections.Count - 1);
             RitualRing ring = sel.sections[i];
-            if (place && pickK < ring.runes.Count) ring.runes[pickK] = rune;   // the chosen place held a rune: it is replaced
+            if (place && !ring.Empty(pickK)) ring.runes[pickK] = rune;   // the chosen place held a rune: it is replaced
+            else if (place)
+            {
+                // an empty place chosen (an end one or a gap left by a rubbed-out rune): it is filled where it is, and the
+                // next empty one is chosen after it, so a section fills place by place
+                ring.Put(pickK, rune);
+                int next = ring.FirstEmpty();
+                if (next >= 0) pickK = next; else ClearPick();
+            }
             else
             {
-                if (ring.runes.Count >= ring.Slots)
+                int free = ring.FirstEmpty();
+                if (free < 0)
                 {
                     if (!grow) { Messages.Message("No empty place in section " + (i + 1) + " - double-click the rune to add a place.", MessageTypeDefOf.RejectInput, false); return false; }
                     if (ring.Slots >= SpellCircle.MaxSlots) { Messages.Message("Section " + (i + 1) + " is full.", MessageTypeDefOf.RejectInput, false); return false; }
                     ring.slots = ring.Slots + 1;
+                    free = ring.FirstEmpty();
                 }
-                ring.runes.Add(rune);
-                // an empty place chosen: the next empty one is chosen after it, so a section fills place by place
-                if (place) { if (ring.runes.Count < ring.Slots) pickK = ring.runes.Count; else ClearPick(); }
+                ring.Put(free, rune);
             }
             section = i;
             SoundDefOf.Tick_High.PlayOneShotOnCamera();
@@ -973,7 +981,7 @@ namespace Avir.Magic
                 {
                     RitualRing cur = sel.sections[section];
                     Stepper(new Rect(r.x + half + 12f, y, half, 30f), "Places in section " + (section + 1), cur.Slots, SpellCircle.MaxSlots, 1,
-                        () => { cur.slots = cur.Slots - 1; if (cur.runes.Count > cur.slots) cur.runes.RemoveAt(cur.runes.Count - 1); ClearPick(); },
+                        () => { cur.slots = cur.Slots - 1; if (cur.runes.Count > cur.slots) cur.runes.RemoveAt(cur.runes.Count - 1); cur.Trim(); ClearPick(); },
                         () => cur.slots = cur.Slots + 1);
                 }
                 else { GUI.color = InkSoft; Text.Anchor = TextAnchor.MiddleCenter; ArtInk.Label(new Rect(r.x + half + 12f, y, half, 30f), "choose a section for its places"); Text.Anchor = TextAnchor.UpperLeft; }
@@ -1212,7 +1220,7 @@ namespace Avir.Magic
             SpellCircle hollow = all.FirstOrDefault(c => c.Great && c.inner.Count == 0 && !c.OwnRunes.Any());
             if (hollow != null) return "A great circle with nothing in it and nothing of its own. A very expensive hoop.";
             for (int i = 0; i < sel.sections.Count; i++)
-                if (sel.sections[i].runes.Count < sel.sections[i].Slots) return "Section " + (i + 1) + " has a gap in it. Fill it or cut it - a gap in a circle is where the magic leaks out.";
+                if (sel.sections[i].Filled < sel.sections[i].Slots) return "Section " + (i + 1) + " has a gap in it. Fill it or cut it - a gap in a circle is where the magic leaks out.";
             return "Good. Now read what it does - before it does it to you.";
         }
 
@@ -1247,7 +1255,7 @@ namespace Avir.Magic
         {
             if (Picked() == null) { ClearPick(); return; }
             if (pickSec < 0) pickC.element = null;
-            else pickC.sections[pickSec].runes.RemoveAt(pickK);
+            else pickC.sections[pickSec].Rub(pickK);   // the place stays: the runes after it keep theirs
             ClearPick();
             SoundDefOf.Tick_Low.PlayOneShotOnCamera();
         }

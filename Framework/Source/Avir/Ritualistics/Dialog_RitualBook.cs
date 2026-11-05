@@ -220,6 +220,7 @@ namespace Avir.Ritualistics
                 float mid = (inner + outer) / 2f, size = RitualOrnament.GlyphSize(inner, outer, per, 90f * view.zoom);
                 for (int k = 0; k < runes.Count && k < per; k++)
                 {
+                    if (runes[k] == null) continue;
                     Rect g = RitualOrnament.GlyphRect(c, mid, RitualOrnament.SlotAngle(i, k, per), size * RitualOrnament.RuneInFrame);
                     bool over = Mouse.IsOver(g);
                     GUI.color = runes[k].Unlocked ? Color.white : new Color(1f, 1f, 1f, 0.75f);
@@ -350,7 +351,7 @@ namespace Avir.Ritualistics
                 sb.AppendLine("DETAILS");
                 sb.AppendLine(reading.Describe());
                 for (int i = 0; i < cur.rings.Count; i++)
-                    sb.AppendLine("Section " + (i + 1) + ": " + (cur.rings[i].runes.Count == 0 ? "-" : string.Join(", ", cur.rings[i].runes.Select(x => x.label))));
+                    sb.AppendLine("Section " + (i + 1) + ": " + (cur.rings[i].runes.Count == 0 ? "-" : string.Join(", ", cur.rings[i].runes.Select(x => x?.label ?? "(empty)"))));
             }
             string text = sb.ToString();
             GUI.color = InkSoft; Text.Font = GameFont.Medium;
