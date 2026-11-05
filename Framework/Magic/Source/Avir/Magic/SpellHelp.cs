@@ -157,10 +157,10 @@ namespace Avir.Magic
                     }
                     if (plain) e0.Add("Transmutation", PlainText);
                     foreach (SecondKind y2 in SecondOrder.Of(s.weave).Values.Distinct())
-                        e0.Add("Second meeting: " + SecondOrder.Label(y2), SecondOrder.Text(y2) + " Three circles work as " + Combos.Label(SecondOrder.PairOf(y2)) + ", with this on top of it.");
+                        e0.Add("Second meeting: " + SecondOrder.Label(y2), SecondOrder.Text(y2));
                     var foundPaths = s.weave.Working.Where(k => SpellTransmute.IsPath(s.weave, k, Combos.Of(s.weave, k))).Select(k => Combos.Of(s.weave, k)).Distinct().Where(k => SpellLore.Known(SpellPaths.Key(k))).ToList();
                     foreach (ComboKind fk in foundPaths) e0.Add("Secret path: " + SpellPaths.Name(fk), PathText(fk));
-                    if (path && foundPaths.Count == 0) e0.Add("Arlie", "Arlie: \"Both edges turned inward, both circles changing what they are... That meeting wants to become something else. I wouldn't know what. I'd cast it and see.\"");
+                    if (path && foundPaths.Count == 0) e0.Add("A hunch", "Arlie: \"Both edges turned inward, both circles changing what they are... That meeting wants to become something else. I wouldn't know what. I'd cast it and see.\"");
                 }
                 else if (RitualEvaluator.Read(s).verbs.Any(v => v.kind == RuneKind.Transmute)) e0.Add("Transmutation", PlainText);
                 bool focused = s.weave != null ? s.weave.All().Any(c => c.OwnRunes.Any(x => x.kind == RuneKind.Focus)) : RitualEvaluator.Read(s).focus > 0;

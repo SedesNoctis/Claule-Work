@@ -456,6 +456,14 @@ namespace Avir.Magic
                 zone = true, energyMax = 45f * s, ranged = Mathf.Min(0.75f, 0.25f * s), melee = Mathf.Min(0.5f, 0.15f * s), of = c
             };
             d.energy = d.energyMax;
+            // a dome of a second-order meeting: its own picture when drawn (Dome_Inferno...), else its pair's - in its colour
+            if (combo != ComboKind.None && SecondOrder.Now != SecondKind.None && SecondOrder.PairOf(SecondOrder.Now) == combo)
+            {
+                string own = "Dome_" + SecondOrder.Now;
+                if (ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/" + own, false) != null) d.tex = own;
+                RuneKind third = Combos.Parts(combo).Length == 2 ? SecondOrder.Third(SecondOrder.Now) : RuneKind.Fire;
+                d.tint = SecondOrder.ColorOf(SecondOrder.Now, combo, third);
+            }
             // a dome raised where one already stands: of the same nature it thickens it (charge adds up, it lasts the longer);
             // of another, the new one takes its place
             int now = Find.TickManager.TicksGame;

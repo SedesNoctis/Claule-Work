@@ -243,6 +243,21 @@
       <li>Avir.Magic.Designator_ArcaneSmooth</li>
       <li>Avir.Magic.Designator_ArcaneGrowth</li>
       <li>Avir.Magic.Designator_ArcaneEnrich</li>
+      <li>Avir.Magic.Designator_2RaiseGeyser</li>
+      <li>Avir.Magic.Designator_2SealGeyser</li>
+      <li>Avir.Magic.Designator_2SmeltItems</li>
+      <li>Avir.Magic.Designator_2LavaCore</li>
+      <li>Avir.Magic.Designator_2Basalt</li>
+      <li>Avir.Magic.Designator_2Obsidian</li>
+      <li>Avir.Magic.Designator_2Ash</li>
+      <li>Avir.Magic.Designator_2Clear</li>
+      <li>Avir.Magic.Designator_2Moat</li>
+      <li>Avir.Magic.Designator_2SiltWater</li>
+      <li>Avir.Magic.Designator_2SiltLand</li>
+      <li>Avir.Magic.Designator_2SiltDump</li>
+      <li>Avir.Magic.Designator_2MarshGas</li>
+      <li>Avir.Magic.Designator_2Quarry</li>
+      <li>Avir.Magic.Designator_2DigClay</li>
     </specialDesignatorClasses>
   </DesignationCategoryDef>
   <WorkGiverDef>

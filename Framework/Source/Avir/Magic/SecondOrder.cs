@@ -61,6 +61,18 @@ namespace Avir.Magic
             return ComboKind.None;
         }
 
+        /// <summary>The element that met the pair to make this.</summary>
+        public static RuneKind Third(SecondKind y)
+        {
+            switch (y)
+            {
+                case SecondKind.Inferno: case SecondKind.Lava: case SecondKind.BallLightning: case SecondKind.Swelter: case SecondKind.MarshGas: case SecondKind.BurningSand: return RuneKind.Fire;
+                case SecondKind.Boil: case SecondKind.Obsidian: case SecondKind.Deluge: case SecondKind.Rainbow: case SecondKind.Quag: case SecondKind.Clay: return RuneKind.Water;
+                case SecondKind.Geyser: case SecondKind.Volcano: case SecondKind.Mudflow: case SecondKind.DryWind: case SecondKind.Silt: case SecondKind.Rockfall: return RuneKind.Earth;
+                default: return RuneKind.Air;
+            }
+        }
+
         /// <summary>The second-order meetings of a spell, circle by circle.</summary>
         public static Dictionary<SpellCircle, SecondKind> Of(SpellCircle root) => Seconds(root, Combos.Pairs(root, false));
 
@@ -145,10 +157,35 @@ namespace Avir.Magic
                     break;
                 }
             }
+            Fourths(root, pairs, map, order);
             return map;
         }
 
         private static bool Small(RuneDef e) => e != null && (e.kind == RuneKind.Fire || e.kind == RuneKind.Water || e.kind == RuneKind.Earth || e.kind == RuneKind.Air);
+
+        /// <summary>The fourth (and further) circle of an element already in the meeting, right beside it, strengthens it
+        /// (the rule: "the fourth of the same element strengthens its part") - +25% for each.</summary>
+        private static void Fourths(SpellCircle root, Dictionary<SpellCircle, ComboKind> pairs, Dictionary<SpellCircle, SecondKind> map, List<SpellCircle> order)
+        {
+            for (int pass = 0; pass < 2; pass++)
+                for (int i = 0; i < order.Count; i++)
+                {
+                    SpellCircle c = order[i];
+                    if (map.ContainsKey(c) || pairs.ContainsKey(c) || !Small(c.element)) continue;
+                    foreach (int j in new[] { i - 1, i + 1 })
+                    {
+                        if (j < 0 || j >= order.Count || !map.TryGetValue(order[j], out SecondKind y)) continue;
+                        if (root.ParentOf(order[j]) != root.ParentOf(c)) continue;
+                        if (j < i ? SpellTransmute.Seals(order[j], c) : SpellTransmute.Seals(c, order[j])) continue;
+                        if (!Combos.Parts(PairOf(y)).Contains(c.element.kind) && Third(y) != c.element.kind) continue;
+                        map[c] = y;
+                        break;
+                    }
+                }
+        }
+
+        /// <summary>How many circles past the three strengthen this meeting in this spell (set by SpellChain.Run).</summary>
+        public static int Extra;
 
         // ------------------------------------------------------------------ the signature at cast
 
@@ -168,7 +205,7 @@ namespace Avir.Magic
             SecondKind y = Now;
             Map map = caster?.Map;
             if (y == SecondKind.None || map == null || r == null) return;
-            var ctx = new Ctx { caster = caster, map = map, at = target.Cell, power = power * 1.25f };
+            var ctx = new Ctx { caster = caster, map = map, at = target.Cell, power = power * (1.25f + 0.25f * Extra) };
             var v = new HashSet<RuneKind>(r.verbs.Select(x => x.kind));
             ctx.release = v.Contains(RuneKind.Release); ctx.hold = v.Contains(RuneKind.Hold); ctx.growth = v.Contains(RuneKind.Growth); ctx.lift = v.Contains(RuneKind.Lift);
             ctx.drain = v.Contains(RuneKind.Drain); ctx.purge = v.Contains(RuneKind.Purge); ctx.restore = v.Contains(RuneKind.Restore);
@@ -346,6 +383,9 @@ namespace Avir.Magic
                     {
                         if (p.RaceProps.IsMechanoid) MagicFx.Stun(p, Mathf.RoundToInt(180f * c.power), by);
                         MagicFx.Give(p, H(c.hold ? "Avir_SiltBound" : "Avir_Silted"), Ticks(c.hold ? 0.25f : 1f, c.power));
+                        // silt in the action: a ranged weapon up to industrial make jams (not a spacer's, not ultratech)
+                        ThingWithComps gun = p.equipment?.Primary;
+                        if (gun != null && gun.def.IsRangedWeapon && gun.def.techLevel <= TechLevel.Industrial) MagicFx.Give(p, H("Avir_SiltJammed"), Ticks(0.5f, c.power));
                     }
                     foreach (Building b in c.cells.Select(x => x.GetEdifice(c.map)).Where(b => b is Building_Turret).Distinct().ToList())
                         b.TakeDamage(new DamageInfo(DamageDefOf.EMP, 20f * c.power, 0f, -1f, by));
@@ -531,6 +571,22 @@ namespace Avir.Magic
             object boxed = __result;
             dist.SetValue(boxed, (float)dist.GetValue(boxed) * f);
             __result = (ShotReport)boxed;
+        }
+    }
+
+    /// <summary>A gun choked with silt does not fire until it is cleared (the hediff wears off).</summary>
+    [HarmonyPatch(typeof(Verb), nameof(Verb.Available))]
+    public static class Patch_SiltJams
+    {
+        private static HediffDef jam;
+        public static void Postfix(Verb __instance, ref bool __result)
+        {
+            if (!__result || __instance?.verbProps == null || __instance.verbProps.IsMeleeAttack) return;
+            Pawn p = __instance.CasterPawn;
+            ThingWithComps gun = __instance.EquipmentSource;
+            if (p?.health?.hediffSet == null || gun == null || gun.def.techLevel > TechLevel.Industrial) return;
+            jam = jam ?? DefDatabase<HediffDef>.GetNamedSilentFail("Avir_SiltJammed");
+            if (jam != null && p.health.hediffSet.HasHediff(jam)) __result = false;
         }
     }
 

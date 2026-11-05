@@ -284,6 +284,21 @@
     </stages>
   </HediffDef>
   <HediffDef>
+    <defName>Avir_SiltJammed</defName>
+    <label>gun choked with silt</label>
+    <description>Silt in the action: a ranged weapon of industrial make or older does not fire until it is cleared. Spacer and ultratech arms shrug it off.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.5, 0.45, 0.35)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>600~600</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+  </HediffDef>
+  <HediffDef>
     <defName>Avir_Clayed</defName>
     <label>clay-bound</label>
     <description>Clay over arms and legs; as it sets it holds the body fast. It crumbles away in time.</description>

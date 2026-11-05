@@ -1,0 +1,632 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <WorkGiverDef>
+    <defName>Avir_2Cremate</defName>
+    <label>cremate the dead</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>cremate</verb>
+    <gerund>cremating the dead</gerund>
+    <priorityInType>8</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Cremate</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>burning the dead to ash by steam and fire.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2Purify</defName>
+    <label>purify food</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>purify</verb>
+    <gerund>purifying food</gerund>
+    <priorityInType>8</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Purify</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>purifying food by boiling steam.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2RaiseGeyser</defName>
+    <label>raise a geyser</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>raise</verb>
+    <gerund>raising a geyser</gerund>
+    <priorityInType>8</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2RaiseGeyser</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>calling a geyser up.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2RaiseGeyser</defName>
+    <texturePath>UI/Designations/Mine</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2SealGeyser</defName>
+    <label>seal a geyser</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>seal</verb>
+    <gerund>sealing a geyser</gerund>
+    <priorityInType>8</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2SealGeyser</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>sealing a geyser.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2SealGeyser</defName>
+    <texturePath>UI/Designations/Deconstruct</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2Rinse</defName>
+    <label>rinse the home</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>rinse</verb>
+    <gerund>rinsing the home</gerund>
+    <priorityInType>7</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Rinse</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>rinsing the home with a typhoon.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2SmeltItems</defName>
+    <label>smelt items by lava</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>smelt</verb>
+    <gerund>smelting by lava</gerund>
+    <priorityInType>7</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2SmeltItems</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>smelting by lava.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2SmeltItems</defName>
+    <texturePath>UI/Designations/Deconstruct</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2LavaCore</defName>
+    <label>seal a lava core</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>seal</verb>
+    <gerund>sealing a lava core</gerund>
+    <priorityInType>7</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2LavaCore</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>sealing a lava core.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2LavaCore</defName>
+    <texturePath>UI/Designations/Mine</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2Basalt</defName>
+    <label>draw basalt</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>draw</verb>
+    <gerund>drawing basalt</gerund>
+    <priorityInType>7</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Basalt</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>drawing basalt up.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2Basalt</defName>
+    <texturePath>UI/Designations/Mine</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2Obsidian</defName>
+    <label>make obsidian</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>make</verb>
+    <gerund>making obsidian</gerund>
+    <priorityInType>6</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Obsidian</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>quenching magma into obsidian.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2Obsidian</defName>
+    <texturePath>UI/Designations/Mine</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2Ash</defName>
+    <label>ash the ground</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>ash</verb>
+    <gerund>ashing the ground</gerund>
+    <priorityInType>6</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Ash</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>letting ash fall on the ground.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2Ash</defName>
+    <texturePath>UI/Designations/Harvest</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2Water</defName>
+    <label>water the fields</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>water</verb>
+    <gerund>watering the fields</gerund>
+    <priorityInType>6</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Water</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>watering the fields with a downpour.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2Wind</defName>
+    <label>drive the wind turbines</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>drive</verb>
+    <gerund>driving the wind</gerund>
+    <priorityInType>6</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Wind</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>driving the wind into a turbine.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2Charge</defName>
+    <label>charge the batteries</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>charge</verb>
+    <gerund>charging batteries</gerund>
+    <priorityInType>5</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Charge</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>charging a battery with ball lightning.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2Clear</defName>
+    <label>clear land</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>clear</verb>
+    <gerund>clearing land</gerund>
+    <priorityInType>5</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Clear</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>tearing the trees up with a mudflow.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2Clear</defName>
+    <texturePath>UI/Designations/CutPlants</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2HeatRoom</defName>
+    <label>tie a heat knot</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>heat</verb>
+    <gerund>heating a room</gerund>
+    <priorityInType>5</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2HeatRoom</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>tying a knot of heat.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2Vent</defName>
+    <label>air the rooms</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>air</verb>
+    <gerund>airing a room</gerund>
+    <priorityInType>5</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Vent</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>airing a room with an updraft.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2Rainbow</defName>
+    <label>raise a rainbow</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>raise</verb>
+    <gerund>raising a rainbow</gerund>
+    <priorityInType>4</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Rainbow</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>raising a rainbow.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2Dry</defName>
+    <label>dry the stores</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>dry</verb>
+    <gerund>drying the stores</gerund>
+    <priorityInType>4</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Dry</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>drying the stores with a dry wind.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2Moat</defName>
+    <label>flood a moat</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>flood</verb>
+    <gerund>flooding a moat</gerund>
+    <priorityInType>4</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Moat</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>flooding a moat.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2Moat</defName>
+    <texturePath>UI/Designations/Harvest</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2SiltWater</defName>
+    <label>turn ground to water</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>silt</verb>
+    <gerund>silting ground</gerund>
+    <priorityInType>4</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2SiltWater</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>turning ground to water.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2SiltWater</defName>
+    <texturePath>UI/Designations/Harvest</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2SiltLand</defName>
+    <label>turn water to ground</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>silt</verb>
+    <gerund>silting water</gerund>
+    <priorityInType>3</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2SiltLand</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>turning water to ground.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2SiltLand</defName>
+    <texturePath>UI/Designations/Harvest</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2SiltDump</defName>
+    <label>keep the silt pit</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>sink</verb>
+    <gerund>sinking refuse</gerund>
+    <priorityInType>3</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2SiltDump</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>sinking refuse into silt.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2SiltDump</defName>
+    <texturePath>UI/Designations/Deconstruct</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2MarshGas</defName>
+    <label>draw marsh gas</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>draw</verb>
+    <gerund>drawing marsh gas</gerund>
+    <priorityInType>3</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2MarshGas</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>drawing marsh gas.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2MarshGas</defName>
+    <texturePath>UI/Designations/Harvest</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2Preserve</defName>
+    <label>preserve the stores</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>preserve</verb>
+    <gerund>preserving</gerund>
+    <priorityInType>3</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Preserve</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>holding off the rot with marsh haze.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2Quarry</defName>
+    <label>quarry rock</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>quarry</verb>
+    <gerund>quarrying</gerund>
+    <priorityInType>2</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Quarry</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>bringing rock down.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2Quarry</defName>
+    <texturePath>UI/Designations/Mine</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2Hone</defName>
+    <label>hone blades</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>hone</verb>
+    <gerund>honing blades</gerund>
+    <priorityInType>2</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Hone</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>honing a blade with emery.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2Bricks</defName>
+    <label>fire bricks</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>fire</verb>
+    <gerund>firing bricks</gerund>
+    <priorityInType>2</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2Bricks</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>firing clay into bricks.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_2DigClay</defName>
+    <label>draw clay</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>draw</verb>
+    <gerund>drawing clay</gerund>
+    <priorityInType>2</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2DigClay</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>drawing clay out of the ground.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2DigClay</defName>
+    <texturePath>UI/Designations/Mine</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+
+  <ThingDef ParentName="ResourceBase">
+    <defName>Avir_LavaCore</defName>
+    <label>lava core</label>
+    <description>A fist of lava sealed in a basalt shell. It stays hot for days: any fire that is fed with wood takes it, and one core burns as long as three logs.</description>
+    <graphicData>
+      <texPath>Things/Item/Resource/StoneBlocks</texPath>
+      <graphicClass>Graphic_StackCount</graphicClass>
+      <color>(205,92,40)</color>
+    </graphicData>
+    <stackLimit>25</stackLimit>
+    <statBases>
+      <MaxHitPoints>80</MaxHitPoints>
+      <Mass>2</Mass>
+      <MarketValue>9</MarketValue>
+      <Flammability>0</Flammability>
+      <DeteriorationRate>0</DeteriorationRate>
+    </statBases>
+    <thingCategories><li>ResourcesRaw</li></thingCategories>
+  </ThingDef>
+  <ThingDef ParentName="ResourceBase">
+    <defName>Avir_MarshGas</defName>
+    <label>marsh gas</label>
+    <description>Bog breath drawn into a canister. Wherever chemfuel feeds a thing it feeds it too, and one canister goes as far as two of chemfuel. Keep it away from fire.</description>
+    <graphicData>
+      <texPath>Things/Item/Resource/Chemfuel</texPath>
+      <graphicClass>Graphic_StackCount</graphicClass>
+      <color>(150,170,95)</color>
+    </graphicData>
+    <stackLimit>75</stackLimit>
+    <statBases>
+      <MaxHitPoints>40</MaxHitPoints>
+      <Mass>0.05</Mass>
+      <MarketValue>3</MarketValue>
+      <Flammability>2</Flammability>
+      <DeteriorationRate>1</DeteriorationRate>
+    </statBases>
+    <thingCategories><li>Manufactured</li></thingCategories>
+    <comps>
+      <li Class="CompProperties_Explosive">
+        <explosiveRadius>1.5</explosiveRadius>
+        <explosiveDamageType>Flame</explosiveDamageType>
+        <explosiveExpandPerStackcount>0.04</explosiveExpandPerStackcount>
+        <startWickOnDamageTaken><li>Flame</li></startWickOnDamageTaken>
+        <startWickHitPointsPercent>0.333</startWickHitPointsPercent>
+        <preExplosionSpawnThingDef>Filth_Fuel</preExplosionSpawnThingDef>
+        <preExplosionSpawnChance>1</preExplosionSpawnChance>
+        <wickTicks>70~150</wickTicks>
+      </li>
+    </comps>
+  </ThingDef>
+  <ThingDef ParentName="StoneBlocksBase">
+    <defName>Avir_ObsidianChunk</defName>
+    <label>obsidian</label>
+    <description>Magma quenched so fast it had no time to become stone: black glass with edges that cut. Brittle, but wicked in a trap.</description>
+    <graphicData><color>(30,26,34)</color></graphicData>
+    <statBases>
+      <Mass>1</Mass>
+      <MarketValue>3</MarketValue>
+      <SharpDamageMultiplier>1.15</SharpDamageMultiplier>
+      <BluntDamageMultiplier>0.7</BluntDamageMultiplier>
+    </statBases>
+    <stuffProps>
+      <color>(30,26,34)</color>
+      <soundImpactBullet>BulletImpact_Ground</soundImpactBullet>
+      <soundMeleeHitSharp>MeleeHit_Stone</soundMeleeHitSharp>
+      <soundMeleeHitBlunt>MeleeHit_Stone</soundMeleeHitBlunt>
+      <soundImpactMelee>Pawn_Melee_Punch_HitBuilding_Stone</soundImpactMelee>
+      <stuffAdjective>obsidian</stuffAdjective>
+      <statFactors>
+        <MaxHitPoints>0.9</MaxHitPoints>
+        <Beauty>1.4</Beauty>
+        <WorkToBuild>1.2</WorkToBuild>
+      </statFactors>
+    </stuffProps>
+  </ThingDef>
+  <ThingDef ParentName="ResourceBase">
+    <defName>Avir_Clay</defName>
+    <label>clay</label>
+    <description>Wet clay drawn out of the ground. Fired by burning sand, it becomes brick.</description>
+    <graphicData>
+      <texPath>Things/Item/Resource/StoneBlocks</texPath>
+      <graphicClass>Graphic_StackCount</graphicClass>
+      <color>(170,110,80)</color>
+    </graphicData>
+    <stackLimit>75</stackLimit>
+    <statBases>
+      <MaxHitPoints>60</MaxHitPoints>
+      <Mass>0.6</Mass>
+      <MarketValue>0.6</MarketValue>
+      <Flammability>0</Flammability>
+      <DeteriorationRate>0.5</DeteriorationRate>
+    </statBases>
+    <thingCategories><li>ResourcesRaw</li></thingCategories>
+  </ThingDef>
+  <ThingDef ParentName="StoneBlocksBase">
+    <defName>Avir_Brick</defName>
+    <label>brick</label>
+    <description>Clay fired through by burning sand. Lighter than stone blocks and quicker to lay, a little weaker.</description>
+    <graphicData><color>(160,72,52)</color></graphicData>
+    <statBases>
+      <Mass>0.8</Mass>
+      <MarketValue>1.2</MarketValue>
+    </statBases>
+    <stuffProps>
+      <color>(160,72,52)</color>
+      <soundImpactBullet>BulletImpact_Ground</soundImpactBullet>
+      <soundMeleeHitSharp>MeleeHit_Stone</soundMeleeHitSharp>
+      <soundMeleeHitBlunt>MeleeHit_Stone</soundMeleeHitBlunt>
+      <soundImpactMelee>Pawn_Melee_Punch_HitBuilding_Stone</soundImpactMelee>
+      <stuffAdjective>brick</stuffAdjective>
+      <statFactors>
+        <MaxHitPoints>1.1</MaxHitPoints>
+        <Beauty>1.1</Beauty>
+        <WorkToBuild>0.75</WorkToBuild>
+      </statFactors>
+      <canSuggestUseDefaultStuff>true</canSuggestUseDefaultStuff>
+    </stuffProps>
+  </ThingDef>
+</Defs>

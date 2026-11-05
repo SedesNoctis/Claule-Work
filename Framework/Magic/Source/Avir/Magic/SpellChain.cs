@@ -154,7 +154,10 @@ namespace Avir.Magic
             bool keepPath = SpellTransmute.OnPath;
             SpellTransmute.OnPath = SpellTransmute.IsPath(c.root, circle, met);
             SecondKind keepSecond = SecondOrder.Now;
-            SecondOrder.Now = SecondOrder.Of(c.root).TryGetValue(circle, out SecondKind sk) ? sk : SecondKind.None;
+            var seconds = SecondOrder.Of(c.root);
+            SecondOrder.Now = seconds.TryGetValue(circle, out SecondKind sk) ? sk : SecondKind.None;
+            int keepExtra = SecondOrder.Extra;
+            SecondOrder.Extra = SecondOrder.Now == SecondKind.None ? 0 : Mathf.Max(0, seconds.Count(kv => kv.Value == SecondOrder.Now) - 3);
             using (SpellWards.Of(circle.element?.kind, met, true))
             using (shaped ? SpellSculpt.Spare(aid) : null)
             try
@@ -164,7 +167,7 @@ namespace Avir.Magic
                 // the barriers in their turn; two elements that met work as what they made
                 else SpellWards.InOrder(caster, one, met, circle.element, c.target, pHere, part => SpellDash.CastPart(caster, part, met, circle.element, c.target, pHere));
             }
-            finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; SpellAura.Spell = keepSpell; SpellTransmute.OnPath = keepPath; SecondOrder.Now = keepSecond; }
+            finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; SpellAura.Spell = keepSpell; SpellTransmute.OnPath = keepPath; SecondOrder.Now = keepSecond; SecondOrder.Extra = keepExtra; }
             SpellDash.Hang(after, met, caster, c.target, p);
             if (leaps != null)
                 foreach (RitualSchema leap in leaps)
