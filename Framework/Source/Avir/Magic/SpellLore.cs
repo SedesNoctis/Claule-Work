@@ -52,7 +52,7 @@ namespace Avir.Magic
                 case "Thread:Shape": return "the Thread turns a Shaping round - the walls close in";
                 case "Thread:Reach": return "Reach and Thread - the spell leaps on to another place";
                 case "Thread:Aid": return "two Barriers and a Thread - the blow goes to one's own (Selective Aid)";
-                case "Thread:Heal": return "a Thread on a verb, with Restoration in the circle - the blow mends instead of wounding";
+                case "Thread:Heal": return "verb, Thread, Restoration - the blow mends instead of wounding";
             }
             return key.StartsWith("Price:") ? "the price of a slipped hold - " + key.Substring(6) : key;
         }
@@ -107,7 +107,7 @@ namespace Avir.Magic
             if (Known("Thread:Shape")) parts.Add("After a Shaping the wall does not stand but closes on the target, a cell nearer at each step.");
             if (Known("Thread:Reach")) parts.Add("Right after a Reach it ties the spell on to a further place: what is outward of it leaps on.");
             if (Known("Thread:Aid")) parts.Add("Beside two Barriers on the outer edge it turns the blow to the caster's own.");
-            if (Known("Thread:Heal")) parts.Add("Right after a verb, in a circle that holds Restoration, it ties the blow to the mending: what would wound the living heals it.");
+            if (Known("Thread:Heal")) parts.Add("Between a verb and Restoration it ties the verb to the mending: what would wound the living heals it.");
             parts.Add(parts.Count < 7 ? "What else it turns is found by casting." : "Anywhere else it ties nothing and does nothing.");
             return string.Join(" ", parts);
         }

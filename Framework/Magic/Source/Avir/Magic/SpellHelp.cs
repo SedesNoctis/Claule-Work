@@ -79,8 +79,8 @@ namespace Avir.Magic
                     + " What is left on the ground (magma, mire, held fields) does not know its own.");
                 if (nAid > 0) e0.Add("Turned to its own", "Two Barriers and a Thread in the outermost section of a circle turn its blow to the caster's own people - the caster among them - and past the foes; "
                     + (1f - SpellSculpt.Keeps).ToStringPercent() + " weaker for it. For mending, warding and strengthening one's own from the circle.");
-                if (SpellHeal.Turns(s)) e0.Add("Turned to mending", "A Thread right after a verb, in a circle that holds Restoration, ties the blow to the mending: on the living it heals instead of wounding - a release becomes a burst of healing, a lift lifts gently. "
-                    + "It sets nothing alight, breaks nothing, knocks no one down. Machines have no life to mend and take it as a blow. Whom it reaches is the circle's rule: everyone; with Selective Protection, foes; with Selective Aid, one's own.");
+                if (SpellHeal.Turns(s)) e0.Add("Turned to mending", "A verb, a Thread right after it and Restoration right after the Thread tie that verb to the mending: on the living its blow heals instead of wounding - a release becomes a burst of healing, a lift lifts gently. "
+                    + "It sets nothing alight, breaks nothing, knocks no one down. Machines have no life to mend and take it as a blow. Only that verb is turned; the others, and the other circles, strike as written. Whom it reaches is the circle's rule: everyone; with Selective Protection, foes; with Selective Aid, one's own.");
                 if (SpellMods.Strict && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Where(x => x.role == RuneRole.Verb).GroupBy(x => x.kind).Any(g => g.Count() > 1)))
                     e0.Add("Echo", "Strict modifiers (a setting, on trial): each later copy of a verb acts with the modifiers written after it, and hears the copy before it - half of all that copy came to; echoes build up.");
                 if (s.weave != null)

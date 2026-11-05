@@ -245,7 +245,7 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Restore:
                         Restore(k, caster, map, FireMagic.Point(at, map, Mathf.Max(0.9f, fr - 1f)), power);
-                        if (SpellHeal.Turns(s) && verbs.Count > 0) Apply(k, caster, map, verbs, FireMagic.Point(at, map, fr), at, power, rf);
+                        { var hv = SpellHeal.Carried(s, forms, verbs); if (hv.Count > 0) Apply(k, caster, map, hv, FireMagic.Point(at, map, fr), at, power, rf); }
                         break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, ComboDefOf.Enchant(k)); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;

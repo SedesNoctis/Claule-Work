@@ -79,7 +79,7 @@ namespace Avir.Magic
                             MagicFx.Give(p, EarthAirDefOf.Avir_StoneSkin, Mathf.RoundToInt(GenDate.TicksPerHour * power));
                             FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 1.2f, MagicFx.EarthDust);
                         }
-                        if (SpellHeal.Turns(s) && verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf);
+                        { var hv = SpellHeal.Carried(s, forms, verbs); if (hv.Count > 0) Apply(caster, map, hv, FireMagic.Point(at, map, fradius), at, power, rf); }
                         break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, EarthAirDefOf.Avir_EarthEnchant); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;
@@ -251,7 +251,7 @@ namespace Avir.Magic
                             SpellRestore.Gift(p, SpellRestore.SecondWind, power);
                             FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 1.2f, MagicFx.AirDust);
                         }
-                        if (SpellHeal.Turns(s) && verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf);
+                        { var hv = SpellHeal.Carried(s, forms, verbs); if (hv.Count > 0) Apply(caster, map, hv, FireMagic.Point(at, map, fradius), at, power, rf); }
                         break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, EarthAirDefOf.Avir_AirEnchant); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;

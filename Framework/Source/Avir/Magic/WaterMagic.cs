@@ -78,7 +78,7 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Restore:
                         Wash(caster, at, map, Mathf.Max(0.9f, fradius - 1f), power);
-                        if (SpellHeal.Turns(s) && verbs.Count > 0) Apply(caster, map, verbs, FireMagic.Point(at, map, fradius), at, power, rf);
+                        { var hv = SpellHeal.Carried(s, forms, verbs); if (hv.Count > 0) Apply(caster, map, hv, FireMagic.Point(at, map, fradius), at, power, rf); }
                         break;
                     case RuneKind.Enchant: Enchant(caster, at, map, power); break;
                     case RuneKind.Summon: Messages.Message("Spirits are not made yet.", MessageTypeDefOf.RejectInput, false); break;

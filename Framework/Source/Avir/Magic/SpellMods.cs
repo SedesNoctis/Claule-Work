@@ -71,8 +71,8 @@ namespace Avir.Magic
         public static RitualReading Verb(RitualReading r, RuneDef v)
         {
             RitualReading c = VerbCore(r, v);
-            // the healing turn: a Thread on a verb, in a circle with Restoration, turns its blow to healing (SpellHeal)
-            SpellHeal.Now = v != null && v.role == RuneRole.Verb && cur != null && cur.own.TryGetValue(v, out Bound hb) && hb.thread > 0 && SpellHeal.Restores(now);
+            // the healing turn: verb + Thread + Restoration turns this verb's blow to healing (SpellHeal)
+            SpellHeal.Now = v != null && v.role == RuneRole.Verb && SpellHeal.Bound(now).Contains(v);
             // strict modifiers (the author's rule, on trial): the depth of the blow is this verb's own, not the circle's
             if (Strict && c != null && SpellWards.AtWork) SpellDepth.Amplify = c.amplify;
             return c;

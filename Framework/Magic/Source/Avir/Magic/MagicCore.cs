@@ -882,9 +882,9 @@ namespace Avir.Magic
                 Spell("TEST Sense: the wind over the land (air)", "Air:Sense"),
                 Spell("TEST Sense: a watcher on a place (bog)", "Water:Sense", "Earth:Sense"),
                 Spell("TEST Moving dome (Barrier, then Aura)", "Water:Barrier|Aura"),
-                Spell("TEST Healing burst (water: Release + Thread, Restore)", "Water:Restore|Release,Thread"),
-                Spell("TEST Healing burst, own only (fire, Selective Aid)", "Fire:Restore|Release,Thread|Barrier,Barrier,Thread"),
-                Spell("TEST Gentle lift (air: Lift + Thread, Restore)", "Air:Restore|Lift,Thread"),
+                Spell("TEST Healing burst (water: Release + Thread + Restore)", "Water:Release,Thread,Restore"),
+                Spell("TEST Heal own, then blast foes (two circles)", "Fire:Release,Thread,Restore|Barrier,Barrier,Thread", "Fire:Release|Barrier,Barrier"),
+                Spell("TEST Gentle lift (air: Lift + Thread + Restore)", "Air:Lift,Thread,Restore"),
                 Spell("TEST Restoration of earth (mends things too)", "Earth:Restore,Breadth"),
                 Spell("TEST Restoration of air (second wind)", "Air:Restore"),
             };

@@ -9,9 +9,11 @@ using Verse;
 
 namespace Avir.Magic
 {
-    /// <summary>The healing turn (Магия-правила.md, the author's rule): a verb with a Thread right outward of it, in a
-    /// circle that also holds Restoration, is tied to the mending - its blow on the living becomes healing. A Release so
-    /// written is a burst of healing; a Lift lifts gently. Whom it reaches is the usual rule of the circle: everyone in it;
+    /// <summary>The healing turn (Магия-правила.md, the author's rule): a verb, a Thread right outward of it and Restoration
+    /// right outward of the Thread - "Release + Thread + Restore" - tie that one verb to the mending: its blow on the living
+    /// becomes healing. The bond is local: other verbs of the circle strike as written, and another circle of the same
+    /// spell is its own (Release + two Barriers in the next circle is a plain blast on foes). A Release so written is a
+    /// burst of healing; a Lift lifts gently. Whom it reaches is the usual rule of the circle: everyone in it;
     /// with two Barriers on the outer edge, only foes (Selective Protection); with two Barriers and a Thread, only the
     /// caster's own (Selective Aid). A blow so turned harms nothing: no wound, no fire, no knock, no ill state; a machine
     /// has no life to mend and takes it as a blow. Hidden until first cast (SpellLore, "Thread:Heal").</summary>
@@ -26,19 +28,36 @@ namespace Avir.Magic
         private sealed class Scope : IDisposable { public void Dispose() { if (depth > 0) depth--; } }
         public static IDisposable In(bool on) { if (!on) return null; depth++; return new Scope(); }
 
-        /// <summary>Does this circle hold Restoration (what a Thread on a verb ties it to)?</summary>
-        public static bool Restores(RitualSchema s) => s?.rings != null && s.rings.Any(g => g.runes.Any(x => x != null && x.kind == RuneKind.Restore));
-
-        /// <summary>Does any verb of this circle turn to healing?</summary>
-        public static bool Turns(RitualSchema s)
+        /// <summary>The verbs of this circle tied to the mending: each followed (its own modifiers between allowed) by a
+        /// Thread, and that Thread at once by Restoration.</summary>
+        public static HashSet<RuneDef> Bound(RitualSchema s)
         {
-            if (!Restores(s)) return false;
-            foreach (RuneDef v in s.rings.SelectMany(g => g.runes).Where(x => x != null && x.role == RuneRole.Verb).Distinct())
+            var bound = new HashSet<RuneDef>();
+            if (s?.rings == null) return bound;
+            List<RuneDef> seq = s.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
+            RuneDef verb = null;
+            for (int i = 0; i < seq.Count; i++)
             {
-                SpellMods.Own(s, v.kind, out _, out _, out _, out int th);
-                if (th > 0) return true;
+                RuneDef x = seq[i];
+                if (x.role == RuneRole.Form && x.kind == RuneKind.Restore && verb != null && i > 0 && seq[i - 1].kind == RuneKind.Thread) bound.Add(verb);
+                if (x.role == RuneRole.Verb) verb = x; else if (x.role == RuneRole.Form) verb = null;
             }
-            return false;
+            return bound;
+        }
+
+        /// <summary>Is this Restoration only the knot of a healing turn (right after "verb + Thread")?</summary>
+        public static bool Knot(RitualSchema s) => Bound(s).Count > 0;
+
+        /// <summary>Does any verb of this circle (or of any circle of the spell) turn to healing?</summary>
+        public static bool Turns(RitualSchema s) => s?.weave != null ? s.weave.Working.Any(k => Bound(k.AsSchema()).Count > 0) : Bound(s).Count > 0;
+
+        /// <summary>What a Restoration form carries in a healing turn: the verbs tied to it - when no other form carries
+        /// them already (they would strike twice).</summary>
+        public static List<RuneDef> Carried(RitualSchema s, List<RuneDef> forms, List<RuneDef> verbs)
+        {
+            if (forms.Any(f => f.kind != RuneKind.Restore)) return new List<RuneDef>();
+            HashSet<RuneDef> b = Bound(s);
+            return verbs.Where(b.Contains).ToList();
         }
 
         public static bool Living(Pawn p) => p != null && !p.Dead && p.RaceProps.IsFlesh;

@@ -72,7 +72,7 @@ namespace Avir.Magic
                     case RuneKind.Restore:
                         Cauterize(caster, at, map, fradius, power, verbs);
                         // the healing turn: the verbs tied to the mending strike, and their blow heals (SpellHeal)
-                        if (SpellHeal.Turns(s) && verbs.Count > 0) Apply(caster, map, verbs, Point(at, map, fradius), at, power, rf, false);
+                        { var hv = SpellHeal.Carried(s, forms, verbs); if (hv.Count > 0) Apply(caster, map, hv, Point(at, map, fradius), at, power, rf, false); }
                         break;
                     case RuneKind.Enchant:
                         Enchant(caster, at, map, power);
