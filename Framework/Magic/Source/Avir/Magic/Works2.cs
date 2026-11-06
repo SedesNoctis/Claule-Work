@@ -458,7 +458,7 @@ namespace Avir.Magic
         protected abstract string Label2 { get; }
         protected abstract string Desc2 { get; }
         protected virtual string Icon2 => "UI/Designators/SmoothSurface";
-        protected Designator_Arcane2() { icon = ContentFinder<Texture2D>.Get(Icon2, false) ?? BaseContent.BadTex; }
+        protected Designator_Arcane2() { icon = ArcaneIcons.For(Key, Icon2); }
         public override string Label => Label2;
         public override string Desc => Desc2;
         protected override DesignationDef Designation => Works2.D(Key);

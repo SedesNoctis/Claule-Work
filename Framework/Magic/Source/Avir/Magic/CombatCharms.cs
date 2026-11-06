@@ -126,7 +126,7 @@ namespace Avir.Magic
             Pawn target = null;
             if (player)
             {
-                if (p.CurJobDef == JobDefOf.Hunt && p.CurJob.targetA.Thing is Pawn prey && !prey.Dead) target = prey;                       // hunting
+                if ((p.CurJobDef == JobDefOf.Hunt || p.CurJob?.def?.defName == "Avir_ArcaneHunt") && p.CurJob.targetA.Thing is Pawn prey && !prey.Dead) target = prey;                       // hunting
                 else if (p.Drafted) { if (p.drafter.FireAtWill && (p.CurJob == null || p.CurJobDef == JobDefOf.Wait_Combat || p.CurJobDef == JobDefOf.Wait)) target = Nearest(p, range); }
                 else if (c.fightUndrafted) target = Nearest(p, Mathf.Min(range, 14f));                                                   // a foe near, undrafted
             }

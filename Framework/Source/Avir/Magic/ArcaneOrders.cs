@@ -113,7 +113,7 @@ namespace Avir.Magic
         {
             defaultLabel = "Raise rock";
             defaultDesc = "Mark where a caster of earth is to raise plain rock, as if it had always stood there - of the stone chosen. It can be mined or smoothed like any rock. Basalt is magma's: it needs a caster of fire and earth both.";
-            icon = ContentFinder<Texture2D>.Get("UI/Designators/SmoothSurface", false) ?? BaseContent.BadTex;
+            icon = ArcaneIcons.For(Designation?.defName, "UI/Designators/SmoothSurface");
         }
 
         public override string Label => "Raise rock: " + (Chosen?.label ?? "-");
@@ -148,7 +148,7 @@ namespace Avir.Magic
         {
             defaultLabel = "Draw ore up";
             defaultDesc = "Mark a deep vein a caster has sensed: casters of earth draw its ore up, a portion at a time, until it is spent. Only what some caster has sensed can be marked.";
-            icon = ContentFinder<Texture2D>.Get("UI/Designators/Mine", false) ?? BaseContent.BadTex;
+            icon = ArcaneIcons.For(Designation?.defName, "UI/Designators/Mine");
         }
         protected override DesignationDef Designation => Arcane.Drill;
 
@@ -168,7 +168,7 @@ namespace Avir.Magic
         {
             defaultLabel = "Arcane smoothing";
             defaultDesc = "Mark walls and floors to be smoothed by a caster of earth - several at once. Ordinary hands leave these to magic (the ordinary smoothing order is taken up by casters too).";
-            icon = ContentFinder<Texture2D>.Get("UI/Designators/SmoothSurface", false) ?? BaseContent.BadTex;
+            icon = ArcaneIcons.For(Designation?.defName, "UI/Designators/SmoothSurface");
         }
         protected override DesignationDef Designation => Arcane.Smooth;
 
@@ -188,7 +188,7 @@ namespace Avir.Magic
         {
             defaultLabel = "Quicken growth";
             defaultDesc = "Mark ground where casters of water or earth are to quicken what grows - once a day for each spot. The mark stays until cancelled.";
-            icon = ContentFinder<Texture2D>.Get("UI/Designators/PlantsHarvest", false) ?? BaseContent.BadTex;
+            icon = ArcaneIcons.For(Designation?.defName, "UI/Designators/PlantsHarvest");
         }
         protected override DesignationDef Designation => Arcane.Growth;
         public override AcceptanceReport CanDesignateCell(IntVec3 c) => c.InBounds(Map) && !c.Fogged(Map) && Map.designationManager.DesignationAt(c, Designation) == null && c.GetEdifice(Map) == null;
@@ -201,7 +201,7 @@ namespace Avir.Magic
         {
             defaultLabel = "Enrich soil (bog)";
             defaultDesc = "Mark ground for a caster of the bog (water and earth) to enrich: sand, gravel and poor ground become arcane soil, soil and arcane soil - rich arcane soil, damp and dark, better than any plain soil - for " + ArcaneWorks.EnrichDays + " days, then it goes back to what it was.";
-            icon = ContentFinder<Texture2D>.Get("UI/Designators/PlantsHarvest", false) ?? BaseContent.BadTex;
+            icon = ArcaneIcons.For(Designation?.defName, "UI/Designators/PlantsHarvest");
         }
         protected override DesignationDef Designation => Arcane.Enrich;
         public override AcceptanceReport CanDesignateCell(IntVec3 c) =>
@@ -215,7 +215,7 @@ namespace Avir.Magic
         {
             defaultLabel = "Arcane water (blood)";
             defaultDesc = "Mark natural stone ground for a caster of Blood (life and water) to turn into shallow water - for good. A caster of earth can make it stone again (Water to stone).";
-            icon = ContentFinder<Texture2D>.Get("UI/Designators/SmoothSurface", false) ?? BaseContent.BadTex;
+            icon = ArcaneIcons.For(Designation?.defName, "UI/Designators/SmoothSurface");
         }
         protected override DesignationDef Designation => Arcane.Water;
         public override AcceptanceReport CanDesignateCell(IntVec3 c) => c.InBounds(Map) && !c.Fogged(Map) && Designation != null && Map.designationManager.DesignationAt(c, Designation) == null && c.GetEdifice(Map) == null && ArcaneWorks.NaturalStone(Map.terrainGrid.TerrainAt(c));
@@ -228,7 +228,7 @@ namespace Avir.Magic
         {
             defaultLabel = "Water to stone (earth)";
             defaultDesc = "Mark shallow water for a caster of earth to turn into the rough stone of this land - for good.";
-            icon = ContentFinder<Texture2D>.Get("UI/Designators/SmoothSurface", false) ?? BaseContent.BadTex;
+            icon = ArcaneIcons.For(Designation?.defName, "UI/Designators/SmoothSurface");
         }
         protected override DesignationDef Designation => Arcane.Stone;
         public override AcceptanceReport CanDesignateCell(IntVec3 c) => c.InBounds(Map) && !c.Fogged(Map) && Designation != null && Map.designationManager.DesignationAt(c, Designation) == null && ArcaneWorks.PlainWater(Map.terrainGrid.TerrainAt(c));
