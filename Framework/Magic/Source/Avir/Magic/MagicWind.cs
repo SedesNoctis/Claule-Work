@@ -17,19 +17,21 @@ namespace Avir.Magic
     /// With Atmosphere Overhaul loaded and its wind allowed (the setting), that mod's own wind does all this instead.</summary>
     public class MapComponent_MagicWind : MapComponent
     {
+        // the wind with fire, gas, ash, water and lightning: see Carry
         public enum Shape { Out, Round, Front }
-        public class Gust { public Shape shape; public Vector3 at, dir; public float radius, strength; public int born, life; public Pawn owner; }
+        public class Gust { public Shape shape; public Vector3 at, dir; public float radius, strength; public int born, life; public Pawn owner; public bool charged; }
 
         private readonly List<Gust> gusts = new List<Gust>();
         private readonly Dictionary<int, int> rest = new Dictionary<int, int>();   // a thing just moved is left alone a moment
         public MapComponent_MagicWind(Map map) : base(map) { }
         public static MapComponent_MagicWind Of(Map m) => m?.GetComponent<MapComponent_MagicWind>();
 
-        public static void Blow(Map map, Shape shape, Vector3 at, float radius, float strength, int life, Pawn owner, Vector3 dir = default)
+        /// <summary>charged - a storm's wind (a hurricane is a storm's): it carries lightning (Fix170).</summary>
+        public static void Blow(Map map, Shape shape, Vector3 at, float radius, float strength, int life, Pawn owner, Vector3 dir = default, bool charged = false)
         {
             var c = Of(map);
             if (c == null || strength <= 0f) return;
-            c.gusts.Add(new Gust { shape = shape, at = at, dir = dir.sqrMagnitude > 0f ? dir.normalized : Vector3.forward, radius = radius, strength = strength, born = Find.TickManager.TicksGame, life = Mathf.Max(10, life), owner = owner });
+            c.gusts.Add(new Gust { shape = shape, at = at, dir = dir.sqrMagnitude > 0f ? dir.normalized : Vector3.forward, radius = radius, strength = strength, born = Find.TickManager.TicksGame, life = Mathf.Max(10, life), owner = owner, charged = charged });
         }
 
         /// <summary>The wind at a cell from one gust: its direction and its strength.</summary>
@@ -65,6 +67,7 @@ namespace Avir.Magic
                     Vector3 w = WindAt(g, c, now, out float s);
                     if (s < 12f || w.sqrMagnitude < 0.01f) continue;
                     if (Rand.Chance(0.12f)) Streak(c, w, s);
+                    Carry(g, c, w, s, now);
                     Act(g, c, w, s, now);
                 }
             }
@@ -98,7 +101,7 @@ namespace Avir.Magic
                     float mass = Mathf.Max(0.05f, t.GetStatValue(StatDefOf.Mass)) * Mathf.Sqrt(Mathf.Max(1, t.stackCount));
                     float need = 16f + 6f * Mathf.Sqrt(mass);
                     if (s < need || t.IsInAnyStorage() && s < need * 1.5f) continue;
-                    WindBorne.Launch(t, w, Mathf.Clamp((s - need) / 4f + 1f, 1f, 9f), s, g.owner);
+                    WindBorne.Launch(t, w, Mathf.Clamp((s - need) / 4f + 1f, 1f, 9f), s, g.owner, g.charged && t.def.IsMetal);
                     continue;
                 }
                 if (t is Plant pl && s >= 26f)
@@ -119,6 +122,75 @@ namespace Avir.Magic
                     }
                 }
             }
+        }
+
+        /// <summary>What the wind carries (Fix170) - neither good nor bad of itself:
+        ///   fire - a middling wind fans it and drives it on downwind, a strong one blows the small flames out;
+        ///   gas - the game's own (smoke, tox gas, rot stink, deadlife dust - and every mod's gas that lives in the same
+        ///   grid) and every gas that is a thing (ours: steam, marsh gas; any mod's of the old kind) drift with the wind,
+        ///   a whirl turns them round itself; one's own gas blown back can cover one's own;
+        ///   ash - blown on, it settles and feeds the ground where it lands;
+        ///   water - a strong wind tears spray off water and puddles and soaks whoever is downwind;
+        ///   lightning - a storm's wind (charged): the wet in it are struck now and then.</summary>
+        private void Carry(Gust g, IntVec3 c, Vector3 w, float s, int now)
+        {
+            IntVec3 to = (c.ToVector3Shifted() + w * (s > 30f ? 2f : 1f)).ToIntVec3();
+            bool canTo = to.InBounds(map) && to != c;
+            // the game's gas grid: the whole cell's gas moves on, added to what is there
+            if (canTo && map.gasGrid.AnyGasAt(c) && map.gasGrid.GasCanMoveTo(to) && Rand.Chance(Mathf.Clamp01(s / 30f)))
+            {
+                uint a = map.gasGrid.GetDirect(c), b = map.gasGrid.GetDirect(to);
+                byte Sum(int sh) => (byte)Mathf.Min(255, (int)((a >> sh) & 0xFF) + (int)((b >> sh) & 0xFF));
+                map.gasGrid.SetDirect(to, (uint)(Sum(0) | (Sum(8) << 8) | (Sum(16) << 16) | (Sum(24) << 24)));
+                map.gasGrid.SetDirect(c, 0u);
+            }
+            var here = c.GetThingList(map);
+            for (int i = here.Count - 1; i >= 0; i--)
+            {
+                Thing t = here[i];
+                if (t.Destroyed || Resting(t, now)) continue;
+                if (t is Gas gas && canTo && to.Walkable(map) && !to.GetThingList(map).Any(x => x.def == gas.def) && Rand.Chance(Mathf.Clamp01(s / 25f)))
+                { gas.Position = to; Rest(gas, now, 20); continue; }
+                if (t is Fire f)
+                {
+                    if (s > 35f && f.fireSize < 0.6f) { f.Destroy(); FleckMaker.ThrowSmoke(c.ToVector3Shifted(), map, 0.8f); continue; }   // blown out
+                    f.fireSize = Mathf.Min(1.75f, f.fireSize + 0.04f * s / 20f);                                                         // fanned
+                    if (canTo && Rand.Chance(Mathf.Clamp01((s - 10f) / 70f))) FireUtility.TryStartFireIn(to, map, 0.3f, g.owner);
+                    continue;
+                }
+                if (t.def == ThingDefOf.Filth_Ash && canTo && to.Walkable(map) && Rand.Chance(0.4f))
+                {
+                    t.Position = to; Rest(t, now, 60);
+                    MapComponent_LifeFertility.Of(map)?.Add(to, 0.15f, 3);   // ash settles and feeds the ground
+                    continue;
+                }
+            }
+            // spray torn off water
+            if (s > 25f && Reactions.Wet(c, map) && Rand.Chance(0.3f))
+            {
+                FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.2f);
+                for (int k = 1; k <= 2; k++)
+                {
+                    IntVec3 d = (c.ToVector3Shifted() + w * k).ToIntVec3();
+                    if (!d.InBounds(map)) continue;
+                    foreach (Pawn p in d.GetThingList(map).OfType<Pawn>().ToList()) WaterMagic.Soak(p, 0.25f);
+                }
+            }
+            // a storm's wind: lightning finds the wet and the metal
+            if (g.charged && s > 20f)
+                foreach (Pawn p in here.OfType<Pawn>().ToList())
+                {
+                    if (p == g.owner || p.Dead) continue;
+                    bool wet = p.health.hediffSet.HasHediff(WaterDefOf.Avir_Soaked) || Reactions.Wet(c, map);
+                    bool metal = SpellBody.Of(p).metalArmour;
+                    if ((wet || metal) && Rand.Chance(wet && metal ? 0.12f : 0.06f))
+                    {
+                        p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 4f * s / 40f, 0f, -1f, g.owner));
+                        p.stances?.stunner?.StunFor(40, g.owner, false, false);
+                        FleckMaker.ThrowLightningGlow(p.DrawPos, map, 1.2f);
+                        MapComponent_SpellSprites.Put(map, "Storm/Strike", p.DrawPos, 1.4f, 14);
+                    }
+                }
         }
 
         /// <summary>A streak of dust along the wind: what the eye sees of it.</summary>
@@ -147,7 +219,9 @@ namespace Avir.Magic
         public ThingOwner GetDirectlyHeldThings() => inner;
         public void GetChildHolders(List<IThingHolder> outChildren) => ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, GetDirectlyHeldThings());
 
-        public static void Launch(Thing thing, Vector3 dir, float dist, float windSpeed, Pawn by)
+        private bool charged;
+
+        public static void Launch(Thing thing, Vector3 dir, float dist, float windSpeed, Pawn by, bool charged = false)
         {
             ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_WindBorne");
             Map map = thing.Map;
@@ -163,7 +237,7 @@ namespace Avir.Magic
             }
             if (end == start) return;
             var w = (WindBorne)ThingMaker.MakeThing(def);
-            w.from = start.ToVector3Shifted(); w.to = end.ToVector3Shifted(); w.by = by; w.hitWall = wall; w.speed = windSpeed;
+            w.from = start.ToVector3Shifted(); w.to = end.ToVector3Shifted(); w.by = by; w.hitWall = wall; w.speed = windSpeed; w.charged = charged;
             w.dur = Mathf.Clamp(Mathf.RoundToInt((w.to - w.from).magnitude * 7f), 10, 90);
             w.height = Mathf.Clamp((w.to - w.from).magnitude * 0.18f, 0.3f, 1.6f);
             w.spin = Rand.Range(240f, 720f) * (Rand.Bool ? 1f : -1f);
@@ -205,6 +279,13 @@ namespace Avir.Magic
                 if (under != null) under.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Mathf.Min(12f, thing.GetStatValue(StatDefOf.Mass) * 2f), 0f, -1f, by));
                 if (!GenPlace.TryPlaceThing(thing, at.InBounds(map) ? at : Position, map, ThingPlaceMode.Near)) thing.Destroy();
                 FleckMaker.ThrowDustPuff(at, map, hitWall ? 1.2f : 0.7f);
+                if (charged)
+                {
+                    // metal carried by a storm's wind comes down with the lightning it gathered
+                    foreach (Pawn q in GenRadial.RadialDistinctThingsAround(at, map, 1.5f, true).OfType<Pawn>().ToList()) q.TakeDamage(new DamageInfo(DamageDefOf.Burn, 5f, 0f, -1f, by));
+                    FleckMaker.ThrowLightningGlow(at.ToVector3Shifted(), map, 1.5f);
+                    MapComponent_SpellSprites.Put(map, "Storm/Strike", at.ToVector3Shifted(), 1.6f, 14);
+                }
             }
             Destroy();
         }
@@ -225,7 +306,7 @@ namespace Avir.Magic
             Scribe_Values.Look(ref from, "from"); Scribe_Values.Look(ref to, "to");
             Scribe_Values.Look(ref t, "t"); Scribe_Values.Look(ref dur, "dur");
             Scribe_Values.Look(ref spin, "spin"); Scribe_Values.Look(ref angle, "angle"); Scribe_Values.Look(ref height, "height"); Scribe_Values.Look(ref speed, "speed");
-            Scribe_Values.Look(ref hitWall, "hitWall");
+            Scribe_Values.Look(ref hitWall, "hitWall"); Scribe_Values.Look(ref charged, "charged");
             Scribe_References.Look(ref by, "by");
         }
     }
