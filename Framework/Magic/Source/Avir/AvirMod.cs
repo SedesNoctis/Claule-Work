@@ -81,7 +81,7 @@ namespace Avir
         // air's momentum: seconds the wind holds between casts, share per stage, stages
         public float airMomentumSeconds = 10f, airMomentumStep = 0.15f;
         public bool magicBarsOnPane = true;
-        public bool magicAutoM = true, magicWorkDetail = true, paintedMire = true, atmoWind = true;
+        public bool magicAutoM = true, magicWorkDetail = true, paintedMire = true, atmoWind = true, weatherWind = true;
         public float atmoWindScale = 1f;
         public int airMomentumStages = 3;
         // earth (and magma, bog) casts slower by this much
@@ -155,6 +155,7 @@ namespace Avir
             Scribe_Values.Look(ref magicAutoM, "magicAutoM", true);
             Scribe_Values.Look(ref paintedMire, "paintedMire", true);
             Scribe_Values.Look(ref atmoWind, "atmoWind", true);
+            Scribe_Values.Look(ref weatherWind, "weatherWind", true);
             Scribe_Values.Look(ref atmoWindScale, "atmoWindScale", 1f);
             Scribe_Values.Look(ref magicWorkDetail, "magicWorkDetail", true);
             Scribe_Values.Look(ref airMomentumStep, "airMomentumStep", 0.15f);
@@ -234,6 +235,8 @@ namespace Avir
                 "The arcane works split as finely as Complex Jobs splits the ordinary ones (smooth apart from build, stone cut apart from mining, smelting apart from craft, the mortuary apart from hauling, cooking apart from the stores). Off - merged as the vanilla work types.");
             list.CheckboxLabeled("Hurricane winds by Atmosphere Overhaul", ref o.atmoWind,
                 "With Atmosphere Overhaul loaded, the hurricane and its whirls blow that mod's own wind, and its wind throws, knocks down and breaks with its own animations. Off (or without it) - our own wind: things fly tumbling, people stagger, fall and are thrown, light walls and doors break, plants snap.");
+            list.CheckboxLabeled("Weather winds and arcane gusts", ref o.weatherWind,
+                "Gusts cross the map in rain, storms, snowstorms and windy weather (out of doors, sheltered behind walls); our howling storm brings cold squalls; where the stream rages, arcane gusts break loose. With Atmosphere Overhaul the weather's wind is its own, the arcane gusts stay.");
             list.Label("Strength of magic wind (ours, or Atmosphere Overhaul's): x" + o.atmoWindScale.ToString("0.0"));
             o.atmoWindScale = list.Slider(o.atmoWindScale, 0.3f, 3f);
             list.CheckboxLabeled("Painted mire", ref o.paintedMire,

@@ -338,7 +338,7 @@ namespace Avir.Magic
                 MapComponent_MagicWind.Blow(map, line ? MapComponent_MagicWind.Shape.Front : MapComponent_MagicWind.Shape.Out, line ? mid : mid, span, st, hold ? 300 : 40, caster, along);
             }
             if (AtmosphereBridge.On)
-                foreach (IntVec3 c in cells) { Vector3 o = c.ToVector3Shifted() - from.ToVector3Shifted(); if (o.sqrMagnitude > 0.1f) AtmosphereBridge.Wind(map, c, new Vector2(o.x, o.z).normalized * Mathf.Min(AtmosphereBridge.MaxPush, 8f * power * AtmosphereBridge.Scale)); }
+                foreach (IntVec3 c in cells) { Vector3 o = c.ToVector3Shifted() - from.ToVector3Shifted(); if (o.sqrMagnitude > 0.1f) AtmosphereBridge.Wind(map, c, new Vector2(o.x, o.z).normalized * Mathf.Min(AtmosphereBridge.MaxPush, MapComponent_MagicWind.AirStrength(power, r.amplify, map) * 0.4f)); }
             foreach (RuneDef v in verbs)
             {
                 RitualReading rv = SpellMods.Verb(r, v);

@@ -349,7 +349,7 @@ namespace Avir.Magic
                             // up past that mod's throwing speed (it takes ~12 m/s a push)
                             var cs = c.cells.ToList(); IntVec3 mid = c.aura ? by.Position : c.at; Map m0 = c.map; float pw = c.power;
                             for (int k2 = 0; k2 < 6; k2++)
-                                F(m0)?.Later(1 + 15 * k2, () => { foreach (IntVec3 x in cs) { Vector3 o = x.ToVector3Shifted() - mid.ToVector3Shifted(); if (o.sqrMagnitude > 0.1f) AtmosphereBridge.Wind(m0, x, new Vector2(o.x, o.z).normalized * Mathf.Min(AtmosphereBridge.MaxPush, 10f * pw * AtmosphereBridge.Scale)); } });
+                                F(m0)?.Later(1 + 15 * k2, () => { foreach (IntVec3 x in cs) { Vector3 o = x.ToVector3Shifted() - mid.ToVector3Shifted(); if (o.sqrMagnitude > 0.1f) AtmosphereBridge.Wind(m0, x, new Vector2(o.x, o.z).normalized * Mathf.Min(AtmosphereBridge.MaxPush, MapComponent_MagicWind.HurricaneStrength(pw, m0) / 6f)); } });
                         }
                     }
                     break;
@@ -568,7 +568,7 @@ namespace Avir.Magic
                     {
                         Vector3 o = x.ToVector3Shifted() - w.center; o.y = 0f;
                         Vector3 v = o.sqrMagnitude < 0.05f ? Vector3.zero : (new Vector3(-o.z, 0f, o.x).normalized * 0.85f - o.normalized * 0.3f);   // round, and a little inward
-                        AtmosphereBridge.Wind(map, x, new Vector2(v.x, v.z) * Mathf.Min(AtmosphereBridge.MaxPush, 11f * w.power * AtmosphereBridge.Scale));
+                        AtmosphereBridge.Wind(map, x, new Vector2(v.x, v.z) * Mathf.Min(AtmosphereBridge.MaxPush, MapComponent_MagicWind.HurricaneStrength(w.power, map, true) / 5f));
                     }
             if (now % 60 != 0) return;
             foreach (Fld f in fields)

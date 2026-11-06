@@ -20,7 +20,7 @@ namespace Avir.Magic
     {
         // the wind with fire, gas, ash, water and lightning: see Carry
         public enum Shape { Out, Round, Front }
-        public class Gust { public Shape shape; public Vector3 at, dir; public float radius, strength; public int born, life; public Pawn owner; public bool charged; }
+        public class Gust { public Shape shape; public Vector3 at, dir; public float radius, strength; public int born, life; public Pawn owner; public bool charged, weather; public Color tint = Color.clear; }
 
         private readonly List<Gust> gusts = new List<Gust>();
         private readonly Dictionary<int, int> rest = new Dictionary<int, int>();   // a thing just moved is left alone a moment
@@ -54,12 +54,14 @@ namespace Avir.Magic
             return f;
         }
 
-        public static void Blow(Map map, Shape shape, Vector3 at, float radius, float strength, int life, Pawn owner, Vector3 dir = default, bool charged = false, float max = AirMax)
+        public static Gust Blow(Map map, Shape shape, Vector3 at, float radius, float strength, int life, Pawn owner, Vector3 dir = default, bool charged = false, float max = AirMax)
         {
             var c = Of(map);
-            if (c == null || strength <= 0f) return;
+            if (c == null || strength <= 0f) return null;
             strength = Mathf.Min(strength, max);
-            c.gusts.Add(new Gust { shape = shape, at = at, dir = dir.sqrMagnitude > 0f ? dir.normalized : Vector3.forward, radius = radius, strength = strength, born = Find.TickManager.TicksGame, life = Mathf.Max(10, life), owner = owner, charged = charged });
+            var g = new Gust { shape = shape, at = at, dir = dir.sqrMagnitude > 0f ? dir.normalized : Vector3.forward, radius = radius, strength = strength, born = Find.TickManager.TicksGame, life = Mathf.Max(10, life), owner = owner, charged = charged };
+            c.gusts.Add(g);
+            return g;
         }
 
         /// <summary>The wind at a cell from one gust: its direction and its strength.</summary>
@@ -94,11 +96,44 @@ namespace Avir.Magic
                     if (!c.InBounds(map)) continue;
                     Vector3 w = WindAt(g, c, now, out float s);
                     if (s < 12f || w.sqrMagnitude < 0.01f) continue;
-                    if (Rand.Chance(0.12f)) Streak(c, w, s);
+                    if (g.weather)
+                    {
+                        // the weather's wind is out of doors, and a wall upwind shelters what is behind it
+                        if (c.Roofed(map)) continue;
+                        IntVec3 up = (c.ToVector3Shifted() - w * 1.2f).ToIntVec3();
+                        if (up.InBounds(map) && up.GetEdifice(map) is Building wb && wb.def.Fillage == FillCategory.Full) s *= 0.35f;
+                        if (s < 12f) continue;
+                    }
+                    if (Rand.Chance(g.weather ? 0.04f : 0.12f)) Streak(c, w, s, g.tint);
                     Carry(g, c, w, s, now);
                     Act(g, c, w, s, now);
                 }
             }
+        }
+
+        /// <summary>Thrown against another body (the author, Fix177): if someone stands on the line of the throw, the two
+        /// meet - both are struck and fall, the one hit is pushed on a little; a hurricane (past 60 m/s) does it harder.</summary>
+        private bool Smash(Gust g, Pawn p, Vector3 w, float sp)
+        {
+            int reach = Mathf.Clamp(Mathf.RoundToInt((sp - 34f) / 5f), 1, 6);
+            for (int i = 1; i <= reach; i++)
+            {
+                IntVec3 n = (p.DrawPos + w * i).ToIntVec3();
+                if (!n.InBounds(map) || n.Impassable(map)) return false;
+                Pawn q = n.GetFirstPawn(map);
+                if (q == null || q == p || q.Dead) continue;
+                float hit = Mathf.Min(18f, (sp - 30f) * 0.3f) * (sp > 60f ? 1.5f : 1f);
+                if (i > 1) SpellHurl.Throw(p, (p.DrawPos - w * 3f).ToIntVec3(), i - 1, map, g.owner, sp / 40f, 60);
+                p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, hit, 0f, -1f, g.owner));
+                q.TakeDamage(new DamageInfo(DamageDefOf.Blunt, hit, 0f, -1f, g.owner));
+                if (q.Spawned) { SpellHurl.Throw(q, (q.DrawPos - w * 3f).ToIntVec3(), Mathf.Max(1, reach / 2), map, g.owner, sp / 50f, 60); if (q.Spawned) Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(q, 120); }
+                if (p.Spawned) Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(p, 120);
+                FleckMaker.ThrowDustPuffThick(n.ToVector3Shifted(), map, 1.6f, new Color(0.6f, 0.6f, 0.6f, 0.8f));
+                MoteMaker.ThrowText(n.ToVector3Shifted(), map, "smashed", 2f);
+                if (Prefs.DevMode) Log.Message("[Avir wind] " + p.LabelShort + " smashed into " + q.LabelShort + " at " + sp.ToString("0") + " m/s");
+                return true;
+            }
+            return false;
         }
 
         private bool Resting(Thing t, int now) => rest.TryGetValue(t.thingIDNumber, out int until) && until > now;
@@ -116,7 +151,8 @@ namespace Avir.Magic
                     float sp = s / hold * Held(p, s);
                     IntVec3 was = p.Position;
                     string did = null;
-                    if (sp >= 40f)
+                    if (sp >= 40f && Smash(g, p, w, sp)) { Rest(p, now, 90); did = "smashed into another"; }
+                    else if (sp >= 40f)
                     {
                         IntVec3 from = (p.DrawPos - w * 3f).ToIntVec3();
                         if (from == p.Position) from = p.Position - new IntVec3(Mathf.RoundToInt(w.x * 2f), 0, Mathf.RoundToInt(w.z * 2f));
@@ -199,6 +235,13 @@ namespace Avir.Magic
                     if (canTo && Rand.Chance(Mathf.Clamp01((s - 10f) / 70f))) FireUtility.TryStartFireIn(to, map, 0.3f, g.owner);
                     continue;
                 }
+                if (t is HeldFlame hf && canTo && to.Walkable(map) && !to.GetThingList(map).Any(x => x is HeldFlame) && Rand.Chance(Mathf.Clamp01((s - 12f) / 40f)))
+                {
+                    // a wall of fire is fire: the wind drives it on, cell by cell, and it sets alight what it reaches
+                    hf.Position = to; Rest(hf, now, 30);
+                    FireUtility.TryStartFireIn(to, map, 0.2f, g.owner);
+                    continue;
+                }
                 if (t.def == ThingDefOf.Filth_Ash && canTo && to.Walkable(map) && Rand.Chance(0.4f))
                 {
                     t.Position = to; Rest(t, now, 60);
@@ -256,9 +299,10 @@ namespace Avir.Magic
         }
 
         /// <summary>A streak of dust along the wind: what the eye sees of it.</summary>
-        private void Streak(IntVec3 c, Vector3 w, float s)
+        private void Streak(IntVec3 c, Vector3 w, float s, Color tint)
         {
             FleckCreationData d = FleckMaker.GetDataStatic(c.ToVector3Shifted() + new Vector3(Rand.Range(-0.4f, 0.4f), 0f, Rand.Range(-0.4f, 0.4f)), map, FleckDefOf.DustPuffThick, Rand.Range(0.6f, 1.1f));
+            if (tint.a > 0f) d.instanceColor = tint;
             d.velocityAngle = w.AngleFlat();
             d.velocitySpeed = Mathf.Min(6f, s / 8f);
             d.rotationRate = Rand.Range(-90f, 90f);
@@ -323,7 +367,24 @@ namespace Avir.Magic
         protected override void Tick()
         {
             t++; angle += spin / 60f;
-            if (Spawned && t % 4 == 0) Position = DrawPos.ToIntVec3().InBounds(Map) ? DrawPos.ToIntVec3() : Position;
+            if (Spawned && t % 4 == 0)
+            {
+                Position = DrawPos.ToIntVec3().InBounds(Map) ? DrawPos.ToIntVec3() : Position;
+                // a heavy thing in flight (a stone chunk, a log) strikes whoever it passes, and falls there (Fix177)
+                Thing thing = inner.FirstOrDefault();
+                if (thing != null && t > 4 && t < dur - 2)
+                {
+                    float mass = thing.GetStatValue(StatDefOf.Mass) * thing.stackCount;
+                    Pawn q = mass >= 3f ? Position.GetFirstPawn(Map) : null;
+                    if (q != null && q != by)
+                    {
+                        q.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Mathf.Min(30f, mass * speed * 0.02f + 3f), 0f, -1f, by));
+                        if (mass >= 10f && q.Spawned) Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(q, 90);
+                        FleckMaker.ThrowDustPuffThick(q.DrawPos, Map, 1.3f, new Color(0.6f, 0.6f, 0.6f, 0.8f));
+                        to = Position.ToVector3Shifted(); dur = t; // it stops there
+                    }
+                }
+            }
             if (t >= dur) Land();
         }
 
