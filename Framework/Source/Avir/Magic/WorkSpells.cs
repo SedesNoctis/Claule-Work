@@ -38,6 +38,7 @@ namespace Avir.Magic
         {
             ["Avir_MagicTend"] = new[] { RuneKind.Restore },
             ["Avir_ArcaneFirefight"] = new[] { RuneKind.Release },
+            ["Avir_ArcaneFish"] = new[] { RuneKind.Hold, RuneKind.Lift },   // water: a bubble holds the catch; wind: lifts it out
             ["Avir_MagicClean"] = new[] { RuneKind.Purge },
             ["Avir_MagicHaul"] = new[] { RuneKind.Lift },
             ["Avir_ArcaneGrowth"] = new[] { RuneKind.Growth },

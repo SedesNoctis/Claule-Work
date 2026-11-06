@@ -41,7 +41,7 @@ namespace Avir.Magic
             G("Tend", "Tend", "tend", "Tending the wounded by water: no medicine needed.", new[] { "Avir_MagicTend" }, "Doctor", "FSFNurse"),
             G("Cook", "Stores", "cook", "Purifying food.", new[] { "Avir_2Purify" }, "Cooking"),
             G("Hunt", "Hunt", "hunt", "Hunting the marked animals with the battle charm - no gun needed.", new[] { "Avir_ArcaneHunt" }, "Hunting"),
-            G("Fish", "Fish", "fish", "Fishing by water (the fish drawn to the line) or the wind (the water stirred where they gather) - quicker and more. Odyssey's fishing.", new[] { "Avir_ArcaneFish" }, "Fishing"),
+            G("Fish", "Fish", "fish", "Drawing fish out of a fishing zone from the shore: water closes a bubble round a few and lifts it out, the wind yanks one out from farther off. No line, no waiting. Odyssey's fishing.", new[] { "Avir_ArcaneFish" }, "Fishing"),
             G("Build", "Build", "build", "Raising rock where the arcane orders say, drawing basalt.", new[] { "Avir_ArcaneRaiseRock", "Avir_2Basalt" }, "Construction"),
             G("Smooth", "Build", "smooth", "Smoothing floors and walls by earth.", new[] { "Avir_MagicSmooth" }, "Construction"),
             G("Grow", "Grow", "grow", "Quickening growth, enriching soil by bog, watering the fields, ashing the ground.", new[] { "Avir_ArcaneGrowth", "Avir_ArcaneEnrich", "Avir_2Water", "Avir_2Ash" }, "Growing", "FSFHarvesting"),
@@ -261,7 +261,7 @@ namespace Avir.Magic
         /// <summary>What each work gives - why it is worth the Arcana (the author asked: why steam, if water washes too?).</summary>
         public static readonly Dictionary<string, string> Gives = new Dictionary<string, string>
         {
-            ["Avir_ArcaneFish"] = "fishing in the fishing zones quicker and with a bigger catch (water more than the wind)",
+            ["Avir_ArcaneFish"] = "fish drawn out of the fishing zones from the shore - a bubble of water brings a few at once, the wind one from farther off",
             ["Avir_ArcaneHunt"] = "the marked animals hunted with the battle charm from range - no gun, no closing in",
             ["Avir_ArcaneFirefight"] = "every fire in a radius goes out at once, from a few cells off - no walking into the flames",
             ["Avir_MagicTend"] = "tends wounds with no medicine at all; the better the stage, the better the tending",
