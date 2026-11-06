@@ -69,7 +69,7 @@ namespace Avir.Magic
 
         /// <summary>The sprites redrawn as pictures with their own light and alpha (Fix136): drawn as they are, so their
         /// dark parts show; the older ones stay glow.</summary>
-        private static bool Painted(string path) => path.StartsWith("Life/") || path.StartsWith("Second/") || path.StartsWith("Storm/Bolt_Fork") || path.StartsWith("Storm/Strike") || path.StartsWith("Haze/Shimmer");
+        private static bool Painted(string path) => path.StartsWith("Life/") || path.StartsWith("Second/") || path.StartsWith("Storm/Bolt_Fork") || path.StartsWith("Storm/Bolt_Line") || path.StartsWith("Storm/Strike") || path.StartsWith("Haze/Shimmer");
 
         /// <summary>A sprite at a point: its size in cells, how long it lasts (ticks), its angle and its turning.</summary>
         public static void Put(Verse.Map map, string path, UnityEngine.Vector3 at, float size, int life, float angle = -1f, float spin = 0f, float aspect = 1f)
@@ -87,6 +87,15 @@ namespace Avir.Magic
             float len = d.magnitude;
             if (len < 0.2f) return;
             Put(map, "Storm/Bolt_Line", (from + to) / 2f, len, life, d.AngleFlat() - 90f, 0f, len / UnityEngine.Mathf.Max(0.6f, len * 0.22f));
+        }
+
+        /// <summary>A living vein of Life stretched from one point to another (a beam of Life, taking or giving).</summary>
+        public static void Vein(Verse.Map map, UnityEngine.Vector3 from, UnityEngine.Vector3 to, int life = 40)
+        {
+            UnityEngine.Vector3 d = to - from; d.y = 0f;
+            float len = d.magnitude;
+            if (len < 0.3f) return;
+            Put(map, "Life/Vein", (from + to) / 2f, len, life, d.AngleFlat() - 90f, 0f, len / UnityEngine.Mathf.Max(0.6f, len * 0.25f));
         }
 
         public override void MapComponentUpdate()

@@ -593,6 +593,7 @@ namespace Avir.Magic
             switch (f.y)
             {
                 case SecondKind.Deluge: FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 0.6f); break;
+                case SecondKind.Rainbow: if (Rand.Chance(0.15f)) MapComponent_SpellSprites.Put(map, "Second/Rainbow", v, 3f, 120, Rand.Range(0f, 360f), 0f, 2f); else FleckMaker.ThrowDustPuffThick(v, map, 0.8f, new Color(0.95f, 0.9f, 1f, 0.35f)); break;
                 case SecondKind.Ash: case SecondKind.MarshHaze: FleckMaker.ThrowSmoke(v, map, 1.4f); break;
                 case SecondKind.Inferno: case SecondKind.Swelter: FleckMaker.ThrowHeatGlow(c, map, 1f); break;
                 case SecondKind.BallLightning: FleckMaker.ThrowLightningGlow(v, map, 0.8f); if (Rand.Chance(0.25f)) MapComponent_SpellSprites.Put(map, "Second/BallLightning", v, 1.4f, 40, -1f, 4f); break;

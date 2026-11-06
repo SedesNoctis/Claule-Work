@@ -276,6 +276,7 @@ namespace Avir.Magic
                     FleckMaker.Static(at, map, FleckDefOf.PsycastAreaEffect, r);
                     break;
                 case RuneKind.Beam:      // a withering beam
+                    MapComponent_SpellSprites.Vein(map, caster.DrawPos, at.ToVector3Shifted());
                     got += Wither(caster, Reached(caster, g, Line(caster, at, map, out var cells).Where(p => p != caster)), 7f * power, map);
                     foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) Wisp(c.ToVector3Shifted(), map);
                     break;
@@ -382,7 +383,7 @@ namespace Avir.Magic
             switch (act.verb)
             {
                 case RuneKind.Release: who = Reached(caster, g, Area(at, r, map)); per = 9f; regen = 0.15f; break;
-                case RuneKind.Beam: who = Reached(caster, g, Line(caster, at, map, out cells)); per = 10f; regen = 0.2f; break;
+                case RuneKind.Beam: who = Reached(caster, g, Line(caster, at, map, out cells)); per = 10f; regen = 0.2f; MapComponent_SpellSprites.Vein(map, caster.DrawPos, at.ToVector3Shifted()); break;
                 case RuneKind.Hold: who = Reached(caster, g, Area(at, r, map)); per = 6f; regen = 0.4f; break;     // a cocoon: held still, mended deep
                 case RuneKind.Growth: who = Reached(caster, g, Area(at, r, map)); per = 3f; regen = 0.15f; break;
                 case RuneKind.Purge: who = Reached(caster, g, Area(at, r, map)); per = 0f; regen = 0f; break;
