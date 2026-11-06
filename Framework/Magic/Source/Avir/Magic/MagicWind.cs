@@ -96,13 +96,14 @@ namespace Avir.Magic
                         SpellHurl.Throw(p, from, Mathf.Clamp(Mathf.RoundToInt((sp - 34f) / 5f), 1, 6), map, g.owner, sp / 40f, 60);
                         // nowhere to fly, or held by something: knocked down where they stand, and the wind's debris strikes
                         if (p.Spawned && p.Position == was) { Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(p, 120); did = "felled (could not fly)"; } else did = "thrown";
-                        p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Mathf.Min(12f, (sp - 36f) * 0.35f + 2f), 0f, -1f, g.owner));
+                        // lifted and dropped: a bruise from the landing at least, more the harder it blew (debris)
+                        p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Mathf.Min(14f, 3f + (sp - 40f) * 0.3f), 0f, -1f, g.owner));
                         Rest(p, now, 90);
                     }
                     else if (sp >= 28f)
                     {
                         Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(p, 90);
-                        if (Rand.Chance(0.5f)) p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 2f, 0f, -1f, g.owner));   // struck by what flies
+                        p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Rand.Range(1f, 2.5f), 0f, -1f, g.owner));   // a fall: a small bruise
                         did = "knocked down"; Rest(p, now, 120);
                     }
                     else if (sp >= 20f) { p.stances?.stagger?.StaggerFor(60, 0.4f); did = "staggered"; Rest(p, now, 40); }
