@@ -36,7 +36,7 @@ namespace Avir.Magic
         private static readonly Dictionary<long, int> lastSeen = new Dictionary<long, int>();
         private static long Key(Pawn p, RuneKind k) => ((long)p.thingIDNumber << 8) | (long)((int)k + 2);
 
-        /// <summary>Hourly: a store whose spells have left the book for an hour passes half into the store that stays.</summary>
+        /// <summary>A store whose spells have left the book passes half into the store that stays - at once (the author, Fix149).</summary>
         public static void Shift(Hediff_ArcaneCore core)
         {
             Pawn p = core.pawn;
@@ -48,8 +48,6 @@ namespace Avir.Magic
             foreach (RuneKind k in AllKinds)
             {
                 if (here.Contains(k) || core.Store(k) <= 0.5f) continue;
-                if (!lastSeen.TryGetValue(Key(p, k), out int seen)) { lastSeen[Key(p, k)] = now; continue; }
-                if (now - seen < GenDate.TicksPerHour) continue;
                 RuneKind to = here.Contains(None) ? None : here.First();
                 float v = core.Store(k);
                 core.SetStore(k, 0f);

@@ -242,6 +242,11 @@ namespace Avir.Magic
             ctx.release = v.Contains(RuneKind.Release); ctx.hold = v.Contains(RuneKind.Hold); ctx.growth = v.Contains(RuneKind.Growth); ctx.lift = v.Contains(RuneKind.Lift);
             ctx.drain = v.Contains(RuneKind.Drain); ctx.purge = v.Contains(RuneKind.Purge); ctx.restore = v.Contains(RuneKind.Restore);
             ctx.aura = v.Contains(RuneKind.Aura); ctx.beam = v.Contains(RuneKind.Beam); ctx.shape = v.Contains(RuneKind.Shape); ctx.enchant = v.Contains(RuneKind.Enchant);
+            // the meeting works only through a deed: a Barrier alone (a ward) or a Step has nothing for it to work through,
+            // and a mending lets through only the meetings that have a mending of their own (the author, Fix149: a ward
+            // spell poured lava round its caster)
+            bool acts = ctx.release || ctx.beam || ctx.hold || ctx.growth || ctx.lift || ctx.drain || ctx.purge || ctx.aura || ctx.shape || ctx.enchant;
+            if (!acts && (!ctx.restore || (y != SecondKind.Boil && y != SecondKind.Geyser && y != SecondKind.Mudflow))) return;
             ctx.radius = FireMagic.PointRadius(r) * (ctx.growth ? 1.5f : 1f);
             if (ctx.aura) ctx.cells = FireMagic.Point(caster.Position, map, SpellAura.Pulsing ? SpellAura.PulseRadius : ctx.radius + 1.5f).Where(c => c != caster.Position).ToList();
             else if (ctx.beam) ctx.cells = FireMagic.Beam(caster.Position, ctx.at, map, r.breadth).Where(c => c != caster.Position).ToList();
@@ -309,7 +314,7 @@ namespace Avir.Magic
                         var where = c.beam ? FireMagic.Beam(by.Position, c.at + (c.at - by.Position), c.map, 0).Where(x => x.InBounds(c.map) && x != by.Position).ToList()
                                   : c.shape ? c.cells : FireMagic.Point(c.aura ? by.Position : c.at, c.map, c.radius * 2f).Where(x => x != by.Position && !x.AdjacentTo8Way(by.Position)).ToList();
                         int life = c.hold ? 5000 : 3000;
-                        foreach (IntVec3 x in where) if (Rand.Chance(c.aura ? 0.4f : 0.7f)) MagmaPool.Pour(x, c.map, by, c.power * 1.3f, life, true, 2500, true);
+                        foreach (IntVec3 x in where) if (Rand.Chance(c.aura ? 0.4f : 0.7f)) MagmaPool.Pour(x, c.map, by, c.power * 1.3f, life, c.shape, 2500, true);   // it sets into basalt only when shaped
                         // the magma the pair poured turns to lava too - the whole place is lava, not magma with a rim
                         foreach (MagmaPool mp in c.cells.SelectMany(x => x.GetThingList(c.map).OfType<MagmaPool>()).ToList()) mp.MakeLava(life);
                         foreach (Pawn p in c.foes) MagicFx.Give(p, H("Avir_LavaMired"), 300);

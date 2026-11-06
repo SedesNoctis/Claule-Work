@@ -474,6 +474,7 @@ namespace Avir.Magic
             if (s?.weave == null || caster?.Map == null) return null;
             Hediff_ArcaneCore core = Mages.Core(caster);
             if (core == null) return null;
+            Shift(core);   // a spell just written in: the store left behind passes into its store before it is weighed
             var lifes = Links(s.weave).ToList();
             bool wraps = Circles(s.weave).Any(g => g.inner.Any(k => k.element != null));
             if (lifes.Count == 0 && !wraps) return null;

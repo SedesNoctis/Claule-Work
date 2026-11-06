@@ -19,7 +19,7 @@ namespace Avir.Magic
 
         public class Scale { public string key, label, tip; public float value, max; public Color fill; }
 
-        private const float ArcanaH = 84f, ScaleH = 40f, Gap = 2f;
+        private const float ArcanaH = 84f, ScaleH = 52f, Gap = 2f;
         // the slim scales (Лист 26): the ends keep their shape, the length stretches; the band the bar lies on (measured)
         private static readonly float[] SlimCutsF = { 0f, 0.12f, 0.88f, 1f };
         private static readonly bool[] SlimStretch = { false, true, false };
@@ -115,9 +115,9 @@ namespace Avir.Magic
                 bar = new Rect(r.x + 4f, r.y + 4f, r.width - 8f, r.height - 8f);
                 GlassBar.Draw(bar, sc.value / sc.max, sc.fill);
             }
-            Text.Font = GameFont.Tiny; Text.Anchor = TextAnchor.MiddleCenter;
+            Text.Font = GameFont.Small; Text.Anchor = TextAnchor.MiddleCenter;
             string words = sc.label + "  " + Mathf.FloorToInt(sc.value) + " / " + Mathf.FloorToInt(sc.max);
-            Rect tr = new Rect(bar.x, bar.center.y - 10f, bar.width, 20f);
+            Rect tr = new Rect(bar.x, bar.center.y - 12f, bar.width, 24f);
             GUI.color = new Color(0f, 0f, 0f, 0.85f); Widgets.Label(new Rect(tr.x + 1f, tr.y + 1f, tr.width, tr.height), words);
             GUI.color = new Color(0.95f, 0.97f, 0.9f); Widgets.Label(tr, words);
             GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft; Text.Font = GameFont.Small;
