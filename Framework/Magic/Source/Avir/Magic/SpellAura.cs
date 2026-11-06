@@ -232,7 +232,7 @@ namespace Avir.Magic
             public float power, radius;
             public bool shaped, aid;
             /// <summary>A living aura of Life: its circle (its acts pulse round the mage by Life's own grammar).</summary>
-            public SpellCircle life; public RuneKind lifePair = (RuneKind)(-1);
+            public SpellCircle life; public RuneKind lifePair = (RuneKind)(-1), lifeAspect = (RuneKind)(-1); public LifeMix lifeMix;   // the box's meeting, all of it (Fix196)
             /// <summary>A streaming beam: it holds on its target instead of standing round the caster.</summary>
             public bool beam;
             public LocalTargetInfo target;
@@ -336,7 +336,7 @@ namespace Avir.Magic
             try
             {
                 using (SpellWards.Of(a.combo == ComboKind.None ? a.el?.kind : null, a.combo, a.beam))   // a field round the caster, not a blow thrown: it meets wards as the ground does
-                if (a.life != null) LifeMagic.Pulse(a.caster, a.life, a.lifePair, a.power * SpellAura.PulseShare, a.radius);
+                if (a.life != null) LifeMagic.Pulse(a.caster, a.life, a.lifePair, a.power * SpellAura.PulseShare, a.radius, a.lifeAspect, a.lifeMix);
                 else
                 using (a.shaped ? SpellSculpt.Spare(a.aid) : null)
                     foreach (RitualSchema part in a.parts)

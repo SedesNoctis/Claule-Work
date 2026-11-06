@@ -265,7 +265,7 @@ namespace Avir.Magic
             {
                 caster = caster, el = g.element ?? DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Life"), combo = ComboKind.None, breadth = breadth,
                 left = SpellAura.Strikes(anchor), power = power, interval = SpellAura.Interval(breadth), radius = SpellAura.Radius(breadth),
-                life = g, lifePair = pair
+                life = g, lifePair = pair, lifeAspect = aspect, lifeMix = mix
             };
             au.next = Find.TickManager.TicksGame + au.interval;
             c.all.Add(au);
@@ -274,11 +274,12 @@ namespace Avir.Magic
 
         /// <summary>One pulse of a living aura of Life: the circle's acts round the mage, with the aura's reach; its own
         /// energy for the pulse - what it takes, it may give in the same pulse, the rest into the store.</summary>
-        public static void Pulse(Pawn caster, SpellCircle g, RuneKind withPair, float power, float radius)
+        public static void Pulse(Pawn caster, SpellCircle g, RuneKind withPair, float power, float radius, RuneKind withAspect = (RuneKind)(-1), LifeMix withMix = LifeMix.None)
         {
             if (caster?.Map == null) return;
-            bool keepP = pulsing; float keepR = pulseRadius; RuneKind keepPair = pair; float keepFlow = flow;
-            pulsing = true; pulseRadius = radius; pair = withPair; flow = 0f;
+            bool keepP = pulsing; float keepR = pulseRadius; RuneKind keepPair = pair, keepAspect = aspect; LifeMix keepMix = mix; float keepFlow = flow;
+            // (Fix196) the aura keeps the whole meeting of its box - the wide and the mixed too, not only the deep one
+            pulsing = true; pulseRadius = radius; pair = withPair; aspect = withAspect; mix = withMix; flow = 0f;
             MapComponent_SpellSprites.Put(caster.Map, "Life/Burst", caster.DrawPos, radius * 2f, 45);
             try
             {
@@ -290,7 +291,7 @@ namespace Avir.Magic
                 }
                 if (core != null && flow > 0f) core.AddVita(flow);
             }
-            finally { pulsing = keepP; pulseRadius = keepR; pair = keepPair; flow = keepFlow; }
+            finally { pulsing = keepP; pulseRadius = keepR; pair = keepPair; aspect = keepAspect; mix = keepMix; flow = keepFlow; }
         }
 
         private static void Leap(Map map, IntVec3 a, IntVec3 b)
