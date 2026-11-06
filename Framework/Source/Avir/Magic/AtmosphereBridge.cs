@@ -11,7 +11,7 @@ namespace Avir.Magic
     public static class AtmosphereBridge
     {
         private static bool looked;
-        private static MethodInfo addWind, addHeat, addMoist, addMist;
+        private static MethodInfo addWind, addHeat, addMoist, addMist, getWind;
 
         private static void Look()
         {
@@ -25,6 +25,7 @@ namespace Avir.Magic
                 addHeat = t.GetMethod("AddTemperatureDelta", BindingFlags.Public | BindingFlags.Static);
                 addMoist = t.GetMethod("AddMoistureDelta", BindingFlags.Public | BindingFlags.Static);
                 addMist = t.GetMethod("AddMistDelta", BindingFlags.Public | BindingFlags.Static);
+                getWind = t.GetMethod("TryGetWind", BindingFlags.Public | BindingFlags.Static);
             }
             catch (Exception) { addWind = addHeat = addMoist = addMist = null; }
         }
@@ -37,6 +38,23 @@ namespace Avir.Magic
         /// <summary>That mod takes a push of at most about 12 m/s at a time (its PatchSafeVelocityImpulse); stronger wind is
         /// built up by pushing again and again. Its own thresholds: staggers from 20 m/s, fells from 28, throws from 40.</summary>
         public const float MaxPush = 12f;
+
+        /// <summary>Its wind at a cell, metres a second (Fix188: our gases that are things ride it - it moves only the game's
+        /// gas grid itself).</summary>
+        public static bool WindAt(Map map, IntVec3 c, out Vector2 w)
+        {
+            Look();
+            w = Vector2.zero;
+            if (getWind == null || map == null || !c.InBounds(map)) return false;
+            try
+            {
+                object[] args = { map, c, Vector2.zero };
+                if (!(bool)getWind.Invoke(null, args)) return false;
+                w = (Vector2)args[2];
+                return true;
+            }
+            catch (Exception) { getWind = null; return false; }
+        }
 
         /// <summary>A push of wind at a cell, in metres a second.</summary>
         public static void Wind(Map map, IntVec3 c, Vector2 push)

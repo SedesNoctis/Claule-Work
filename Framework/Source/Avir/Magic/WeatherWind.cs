@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
 using UnityEngine;
@@ -71,6 +72,64 @@ namespace Avir.Magic
             if (g == null) return;
             g.tint = new Color(0.72f, 0.5f, 1f, 0.85f);
             Messages.Message("The stream is raging: an arcane gust breaks loose.", new TargetInfo(g.at.ToIntVec3(), map), MessageTypeDefOf.NeutralEvent, false);
+        }
+    }
+
+    /// <summary>The steady wind carries gas (Fix188). With Atmosphere Overhaul its own wind moves the game's gas grid, but
+    /// not a gas that is a thing - our scalding steam and marsh gas, a mod's clouds - so those ride its wind here, read
+    /// cell by cell. Without it the game's breeze (out of doors, the weather wind's direction) moves both: the grid and the
+    /// things. Once a second; the stronger the wind, the likelier a cell moves on.</summary>
+    public class MapComponent_GasDrift : MapComponent
+    {
+        private static List<ThingDef> gasDefs;
+        private readonly List<IntVec3> withGas = new List<IntVec3>();
+        public MapComponent_GasDrift(Map map) : base(map) { }
+
+        private static List<ThingDef> GasDefs => gasDefs ?? (gasDefs = DefDatabase<ThingDef>.AllDefsListForReading.Where(d => d.thingClass != null && typeof(Gas).IsAssignableFrom(d.thingClass)).ToList());
+
+        /// <summary>The steady wind at a cell: direction and metres a second.</summary>
+        private bool Steady(IntVec3 c, out Vector3 dir, out float s)
+        {
+            dir = Vector3.zero; s = 0f;
+            if (AtmosphereBridge.On)
+            {
+                if (!AtmosphereBridge.WindAt(map, c, out Vector2 w)) return false;
+                s = w.magnitude; if (s < 0.5f) return false;
+                dir = new Vector3(w.x, 0f, w.y) / s;
+                return true;
+            }
+            if (c.Roofed(map)) return false;
+            s = map.windManager.WindSpeed * 6f;   // the game's 0..2 - a breeze to a gale
+            if (s < 1.5f) return false;
+            var ww = map.GetComponent<MapComponent_WeatherWind>();
+            dir = ww != null ? ww.Dir : Vector3.forward;
+            return true;
+        }
+
+        private static IntVec3 Next(IntVec3 c, Vector3 dir, float s) => (c.ToVector3Shifted() + dir * (s > 14f ? 2f : 1.2f)).ToIntVec3();
+
+        public override void MapComponentTick()
+        {
+            if (AvirMod.Settings != null && !AvirMod.Settings.weatherWind) return;
+            if (Find.TickManager.TicksGame % 60 != 17) return;
+            // gases that are things
+            foreach (ThingDef d in GasDefs)
+                foreach (Thing t in map.listerThings.ThingsOfDef(d).ToList())
+                {
+                    if (!(t is Gas gas) || !Steady(t.Position, out Vector3 dir, out float s)) continue;
+                    if (!Rand.Chance(Mathf.Clamp(s / 8f, 0f, 0.85f))) continue;
+                    MapComponent_MagicWind.DriftGasThing(gas, map, Next(t.Position, dir, s));
+                }
+            // the game's gas grid - only where Atmosphere Overhaul does not move it already
+            if (AtmosphereBridge.On) return;
+            withGas.Clear();
+            int n = map.cellIndices.NumGridCells;
+            for (int i = 0; i < n; i++) if (map.gasGrid.GetDirect(i) != 0u) withGas.Add(map.cellIndices.IndexToCell(i));
+            foreach (IntVec3 c in withGas.InRandomOrder())
+            {
+                if (!Steady(c, out Vector3 dir, out float s) || !Rand.Chance(Mathf.Clamp(s / 10f, 0f, 0.8f))) continue;
+                MapComponent_MagicWind.DriftGridGas(map, c, Next(c, dir, s), dir, s * 0.6f);
+            }
         }
     }
 }
