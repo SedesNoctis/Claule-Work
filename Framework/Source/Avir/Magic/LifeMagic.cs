@@ -181,8 +181,17 @@ namespace Avir.Magic
             float r = pulsing ? pulseRadius : Radius(g);
             IntVec3 last = at;
             bool gaveNothing = false;
+            // Step + Anchor: a living gate grows where the spell lands (the author's plan; Fix195) - out of the store
+            bool gate = !pulsing && g.OwnRunes.Any(x => x.kind == RuneKind.Step) && g.OwnRunes.Any(x => x.kind == RuneKind.Anchor);
+            if (gate)
+            {
+                float fg = Pay(core, 15f);
+                if (fg >= 0.99f) Building_LifeGate.Grow(caster, map, at);
+                else MoteMaker.ThrowText(at.ToVector3Shifted(), map, "Not life enough to grow a gate", Necrotic, 3f);
+            }
             foreach (Act act in Read(g, out _))
             {
+                if (gate && act.verb == RuneKind.Step) continue;
                 IntVec3 where = last;
                 if (act.hop)
                 {

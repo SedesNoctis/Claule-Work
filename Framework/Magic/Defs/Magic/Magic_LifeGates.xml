@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- The living gates of Life (Fix195): Step + Anchor in a circle of Life. -->
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_LifeGate</defName>
+    <label>living gate</label>
+    <description>A gate of living roots, grown by a caster of Life. Whoever steps into it comes out of another such gate; it can draw a friend or a foe through to itself. It lives on those who go through it - left unused, it dries and dies.</description>
+    <thingClass>Avir.Magic.Building_LifeGate</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Life_BranchDome</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(2.2,2.2)</drawSize>
+      <color>(0.75,0.95,0.65)</color>
+    </graphicData>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>Standable</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <selectable>true</selectable>
+    <useHitPoints>true</useHitPoints>
+    <statBases>
+      <MaxHitPoints>150</MaxHitPoints>
+      <Flammability>1</Flammability>
+      <Beauty>6</Beauty>
+    </statBases>
+    <size>(1,1)</size>
+    <building>
+      <isInert>true</isInert>
+      <claimable>false</claimable>
+      <deconstructible>true</deconstructible>
+      <expandHomeArea>false</expandHomeArea>
+    </building>
+  </ThingDef>
+  <JobDef>
+    <defName>Avir_LifeGateWalk</defName>
+    <driverClass>Avir.Magic.JobDriver_LifeGateWalk</driverClass>
+    <reportString>going through a living gate.</reportString>
+  </JobDef>
+  <HediffDef>
+    <defName>Avir_GateDrained</defName>
+    <label>drained by a gate</label>
+    <description>A living gate took its fare from the body: weak and sleepy for a while.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>10000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><restFallFactor>1.5</restFallFactor><capMods><li><capacity>Moving</capacity><offset>-0.15</offset></li><li><capacity>Consciousness</capacity><offset>-0.05</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_GateLight</defName>
+    <label>light from a gate</label>
+    <description>Drawn through a living gate and given to on the way: light on the feet, mending.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>10000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Moving</capacity><offset>0.1</offset></li></capMods><statOffsets><InjuryHealingFactor>0.2</InjuryHealingFactor></statOffsets></li></stages>
+  </HediffDef>
+</Defs>

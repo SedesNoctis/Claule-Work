@@ -162,6 +162,8 @@ namespace Avir.Magic
                 e.extras.Insert(0, new KeyValuePair<string, string>(lm.ToString(), LifeMagic.MixText(lm)));
             foreach (RuneKind la in LifeMagic.Circles(root).Select(g => LifeMagic.AspectOf(root, g)).Where(k => k != LifeMagic.None).Distinct())
                 e.extras.Insert(0, new KeyValuePair<string, string>(LifeMagic.AspectName(la), LifeMagic.AspectText(la)));
+            if (LifeMagic.Links(root).Any(g => g.OwnRunes.Any(x => x.kind == RuneKind.Step) && g.OwnRunes.Any(x => x.kind == RuneKind.Anchor)))
+                e.extras.Insert(0, new KeyValuePair<string, string>("Living Gate", "Step and Anchor in a circle of Life: a gate of roots grows where the spell lands (15 of the store). Two gates or more - a colonist can go through them (a command on the colonist); a gate can draw a friend (mending, light) or a foe (spent) through to itself. The druid's store pays for each passage; with it empty, the walker pays - weakened and sleepy. A gate lives on those who go through it: unused, it dries and dies in about a week."));
             if (LifeMagic.Circles(root).Any())
             {
                 e.extras.Insert(0, new KeyValuePair<string, string>("Symbiosis", "Life makes nothing; it only moves. Withering fills the store of life, the other verbs give it away - with the store empty they give nothing."));
