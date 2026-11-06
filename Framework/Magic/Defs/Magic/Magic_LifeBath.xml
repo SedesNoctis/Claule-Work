@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Defs>
-  <!-- The bath of Fever and the couch of Life care (Fix198). -->
+  <!-- The bath of Fever (Fix198) and massage on a medical bed (Fix201). -->
   <JoyKindDef>
     <defName>Avir_Care</defName>
     <label>bodily ease</label>
@@ -66,41 +66,10 @@
     <requiredCapacities><li>Moving</li></requiredCapacities>
   </JoyGiverDef>
 
-  <ThingDef ParentName="FurnitureBase">
-    <defName>Avir_LifeCouch</defName>
-    <label>massage couch</label>
-    <description>A low couch. A colonist lies down on it and waits; a caster comes and works over them - a caster of Life with slow hands, a caster of earth with warm stones. Recreation and rest, better than a passing soothing.</description>
-    <thingClass>Avir.Magic.Building_LifeCouch</thingClass>
-    <graphicData>
-      <texPath>Things/Building/Furniture/Bed/Bed</texPath>
-      <graphicClass>Graphic_Multi</graphicClass>
-      <drawSize>(3,4)</drawSize>
-      <color>(0.55,0.75,0.5)</color>
-    </graphicData>
-    <size>(1,2)</size>
-    <altitudeLayer>Building</altitudeLayer>
-    <passability>PassThroughOnly</passability>
-    <rotatable>true</rotatable>
-    <castEdgeShadows>true</castEdgeShadows>
-    <fillPercent>0.4</fillPercent>
-    <pathCost>42</pathCost>
-    <statBases>
-      <MaxHitPoints>120</MaxHitPoints>
-      <WorkToBuild>1200</WorkToBuild>
-      <Mass>20</Mass>
-      <Flammability>1</Flammability>
-      <Beauty>2</Beauty>
-      <Comfort>0.7</Comfort>
-    </statBases>
-    <stuffCategories><li>Woody</li><li>Fabric</li></stuffCategories>
-    <costStuffCount>50</costStuffCount>
-    <designationCategory>Furniture</designationCategory>
-    <building><isSittable>false</isSittable></building>
-  </ThingDef>
   <JobDef>
     <defName>Avir_LieForCare</defName>
     <driverClass>Avir.Magic.JobDriver_LieForCare</driverClass>
-    <reportString>lying on the couch, waiting for care.</reportString>
+    <reportString>lying on a medical bed, waiting for a massage.</reportString>
     <joyDuration>3000</joyDuration>
     <joyKind>Avir_Care</joyKind>
     <casualInterruptible>true</casualInterruptible>
@@ -114,7 +83,7 @@
   </JoyGiverDef>
   <WorkGiverDef>
     <defName>Avir_LifeCare</defName>
-    <label>massage on the couch</label>
+    <label>massage</label>
     <giverClass>Avir.Magic.WorkGiver_LifeCare</giverClass>
     <workType>Avir_MagicWork</workType>
     <verb>care for</verb>
@@ -153,7 +122,7 @@
     <thoughtClass>Thought_Memory</thoughtClass>
     <durationDays>1.5</durationDays>
     <stackLimit>1</stackLimit>
-    <stages><li><label>cared for on the couch</label><description>A caster of Life worked the knots out of me. I feel new.</description><baseMoodEffect>8</baseMoodEffect></li></stages>
+    <stages><li><label>back worked loose</label><description>A caster of Life worked the knots out of me. I feel new.</description><baseMoodEffect>8</baseMoodEffect></li></stages>
   </ThoughtDef>
   <HediffDef>
     <defName>Avir_StoneMassaged</defName>

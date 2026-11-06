@@ -275,7 +275,7 @@ namespace Avir.Magic
             ["Avir_LifeEmerald"] = "turns marked plants into emerald statues (Emerald)",
             ["Avir_LifeAge"] = "ages the brew in the fermenting barrels on by a quarter (Decay)",
             ["Avir_LifeSoothe"] = "eases the tired and the low: recreation, a little rest, a good memory",
-            ["Avir_LifeCare"] = "comes to the one lying on a couch of Life care and works over them: recreation, rest, ease",
+            ["Avir_LifeCare"] = "comes to the one lying on a medical bed for a massage and works the back loose: recreation, rest, ease",
             ["Avir_LifeBathSteam"] = "raises a light steam for a bath where marked, and renews it (Fever)",
             ["Avir_2Purify"] = "takes the food poisoning out of meals and food - no sickness from a careless cook",
             ["Avir_ArcaneRaiseRock"] = "raises natural rock where marked - walls of real stone of the kind chosen, no materials",

@@ -215,23 +215,24 @@ namespace Avir.Magic
         }
     }
 
-    // ================================================================== the couch: a caster works over one who lies
+    // ================================================================== massage: a caster works over one who lies on a medical bed
 
-    /// <summary>A couch of Life care (the author, Fix198): a colonist lies down on it for recreation and waits; a caster of
-    /// Life comes and works over them - kneading, warmth, the slow hands. Stronger than a passing soothing.</summary>
-    public class Building_LifeCouch : Building
+    /// <summary>Where one lies for a massage (the author, Fix201): any medical bed - no couch of its own.</summary>
+    public static class CareSpots
     {
-        public Pawn lying;
-        public bool cared;
-        public bool Waiting => lying != null && lying.Spawned && lying.CurJobDef?.defName == "Avir_LieForCare" && !cared;
-        public IntVec3 LieCell => Position;
-        public override void ExposeData() { base.ExposeData(); Scribe_References.Look(ref lying, "lying"); Scribe_Values.Look(ref cared, "cared"); }
-        public override string GetInspectString()
+        private static readonly Dictionary<int, Pawn> lying = new Dictionary<int, Pawn>();
+        private static readonly HashSet<int> cared = new HashSet<int>();
+        public static bool IsSpot(Thing t) => t is Building_Bed b && b.Medical && !b.ForPrisoners && b.def.building != null && b.def.building.bed_humanlike;
+        public static Pawn Lying(Thing t) => lying.TryGetValue(t.thingIDNumber, out Pawn p) ? p : null;
+        public static bool Cared(Thing t) => cared.Contains(t.thingIDNumber);
+        public static void Set(Thing t, Pawn p, bool done)
         {
-            string s = base.GetInspectString();
-            string mine = Waiting ? lying.LabelShort + " lies waiting for a caster of Life." : "Free.";
-            return s.NullOrEmpty() ? mine : s + "\n" + mine;
+            if (p == null) lying.Remove(t.thingIDNumber); else lying[t.thingIDNumber] = p;
+            if (done) cared.Add(t.thingIDNumber); else cared.Remove(t.thingIDNumber);
         }
+        public static bool Waiting(Thing t) { Pawn p = Lying(t); return p != null && p.Spawned && p.CurJobDef?.defName == "Avir_LieForCare" && !Cared(t); }
+        public static bool Free(Thing t) => Lying(t) == null && !(t is Building_Bed b && b.AnyOccupants);
+        public static IntVec3 LieCell(Thing t) => t is Building_Bed b ? b.GetSleepingSlotPos(0) : t.Position;
     }
 
     public class JoyGiver_LieForCare : JoyGiver
@@ -241,8 +242,8 @@ namespace Avir.Magic
             if (pawn.Map == null || !pawn.RaceProps.Humanlike) return null;
             // only where a caster of Life is about to come
             if (!pawn.Map.mapPawns.FreeColonistsSpawned.Any(m => m != pawn && WorkGiver_LifeCare.Able(m) && !m.Downed && m.workSettings != null && m.workSettings.WorkIsActive(DefDatabase<WorkTypeDef>.GetNamedSilentFail("Avir_MagicWork")))) return null;
-            Building_LifeCouch couch = pawn.Map.listerThings.AllThings.OfType<Building_LifeCouch>().Where(c => c.lying == null && !c.IsForbidden(pawn) && pawn.CanReserveAndReach(c, PathEndMode.OnCell, Danger.Some)).OrderBy(c => c.Position.DistanceToSquared(pawn.Position)).FirstOrDefault();
-            return couch != null ? JobMaker.MakeJob(def.jobDef, couch) : null;
+            Thing spot = pawn.Map.listerBuildings.allBuildingsColonist.Where(c => CareSpots.IsSpot(c) && CareSpots.Free(c) && !c.IsForbidden(pawn) && pawn.CanReserveAndReach(c, PathEndMode.Touch, Danger.Some)).OrderBy(c => c.Position.DistanceToSquared(pawn.Position)).FirstOrDefault();
+            return spot != null ? JobMaker.MakeJob(def.jobDef, spot) : null;
         }
     }
 
@@ -252,18 +253,23 @@ namespace Avir.Magic
         protected override IEnumerable<Toil> MakeNewToils()
         {
             this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
-            yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
+            Toil go = ToilMaker.MakeToil("GoToCareSpot");
+            go.initAction = () => pawn.pather.StartPath(CareSpots.LieCell(TargetA.Thing), PathEndMode.OnCell);
+            go.defaultCompleteMode = ToilCompleteMode.PatherArrival;
+            yield return go;
+            bool bed = TargetA.Thing is Building_Bed;
+            PawnPosture Lie() => bed ? PawnPosture.LayingInBed : PawnPosture.LayingOnGroundFaceUp;
             Toil lie = ToilMaker.MakeToil("LieForCare");
-            lie.initAction = () => { if (TargetA.Thing is Building_LifeCouch c) { c.lying = pawn; c.cared = false; } pawn.jobs.posture = PawnPosture.LayingOnGroundFaceUp; };
+            lie.initAction = () => { CareSpots.Set(TargetA.Thing, pawn, false); pawn.jobs.posture = Lie(); };
             lie.defaultCompleteMode = ToilCompleteMode.Delay;
             lie.defaultDuration = job.def.joyDuration;
             lie.tickIntervalAction = delta =>
             {
-                pawn.jobs.posture = PawnPosture.LayingOnGroundFaceUp;
+                pawn.jobs.posture = Lie();
                 JoyUtility.JoyTickCheckEnd(pawn, delta, JoyTickFullJoyAction.None, 0.4f, TargetA.Thing as Building);
-                if (TargetA.Thing is Building_LifeCouch c && c.cared) ReadyForNextToil();
+                if (TargetA.Thing != null && CareSpots.Cared(TargetA.Thing)) ReadyForNextToil();
             };
-            lie.AddFinishAction(() => { if (TargetA.Thing is Building_LifeCouch c && c.lying == pawn) { c.lying = null; c.cared = false; } pawn.jobs.posture = PawnPosture.Standing; });
+            lie.AddFinishAction(() => { if (TargetA.Thing != null && CareSpots.Lying(TargetA.Thing) == pawn) CareSpots.Set(TargetA.Thing, null, false); pawn.jobs.posture = PawnPosture.Standing; });
             yield return lie;
         }
     }
@@ -271,14 +277,14 @@ namespace Avir.Magic
     public class WorkGiver_LifeCare : WorkGiver_Scanner
     {
         public const float Store = 2f, StoneArcana = 3f;
-        /// <summary>Who can work over the one on the couch (the author, Fix199: not Life's alone): a caster of Life, out of
+        /// <summary>Who can massage the one on a medical bed (the author, Fix199: not Life's alone): a caster of Life, out of
         /// its store; a caster of earth with warm stones, for Arcana.</summary>
         public static bool Able(Pawn p) => LifeWorks.Able(p, Store) != null || MagicWork.Able(p, RuneKind.Earth, StoneArcana) != null;
         public override PathEndMode PathEndMode => PathEndMode.Touch;
         public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial);
         public override bool ShouldSkip(Pawn pawn, bool forced = false) => !Able(pawn);
         public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false) =>
-            t is Building_LifeCouch c && c.Waiting && c.lying != pawn && !c.IsForbidden(pawn) && pawn.CanReach(c, PathEndMode.Touch, Danger.Some) && Able(pawn);
+            CareSpots.IsSpot(t) && CareSpots.Waiting(t) && CareSpots.Lying(t) != pawn && !t.IsForbidden(pawn) && pawn.CanReach(t, PathEndMode.Touch, Danger.Some) && Able(pawn);
         public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false) => JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("Avir_LifeCare"), t);
     }
 
@@ -287,14 +293,15 @@ namespace Avir.Magic
         public override bool TryMakePreToilReservations(bool errorOnFailed) => true;
         protected override IEnumerable<Toil> MakeNewToils()
         {
-            this.FailOn(() => !(TargetA.Thing is Building_LifeCouch c) || !c.Waiting);
+            this.FailOn(() => TargetA.Thing == null || !CareSpots.Waiting(TargetA.Thing));
             yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
             yield return ArcaneChannel.Channel(this, 900, WorkSpells.Charm("Avir_LifeCare", new[] { RuneKind.Life }), false, new Color(0.7f, 0.95f, 0.6f, 0.45f));
             Toil done = ToilMaker.MakeToil("LifeCare");
             done.initAction = () =>
             {
-                if (!(TargetA.Thing is Building_LifeCouch c) || c.lying == null) return;
-                Pawn p = c.lying;
+                Thing c = TargetA.Thing;
+                Pawn p = c != null ? CareSpots.Lying(c) : null;
+                if (p == null) return;
                 Hediff_ArcaneCore core = MagicWork.Able(pawn, RuneKind.Life, LifeWorks.Arcana);
                 float f = core != null && LifeWorks.Has(core, WorkGiver_LifeCare.Store) ? LifeWorks.Spend(core, WorkGiver_LifeCare.Store) : 0f;
                 if (f <= 0f)
@@ -309,7 +316,7 @@ namespace Avir.Magic
                     ThoughtDef th0 = DefDatabase<ThoughtDef>.GetNamedSilentFail("Avir_LifeCaredFor");
                     if (th0 != null) p.needs?.mood?.thoughts?.memories?.TryGainMemory(th0, pawn);
                     FleckMaker.ThrowDustPuffThick(p.DrawPos, p.Map, 1f, MagicFx.EarthDust);
-                    c.cared = true;
+                    CareSpots.Set(c, p, true);
                     MagicWork.Done(ec, RuneKind.Earth, WorkGiver_LifeCare.StoneArcana, LifeWorks.Xp);
                     return;
                 }
@@ -321,7 +328,7 @@ namespace Avir.Magic
                 if (th != null) p.needs?.mood?.thoughts?.memories?.TryGainMemory(th, pawn);
                 LifeWorks.AfterGift(core, p, q * 0.5f);   // the caster's own kind shows in the hands too
                 MapComponent_SpellSprites.PutTinted(p.Map, "Life/Petals", new Color(0.75f, 0.95f, 0.65f), p.DrawPos, 1.4f, 80);
-                c.cared = true;
+                CareSpots.Set(c, p, true);
                 MagicWork.Done(core, RuneKind.Life, LifeWorks.Arcana, LifeWorks.Xp);
             };
             done.defaultCompleteMode = ToilCompleteMode.Instant;
