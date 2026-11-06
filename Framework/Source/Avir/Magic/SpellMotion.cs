@@ -546,7 +546,7 @@ namespace Avir.Magic
             int until = Find.TickManager.TicksGame + ticks;
             if (raised.TryGetValue(c, out var kv)) { raised[c] = new KeyValuePair<TerrainDef, int>(kv.Key, Mathf.Max(kv.Value, until)); return; }
             raised[c] = new KeyValuePair<TerrainDef, int>(cur, until);
-            map.terrainGrid.SetTerrain(c, TerrainDefOf.WaterShallow);
+            map.terrainGrid.SetTerrain(c, ArcaneWorks.ShallowWater(map));
         }
 
         public override void MapComponentTick()
@@ -555,7 +555,7 @@ namespace Avir.Magic
             int now = Find.TickManager.TicksGame;
             foreach (var kv in raised.Where(x => x.Value.Value <= now).ToList())
             {
-                if (map.terrainGrid.TerrainAt(kv.Key) == TerrainDefOf.WaterShallow) map.terrainGrid.SetTerrain(kv.Key, kv.Value.Key);
+                if (map.terrainGrid.TerrainAt(kv.Key) == ArcaneWorks.ShallowWater(map)) map.terrainGrid.SetTerrain(kv.Key, kv.Value.Key);
                 raised.Remove(kv.Key);
             }
         }

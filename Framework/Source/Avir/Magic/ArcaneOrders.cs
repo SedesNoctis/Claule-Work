@@ -270,6 +270,15 @@ namespace Avir.Magic
 
     public static class ArcaneWorks
     {
+        /// <summary>The water magic makes on this map (the author, Fix172): in our forests - their own forest water
+        /// (the Twilight Forest's, the Burning Forest's), elsewhere the game's shallow water. It warms into a hot spring,
+        /// turns back to stone, holds and floods like any other.</summary>
+        public static TerrainDef ShallowWater(Map map)
+        {
+            string b = map?.Biome?.defName;
+            if (b == "Avir_TwilightForest" || b == "Avir_BurningForest") { TerrainDef f = DefDatabase<TerrainDef>.GetNamedSilentFail("Avir_TwilightWaterShallow"); if (f != null) return f; }
+            return TerrainDefOf.WaterShallow;
+        }
         public static readonly Dictionary<string, ArcaneSpec> Specs = new Dictionary<string, ArcaneSpec>
         {
             ["Avir_ArcaneRaiseRock"] = new ArcaneSpec { kinds = new[] { RuneKind.Earth }, cost = 6f, xp = 10f, ticks = 300, effect = RaiseRock },
@@ -483,7 +492,7 @@ namespace Avir.Magic
             foreach (IntVec3 cell in cells)
             {
                 if (!cell.InBounds(map) || cell.GetEdifice(map) != null || !NaturalStone(map.terrainGrid.TerrainAt(cell))) continue;
-                map.terrainGrid.SetTerrain(cell, TerrainDefOf.WaterShallow); n++;
+                map.terrainGrid.SetTerrain(cell, ArcaneWorks.ShallowWater(map)); n++;
                 if (Rand.Chance(0.4f)) FleckMaker.Static(cell, map, FleckDefOf.WaterSplash, 0.7f);
             }
             return n;

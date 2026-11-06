@@ -225,9 +225,9 @@ namespace Avir.Magic
                 } },
             // ---- bog
             ["Avir_2Moat"] = new Work2 { y = SecondKind.Quag, cost = 4f, ticks = 200, desName = "Avir_2Moat",
-                effect = (p, t, c) => TempTo(p.Map, t.Cell, "Avir_2Moat", TerrainDefOf.WaterShallow, 30) },
+                effect = (p, t, c) => TempTo(p.Map, t.Cell, "Avir_2Moat", ArcaneWorks.ShallowWater(p.Map), 30) },
             ["Avir_2SiltWater"] = new Work2 { y = SecondKind.Silt, cost = 4f, ticks = 200, desName = "Avir_2SiltWater",
-                effect = (p, t, c) => TempTo(p.Map, t.Cell, "Avir_2SiltWater", TerrainDefOf.WaterShallow, 30) },
+                effect = (p, t, c) => TempTo(p.Map, t.Cell, "Avir_2SiltWater", ArcaneWorks.ShallowWater(p.Map), 30) },
             ["Avir_2SiltLand"] = new Work2 { y = SecondKind.Silt, cost = 4f, ticks = 200, desName = "Avir_2SiltLand",
                 effect = (p, t, c) => TempTo(p.Map, t.Cell, "Avir_2SiltLand", TerrainDefOf.Soil, 30) },
             ["Avir_2SiltDump"] = new Work2 { y = SecondKind.Silt, cost = 3f, ticks = 150, desName = "Avir_2SiltDump",
