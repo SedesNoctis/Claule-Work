@@ -29,8 +29,16 @@ namespace Avir.Magic
                 try
                 {
                     if (sc.ShouldSkip(p, true)) continue;
-                    foreach (Thing t in things) { if (sc.HasJobOnThing(p, t, true)) { job = sc.JobOnThing(p, t, true); if (job != null) break; } }
-                    if (job == null && sc.HasJobOnCell(p, cell, true)) job = sc.JobOnCell(p, cell, true);
+                    // only where the work itself would look (Fix160: room works offered themselves on every cell)
+                    var potThings = sc.PotentialWorkThingsGlobal(p);
+                    var tset = potThings != null ? new HashSet<Thing>(potThings) : null;
+                    foreach (Thing t in things)
+                    {
+                        if (tset != null ? !tset.Contains(t) : !sc.PotentialWorkThingRequest.Accepts(t)) continue;
+                        if (sc.HasJobOnThing(p, t, true)) { job = sc.JobOnThing(p, t, true); if (job != null) break; }
+                    }
+                    var potCells = job == null ? sc.PotentialWorkCellsGlobal(p) : null;
+                    if (job == null && potCells != null && potCells.Contains(cell) && sc.HasJobOnCell(p, cell, true)) job = sc.JobOnCell(p, cell, true);
                 }
                 catch (Exception) { job = null; }
                 if (job == null) continue;

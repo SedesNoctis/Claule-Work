@@ -30,6 +30,9 @@ namespace Avir.Magic
                 d += "\nCast - " + Caster.LabelShortCap + ", " + (c.Sorcerer ? "sorcerer" : "caster") + ": " + sec(Spells.CastTicks(c, s))
                    + " · hold " + Spells.HoldChance(Caster, s).ToStringPercent();
             else d += "\nCast: sorcerer " + sec(Spells.CastTicks(true, s)) + " · caster " + sec(Spells.CastTicks(false, s));
+            string life = null;
+            try { life = LifeMagic.Ledger(s?.weave, Caster); } catch (System.Exception) { life = null; }
+            if (life != null) d += "\n" + life;
             return d;
         }
 

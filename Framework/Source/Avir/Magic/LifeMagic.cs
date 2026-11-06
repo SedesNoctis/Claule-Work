@@ -156,7 +156,7 @@ namespace Avir.Magic
                 case RuneKind.Fire: return "Wild Flame - living bombs: Withering sows a spark in the bodies it reaches; a carrier that touches another bursts in petals of flame, and the spark leaps on, weaker each time. Water does not put it out - in water the carrier steams and scalds. Restoration sows smouldering hearts that mend whom they touch.";
                 case RuneKind.Water: return "Blood - the body is a pool, as water's pools are: Withering drinks part of the blood of the reached, Restoration gives it back. Release and Beam paralyse, Hold holds the blood still, Lift throws the body up, Lift with a Thread presses it down, Step drags it by its blood. The mage of Blood mends their own blood quickest of all, out of the store.";
                 case RuneKind.Earth: return "Emerald - stone remembers life: Withering grows a crust of stone on the living, slower and harder as it thickens; full, a living statue that stands for days, hunger at a tenth. Half of what it takes is sealed in emeralds at the spot. Restoration draws on such stones, makes living ground; with Hold, a stone cocoon.";
-                case RuneKind.Air: return "Pestilence - turned round: Withering drinks the sicknesses of the reached into the store; Restoration lays a fertile poison fog - the ground grows rich under it for three days, and whoever stands in it takes the poison in, which ends in a paralytic abasia. Growth swells the sicknesses it reaches.";
+                case RuneKind.Air: return "Pestilence - turned round: Withering takes the sicknesses of the reached onto the mage, who carries them as fuel (at mastery it draws out even cancer and the heaviest illnesses - those cannot be taken, only cured); Growth cast at the mage's own feet grows sicknesses on the mage, more of them the stronger it is; Restoration lays a fertile poison fog - the ground grows rich under it for three days, and whoever stands in it takes the poison in, which ends in a paralytic abasia. Growth swells the sicknesses it reaches.";
             }
             return null;
         }
@@ -330,7 +330,7 @@ namespace Avir.Magic
                     case RuneKind.Fire: Seed(p, caster, dmg, false, 3); got += dmg * 0.3f; break;          // a living bomb, not a burn
                     case RuneKind.Water: got += Suck(p, dmg); break;                                       // part of its blood
                     case RuneKind.Earth: Crust(p, dmg * 0.04f); got += dmg * 0.5f; break;                  // stone grows on it
-                    case RuneKind.Air: got += Drink(p, dmg / 6f); break;                                   // its sicknesses drunk
+                    case RuneKind.Air: got += p == caster ? 0f : Pestilence.TakeFrom(caster, p, dmg) + Drink(p, dmg / 6f); break;   // its sicknesses taken onto the mage (Fix160), the rest drunk
                     default: p.TakeDamage(new DamageInfo(WitherDmg, dmg, 2f, -1f, caster)); got += dmg; break;
                 }
                 Wisp(p.DrawPos, map);
@@ -478,6 +478,9 @@ namespace Avir.Magic
             var lifes = Links(s.weave).ToList();
             bool wraps = Circles(s.weave).Any(g => g.inner.Any(k => k.element != null));
             if (lifes.Count == 0 && !wraps) return null;
+            // the author (Fix160): giving short of energy is weakened, not refused; a spell is held back only when
+            // giving is all it does - no Withering, no element of its own - and there is nothing for it at all
+            if (s.weave.All().Any(c => c.element != null && !Is(c.element))) return null;
             bool gives = lifes.Any(g => Read(g, out _).Any(a => a.side == RuneKind.Restore)) || wraps;
             if (!gives) return null;
             bool takes = lifes.Any(g => Read(g, out _).Any(a => a.side == RuneKind.Drain));
@@ -875,6 +878,53 @@ namespace Avir.Magic
                 from.health.RemoveHediff(h);
                 Messages.Message(mage.LabelShortCap + " took " + h.LabelBase + " from " + from.LabelShort + ".", from, MessageTypeDefOf.PositiveEvent, false);
             }
+        }
+
+        /// <summary>The sicknesses a mage of Pestilence can grow on themselves (Fix160).</summary>
+        private static readonly string[] Sowable = { "Flu", "Malaria", "SleepingSickness", "Plague", "LungRot", "Animal_Flu", "Animal_Plague" };
+        /// <summary>The heaviest bodily illnesses - a master can cure them, not take them, only grow them on themselves.</summary>
+        private static readonly string[] Heavy = { "Carcinoma", "Dementia", "Alzheimers", "Asthma", "HeartArteryBlockage", "BadBack", "Frail", "Cataract", "HearingLoss" };
+        public static bool Master(Pawn mage) { Hediff_ArcaneCore c = Mages.Core(mage); return c != null && Arcane.Stage(c, RuneKind.Life, RuneKind.Air) >= 4; }
+
+        /// <summary>Withering of Pestilence (the author, Fix160): the sicknesses of the reached are taken onto the mage and
+        /// carried; at mastery the heaviest illnesses (cancer and the like) are cured outright - not taken, they cannot be.</summary>
+        public static float TakeFrom(Pawn mage, Pawn from, float dmg)
+        {
+            if (from == null || from.Dead || Mages.Core(mage) == null) return 0f;
+            float got = 0f;
+            int had = from.health.hediffSet.hediffs.Count(Sickness);
+            if (had > 0) { got += 15f * had; Gather(mage, from); }
+            if (Master(mage))
+                foreach (Hediff h in from.health.hediffSet.hediffs.Where(h => Heavy.Contains(h.def.defName)).ToList())
+                {
+                    got += 25f;
+                    from.health.RemoveHediff(h);
+                    Messages.Message(mage.LabelShortCap + " drew " + h.LabelBase + " out of " + from.LabelShort + ".", from, MessageTypeDefOf.PositiveEvent, false);
+                }
+            return got;
+        }
+
+        /// <summary>Growth of Pestilence at the mage's own feet (the author, Fix160): sicknesses grown on oneself, more of them
+        /// the stronger the spell (one, and one more for each 0.4 of strength past 0.8); a master can grow the heaviest too.</summary>
+        public static void Sow(Pawn mage, float power)
+        {
+            Hediff_ArcaneCore core = Mages.Core(mage);
+            if (core == null || mage.Dead) return;
+            int n = Mathf.Clamp(1 + Mathf.FloorToInt((power - 0.8f) / 0.4f), 1, 4);
+            var pool = Sowable.Select(x => DefDatabase<HediffDef>.GetNamedSilentFail(x)).Where(d => d != null).ToList();
+            if (Master(mage)) pool.AddRange(Heavy.Take(1).Select(x => DefDatabase<HediffDef>.GetNamedSilentFail(x)).Where(d => d != null));
+            pool = pool.Where(d => mage.health.hediffSet.GetFirstHediffOfDef(d) == null && (d.defName.StartsWith("Animal_") == !mage.RaceProps.Humanlike)).InRandomOrder().ToList();
+            var grown = new List<string>();
+            foreach (HediffDef d in pool.Take(n))
+            {
+                Hediff h = HediffMaker.MakeHediff(d, mage);
+                h.Severity = Mathf.Max(0.05f, d.initialSeverity);
+                mage.health.AddHediff(h);
+                Carry(core, h);
+                grown.Add(h.LabelBase);
+            }
+            if (grown.Count > 0) Messages.Message(mage.LabelShortCap + " grew " + string.Join(", ", grown) + " in themselves - carried, as fuel.", mage, MessageTypeDefOf.NeutralEvent, false);
+            else Messages.Message(mage.LabelShortCap + " carries every sickness they can grow already.", mage, MessageTypeDefOf.RejectInput, false);
         }
 
         /// <summary>A sickness grown on the mage on purpose: the flu, if nothing is carried yet.</summary>

@@ -269,6 +269,7 @@ namespace Avir.Magic
                     break;
                 case RuneKind.Air:
                     // growth on a sickness swells it - with Withering after, it is then drunk the fuller
+                    if (act.verb == RuneKind.Growth && (at == caster.Position || pulsing)) { Pestilence.Sow(caster, power); break; }   // grown on oneself (Fix160)
                     if (act.verb == RuneKind.Growth) foreach (Pawn q in area) Swell(q, 0.15f * power);
                     break;
             }
@@ -309,6 +310,8 @@ namespace Avir.Magic
                 : GenRadial.RadialCellsAround(at, rr, true).Where(c => c.InBounds(map)).ToList();
             if (act.verb == RuneKind.Growth)
             {
+                // at the mage's own feet: the sicknesses grown on the mage (Fix160)
+                if (at == caster.Position || pulsing) { Pestilence.Sow(caster, power); return true; }
                 // growth on the sicknesses of the reached: they swell
                 var who = Reached(caster, g, Area(at, r, map));
                 float fs = Pay(core, who.Count * 2f); if (fs <= 0f) return false;
