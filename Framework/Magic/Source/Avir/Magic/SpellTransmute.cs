@@ -148,7 +148,7 @@ namespace Avir.Magic
             if (k == ComboKind.Haze)
             {
                 Room room = at.GetRoom(map);
-                if (room != null && !room.UsesOutdoorTemperature) { room.Temperature = Mathf.Min(21f, room.Temperature + 8f * power); n++; }
+                if (room != null && !room.UsesOutdoorTemperature) { AtmosphereBridge.RoomTemp(room, Mathf.Min(21f, room.Temperature + 8f * power)); n++; }
             }
             if (n > 0 && caster?.Spawned == true) MoteMaker.ThrowText(at.ToVector3Shifted(), map, "Transmuted", 2.5f);
             return n;

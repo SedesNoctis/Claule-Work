@@ -81,7 +81,8 @@ namespace Avir
         // air's momentum: seconds the wind holds between casts, share per stage, stages
         public float airMomentumSeconds = 10f, airMomentumStep = 0.15f;
         public bool magicBarsOnPane = true;
-        public bool magicAutoM = true, magicWorkDetail = true, paintedMire = true;
+        public bool magicAutoM = true, magicWorkDetail = true, paintedMire = true, atmoWind = true;
+        public float atmoWindScale = 1f;
         public int airMomentumStages = 3;
         // earth (and magma, bog) casts slower by this much
         public float earthCastFactor = 1.5f;
@@ -153,6 +154,8 @@ namespace Avir
             Scribe_Values.Look(ref magicBarsOnPane, "magicBarsOnPane", true);
             Scribe_Values.Look(ref magicAutoM, "magicAutoM", true);
             Scribe_Values.Look(ref paintedMire, "paintedMire", true);
+            Scribe_Values.Look(ref atmoWind, "atmoWind", true);
+            Scribe_Values.Look(ref atmoWindScale, "atmoWindScale", 1f);
             Scribe_Values.Look(ref magicWorkDetail, "magicWorkDetail", true);
             Scribe_Values.Look(ref airMomentumStep, "airMomentumStep", 0.15f);
             Scribe_Values.Look(ref airMomentumStages, "airMomentumStages", 3);
@@ -229,6 +232,10 @@ namespace Avir
                 "A caster with poor hands (skill under 6) in a work magic can do switches that work to \"M\" by himself: by magic while the Arcana lasts, by hand (if good) below its lower mark. A work the player took \"M\" off is left alone.");
             list.CheckboxLabeled("Arcane works in detail", ref o.magicWorkDetail,
                 "The arcane works split as finely as Complex Jobs splits the ordinary ones (smooth apart from build, stone cut apart from mining, smelting apart from craft, the mortuary apart from hauling, cooking apart from the stores). Off - merged as the vanilla work types.");
+            list.CheckboxLabeled("Hurricane winds by Atmosphere Overhaul", ref o.atmoWind,
+                "With Atmosphere Overhaul loaded, the hurricane and its whirls blow that mod's own wind, and its wind throws, knocks down and breaks with its own animations. Off - our own throws, as without it.");
+            list.Label("Strength of magic wind in Atmosphere Overhaul: x" + o.atmoWindScale.ToString("0.0"));
+            o.atmoWindScale = list.Slider(o.atmoWindScale, 0.3f, 3f);
             list.CheckboxLabeled("Painted mire", ref o.paintedMire,
                 "The mire of a bog spell drawn by the new painted pictures. Off - the old plain stand-in. Patches already lying change when the map is reloaded.");
             list.CheckboxLabeled("Hidden terms", ref o.magicHiddenTerms,

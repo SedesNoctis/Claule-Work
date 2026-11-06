@@ -200,7 +200,7 @@ namespace Avir.Magic
                 {
                     Room r = t.Cell.GetRoom(p.Map); if (r == null) return false;
                     foreach (Thing g in r.ContainedAndAdjacentThings.Where(x => x is Gas).ToList()) g.Destroy();
-                    if (r.Temperature > 32f) r.Temperature = Mathf.Max(21f, r.Temperature - 15f * WorkSpells.Now.S);
+                    if (r.Temperature > 32f) AtmosphereBridge.RoomTemp(r, Mathf.Max(21f, r.Temperature - 15f * WorkSpells.Now.S));
                     return true;
                 } },
             ["Avir_2Rainbow"] = new Work2 { y = SecondKind.Rainbow, cost = 5f, ticks = 200,
@@ -343,7 +343,7 @@ namespace Avir.Magic
         {
             if (knots.Count == 0 || Find.TickManager.TicksGame % 250 != 0) return;
             knots.RemoveAll(k => k.Value <= Find.TickManager.TicksGame || k.Key == null || k.Key.Dereferenced);
-            foreach (var k in knots) if (k.Key.Temperature < 21f) k.Key.Temperature = Mathf.Min(21f, k.Key.Temperature + 3f);
+            foreach (var k in knots) if (k.Key.Temperature < 21f) AtmosphereBridge.RoomTemp(k.Key, Mathf.Min(21f, k.Key.Temperature + 3f));
         }
     }
 

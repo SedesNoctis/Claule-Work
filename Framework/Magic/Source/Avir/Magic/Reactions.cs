@@ -71,6 +71,7 @@ namespace Avir.Magic
             bool hot = (b & (Brings.Heat | Brings.Fire)) != 0, water = (b & Brings.Water) != 0;
             foreach (IntVec3 c in cells.Where(x => x.InBounds(map)).Distinct().ToList())
             {
+                AtmosphereBridge.Touch(map, c, hot, water, power);   // Atmosphere Overhaul's air, if it is there (Fix167)
                 var things = c.GetThingList(map);
                 if (hot)
                 {

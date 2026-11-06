@@ -325,6 +325,9 @@ namespace Avir.Magic
         internal static void Apply(Pawn caster, Map map, List<RuneDef> verbs, List<IntVec3> cells, IntVec3 from, float power, RitualReading r)
         {
             if (cells.Count == 0) return;
+            // the wind of the spell is real wind in Atmosphere Overhaul's air (Fix167): it blows out from where it came
+            if (AtmosphereBridge.On)
+                foreach (IntVec3 c in cells) { Vector3 o = c.ToVector3Shifted() - from.ToVector3Shifted(); if (o.sqrMagnitude > 0.1f) AtmosphereBridge.Wind(map, c, new Vector2(o.x, o.z).normalized * Mathf.Min(AtmosphereBridge.MaxPush, 8f * power * AtmosphereBridge.Scale)); }
             foreach (RuneDef v in verbs)
             {
                 RitualReading rv = SpellMods.Verb(r, v);

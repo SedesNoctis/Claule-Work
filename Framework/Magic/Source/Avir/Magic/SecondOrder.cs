@@ -337,7 +337,14 @@ namespace Avir.Magic
                             IntVec3 w0 = c.cells.Count > 0 ? c.cells.RandomElement() : c.at;
                             F(c.map)?.AddWhirl(w0, by, c.power, c.hold ? 1800 : 900);
                         }
-                        if (AtmosphereBridge.On) foreach (IntVec3 x in c.cells) { Vector3 o = (x.ToVector3Shifted() - c.at.ToVector3Shifted()); if (o.sqrMagnitude > 0.1f) AtmosphereBridge.Wind(c.map, x, new Vector2(o.x, o.z).normalized * 12f * c.power); }
+                        if (AtmosphereBridge.On)
+                        {
+                            // a blast of real wind out from the middle, pushed again and again for a second and a half so it builds
+                            // up past that mod's throwing speed (it takes ~12 m/s a push)
+                            var cs = c.cells.ToList(); IntVec3 mid = c.aura ? by.Position : c.at; Map m0 = c.map; float pw = c.power;
+                            for (int k2 = 0; k2 < 6; k2++)
+                                F(m0)?.Later(1 + 15 * k2, () => { foreach (IntVec3 x in cs) { Vector3 o = x.ToVector3Shifted() - mid.ToVector3Shifted(); if (o.sqrMagnitude > 0.1f) AtmosphereBridge.Wind(m0, x, new Vector2(o.x, o.z).normalized * Mathf.Min(AtmosphereBridge.MaxPush, 10f * pw * AtmosphereBridge.Scale)); } });
+                        }
                     }
                     break;
                 case SecondKind.BallLightning:
@@ -548,6 +555,15 @@ namespace Avir.Magic
                 }
             if (fields.Count == 0) return;
             fields.RemoveAll(f => f.until <= now);
+            // the whirls blow real wind round themselves in Atmosphere Overhaul's air, four times a second, so it builds up
+            if (now % 15 == 0 && AtmosphereBridge.Throws)
+                foreach (Fld w in fields.Where(x => x.y == SecondKind.Hurricane && x.speed > 0f))
+                    foreach (IntVec3 x in w.cells)
+                    {
+                        Vector3 o = x.ToVector3Shifted() - w.center; o.y = 0f;
+                        Vector3 v = o.sqrMagnitude < 0.05f ? Vector3.zero : (new Vector3(-o.z, 0f, o.x).normalized * 0.85f - o.normalized * 0.3f);   // round, and a little inward
+                        AtmosphereBridge.Wind(map, x, new Vector2(v.x, v.z) * Mathf.Min(AtmosphereBridge.MaxPush, 11f * w.power * AtmosphereBridge.Scale));
+                    }
             if (now % 60 != 0) return;
             foreach (Fld f in fields)
             {
@@ -566,7 +582,7 @@ namespace Avir.Magic
                     if (!nc.InBounds(map) || nc.Impassable(map)) { f.dir = -f.dir; next = f.center + f.dir * f.speed; nc = next.ToIntVec3(); }
                     if (nc.InBounds(map)) f.center = next;
                     f.cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(f.center.ToIntVec3(), 2f, true).Where(x => x.InBounds(map)));
-                    if (AtmosphereBridge.On) foreach (IntVec3 x in f.cells) { Vector3 o = x.ToVector3Shifted() - f.center; AtmosphereBridge.Wind(map, x, new Vector2(-o.z, o.x).normalized * 8f * f.power); }
+
                     foreach (IntVec3 x in f.cells.InRandomOrder().Take(3)) FleckMaker.ThrowDustPuffThick(x.ToVector3Shifted(), map, 1.1f, new Color(0.8f, 0.86f, 0.92f, 0.6f));
                 }
                 foreach (IntVec3 c in f.cells)
@@ -579,7 +595,7 @@ namespace Avir.Magic
                         bool foe = f.owner == null || MagicFx.Foe(p, f.owner);
                         switch (f.y)
                         {
-                            case SecondKind.Hurricane: if (f.speed > 0f && p != f.owner && !p.Dead && Rand.Chance(0.55f)) Spin(f, p); break;   // the whirl spares no one but its maker
+                            case SecondKind.Hurricane: if (f.speed > 0f && !AtmosphereBridge.Throws && p != f.owner && !p.Dead && Rand.Chance(0.55f)) Spin(f, p); break;   // the whirl spares no one but its maker
                             case SecondKind.Inferno: if (foe) HealthUtility.AdjustSeverity(p, HediffDefOf.Heatstroke, 0.02f * f.power * (SecondOrder.Sealed(p) ? 2f : 1f)); break;
                             case SecondKind.Boil: if (foe && (p.health.hediffSet.HasHediff(WaterDefOf.Avir_Soaked) || Reactions.Wet(c, map))) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 1.5f * f.power * (SecondOrder.Sealed(p) ? 0.4f : 1.4f), 0f, -1f, f.owner)); break;
                             case SecondKind.Typhoon: if (foe) { WaterMagic.Soak(p, f.power); p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 1.5f * f.power * (SecondOrder.Sealed(p) ? 0.7f : 1.4f), 0f, -1f, f.owner)); if (Rand.Chance(0.3f)) SpellHurl.Throw(p, f.center.ToIntVec3(), 2, map, f.owner, f.power); } break;

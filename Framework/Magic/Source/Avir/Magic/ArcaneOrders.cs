@@ -508,7 +508,7 @@ namespace Avir.Magic
         {
             Room room = t.Cell.GetRoom(p.Map);
             if (room == null || room.UsesOutdoorTemperature) return false;
-            room.Temperature = Mathf.Min(21f, room.Temperature + (10f + 2f * Arcane.Stage(c, RuneKind.Fire, RuneKind.Air)) * WorkSpells.Now.S);
+            AtmosphereBridge.RoomTemp(room, Mathf.Min(21f, room.Temperature + (10f + 2f * Arcane.Stage(c, RuneKind.Fire, RuneKind.Air)) * WorkSpells.Now.S));
             FleckMaker.ThrowHeatGlow(t.Cell, p.Map, 2f);
             return true;
         }
