@@ -134,7 +134,7 @@ namespace Avir.Magic
             ["Avir_2Basalt"] = new Work2 { y = SecondKind.Volcano, cost = 8f, ticks = 300, desName = "Avir_2Basalt",
                 effect = (p, t, c) => { Spawn(Def("Avir_ChunkBasalt"), 1, t.Cell, p.Map); Spawn(Def("Avir_ChunkBasalt"), 1, t.Cell, p.Map); Unmark(p.Map, t.Cell, "Avir_2Basalt"); Fx(p.Map, t.Cell, MagicFx.EarthDust, 1.6f); return true; } },
             ["Avir_2Obsidian"] = new Work2 { y = SecondKind.Obsidian, cost = 10f, ticks = 360, desName = "Avir_2Obsidian",
-                effect = (p, t, c) => { Spawn(Def("Avir_ObsidianChunk"), 1 + (WorkSpells.Now.amplify > 0 ? 1 : 0), t.Cell, p.Map); Unmark(p.Map, t.Cell, "Avir_2Obsidian"); Gas_ScaldingSteam.Release(t.Cell, p.Map, 1); return true; } },
+                effect = (p, t, c) => { ThingDef ody = Def("Obsidian"); if (ody != null) Spawn(ody, 10 + (WorkSpells.Now.amplify > 0 ? 5 : 0), t.Cell, p.Map); else Spawn(Def("Avir_ObsidianChunk"), 1 + (WorkSpells.Now.amplify > 0 ? 1 : 0), t.Cell, p.Map); Unmark(p.Map, t.Cell, "Avir_2Obsidian"); Gas_ScaldingSteam.Release(t.Cell, p.Map, 1); return true; } },
             ["Avir_2Ash"] = new Work2 { y = SecondKind.Ash, cost = 6f, desName = "Avir_2Ash",
                 effect = (p, t, c) =>
                 {
@@ -528,7 +528,7 @@ namespace Avir.Magic
         private static void Items()
         {
             IntVec3 at = Verse.UI.MouseCell(); Map m = Find.CurrentMap;
-            foreach (string n in new[] { "Avir_LavaCore", "Avir_MarshGas", "Avir_ObsidianChunk", "Avir_Brick" })
+            foreach (string n in new[] { "Avir_LavaCore", "Avir_MarshGas", Works2.Def("Obsidian") != null ? "Obsidian" : "Avir_ObsidianChunk", "Avir_Brick" })
             { ThingDef d = Works2.Def(n); if (d == null) continue; Thing t = ThingMaker.MakeThing(d, d.MadeFromStuff ? GenStuff.DefaultStuffFor(d) : null); t.stackCount = Mathf.Min(10, d.stackLimit); GenPlace.TryPlaceThing(t, at, m, ThingPlaceMode.Near); }
             if (Works2.Clay != null) { Thing t = ThingMaker.MakeThing(Works2.Clay); t.stackCount = Mathf.Min(30, Works2.Clay.stackLimit); GenPlace.TryPlaceThing(t, at, m, ThingPlaceMode.Near); }
         }

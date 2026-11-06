@@ -24,7 +24,7 @@ namespace Avir.Magic
         {
             if (map == null || !at.IsValid) return;
             int ticks = Mathf.Clamp(Mathf.RoundToInt(600f * power), 300, 1800);
-            map.GetComponent<MapComponent_Partials>()?.spouts.Add(new MapComponent_Partials.Spout { center = at.ToVector3Shifted(), dir = Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * Vector3.forward, radius = Mathf.Clamp(spread, 2f, 4f), owner = caster, power = power, until = Find.TickManager.TicksGame + ticks });
+            map.GetComponent<MapComponent_Partials>()?.spouts.Add(new MapComponent_Partials.Spout { center = at.ToVector3Shifted(), dir = Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * Vector3.forward, radius = Mathf.Clamp(spread, 2f, 4f), owner = caster, power = power, until = Find.TickManager.TicksGame + ticks, sculpt = SpellSculpt.Active ? (SpellSculpt.Allies ? 2 : 1) : 0 });
             for (int i = 0; i < 6; i++) FleckMaker.ThrowDustPuffThick((at.ToVector3Shifted() + Rand.InsideUnitCircleVec3 * 1.5f), map, 2f, SandColor);
         }
 
@@ -115,7 +115,8 @@ namespace Avir.Magic
                 {
                     if (t is Pawn p)
                     {
-                        if (p == caster || p.Dead) continue;
+                        // who is struck - only the spell's shaping decides; unshaped, its own mage too (Fix189)
+                        if (p.Dead || !MagicFx.Foe(p, caster)) continue;
                         float q = pw * near;
                         if (!p.RaceProps.IsMechanoid)
                         {
@@ -155,7 +156,7 @@ namespace Avir.Magic
     /// <summary>The lasting partials (Fix184): sand spouts that walk, dust veils that keep themselves. Short-lived - not saved.</summary>
     public class MapComponent_Partials : MapComponent
     {
-        public class Spout { public Vector3 center, dir; public float radius, power; public Pawn owner; public int until; }
+        public class Spout { public Vector3 center, dir; public float radius, power; public Pawn owner; public int until, sculpt; }
         public class VeilField { public List<IntVec3> cells; public float power; public Pawn owner; public int until; }
         public readonly List<Spout> spouts = new List<Spout>();
         public readonly List<VeilField> veils = new List<VeilField>();
@@ -181,7 +182,7 @@ namespace Avir.Magic
             SecondFields.Wander(map, ref sp.center, ref sp.dir, 0.9f, lure?.Position ?? IntVec3.Invalid);
             float s = Partials.SpoutStrength(sp.power, map);
             var g = MapComponent_MagicWind.Blow(map, MapComponent_MagicWind.Shape.Round, sp.center, sp.radius, s, 64, sp.owner);
-            if (g != null) g.tint = Partials.SandColor;
+            if (g != null) { g.tint = Partials.SandColor; g.sculpt = sp.sculpt; }   // the spout keeps its spell's shaping
             if (AtmosphereBridge.Throws)
                 foreach (IntVec3 x in GenRadial.RadialCellsAround(sp.center.ToIntVec3(), sp.radius, true))
                 {
@@ -204,7 +205,7 @@ namespace Avir.Magic
             {
                 if (!c.InBounds(map)) continue;
                 foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList())
-                    if (p != sp.owner && MagicFx.Foe(p, sp.owner) && !p.Dead)
+                    if (!p.Dead && (sp.sculpt == 0 || sp.owner == null || (sp.sculpt == 1) != SpellSculpt.Own(p, sp.owner)))
                         p.TakeDamage(new DamageInfo(DamageDefOf.Scratch, 1.5f * sp.power * MapComponent_MagicWind.Held(p, 30f), 0f, -1f, sp.owner));
             }
             if (now % 60 == 0) FireSmoke.Puff(mid, map, 0.8f);

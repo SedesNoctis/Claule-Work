@@ -20,7 +20,7 @@ namespace Avir.Magic
     {
         // the wind with fire, gas, ash, water and lightning: see Carry
         public enum Shape { Out, Round, Front }
-        public class Gust { public Shape shape; public Vector3 at, dir; public float radius, strength; public int born, life; public Pawn owner; public bool charged, weather; public Color tint = Color.clear; }
+        public class Gust { public Shape shape; public Vector3 at, dir; public float radius, strength; public int born, life; public Pawn owner; public bool charged, weather; public Color tint = Color.clear; public int sculpt; }
 
         private readonly List<Gust> gusts = new List<Gust>();
         private readonly Dictionary<int, int> rest = new Dictionary<int, int>();   // a thing just moved is left alone a moment
@@ -60,6 +60,9 @@ namespace Avir.Magic
             if (c == null || strength <= 0f) return null;
             strength = Mathf.Min(strength, max);
             var g = new Gust { shape = shape, at = at, dir = dir.sqrMagnitude > 0f ? dir.normalized : Vector3.forward, radius = radius, strength = strength, born = Find.TickManager.TicksGame, life = Mathf.Max(10, life), owner = owner, charged = charged };
+            // a wind raised by a shaped spell keeps its shaping (Fix189): Selective Protection - it spares the caster's own,
+            // Selective Aid - it touches only them. Unshaped, it takes everyone, its own mage too (rule "Own blast")
+            g.sculpt = SpellSculpt.Active ? (SpellSculpt.Allies ? 2 : 1) : 0;
             c.gusts.Add(g);
             return g;
         }
@@ -197,6 +200,16 @@ namespace Avir.Magic
         private bool Resting(Thing t, int now) => rest.TryGetValue(t.thingIDNumber, out int until) && until > now;
         private void Rest(Thing t, int now, int ticks) => rest[t.thingIDNumber] = now + ticks;
 
+        /// <summary>Who a wind passes by: only those its spell's shaping spares (Fix189: before, it always spared its own mage
+        /// - against the rule; a mage keeps off their own wind with a ward, as anyone: a ward of the storm wholly, of the air
+        /// mostly, any other a quarter - Held).</summary>
+        private static bool Spared(Gust g, Pawn p)
+        {
+            if (g.sculpt == 0 || g.owner == null) return false;
+            bool own = SpellSculpt.Own(p, g.owner);
+            return g.sculpt == 1 ? own : !own;
+        }
+
         private void Act(Gust g, IntVec3 c, Vector3 w, float s, int now)
         {
             foreach (Thing t in c.GetThingList(map).ToList())
@@ -204,7 +217,7 @@ namespace Avir.Magic
                 if (t.Destroyed || Resting(t, now)) continue;
                 if (t is Pawn p)
                 {
-                    if (p == g.owner || p.Dead || !p.Spawned || SpellWards.Stops(p, false)) continue;
+                    if (p.Dead || !p.Spawned || Spared(g, p) || SpellWards.Stops(p, false)) continue;
                     float hold = Mathf.Sqrt(Mathf.Max(0.5f, p.BodySize));   // the heavier hold longer
                     float sp = s / hold * Held(p, s);
                     // the Avir fly: the wind is their element - they ride an ordinary wind (60% off), a hurricane less (25%)
@@ -377,7 +390,7 @@ namespace Avir.Magic
             if (g.charged && s > 20f)
                 foreach (Pawn p in here.OfType<Pawn>().ToList())
                 {
-                    if (p == g.owner || p.Dead) continue;
+                    if (p.Dead || Spared(g, p)) continue;
                     bool wet = p.health.hediffSet.HasHediff(WaterDefOf.Avir_Soaked) || Reactions.Wet(c, map);
                     bool metal = SpellBody.Of(p).metalArmour;
                     if ((wet || metal) && Rand.Chance(wet && metal ? 0.12f : 0.06f))
