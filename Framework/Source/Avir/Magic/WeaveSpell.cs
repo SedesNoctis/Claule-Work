@@ -111,6 +111,7 @@ namespace Avir.Magic
             // one after another, from the heart outward: each strikes where the one before it ended
             var order = MapComponent_SpellChain.Order(root);
             var pairs = Combos.Pairs(root);
+            var seconds2 = SecondOrder.Of(root);
             for (int k = 0; k < order.Count; k++)
             {
                 SpellCircle c = order[k];
@@ -130,7 +131,10 @@ namespace Avir.Magic
                     bool step = prev.verbs.Any(v => v.kind == RuneKind.Step), aura = prev.verbs.Any(v => v.kind == RuneKind.Aura);
                     where = step && !SpellMods.Pulls(order[k - 1].AsSchema()) ? "then, once the caster is there, round them: " : step || aura ? "then, by the caster: " : "then: ";
                 }
-                parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + where + (met ? Combos.Label(ck).CapitalizeFirst() + " (" + c.element.label + ")" : c.element.LabelCap) + " - " + one.main.TrimEnd('.'));
+                // a circle in a meeting of the second order is named by what the three made (Ash, Obsidian...)
+                string nameOf = met ? Combos.Label(ck).CapitalizeFirst() : c.element.LabelCap.ToString();
+                if (seconds2.TryGetValue(c, out SecondKind sy)) nameOf = SecondOrder.Label(sy).CapitalizeFirst() + " - " + Combos.Label(SecondOrder.PairOf(sy)) + " meeting " + SecondOrder.Third(sy).ToString().ToLower();
+                parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + where + nameOf + " (" + c.element.label + ")" + " - " + one.main.TrimEnd('.'));
                 // the order of its own runes, numbered by the circle when there are several
                 one.extras.RemoveAll(x => x.Key == "In turn");
                 string turns = SpellText.Turns(c.AsSchema());

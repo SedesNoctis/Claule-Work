@@ -612,7 +612,18 @@ namespace Avir.Magic
         private static readonly Color BindingColor = new Color(0.92f, 0.84f, 0.66f);
         /// <summary>Circles whose elements met: both wear the colour of what they made.</summary>
         private static readonly Dictionary<SpellCircle, ComboKind> met = new Dictionary<SpellCircle, ComboKind>();
-        private static Color ColorOf(SpellCircle c) => c.binding ? BindingColor : met.TryGetValue(c, out ComboKind k) ? Combos.ColorOf(k) : c.element?.color ?? new Color(0.85f, 0.78f, 0.62f);
+        private static Color ColorOf(SpellCircle c)
+        {
+            if (c.binding) return BindingColor;
+            if (seconds.TryGetValue(c, out SecondKind y)) return SecondOrder.ColorOf(y, SecondOrder.PairOf(y), SecondOrder.Third(y));
+            if (met.TryGetValue(c, out ComboKind k)) return Combos.ColorOf(k);
+            // a great circle of Life with an element inside takes its meeting's colour (the author's rule)
+            if (c.Great && LifeMagic.Is(c.element) && rootNow != null) { RuneKind lp = LifeMagic.PairOf(rootNow, c); if (lp != LifeMagic.None) return LifeMagic.PairColor(lp); }
+            if (c.element == null && !c.Great && rootNow?.ParentOf(c) is SpellCircle b && b.Great && LifeMagic.Is(b.element)) return b.element.color;
+            return c.element?.color ?? new Color(0.85f, 0.78f, 0.62f);
+        }
+        private static readonly Dictionary<SpellCircle, SecondKind> seconds = new Dictionary<SpellCircle, SecondKind>();
+        private static SpellCircle rootNow;
         private static Color Light(Color c, float k) => new Color(c.r + (1f - c.r) * k, c.g + (1f - c.g) * k, c.b + (1f - c.b) * k, 1f);
         private static Color Dark(Color c) => new Color(c.r * 0.28f, c.g * 0.28f, c.b * 0.28f, 0.92f);
 
@@ -641,6 +652,8 @@ namespace Avir.Magic
             orderOf.Clear();
             met.Clear();
             foreach (var kv in Combos.Pairs(s.weave)) met[kv.Key] = kv.Value;
+            seconds.Clear(); foreach (var kv in SecondOrder.Of(s.weave)) seconds[kv.Key] = kv.Value;
+            rootNow = s.weave;
             if (ord.Count > 1) for (int k = 0; k < ord.Count; k++) orderOf[ord[k]] = k + 1;
             float fit = Mathf.Min(area.width, area.height) * 0.47f / (Outer(root) * 1.06f);
             // a circle asked to be brought close: zoomed until it fills the view, moved to its centre
@@ -686,7 +699,12 @@ namespace Avir.Magic
         private static string NameOf(SpellCircle c)
         {
             if (c.binding) return "The binding - " + c.inner.Count + " round the heart";
-            if (c.Great) return "Great: " + (c.element != null ? c.element.LabelCap.ToString() : "no seal yet") + " (" + c.inner.Count + " inside)";
+            if (c.Great)
+            {
+                RuneKind lp = LifeMagic.Is(c.element) ? (rootNow != null ? LifeMagic.PairOf(rootNow, c) : LifeMagic.None) : LifeMagic.None;
+                string nm = lp != LifeMagic.None ? LifeMagic.PairName(lp) + " (Life + " + lp + ")" : c.element != null ? c.element.LabelCap.ToString() : "no seal yet";
+                return "Great: " + nm + " (" + c.inner.Count + " inside)";
+            }
             return c.element != null ? c.element.LabelCap.ToString() : "empty circle";
         }
 
@@ -1055,6 +1073,13 @@ namespace Avir.Magic
                     SpellEffect cfx = ComboText.Explain(selMet, sel.AsSchema());
                     cfx.details = fx0.details; fx0 = cfx;
                 }
+                // a small circle of Life (no element, inside a Life box) - read by Life's grammar, with its box's meeting
+                if (!whole && sel.element == null && !sel.Great && s.weave.ParentOf(sel) is SpellCircle lb && lb.Great && LifeMagic.Is(lb.element))
+                {
+                    LifeMagic.PairOfText = LifeMagic.PairOf(s.weave, lb);
+                    string pn = LifeMagic.PairName(LifeMagic.PairOfText);
+                    fx0.main = "A small circle of " + (pn ?? "Life") + ": " + WeaveSpell.LifeText(sel);
+                }
                 if (!whole) fx0.details = (fx0.details ?? "") + "\nThe whole spell: choose the outer rim (or click the sky).";
                 shownFx = fx0; shownSel = sel; shownWhole = whole; shownAt = Time.realtimeSinceStartup;
             }
@@ -1192,7 +1217,19 @@ namespace Avir.Magic
             if (sel.binding) return "The rim holds everything together. You, so far, hold nothing. Pick a circle.";
             if (all.All(c => c.element == null && !c.OwnRunes.Any())) return "An empty heart. Give it an element - any will do for a start. I'll wait. Not long.";
             if (sel.Great && sel.element == null) return "A great circle without its seal is a crown without a head. Life, Light, Time, Space or Darkness - on top.";
+            // a small circle with no element inside a great one is a small circle of that great element (the author's rule)
+            if (sel.element == null && !sel.Great && root.ParentOf(sel) is SpellCircle lbox && lbox.Great && LifeMagic.Is(lbox.element))
+                return sel.OwnRunes.Any() ? "A small circle of Life. It takes or it gives - make sure it knows which."
+                                          : "No element? Here it does not need one: inside Life it is Life. Tie a verb to Withering or Restoration.";
             if (sel.element == null) return "A circle with no heart is a nest with no egg. Put an element in the middle.";
+            if (sel.Great && LifeMagic.Is(sel.element))
+                switch (LifeMagic.PairOf(root, sel))
+                {
+                    case RuneKind.Fire: return "Living bombs. Charming. Do keep them away from your own - they will not keep away from them.";
+                    case RuneKind.Water: return "Blood, then. Bodies are only pools that walk about.";
+                    case RuneKind.Earth: return "Leaf, stone, emerald. Patience, and everything becomes jewellery.";
+                    case RuneKind.Air: return "Pestilence. The healer who makes you sick. How very honest.";
+                }
             if (all.Count >= 10) return "So many circles. Whoever holds this - I'd like to meet them. Briefly.";
             if (met.TryGetValue(sel, out ComboKind mk) && sel.OwnRunes.Any())
                 switch (mk)

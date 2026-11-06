@@ -135,7 +135,7 @@ namespace Avir.Magic
                 var kv = e.extras[i];
                 // hidden until found in play (SpellLore)
                 string hk = SpellLore.KeyOfPlaque(kv.Key);
-                if (hk != null && !SpellLore.Known(hk)) { e.extras[i] = new KeyValuePair<string, string>("Something hidden", SpellLore.Unknown); continue; }
+                if (hk != null && !SpellLore.Known(hk) && !Prefs.DevMode) { e.extras[i] = new KeyValuePair<string, string>("Something hidden", SpellLore.Unknown); continue; }
                 foreach (Term t in Terms)
                 {
                     Match m = t.match.Match(kv.Key);

@@ -143,6 +143,8 @@ namespace Avir.Magic
         public int outsideTicks;     // how long the Arcana has stood outside its band, above or below
         public float target = 0.5f;  // where the mage keeps it: past this, the excess is let out (vent)
         public bool vent = true;
+        /// <summary>Behaviour of the mage: when the core runs low, draw the charge of the worn artifacts back by itself.</summary>
+        public bool drawArtifacts;
         private int acc, lastGreatStage = -1;
 
         private MageBook book;
@@ -218,6 +220,7 @@ namespace Avir.Magic
             Scribe_Values.Look(ref outsideTicks, "outsideTicks");
             Scribe_Values.Look(ref target, "target", 0.5f);
             Scribe_Values.Look(ref vent, "vent", true);
+            Scribe_Values.Look(ref drawArtifacts, "drawArtifacts");
             Scribe_Deep.Look(ref book, "book");
             Scribe_Defs.Look(ref path, "path");
             Scribe_Collections.Look(ref log, "log", LookMode.Value);
@@ -267,6 +270,8 @@ namespace Avir.Magic
             }
             if (vent) MagicVent.Vent(this, hours);
             Band(out float lo, out float hi);
+            // the mage's own habit (set on the magic panel): below the lower mark, take the artifacts' charge back
+            if (drawArtifacts && Fill < lo && ArcanaIntake.Held(pawn) >= 1f) ArcanaIntake.Absorb(pawn);
             float f = Fill;
             Hediff great = pawn.health.hediffSet.GetFirstHediffOfDef(MagicDefOf.Avir_ArcaneGreatness);
             Hediff hollow = pawn.health.hediffSet.GetFirstHediffOfDef(MagicDefOf.Avir_ArcaneHollow);
@@ -333,21 +338,6 @@ namespace Avir.Magic
             if (!AvirMagic.On || pawn.Faction != Faction.OfPlayer) yield break;
             if (Find.Selector.NumSelected == 1) yield return new Gizmo_Arcana { core = this };
             if (Find.Selector.NumSelected == 1 && KnowsLife) yield return new Gizmo_Vita { core = this };
-            {
-                float held = ArcanaIntake.Held(pawn);
-                var draw = new Command_Action
-                {
-                    defaultLabel = "Draw from artifacts",
-                    defaultDesc = "Take the charge of the artifacts worn back into the core - half of it comes as Arcana. "
-                        + (ArcanaIntake.Avir(pawn) ? "The core fills to its edge; the rest goes into the essence." : "Only up to the edge of the reserve: what is past it stays in the artifacts.")
-                        + "\nHeld in the artifacts now: " + held.ToString("0") + " (" + (held * ArcanaIntake.FromArtifact).ToString("0") + " Arcana).",
-                    icon = ContentFinder<Texture2D>.Get("UI/Magic/ArcanaMage", false) ?? BaseContent.BadTex,
-                    action = () => { float g = ArcanaIntake.Absorb(pawn); Messages.Message(pawn.LabelShortCap + " drew " + g.ToString("0") + " Arcana from the artifacts.", pawn, MessageTypeDefOf.NeutralEvent, false); }
-                };
-                if (held < 1f) draw.Disable("No charge in the artifacts worn.");
-                else if (!ArcanaIntake.Avir(pawn) && arcana >= Capacity) draw.Disable("The reserve is full.");
-                yield return draw;
-            }
             if (pawn.MapHeld?.GetComponent<MapComponent_Auras>()?.all.Any(a => a.beam && a.caster == pawn) == true)
                 yield return new Command_Action
                 {

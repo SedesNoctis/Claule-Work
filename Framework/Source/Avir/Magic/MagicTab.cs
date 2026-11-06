@@ -121,22 +121,114 @@ namespace Avir.Magic
         private int page;
 
         /// <summary>The path of the mage: how they grow - levels and what each brings. Not laid out yet: the page waits.</summary>
+        private Vector2 pathScroll;
+        private float pathH;
+
+        /// <summary>The path of the mage: the core's level, then a scale for every element they work - its stage,
+        /// what the stage gives, how far to the next; Life with its store.</summary>
         private void DrawPath(Rect r, Hediff_ArcaneCore core)
         {
             GUI.color = Ink; Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(r.x, r.y, r.width, 34f), "The path of " + pawn.LabelShort);
-            Text.Font = GameFont.Small; GUI.color = InkSoft;
-            Widgets.Label(new Rect(r.x, r.y + 40f, r.width, r.height - 90f), core == null ? "No arcane core." : MageClass.Explain(core));
-            if (core == null) return;
+            Text.Font = GameFont.Small;
+            if (core == null) { GUI.color = InkSoft; Widgets.Label(new Rect(r.x, r.y + 40f, r.width, 30f), "No arcane core."); return; }
+            RuneDef main = MageClass.Main(core);
+            GUI.color = SpellGlyph.Ink(core.Sorcerer ? Hediff_ArcaneCore.SorcererColor : Hediff_ArcaneCore.MageColor);
+            Widgets.Label(new Rect(r.x, r.y + 32f, r.width, 24f), (core.Sorcerer ? "Sorcerer" : "Wizard") + " - main element: " + (main != null ? main.LabelCap.ToString() : "none yet, the first cast decides"));
+
+            // the core's level: one long bar to the next level
+            float all = MageClass.All(core);
+            int lv = MageClass.LevelOf(all);
+            float from = MageClass.ForLevel(lv), to = MageClass.ForLevel(lv + 1);
+            Rect lb = new Rect(r.x, r.y + 60f, r.width, 26f);
+            Widgets.FillableBar(lb, Mathf.Clamp01((all - from) / Mathf.Max(1f, to - from)), SolidColorMaterials.NewSolidColorTexture(new Color(0.78f, 0.6f, 0.22f)),
+                SolidColorMaterials.NewSolidColorTexture(new Color(0.12f, 0.1f, 0.08f, 0.6f)), false);
+            GUI.color = Color.white; Text.Anchor = TextAnchor.MiddleCenter;
+            Widgets.Label(lb, "Core level " + core.level + "   " + all.ToString("0") + " / " + to.ToString("0"));
+            Text.Anchor = TextAnchor.UpperLeft;
+            GUI.color = InkSoft;
+            Widgets.Label(new Rect(r.x, lb.yMax + 2f, r.width, 22f), "Free points of the path: " + core.points + "   ·   reserve " + Mathf.FloorToInt(core.Capacity) + " Arcana" + (core.reservePoints > 0 ? " (" + core.reservePoints + " point(s) in it)" : ""));
+
+            // the scales
+            Rect card = new Rect(r.x, lb.yMax + 28f, r.width, r.yMax - lb.yMax - 28f - 46f);
+            if (RitualArt.HasCard) RitualArt.CardAt(card); else Widgets.DrawBoxSolid(card, new Color(0.93f, 0.85f, 0.7f, 0.85f));
+            Rect area = card.ContractedBy(12f);
+            Rect view = new Rect(0f, 0f, area.width - 16f, pathH > 0f ? pathH : 600f);
+            RitualScroll.Begin(area, ref pathScroll, view);
+            float y = 0f, w = view.width;
+            var els = MagePath.Made.ToList();
+            RuneDef life = DefDatabase<RuneDef>.AllDefsListForReading.FirstOrDefault(x => x.role == RuneRole.Element && x.kind == RuneKind.Life);
+            if (life != null && !els.Contains(life) && core.KnowsLife) els.Add(life);
+            foreach (RuneDef e in els) y += Scale(new Rect(0f, y, w, 0f), core, e, e == main);
+            GUI.color = InkSoft; Text.Font = GameFont.Tiny;
+            y += 4f;
+            float th = Text.CalcHeight("A meeting of two elements is not a scale of its own: its experience goes to both, shared.", w);
+            Widgets.Label(new Rect(0f, y, w, th), "A meeting of two elements is not a scale of its own: its experience goes to both, shared.");
+            y += th;
+            Text.Font = GameFont.Small;
+            pathH = y + 8f;
+            Widgets.EndScrollView();
+
             GUI.color = Color.white;
             Rect b = new Rect(r.x, r.yMax - 40f, 320f, 34f);
             if (core.points > 0)
             {
                 if (Widgets.ButtonText(b, "Put a point into the reserve (+" + (100f * ArcanaIntake.PerPoint).ToString("0") + "%)")) ArcanaIntake.Invest(core);
             }
-            else { GUI.color = InkSoft; Widgets.Label(b, "No free point of the path."); }
-            if (core.reservePoints > 0) { GUI.color = InkSoft; Widgets.Label(new Rect(b.xMax + 12f, b.y + 7f, r.width - b.width - 12f, 24f), "In the reserve: " + core.reservePoints + " point(s)."); }
+            else { GUI.color = InkSoft; Widgets.Label(new Rect(b.x, b.y + 7f, b.width, 24f), "No free point of the path."); }
+            GUI.color = Color.white;
         }
+
+        /// <summary>One element's scale: the rune, its stage, a bar in its colour with the stage marks, and what the stage gives.</summary>
+        private float Scale(Rect r, Hediff_ArcaneCore core, RuneDef e, bool main)
+        {
+            float x = MageClass.XpIn(core, e.kind);
+            int st = MageClass.Stage(x);
+            bool top = st >= MageClass.StageAt.Length - 1;
+            float h = 70f;
+            Rect row = new Rect(r.x, r.y, r.width, h - 6f);
+            Color col = e.color;
+            Widgets.DrawBoxSolid(row, new Color(col.r, col.g, col.b, main ? 0.16f : 0.08f));
+            SpellGlyph.Draw(new Rect(row.x + 4f, row.y + 8f, 46f, 46f), e);
+            float tx = row.x + 58f, tw = row.width - 62f;
+            GUI.color = SpellGlyph.Ink(col); Text.Font = GameFont.Small;
+            Widgets.Label(new Rect(tx, row.y + 2f, tw * 0.5f, 24f), e.LabelCap + (main ? "  (main)" : ""));
+            Text.Anchor = TextAnchor.UpperRight; GUI.color = Ink;
+            Widgets.Label(new Rect(tx + tw * 0.5f, row.y + 2f, tw * 0.5f, 24f), MageClass.StageNames[st]);
+            Text.Anchor = TextAnchor.UpperLeft;
+            // the bar runs over the whole scale, Novice to Grandmaster; the marks are the stages
+            float max = MageClass.StageAt[MageClass.StageAt.Length - 1];
+            Rect bar = new Rect(tx, row.y + 24f, tw, 14f);
+            Widgets.DrawBoxSolid(bar, new Color(0.12f, 0.1f, 0.08f, 0.55f));
+            Widgets.DrawBoxSolid(new Rect(bar.x, bar.y, bar.width * Mathf.Clamp01(Pos(x) / Pos(max)), bar.height), new Color(col.r, col.g, col.b, 0.9f));
+            for (int i = 1; i < MageClass.StageAt.Length; i++)
+            {
+                float fx = bar.x + bar.width * Pos(MageClass.StageAt[i]) / Pos(max);
+                Widgets.DrawBoxSolid(new Rect(fx - 1f, bar.y - 2f, 2f, bar.height + 4f), i <= st ? new Color(1f, 0.86f, 0.4f) : new Color(0.25f, 0.2f, 0.15f));
+            }
+            TooltipHandler.TipRegion(bar, string.Join("\n", MageClass.StageNames.Select((n, i) => n + " - " + MageClass.StageAt[i].ToString("0"))));
+            GUI.color = InkSoft; Text.Font = GameFont.Tiny;
+            string next = top ? "the top of the scale" : x.ToString("0") + " / " + MageClass.StageAt[st + 1].ToString("0") + " to " + MageClass.StageNames[st + 1];
+            Widgets.Label(new Rect(tx, bar.yMax + 2f, tw, 18f), next + "   ·   power x" + MageClass.PowerAt[st].ToString("0.##") + ", slip x" + MageClass.SlipAt[st].ToString("0.##")
+                + ", cast x" + MageClass.CastAt[st].ToString("0.##") + ", learns x" + MageClass.Learns(core, e.kind).ToString("0.#"));
+            Text.Font = GameFont.Small;
+            if (LifeMagic.Is(e))
+            {
+                // the store of life under its scale
+                Rect vb = new Rect(tx, r.y + h - 4f, tw, 16f);
+                Widgets.DrawBoxSolid(vb, new Color(0.12f, 0.1f, 0.08f, 0.55f));
+                Widgets.DrawBoxSolid(new Rect(vb.x, vb.y, vb.width * Mathf.Clamp01(core.vita / Mathf.Max(1f, core.VitaMax)), vb.height), new Color(0.35f, 0.7f, 0.3f, 0.9f));
+                GUI.color = Color.white; Text.Font = GameFont.Tiny; Text.Anchor = TextAnchor.MiddleCenter;
+                Widgets.Label(vb, "Store of life " + Mathf.FloorToInt(core.vita) + " / " + Mathf.FloorToInt(core.VitaMax));
+                Text.Anchor = TextAnchor.UpperLeft; Text.Font = GameFont.Small;
+                h += 20f;
+            }
+            GUI.color = Color.white;
+            return h;
+        }
+
+        /// <summary>The scale is drawn by square root, so the first stages are not squeezed into a sliver.</summary>
+        private static float Pos(float xp) => Mathf.Sqrt(Mathf.Max(0f, xp));
 
         private void DrawMage(Rect r, Hediff_ArcaneCore core)
         {
@@ -168,6 +260,26 @@ namespace Avir.Magic
             bool v = core.vent;
             Widgets.CheckboxLabeled(vt, "Let the excess out (above the white mark)", ref v);
             core.vent = v;
+            // behaviour: the artifacts' charge - by itself when low, or now by hand (no gizmo: the author wants fewer of them)
+            float held = ArcanaIntake.Held(pawn);
+            vt = new Rect(r.x, vt.yMax + 2f, r.width - 116f, 24f);
+            bool da = core.drawArtifacts;
+            Widgets.CheckboxLabeled(vt, "Draw from worn artifacts when low", ref da);
+            core.drawArtifacts = da;
+            TooltipHandler.TipRegion(vt, "When the Arcana falls below the lower mark, the mage takes the charge of the artifacts worn back into the core - half of it comes as Arcana. "
+                + (ArcanaIntake.Avir(pawn) ? "The core fills to its edge; the rest goes into the essence." : "Only up to the edge of the reserve: what is past it stays in the artifacts.")
+                + "\nHeld in the artifacts now: " + held.ToString("0") + " (" + (held * ArcanaIntake.FromArtifact).ToString("0") + " Arcana).");
+            Rect now = new Rect(vt.xMax + 6f, vt.y, 110f, 24f);
+            bool can = held >= 1f && (ArcanaIntake.Avir(pawn) || core.arcana < core.Capacity);
+            GUI.color = can ? Color.white : new Color(1f, 1f, 1f, 0.45f);
+            if (Widgets.ButtonText(now, "Draw now", true, true, can))
+            {
+                float drawn = ArcanaIntake.Absorb(pawn);
+                Messages.Message(pawn.LabelShortCap + " drew " + drawn.ToString("0") + " Arcana from the artifacts.", pawn, MessageTypeDefOf.NeutralEvent, false);
+            }
+            TooltipHandler.TipRegion(now, held < 1f ? "No charge in the artifacts worn." : !can ? "The reserve is full." : "Take the artifacts' charge back now.");
+            GUI.color = Ink;
+            vt.width = r.width;
             // below: six blocks - the path, the Arcana coming in, the core, the casting, what steadies, what happened
             Rect card = new Rect(r.x, vt.yMax + 8f, r.width, r.yMax - vt.yMax - 8f);
             if (RitualArt.HasCard) RitualArt.CardAt(card); else Widgets.DrawBoxSolid(card, new Color(0.93f, 0.85f, 0.7f, 0.85f));

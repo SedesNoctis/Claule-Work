@@ -19,9 +19,9 @@ namespace Avir.Magic
         public static readonly string[] StageNames = { "Novice", "Apprentice", "Adept", "Expert", "Master", "Grandmaster" };
         public static readonly float[] StageAt = { 0f, 500f, 2000f, 5000f, 12000f, 25000f };
         // what each stage does to a spell of that element: strength, the chance of a slip, the time of the cast
-        private static readonly float[] PowerAt = { 0.85f, 0.95f, 1f, 1.1f, 1.2f, 1.3f };
-        private static readonly float[] SlipAt = { 1.2f, 1.05f, 1f, 0.9f, 0.8f, 0.7f };
-        private static readonly float[] CastAt = { 1.15f, 1.05f, 1f, 0.9f, 0.8f, 0.7f };
+        public static readonly float[] PowerAt = { 0.85f, 0.95f, 1f, 1.1f, 1.2f, 1.3f };
+        public static readonly float[] SlipAt = { 1.2f, 1.05f, 1f, 0.9f, 0.8f, 0.7f };
+        public static readonly float[] CastAt = { 1.15f, 1.05f, 1f, 0.9f, 0.8f, 0.7f };
 
         /// <summary>A born sorcerer starts as an adept in the element born with.</summary>
         public const float SorcererStart = 2000f;
