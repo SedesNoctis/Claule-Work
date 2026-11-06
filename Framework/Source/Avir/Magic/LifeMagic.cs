@@ -490,7 +490,7 @@ namespace Avir.Magic
             if (root == null) yield break;
             var untied = Links(root).SelectMany(g => { Read(g, out var u); return u; }).Distinct().ToList();
             if (untied.Count > 0)
-                yield return new KeyValuePair<string, string>("Untied verb of Life", "Arlie: \"" + Quip(root) + "\"\n"
+                yield return new KeyValuePair<string, string>("Untied Verb of Life", "Arlie: \"" + Quip(root) + "\"\n"
                     + string.Join(", ", untied.Select(k => k.ToString())) + " here is not tied to Withering or Restoration, and does nothing. In Life every verb and every beam is written with one of the two: Release + Withering, Beam + Restoration.");
         }
 

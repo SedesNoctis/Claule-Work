@@ -141,13 +141,13 @@ namespace Avir.Magic
             foreach (var g in smalls.GroupBy(c => c.element).Where(g => g.Key != null && g.Count() > 1))
                 e.extras.Insert(0, new KeyValuePair<string, string>(g.Key.LabelCap + " ×" + g.Count() + ": resonance", "Circles of the same element strengthen each other: +" + (25 * (g.Count() - 1)) + "% to each."));
             foreach (ComboKind ck in pairs.Values.Distinct()) e.extras.Insert(0, new KeyValuePair<string, string>(Combos.Label(ck).CapitalizeFirst() + ": two elements met", ComboText.Short(ck)));
-            if (Wraps(root, RuneKind.Life)) e.extras.Insert(0, new KeyValuePair<string, string>("Life wraps", "Friends within the spell's reach are mended as it strikes - out of the store of life."));
+            if (Wraps(root, RuneKind.Life)) e.extras.Insert(0, new KeyValuePair<string, string>("Life Wraps", "Friends within the spell's reach are mended as it strikes - out of the store of life."));
             foreach (RuneKind lk in LifeMagic.Circles(root).Select(g => LifeMagic.PairOf(root, g)).Where(k => k != LifeMagic.None).Distinct())
-                e.extras.Insert(0, new KeyValuePair<string, string>("Life meets " + lk.ToString().ToLower() + ": " + LifeMagic.PairName(lk), LifeMagic.PairText(lk)));
+                e.extras.Insert(0, new KeyValuePair<string, string>(LifeMagic.PairName(lk), LifeMagic.PairText(lk)));
             if (LifeMagic.Circles(root).Any())
             {
                 e.extras.Insert(0, new KeyValuePair<string, string>("Symbiosis", "Life makes nothing; it only moves. Withering fills the store of life, the other verbs give it away - with the store empty they give nothing."));
-                if (!LifeMagic.Links(root).Any(g => g.OwnRunes.Any(x => x.kind == RuneKind.Drain))) e.extras.Insert(0, new KeyValuePair<string, string>("Gives from the store", "No Withering here: this spell only spends the store of life a former spell filled."));
+                if (!LifeMagic.Links(root).Any(g => g.OwnRunes.Any(x => x.kind == RuneKind.Drain))) e.extras.Insert(0, new KeyValuePair<string, string>("Giving from the Store", "No Withering here: this spell only spends the store of life a former spell filled."));
             }
             // the price chip last, once
             var price = e.extras.Where(x => x.Key.StartsWith("Price")).ToList();
