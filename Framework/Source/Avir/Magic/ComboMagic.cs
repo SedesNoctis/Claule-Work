@@ -136,6 +136,16 @@ namespace Avir.Magic
     public class GameComponent_Combos : GameComponent
     {
         public HashSet<ComboKind> known = new HashSet<ComboKind>();
+        /// <summary>Meetings Arlie has already spoken of (Life's and the second order's): she says it the first time only.</summary>
+        public HashSet<string> said = new HashSet<string>();
+
+        public static void First(string key, Pawn by)
+        {
+            var c = Current.Game?.GetComponent<GameComponent_Combos>();
+            if (c == null || key == null || by == null || by.Faction != Faction.OfPlayer || c.said.Contains(key)) return;
+            c.said.Add(key);
+            Avir.Ritualistics.Arlia.Say(key);
+        }
         public GameComponent_Combos(Game g) { }
 
         public static void Made(ComboKind k, Pawn by)
@@ -155,6 +165,9 @@ namespace Avir.Magic
             var list = known.ToList();
             Scribe_Collections.Look(ref list, "known", LookMode.Value);
             if (Scribe.mode == LoadSaveMode.PostLoadInit) known = new HashSet<ComboKind>(list ?? new List<ComboKind>());
+            var sl = said.ToList();
+            Scribe_Collections.Look(ref sl, "said", LookMode.Value);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit) said = new HashSet<string>(sl ?? new List<string>());
         }
     }
 

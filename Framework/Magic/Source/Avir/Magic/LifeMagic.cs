@@ -116,6 +116,7 @@ namespace Avir.Magic
         {
             flows.TryGetValue(caster.thingIDNumber, out flow);
             pair = PairOf(root, g.Great ? g : root?.ParentOf(g));
+            if (pair != None) GameComponent_Combos.First("life" + pair, caster);
             try { Cast(caster, g, at, power, map); }
             finally { flows[caster.thingIDNumber] = flow; flow = 0f; pair = None; }
         }

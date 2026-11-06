@@ -93,6 +93,22 @@ namespace Avir.Ritualistics
             { "comboStorm", new[] { "Mind dressing up in metal?" } },
             { "comboHaze", new[] { "Can't see straight? Neither can they. That's the point." } },
             { "comboDust", new[] { "Eat dust. No, really - that's the spell." } },
+            // Life meeting an element (the author's lines)
+            { "lifeFire", new[] { "And I thought flames couldn't be any more fun! Gather 'round! It's usually a good strategy." } },
+            { "lifeWater", new[] { "Bah, Druids and their disgusting practices!" } },
+            { "lifeEarth", new[] { "You aim to charm your enemies with sculptures? Or do you aim to make sculptures out of your enemies? Either way, it's.. something." } },
+            { "lifeAir", new[] { "You know, I do enjoy the fact that we do not have to interact with each other." } },
+            // meetings of the second order (the author's lines; the rest are still to come)
+            { "secondInferno", new[] { "Well, I'd love a blast, but I suppose armour as a pan is cute too." } },
+            { "secondBoil", new[] { "A cauldron with no lid. Who's the soup?" } },
+            { "secondGeyser", new[] { "Ah, so-called progress is incoming." } },
+            { "secondLava", new[] { "Don't try to lick it, please." } },
+            { "secondVolcano", new[] { "So, are you eager to burn away some little castle?" } },
+            { "secondObsidian", new[] { "Some believe this and a bit of fire sends you right to the hells. Weird, right?" } },
+            { "secondAsh", new[] { "Breathe it in! Wait, no, don't." } },
+            { "secondDeluge", new[] { "Dance around and call a rain; or kill your sheep, or your.. What, did someone truly think that would call a rain?" } },
+            { "secondHurricane", new[] { "You spin their spines right round, right round. Dizzy yet? They are." } },
+            { "secondBallLightning", new[] { "Ride the lightning! Or maybe - don't?" } },
             { "fresh", new[] { "A clean sheet. Don't waste it.", "Fresh chalk, fresh mistakes. Try not to make too many." } },
             { "pin", new[] { "Oh, do you actually have an idea?", "Yes, initiative is good for studies." } },
             { "lessons", new[] { "In need of a master, huh?", "Pay attention now, I'd rather not repeat myself.", "It's good to know your limits." } },
@@ -110,6 +126,9 @@ namespace Avir.Ritualistics
 
         /// <summary>She says her piece about this - sharper each time she is made to repeat it. A passing remark can be
         /// given a shorter time on the page.</summary>
+        /// <summary>Her line for this key, if she has one (the spell editor shows it under the circles).</summary>
+        public static string LineFor(string key) => key != null && lines.TryGetValue(key, out string[] l) && l.Length > 0 ? l[0] : null;
+
         public static void Say(string key, float seconds = 0f)
         {
             if (!On || key == null || !lines.TryGetValue(key, out string[] l) || l.Length == 0) return;

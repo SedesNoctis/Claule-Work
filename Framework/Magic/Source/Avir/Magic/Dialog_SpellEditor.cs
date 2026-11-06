@@ -1230,13 +1230,13 @@ namespace Avir.Magic
                                           : "No element? Here it does not need one: inside Life it is Life. Tie a verb to Withering or Restoration.";
             if (sel.element == null) return "A circle with no heart is a nest with no egg. Put an element in the middle.";
             if (sel.Great && LifeMagic.Is(sel.element))
-                switch (LifeMagic.PairOf(root, sel))
-                {
-                    case RuneKind.Fire: return "Living bombs. Charming. Do keep them away from your own - they will not keep away from them.";
-                    case RuneKind.Water: return "Blood, then. Bodies are only pools that walk about.";
-                    case RuneKind.Earth: return "Leaf, stone, emerald. Patience, and everything becomes jewellery.";
-                    case RuneKind.Air: return "Pestilence. The healer who makes you sick. How very honest.";
-                }
+            {
+                RuneKind lp = LifeMagic.PairOf(root, sel);
+                string ll = lp != LifeMagic.None ? Avir.Ritualistics.Arlia.LineFor("life" + lp) : null;
+                if (ll != null) return ll;
+            }
+            // a meeting of the second order: her line for it, where the author has written one
+            if (seconds.TryGetValue(sel, out SecondKind sy2) && Avir.Ritualistics.Arlia.LineFor("second" + sy2) is string l2) return l2;
             if (all.Count >= 10) return "So many circles. Whoever holds this - I'd like to meet them. Briefly.";
             if (met.TryGetValue(sel, out ComboKind mk) && sel.OwnRunes.Any())
                 switch (mk)
