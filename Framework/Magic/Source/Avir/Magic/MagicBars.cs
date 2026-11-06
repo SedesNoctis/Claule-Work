@@ -19,7 +19,15 @@ namespace Avir.Magic
 
         public class Scale { public string key, label, tip; public float value, max; public Color fill; }
 
-        private const float ArcanaH = 64f, ScaleH = 26f, Gap = 3f;
+        private const float ArcanaH = 84f, ScaleH = 30f, Gap = 2f;
+        // the slim scales (Лист 26): the ends keep their shape, the length stretches; the band the bar lies on (measured)
+        private static readonly float[] SlimCutsF = { 0f, 0.12f, 0.88f, 1f };
+        private static readonly bool[] SlimStretch = { false, true, false };
+        private static readonly Dictionary<string, Vector2> Band = new Dictionary<string, Vector2>
+        {
+            { "Life", new Vector2(0.236f, 0.640f) }, { "WildFlame", new Vector2(0.258f, 0.667f) }, { "Blood", new Vector2(0.268f, 0.670f) },
+            { "Emerald", new Vector2(0.217f, 0.707f) }, { "Pestilence", new Vector2(0.233f, 0.640f) },
+        };
         private static readonly Dictionary<string, float> shownY = new Dictionary<string, float>();
         private static int pawnShown = -1;
         private static readonly System.Reflection.PropertyInfo tabRect = AccessTools.Property(typeof(InspectTabBase), "TabRect");
@@ -89,10 +97,17 @@ namespace Avir.Magic
             Rect bar;
             if (frame != null)
             {
-                // its own slim plaque (Лист 27): the window for the bar is 8-92% across, 25-75% down
-                bar = new Rect(r.x + r.width * 0.08f, r.y + r.height * 0.25f, r.width * 0.84f, r.height * 0.5f);
-                Widgets.FillableBar(bar, Mathf.Clamp01(sc.value / sc.max), fill, empty, false);
-                GUI.DrawTexture(r, frame, ScaleMode.StretchToFill);
+                // its own slim plaque: the band has no hole - the fill lies over it, half see-through, so its pattern shows
+                float[] cuts = SlimCutsF.Select(f => f * frame.width).ToArray();
+                PlaqueArt.Draw(r, frame, cuts, SlimStretch);
+                Vector2 bd = Band.TryGetValue(sc.key, out Vector2 b0) ? b0 : new Vector2(0.25f, 0.65f);
+                float x0 = PlaqueArt.MapX(r, frame, cuts, SlimStretch, 0.12f * frame.width), x1 = PlaqueArt.MapX(r, frame, cuts, SlimStretch, 0.88f * frame.width);
+                float y0 = r.y + r.height * bd.x, y1 = r.y + r.height * bd.y, pad = (y1 - y0) * 0.12f;
+                bar = new Rect(x0, y0 + pad, x1 - x0, y1 - y0 - 2f * pad);
+                GUI.color = new Color(0f, 0f, 0f, 0.35f); GUI.DrawTexture(bar, BaseContent.WhiteTex);
+                GUI.color = new Color(sc.fill.r, sc.fill.g, sc.fill.b, 0.72f);
+                GUI.DrawTexture(new Rect(bar.x, bar.y, bar.width * Mathf.Clamp01(sc.value / sc.max), bar.height), BaseContent.WhiteTex);
+                GUI.color = Color.white;
             }
             else
             {

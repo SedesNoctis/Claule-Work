@@ -490,14 +490,15 @@ namespace Avir.Magic
         private static Texture2D LongMage { get { Look(); return longMage; } }
         private static Texture2D LongSorc { get { Look(); return longSorc; } }
 
-        // the long plaque over the pawn's panel (its own art, Лист 26): ornaments at the ends and the middle, plain lengths
-        // between them stretch; the window for the bar is 10-90% across, 38-74% down, the numbers sit in it
-        private static readonly float[] LongCuts = { 0f, 0.15f, 0.42f, 0.58f, 0.85f, 1f };
+        // the long plaque over the pawn's panel (its own art, Лист 26): ornaments at the ends and the crest in the middle
+        // keep their shape, the plain lengths between them stretch; the window is cut by the art (measured)
+        private static readonly float[] LongCuts = { 0f, 0.13f, 0.33f, 0.67f, 0.87f, 1f };
         private void DrawLong(Rect r, Texture2D art, bool sorc)
         {
             float[] cuts = LongCuts.Select(f => f * art.width).ToArray();
             float X(float frac) => PlaqueArt.MapX(r, art, cuts, Stretch, frac * art.width);
-            Rect slot = new Rect(X(0.10f), r.y + r.height * 0.38f, X(0.90f) - X(0.10f), r.height * 0.36f);
+            Rect slot = sorc ? new Rect(X(0.094f), r.y + r.height * 0.46f, X(0.906f) - X(0.094f), r.height * 0.245f)
+                             : new Rect(X(0.097f), r.y + r.height * 0.447f, X(0.902f) - X(0.097f), r.height * 0.24f);
             Widgets.FillableBar(slot, Mathf.Clamp01(core.Fill), sorc ? SorcFill : MageFill, Empty, false);
             core.Band(out float lo, out float hi);
             Texture2D mark = sorc ? Black : Gold;
@@ -505,8 +506,8 @@ namespace Avir.Magic
             GUI.DrawTexture(new Rect(slot.x + slot.width * hi - 1f, slot.y, 2f, slot.height), mark);
             if (core.vent) GUI.DrawTexture(new Rect(slot.x + slot.width * core.target - 1f, slot.y - 2f, 2f, slot.height + 4f), White);
             PlaqueArt.Draw(r, art, cuts, Stretch);
-            Text.Font = GameFont.Small; Text.Anchor = TextAnchor.MiddleCenter; GUI.color = new Color(0.95f, 0.92f, 0.86f);
-            Widgets.Label(slot, "Arcana " + Mathf.FloorToInt(core.arcana) + " / " + Mathf.FloorToInt(core.Capacity));
+            Text.Font = slot.height >= 21f ? GameFont.Small : GameFont.Tiny; Text.Anchor = TextAnchor.MiddleCenter; GUI.color = new Color(0.95f, 0.92f, 0.86f);
+            Widgets.Label(new Rect(slot.x, slot.y - 2f, slot.width, slot.height + 4f), "Arcana " + Mathf.FloorToInt(core.arcana) + " / " + Mathf.FloorToInt(core.Capacity));
             GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft;
             if (Mouse.IsOver(slot) && Event.current.type == EventType.MouseDown && Event.current.button == 0)
             { core.target = Mathf.Clamp01((Event.current.mousePosition.x - slot.x) / slot.width); core.vent = true; Event.current.Use(); }

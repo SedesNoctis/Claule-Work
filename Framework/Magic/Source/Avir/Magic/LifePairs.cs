@@ -35,13 +35,14 @@ namespace Avir.Magic
         }
 
         /// <summary>A burst of living flame round a cell: petals of green-gold fire, not an explosion of fire.</summary>
-        public static void Burst(IntVec3 at, Map map, Pawn owner, float power, bool heart, Pawn carrier)
+        public static void Burst(IntVec3 at, Map map, Pawn owner, float power, bool heart, Pawn carrier, int fed = 0)
         {
             if (map == null) return;
-            for (int i = 0; i < 6; i++) FleckMaker.ThrowFireGlow(at.ToVector3Shifted() + new Vector3(Rand.Range(-0.8f, 0.8f), 0f, Rand.Range(-0.8f, 0.8f)), map, 0.7f);
+            float rad = 1.5f + 0.6f * fed;   // a fed spark bursts wider
+            for (int i = 0; i < 6 + 3 * fed; i++) FleckMaker.ThrowFireGlow(at.ToVector3Shifted() + new Vector3(Rand.Range(-rad, rad) * 0.6f, 0f, Rand.Range(-rad, rad) * 0.6f), map, 0.7f + 0.2f * fed);
             FleckMaker.ThrowDustPuffThick(at.ToVector3Shifted(), map, 1.4f, new Color(0.85f, 0.85f, 0.3f, 0.6f));
             float got = 0f;
-            foreach (Pawn q in GenRadial.RadialDistinctThingsAround(at, map, 1.5f, true).OfType<Pawn>().Where(Living).ToList())
+            foreach (Pawn q in GenRadial.RadialDistinctThingsAround(at, map, rad, true).OfType<Pawn>().Where(Living).ToList())
             {
                 if (q.Dead) continue;
                 float amt = (q == carrier ? 0.4f : 1f) * power;
@@ -50,6 +51,20 @@ namespace Avir.Magic
             }
             Hediff_ArcaneCore core = owner != null ? Mages.Core(owner) : null;
             if (core != null && got > 0f) core.AddTo(RuneKind.Fire, got * 0.5f);
+        }
+
+        /// <summary>A spark of this mage in this body grows: x1.5 and +4 x power, one leap more, renewed; three times at most.</summary>
+        public static bool FeedSpark(Pawn q, Pawn caster, float power)
+        {
+            Hediff h = Seeded != null ? q.health.hediffSet.GetFirstHediffOfDef(Seeded) : null;
+            HediffComp_WildSeed c = h?.TryGetComp<HediffComp_WildSeed>();
+            if (c == null || c.heart || c.owner != caster || c.fed >= HediffComp_WildSeed.MaxFed) return false;
+            c.fed++;
+            c.power = c.power * 1.5f + 4f * power;
+            c.jumps = Mathf.Min(c.jumps + 1, 6);
+            c.Renew();
+            if (q.Spawned) for (int i = 0; i < 4; i++) FleckMaker.ThrowFireGlow(q.DrawPos + new Vector3(Rand.Range(-0.4f, 0.4f), 0f, Rand.Range(-0.4f, 0.4f)), q.Map, 0.9f + 0.3f * c.fed);
+            return true;
         }
 
         // ================================================================== Blood: the body is a pool
@@ -207,11 +222,16 @@ namespace Avir.Magic
                         {
                             Hediff h = Seeded != null ? q.health.hediffSet.GetFirstHediffOfDef(Seeded) : null;
                             HediffComp_WildSeed c = h?.TryGetComp<HediffComp_WildSeed>();
-                            if (c != null && c.owner == caster) { Burst(q.Position, map, caster, c.power, c.heart, q); q.health.RemoveHediff(h); }
+                            if (c != null && c.owner == caster) { Burst(q.Position, map, caster, c.power, c.heart, q, c.fed); q.health.RemoveHediff(h); }
                         }
                     if (act.verb == RuneKind.Growth)
+                    {
                         foreach (IntVec3 c in GenRadial.RadialCellsAround(at, r, true).Where(c => c.InBounds(map) && c.GetPlant(map) != null))
                             MapComponent_WildSeeds.Of(map)?.Sow(c, caster, 6f * power, false);
+                        // Growth feeds the sparks already sown (the author: strengthen the burst after the fact): every spark
+                        // of this mage near grows - stronger, one leap more, alight longer; three feedings at most
+                        foreach (Pawn q in Area(at, r * 2f + 2f, map).ToList()) FeedSpark(q, caster, power);
+                    }
                     if (act.verb == RuneKind.Step) Seed(caster, caster, 6f * power, false, 3);
                     if (act.verb == RuneKind.Hold) foreach (Pawn q in area) MagicFx.Give(q, H("Avir_Entangled"), Mathf.RoundToInt(600f * power));
                     break;
@@ -339,10 +359,12 @@ namespace Avir.Magic
     public class HediffComp_WildSeed : HediffComp
     {
         public Pawn owner; public float power; public bool heart; public int jumps;
+        /// <summary>How many times Growth has fed this spark (FeedSpark); the burst grows with it.</summary>
+        public int fed; public const int MaxFed = 3;
         private int until, check;
         public void Renew() => until = Find.TickManager.TicksGame + GenDate.TicksPerHour / 2;
         public override bool CompShouldRemove => Find.TickManager.TicksGame > until && until > 0;
-        public override string CompLabelInBracketsExtra => heart ? "heart" : "spark";
+        public override string CompLabelInBracketsExtra => heart ? "heart" : fed > 0 ? "spark, fed " + fed + "x" : "spark";
 
         public override void CompPostTickInterval(ref float severityAdjustment, int delta)
         {
@@ -369,7 +391,7 @@ namespace Avir.Magic
             Pawn touched = GenAdj.CellsAdjacent8Way(p).Where(c => c.InBounds(map)).SelectMany(c => c.GetThingList(map).OfType<Pawn>())
                 .FirstOrDefault(q => q != p && !q.Dead && q.RaceProps.IsFlesh && !q.health.hediffSet.HasHediff(parent.def));
             if (touched == null) return;
-            LifeMagic.Burst(touched.Position, map, owner, power, heart, p);
+            LifeMagic.Burst(touched.Position, map, owner, power, heart, p, fed);
             if (jumps > 0 && !touched.Dead) LifeMagic.Seed(touched, owner, power * 0.7f, heart, jumps - 1);
             if (!p.Dead) p.health.RemoveHediff(parent);
         }
@@ -396,7 +418,7 @@ namespace Avir.Magic
         public override void CompExposeData()
         {
             Scribe_References.Look(ref owner, "owner");
-            Scribe_Values.Look(ref power, "power"); Scribe_Values.Look(ref heart, "heart"); Scribe_Values.Look(ref jumps, "jumps"); Scribe_Values.Look(ref until, "until");
+            Scribe_Values.Look(ref power, "power"); Scribe_Values.Look(ref heart, "heart"); Scribe_Values.Look(ref jumps, "jumps"); Scribe_Values.Look(ref until, "until"); Scribe_Values.Look(ref fed, "fed");
         }
     }
 
