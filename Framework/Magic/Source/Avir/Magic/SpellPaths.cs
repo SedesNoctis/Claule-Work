@@ -96,7 +96,6 @@ namespace Avir.Magic
             if (map == null) return;
             int ticks = aura ? AuraTicks : ReleaseTicks;
             IEnumerable<IntVec3> area = GenRadial.RadialCellsAround(at, Mathf.Min(radius, GenRadial.MaxRadialPatternRadius - 1f), true).Where(c => c.InBounds(map));
-            if (aura) area = area.Where(c => c != caster.Position && !c.AdjacentTo8Way(caster.Position));
             if (SpellSculpt.Active)
             {
                 var under = new HashSet<IntVec3>();

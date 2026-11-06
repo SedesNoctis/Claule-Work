@@ -29,6 +29,38 @@
   </JobDef>
 
   <WorkGiverDef>
+    <defName>Avir_ArcaneHunt</defName>
+    <label>hunt by magic</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneHunt</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>hunt</verb>
+    <gerund>hunting by magic</gerund>
+    <priorityInType>60</priorityInType>
+    <requiredCapacities><li>Sight</li><li>Moving</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_ArcaneHunt</defName>
+    <driverClass>Avir.Magic.JobDriver_ArcaneHunt</driverClass>
+    <reportString>hunting TargetA by magic.</reportString>
+  </JobDef>
+
+  <WorkGiverDef>
+    <defName>Avir_ArcaneFish</defName>
+    <label>fish by magic</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneFish</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>fish</verb>
+    <gerund>fishing by magic</gerund>
+    <priorityInType>55</priorityInType>
+    <requiredCapacities><li>Manipulation</li><li>Sight</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_ArcaneFish</defName>
+    <driverClass>Avir.Magic.JobDriver_ArcaneFish</driverClass>
+    <reportString>drawing fish out of the water by magic.</reportString>
+  </JobDef>
+
+  <WorkGiverDef>
     <defName>Avir_MagicClean</defName>
     <label>wash the floor by water</label>
     <giverClass>Avir.Magic.WorkGiver_MagicClean</giverClass>
@@ -91,7 +123,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_RaiseRock</defName>
-    <texturePath>UI/Designators/SmoothSurface</texturePath>
+    <texturePath>Designations/SmoothSurface</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -232,19 +264,19 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_ArcaneDrill</defName>
-    <texturePath>UI/Designations/Mine</texturePath>
+    <texturePath>Designations/Mine</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
   <DesignationDef>
     <defName>Avir_ArcaneSmooth</defName>
-    <texturePath>UI/Designations/SmoothSurface</texturePath>
+    <texturePath>Designations/SmoothSurface</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
   <DesignationDef>
     <defName>Avir_ArcaneGrowth</defName>
-    <texturePath>UI/Designations/Harvest</texturePath>
+    <texturePath>Designations/HarvestPlant</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -261,11 +293,14 @@
       <li>Avir.Magic.Designator_ArcaneGrowth</li>
       <li>Avir.Magic.Designator_ArcaneEnrich</li>
       <li>Avir.Magic.Designator_ArcaneWater</li>
+      <li>Avir.Magic.Designator_ArcaneHotSpring</li>
       <li>Avir.Magic.Designator_ArcaneStone</li>
       <li>Avir.Magic.Designator_2RaiseGeyser</li>
       <li>Avir.Magic.Designator_2SealGeyser</li>
       <li>Avir.Magic.Designator_2SmeltItems</li>
       <li>Avir.Magic.Designator_2LavaCore</li>
+      <li>Avir.Magic.Designator_2LavaPool</li>
+      <li>Avir.Magic.Designator_2LavaSet</li>
       <li>Avir.Magic.Designator_2Basalt</li>
       <li>Avir.Magic.Designator_2Obsidian</li>
       <li>Avir.Magic.Designator_2Ash</li>
@@ -301,7 +336,28 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_ArcaneEnrich</defName>
-    <texturePath>UI/Designations/Harvest</texturePath>
+    <texturePath>Designations/HarvestPlant</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneHotSpring</defName>
+    <label>warm a hot spring</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneHotSpring</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>warm</verb>
+    <gerund>warming water into a hot spring</gerund>
+    <priorityInType>8</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_ArcaneHotSpring</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>warming the water into a hot spring.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_ArcaneHotSpring</defName>
+    <texturePath>Designations/HarvestPlant</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -322,7 +378,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_ArcaneWater</defName>
-    <texturePath>UI/Designations/Harvest</texturePath>
+    <texturePath>Designations/HarvestPlant</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -343,7 +399,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_ArcaneStone</defName>
-    <texturePath>UI/Designations/Mine</texturePath>
+    <texturePath>Designations/Mine</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>

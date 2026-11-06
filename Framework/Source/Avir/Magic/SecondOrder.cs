@@ -101,7 +101,7 @@ namespace Avir.Magic
                 case SecondKind.Inferno: return "Dry heat, no steam: it dries everything in reach, strips the wet and water wards, and cooks those sealed in armour twice as fast (the heat has nowhere to go).";
                 case SecondKind.Boil: return "Boiling water: everything wet in reach boils - the soaked and those standing in water are scalded every second; the dry are spared. Held, it is a cauldron.";
                 case SecondKind.Geyser: return "Boiling mud and steam burst from the ground in turn, throwing whoever stands over them. Beside a natural geyser it is stronger.";
-                case SecondKind.Typhoon: return "A whirl of boiling rain that walks: it scalds, soaks and throws whatever it crosses.";
+                case SecondKind.Typhoon: return "A whirl of boiling rain that walks, raining under itself: it soaks first and then the boiling rain bites the soaked half again as hard (its own wound, from above); now and then a jet strikes and throws.";
                 case SecondKind.Lava: return "Lava: it runs further and burns harder than magma, and before it is gone it cools into magma, which then goes its own way.";
                 case SecondKind.Volcano: return "Fire inside stone: the ground cracks, and a heartbeat later stones and magma burst up from below - where armour is thinnest. With Lift a basalt pillar rises under the foe and holds them up there until it falls.";
                 case SecondKind.Obsidian: return "Magma quenched: a burst of steam and black glass, sharp and brittle.";
@@ -205,7 +205,7 @@ namespace Avir.Magic
             if (!acts && (!ctx.restore || (y != SecondKind.Boil && y != SecondKind.Geyser && y != SecondKind.Mudflow))) return;
             ctx.breadth = r.breadth;
             ctx.radius = FireMagic.PointRadius(r) * (ctx.growth ? 1.5f : 1f);
-            if (ctx.aura) ctx.cells = FireMagic.Point(caster.Position, map, SpellAura.Pulsing ? SpellAura.PulseRadius : ctx.radius + 1.5f).Where(c => c != caster.Position).ToList();
+            if (ctx.aura) ctx.cells = FireMagic.Point(caster.Position, map, SpellAura.Pulsing ? SpellAura.PulseRadius : ctx.radius + 1.5f).ToList();   // the mage's own cell too (Own Blast; Fix190)
             else if (ctx.beam) ctx.cells = FireMagic.Beam(caster.Position, ctx.at, map, r.breadth).Where(c => c != caster.Position).ToList();
             else if (ctx.shape) ctx.cells = FireMagic.Wall(caster.Position, ctx.at, map, 5 + 2 * r.breadth);
             else ctx.cells = FireMagic.Point(ctx.at, map, ctx.radius);
@@ -216,7 +216,7 @@ namespace Avir.Magic
             foreach (SpellHurl f in SpellHurl.Flying.ToList())
                 if (f.Spawned && f.Map == map && f.FlyingPawn != null && !all.Contains(f.FlyingPawn) && (cellSet.Contains(f.DestinationPos.ToIntVec3()) || cellSet.Contains(f.Position))) all.Add(f.FlyingPawn);
             ctx.foes = all.Where(p => MagicFx.Foe(p, caster)).ToList();
-            ctx.own = all.Where(p => p == caster || !p.HostileTo(caster)).ToList();
+            ctx.own = all.Where(p => SpellSculpt.Own(p, caster)).ToList();
             SpellLore.Learn("Second:" + y);
             // it shows: its name over the place once a cast, and its colour over the ground it takes
             if (signedAt != Find.TickManager.TicksGame) { signedAt = Find.TickManager.TicksGame; MoteMaker.ThrowText(ctx.at.ToVector3Shifted(), map, Label(y).CapitalizeFirst() + "!", ColorOf(y), 3.5f); }
@@ -273,7 +273,7 @@ namespace Avir.Magic
                 case SecondKind.Lava:
                     {
                         var where = c.beam ? FireMagic.Beam(by.Position, c.at + (c.at - by.Position), c.map, c.breadth).Where(x => x.InBounds(c.map) && x != by.Position).ToList()
-                                  : c.shape ? c.cells : FireMagic.Point(c.aura ? by.Position : c.at, c.map, c.radius * 2f).Where(x => x != by.Position && !x.AdjacentTo8Way(by.Position)).ToList();
+                                  : c.shape ? c.cells : FireMagic.Point(c.aura ? by.Position : c.at, c.map, c.radius * 2f).ToList();   // round the mage too (Own Blast; Fix190)
                         int life = c.hold ? 5000 : 3000;
                         foreach (IntVec3 x in where) if (Rand.Chance(c.aura ? 0.4f : 0.7f)) MagmaPool.Pour(x, c.map, by, c.power * 1.3f, life, c.shape, 2500, true);   // it sets into basalt only when shaped
                         // the magma the pair poured turns to lava too - the whole place is lava, not magma with a rim
@@ -500,6 +500,24 @@ namespace Avir.Magic
             F(map)?.Later(60, () => Rift(map, at, power, by, seconds - 1, size));
         }
 
+        /// <summary>The typhoon's own blow (the author, Fix190): boiling rain - not steam's scald. It soaks first, and on the
+        /// soaked it bites half again as hard; it falls from above (head and shoulders first); a sealed suit keeps most of
+        /// it off. Now and then a jet of the whirl strikes like a fist and throws.</summary>
+        public static void BoilingRain(Pawn p, float power, Pawn by, Map map, IntVec3 centre)
+        {
+            if (p == null || p.Dead) return;
+            bool wet = p.health.hediffSet.HasHediff(WaterDefOf.Avir_Soaked);
+            WaterMagic.Soak(p, power);
+            DamageDef rain = DefDatabase<DamageDef>.GetNamedSilentFail("Avir_BoilingRain") ?? DamageDefOf.Burn;
+            BodyPartRecord top = p.health.hediffSet.GetNotMissingParts().Where(b => b.height == BodyPartHeight.Top && b.depth == BodyPartDepth.Outside).RandomElementWithFallback();
+            p.TakeDamage(new DamageInfo(rain, 1.6f * power * (wet ? 1.5f : 1f) * (Sealed(p) ? 0.4f : 1f), 0f, -1f, by, top));
+            if (!p.Dead && Rand.Chance(0.25f))
+            {
+                p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 3f * power, 0f, -1f, by));
+                if (!p.Dead && !SpellWards.HoldsWind(p)) SpellHurl.Throw(p, centre, 2, map, by, power);
+            }
+        }
+
         private static void Burst(Map map, IntVec3 at, float power, Pawn by)
         {
             if (map == null || !at.InBounds(map)) return;
@@ -616,6 +634,12 @@ namespace Avir.Magic
                     IntVec3 c0 = f.center.ToIntVec3();
                     f.cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(c0, 2.5f, true).Where(x => x.InBounds(map)));
                 }
+                if (f.y == SecondKind.Typhoon)
+                    foreach (IntVec3 x in f.cells.InRandomOrder().Take(6))
+                    {
+                        FleckMaker.Static(x, map, FleckDefOf.WaterSplash, Rand.Range(0.5f, 0.9f));
+                        if (Rand.Chance(0.25f)) FleckMaker.ThrowDustPuffThick(x.ToVector3Shifted(), map, 0.6f, new Color(1f, 1f, 1f, 0.25f));   // it boils where it falls
+                    }
                 if (f.y == SecondKind.Hurricane && f.speed > 0f)
                 {
                     // a whirl wanders: it turns this way and that, and is turned back by walls and the map's edge
@@ -638,7 +662,7 @@ namespace Avir.Magic
                             case SecondKind.Hurricane: break;   // a whirl's spinning is its wind's (MagicWind, or Atmosphere Overhaul's)   // the whirl spares no one but its maker
                             case SecondKind.Inferno: if (foe) HealthUtility.AdjustSeverity(p, HediffDefOf.Heatstroke, 0.02f * f.power * (SecondOrder.Sealed(p) ? 2f : 1f)); break;
                             case SecondKind.Boil: if (foe && (p.health.hediffSet.HasHediff(WaterDefOf.Avir_Soaked) || Reactions.Wet(c, map))) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 1.5f * f.power * (SecondOrder.Sealed(p) ? 0.4f : 1.4f), 0f, -1f, f.owner)); break;
-                            case SecondKind.Typhoon: if (foe) { WaterMagic.Soak(p, f.power); p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 1.5f * f.power * (SecondOrder.Sealed(p) ? 0.7f : 1.4f), 0f, -1f, f.owner)); if (Rand.Chance(0.3f)) SpellHurl.Throw(p, f.center.ToIntVec3(), 2, map, f.owner, f.power); } break;
+                            case SecondKind.Typhoon: if (foe) SecondOrder.BoilingRain(p, f.power, f.owner, map, f.center.ToIntVec3()); break;
                             case SecondKind.Ash: if (foe && !SecondOrder.Sealed(p)) MagicFx.Give(p, SecondOrder.H("Avir_Ashen"), 300); break;
                             case SecondKind.Deluge: WaterMagic.Soak(p, f.power); break;
                             case SecondKind.Swelter: if (foe && p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Max(0f, p.needs.rest.CurLevel - 0.01f * f.power); else if (!foe) MagicFx.Give(p, SecondOrder.H("Avir_Updraft"), 120); break;
@@ -663,8 +687,37 @@ namespace Avir.Magic
             return m;
         }
 
-        private static Material auraHurricane;
-        private static Material AuraMat(SecondKind y) => auraHurricane ?? (auraHurricane = ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Aura_Hurricane", false) != null ? MaterialPool.MatFrom("Things/Mote/Avir/Magic/Aura_Hurricane", ShaderDatabase.Transparent, Color.white) : null);
+        // a whirl that walks is drawn as its own whirl (the author's Aura_<Kind>): the hurricane's white, the typhoon's sea-teal
+        // (Fix190: the typhoon had no picture of its own - grey puffs, and was taken for steam)
+        private static readonly Dictionary<SecondKind, Material> auraMats = new Dictionary<SecondKind, Material>();
+        private static Material AuraMat(SecondKind y)
+        {
+            if (auraMats.TryGetValue(y, out Material m)) return m;
+            string path = "Things/Mote/Avir/Magic/Aura_" + y;
+            m = ContentFinder<Texture2D>.Get(path, false) != null ? MaterialPool.MatFrom(path, ShaderDatabase.Transparent, Color.white) : null;
+            auraMats[y] = m;
+            return m;
+        }
+        private static bool Whirls(Fld f) => f.y == SecondKind.Hurricane && f.speed > 0f || f.y == SecondKind.Typhoon;
+
+        // a typhoon's own rain (Fix190): drops falling under it, drawn by code - each its own place and pace, looping
+        private static Material rain;
+        private void Rain(Fld f, float t, int now)
+        {
+            if (rain == null) rain = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Wind/Rain", ShaderDatabase.MoteGlow, Color.white);
+            var block = new MaterialPropertyBlock();
+            float fade = Mathf.Clamp01((f.until - now) / 300f);
+            for (int i = 0; i < 46; i++)
+            {
+                float h1 = Mathf.Repeat(i * 0.6180339f, 1f), h2 = Mathf.Repeat(i * 0.3819660f + 0.17f, 1f), h3 = Mathf.Repeat(i * 0.7548776f, 1f);
+                float ang = h1 * 6.2831853f, rr = Mathf.Sqrt(h2) * f.rad * 0.9f;
+                float ph = Mathf.Repeat(t * (1.3f + 0.7f * h3) + h3, 1f);
+                Vector3 p = f.mid + new Vector3(Mathf.Cos(ang) * rr - 0.25f * ph, 0f, Mathf.Sin(ang) * rr + 1.1f * (1f - ph) - 0.3f);
+                p.y = AltitudeLayer.MoteOverhead.AltitudeFor();
+                block.SetColor(ShaderPropertyIDs.Color, new Color(0.75f, 0.9f, 1f, 0.55f * Mathf.Sin(ph * Mathf.PI) * fade));
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(p, Quaternion.AngleAxis(12f, Vector3.up), new Vector3(0.07f, 1f, 0.5f)), rain, 0, null, 0, block);
+            }
+        }
 
         public override void MapComponentUpdate()
         {
@@ -676,7 +729,7 @@ namespace Avir.Magic
                 if (f.cells == null || f.cells.Count == 0) continue;
                 // a hurricane shows where it rages (Fix185): its edge, as long as it lasts
                 if (f.y == SecondKind.Hurricane && f.speed <= 0f) GenDraw.DrawFieldEdges(f.cells.ToList(), new Color(0.55f, 0.75f, 1f, 0.6f));
-                Material m = FieldMat(f.y) ?? (f.speed > 0f && f.y == SecondKind.Hurricane ? AuraMat(f.y) : null);
+                Material m = FieldMat(f.y) ?? (Whirls(f) ? AuraMat(f.y) : null);
                 if (m == null) continue;
                 if (f.rad <= 0f || f.speed > 0f)
                 {
@@ -687,11 +740,12 @@ namespace Avir.Magic
                 }
                 Vector3 pos = f.mid; pos.y = AltitudeLayer.MoteLow.AltitudeFor() - 0.01f;
                 var block = new MaterialPropertyBlock();
-                Color col = Color.white; col.a = 0.55f * Mathf.Clamp01((f.until - now) / 600f) + 0.05f * Mathf.Sin(t * 1.3f);
+                Color col = f.y == SecondKind.Typhoon ? new Color(0.45f, 0.85f, 0.95f) : Color.white; col.a = 0.55f * Mathf.Clamp01((f.until - now) / 600f) + 0.05f * Mathf.Sin(t * 1.3f);
                 block.SetColor(ShaderPropertyIDs.Color, col);
                 float size = f.rad * 2f;
-                float turn = f.y == SecondKind.Hurricane && f.speed > 0f ? t * 140f : t * 4f;   // a whirl spins fast
+                float turn = f.y == SecondKind.Hurricane && f.speed > 0f ? t * 140f : f.y == SecondKind.Typhoon ? t * 95f : t * 4f;   // a whirl spins fast
                 Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis((turn + f.mid.x * 13f) % 360f, Vector3.up), new Vector3(size, 1f, size)), m, 0, null, 0, block);
+                if (f.y == SecondKind.Typhoon) Rain(f, t, now);
             }
         }
 
@@ -700,7 +754,7 @@ namespace Avir.Magic
             Vector3 v = c.ToVector3Shifted();
             switch (f.y)
             {
-                case SecondKind.Deluge: FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 0.6f); break;
+                case SecondKind.Deluge: case SecondKind.Typhoon: FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 0.6f); break;
                 case SecondKind.Rainbow: if (Rand.Chance(0.15f)) MapComponent_SpellSprites.Put(map, "Second/Rainbow", v, 3f, 120, Rand.Range(0f, 360f), 0f, 2f); else FleckMaker.ThrowDustPuffThick(v, map, 0.8f, new Color(0.95f, 0.9f, 1f, 0.35f)); break;
                 case SecondKind.Ash: case SecondKind.MarshHaze: FleckMaker.ThrowSmoke(v, map, 1.4f); break;
                 case SecondKind.Inferno: case SecondKind.Swelter: FleckMaker.ThrowHeatGlow(c, map, 1f); break;

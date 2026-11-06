@@ -47,7 +47,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2RaiseGeyser</defName>
-    <texturePath>UI/Designations/Mine</texturePath>
+    <texturePath>Designations/Mine</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -68,7 +68,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2SealGeyser</defName>
-    <texturePath>UI/Designations/Deconstruct</texturePath>
+    <texturePath>Designations/Deconstruct</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -104,7 +104,49 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2SmeltItems</defName>
-    <texturePath>UI/Designations/Deconstruct</texturePath>
+    <texturePath>Designations/Deconstruct</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2LavaPool</defName>
+    <label>hold a lava pool</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>hold</verb>
+    <gerund>holding a lava pool</gerund>
+    <priorityInType>7</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2LavaPool</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>calling up lava.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2LavaPool</defName>
+    <texturePath>Designations/Mine</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_2LavaSet</defName>
+    <label>let lava set</label>
+    <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>let set</verb>
+    <gerund>letting lava set</gerund>
+    <priorityInType>7</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_2LavaSet</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
+    <reportString>letting the lava set.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_2LavaSet</defName>
+    <texturePath>Designations/Mine</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -125,7 +167,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2LavaCore</defName>
-    <texturePath>UI/Designations/Mine</texturePath>
+    <texturePath>Designations/Mine</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -146,7 +188,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2Basalt</defName>
-    <texturePath>UI/Designations/Mine</texturePath>
+    <texturePath>Designations/Mine</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -167,7 +209,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2Obsidian</defName>
-    <texturePath>UI/Designations/Mine</texturePath>
+    <texturePath>Designations/Mine</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -188,7 +230,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2Ash</defName>
-    <texturePath>UI/Designations/Harvest</texturePath>
+    <texturePath>Designations/HarvestPlant</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -254,7 +296,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2Clear</defName>
-    <texturePath>UI/Designations/CutPlants</texturePath>
+    <texturePath>Designations/CutPlant</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -335,7 +377,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2Moat</defName>
-    <texturePath>UI/Designations/Harvest</texturePath>
+    <texturePath>Designations/HarvestPlant</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -356,7 +398,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2SiltWater</defName>
-    <texturePath>UI/Designations/Harvest</texturePath>
+    <texturePath>Designations/HarvestPlant</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -377,7 +419,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2SiltLand</defName>
-    <texturePath>UI/Designations/Harvest</texturePath>
+    <texturePath>Designations/HarvestPlant</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -398,7 +440,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2SiltDump</defName>
-    <texturePath>UI/Designations/Deconstruct</texturePath>
+    <texturePath>Designations/Deconstruct</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -419,7 +461,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2MarshGas</defName>
-    <texturePath>UI/Designations/Harvest</texturePath>
+    <texturePath>Designations/HarvestPlant</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -455,7 +497,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2Quarry</defName>
-    <texturePath>UI/Designations/Mine</texturePath>
+    <texturePath>Designations/Mine</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
@@ -506,7 +548,7 @@
   </JobDef>
   <DesignationDef>
     <defName>Avir_2DigClay</defName>
-    <texturePath>UI/Designations/Mine</texturePath>
+    <texturePath>Designations/Mine</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>

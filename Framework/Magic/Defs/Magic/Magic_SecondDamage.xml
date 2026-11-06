@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- The typhoon's own blow (the author, Fix190): boiling rain - not steam's scald, not fire's burn. -->
+  <DamageDef>
+    <defName>Avir_BoilingRain</defName>
+    <label>boiling rain</label>
+    <workerClass>DamageWorker_AddInjury</workerClass>
+    <externalViolence>true</externalViolence>
+    <deathMessage>{0} has been boiled alive by a typhoon's rain.</deathMessage>
+    <hediff>Avir_RainScald</hediff>
+    <armorCategory>Heat</armorCategory>
+    <harmsHealth>true</harmsHealth>
+    <defaultDamage>3</defaultDamage>
+  </DamageDef>
+
+  <HediffDef ParentName="InjuryBase">
+    <defName>Avir_RainScald</defName>
+    <label>rain scald</label>
+    <labelNoun>a scald from boiling rain</labelNoun>
+    <description>Skin blistered by boiling rain: many small scalds where the drops struck, worst where the clothes were soaked through.</description>
+    <comps>
+      <li Class="HediffCompProperties_TendDuration">
+        <labelTendedWell>dressed</labelTendedWell>
+        <labelTendedWellInner>tended</labelTendedWellInner>
+        <labelSolidTendedWell>dressed</labelSolidTendedWell>
+      </li>
+      <li Class="HediffCompProperties_Infecter"><infectionChance>0.15</infectionChance></li>
+      <li Class="HediffCompProperties_GetsPermanent">
+        <permanentLabel>pocked scar</permanentLabel>
+      </li>
+    </comps>
+    <injuryProps>
+      <painPerSeverity>0.0175</painPerSeverity>
+      <averagePainPerSeverityPermanent>0.00625</averagePainPerSeverityPermanent>
+      <canMerge>true</canMerge>
+      <destroyedLabel>boiled away</destroyedLabel>
+    </injuryProps>
+  </HediffDef>
+</Defs>

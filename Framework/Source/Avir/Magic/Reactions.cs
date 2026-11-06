@@ -126,7 +126,7 @@ namespace Avir.Magic
             foreach (IntVec3 c in seen)
                 foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList())
                 {
-                    if (p.Dead || p == caster || (caster != null && !MagicFx.Foe(p, caster))) continue;
+                    if (p.Dead || (caster != null && !MagicFx.Foe(p, caster))) continue;   // the mage in the water too (Fix190)
                     p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 5f * power, 0f, -1f, caster));
                     if (!p.Dead) MagicFx.Stun(p, 45, caster);
                 }

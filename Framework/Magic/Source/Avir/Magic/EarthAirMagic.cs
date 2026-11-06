@@ -352,7 +352,8 @@ namespace Avir.Magic
                             p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (5f + 2f * rv.amplify) * power, 0f, -1f, caster));
                             // the heavy (body and gear) are not thrown far - the gust takes their feet instead, and the
                             // ground strikes them through any plate
-                            if (!p.Dead && SpellBody.Heavy(p) >= 1.3f) { SpellHurl.Topple(p, caster, power); if (!p.Dead) MagicFx.Fell(p, from, 1, map, caster, power, Mathf.RoundToInt(90f * power)); }
+                            if (p.Dead || SpellWards.HoldsWind(p)) continue;   // a ward of the air holds the push; the blow has landed
+                            if (SpellBody.Heavy(p) >= 1.3f) { SpellHurl.Topple(p, caster, power); if (!p.Dead) MagicFx.Fell(p, from, 1, map, caster, power, Mathf.RoundToInt(90f * power)); }
                             else MagicFx.Push(p, from, 4 + rv.amplify, map);
                         }
                         foreach (IntVec3 c in cells)
@@ -397,7 +398,7 @@ namespace Avir.Magic
                     case RuneKind.Growth:
                         // the wind rises and widens: a ring two cells wider is swept
                         var wide = cells.SelectMany(c => GenRadial.RadialCellsAround(c, 2f, true)).Where(c => c.InBounds(map)).Distinct().ToList();
-                        foreach (Pawn p in MagicFx.PawnsIn(wide, map)) if (MagicFx.Foe(p, caster)) MagicFx.Push(p, from, 2, map);
+                        foreach (Pawn p in MagicFx.PawnsIn(wide, map)) if (MagicFx.Foe(p, caster) && !SpellWards.HoldsWind(p)) MagicFx.Push(p, from, 2, map);
                         foreach (IntVec3 c in wide) if (Rand.Chance(0.15f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.4f, MagicFx.AirDust);
                         break;
                     case RuneKind.Purge:
@@ -643,7 +644,7 @@ namespace Avir.Magic
             if (this.IsHashIntervalTick(40)) FleckMaker.ThrowDustPuffThick(DrawPos + Rand.InsideUnitCircleVec3 * 0.4f, Map, 1.1f, MagicFx.AirDust);
             if (!this.IsHashIntervalTick(15)) return;
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
-                if (owner != null && MagicFx.Foe(p, owner)) { MagicFx.Push(p, owner.Position, -2, Map); MagicFx.Give(p, EarthAirDefOf.Avir_Buffeted, 300); }
+                if (owner != null && MagicFx.Foe(p, owner) && !SpellWards.HoldsWind(p)) { MagicFx.Push(p, owner.Position, -2, Map); MagicFx.Give(p, EarthAirDefOf.Avir_Buffeted, 300); }
         }
     }
 

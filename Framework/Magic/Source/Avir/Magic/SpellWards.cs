@@ -161,6 +161,10 @@ namespace Avir.Magic
 
         /// <summary>The layers of ward round a pawn, outside first: the dome it stands in, then its own ward. A blow meets
         /// the dome, and what the dome lets through meets the ward on the body.</summary>
+        /// <summary>A ward of the air (or of the storm, which has air in it) holds the wind's push (the author, Fix190): its
+        /// wearer is not thrown, felled or staggered by wind - the blow itself still lands.</summary>
+        public static bool HoldsWind(Pawn p) => p != null && Layers(p).Any(w => w != null && w.Energy > 0f && (w.Parts?.Contains(RuneKind.Air) ?? false));
+
         public static IEnumerable<IWard> Layers(Pawn p)
         {
             if (p == null) yield break;
@@ -191,6 +195,9 @@ namespace Avir.Magic
             // the schools of fire are the exception (the author's, kept on purpose): fire on a fiery ward (fire, magma,
             // steam) - both go out
             if (d.Fiery && overlap && inc.Contains(RuneKind.Fire)) { d.Fall("Ward and spell put out"); Puff(map, at, 0.5f); return true; }
+            // air on a ward of the air (the author, Fix190): the ward is not scattered - it holds the push, and the blow goes
+            // through it whole (no more, no less)
+            if (same && inc.Length == 1 && inc[0] == RuneKind.Air) { Note(d.Name + " holds the push; the blow goes through"); return false; }
             if (same) { boost = 1f + 0.5f * Mathf.Clamp01(d.Energy / Mathf.Max(1f, d.EnergyMax)); d.Fall("Ward scattered by its own"); Puff(map, at, 0.6f); return false; }
             float need = 12f * power;
             if (d.Energy >= need)

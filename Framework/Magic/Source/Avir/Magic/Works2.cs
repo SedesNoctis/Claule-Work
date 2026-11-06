@@ -131,6 +131,13 @@ namespace Avir.Magic
                 } },
             ["Avir_2LavaCore"] = new Work2 { y = SecondKind.Lava, cost = 12f, ticks = 400, desName = "Avir_2LavaCore",
                 effect = (p, t, c) => { Spawn(Def("Avir_LavaCore"), 1, t.Cell, p.Map); Unmark(p.Map, t.Cell, "Avir_2LavaCore"); FleckMaker.ThrowFireGlow(t.CenterVector3, p.Map, 1.5f); return true; } },
+            // a pool of lava (the author, Fix190): Odyssey's shallow lava for seven and a half days; the order renews itself
+            // before it runs out (with a word to the player) - a forge's heat, a trap at the gate, a hearth that needs no wood
+            ["Avir_2LavaPool"] = new Work2 { y = SecondKind.Lava, cost = 10f, ticks = 320, desName = "Avir_2LavaPool",
+                effect = (p, t, c) => LavaPools.Pour(p.Map, t.Cell) },
+            // and to stop it: the lava is let go into magma, which sets into stone in its own time
+            ["Avir_2LavaSet"] = new Work2 { y = SecondKind.Lava, cost = 2f, ticks = 120, desName = "Avir_2LavaSet",
+                effect = (p, t, c) => LavaPools.Set(p, t.Cell) },
             ["Avir_2Basalt"] = new Work2 { y = SecondKind.Volcano, cost = 8f, ticks = 300, desName = "Avir_2Basalt",
                 effect = (p, t, c) => { Spawn(Def("Avir_ChunkBasalt"), 1, t.Cell, p.Map); Spawn(Def("Avir_ChunkBasalt"), 1, t.Cell, p.Map); Unmark(p.Map, t.Cell, "Avir_2Basalt"); Fx(p.Map, t.Cell, MagicFx.EarthDust, 1.6f); return true; } },
             ["Avir_2Obsidian"] = new Work2 { y = SecondKind.Obsidian, cost = 10f, ticks = 360, desName = "Avir_2Obsidian",
@@ -470,6 +477,8 @@ namespace Avir.Magic
     public class Designator_2SealGeyser : Designator_Arcane2 { protected override string Key => "Avir_2SealGeyser"; protected override string Label2 => "Seal a geyser (geyser)"; protected override string Desc2 => "A caster of fire, water and earth seals the steam geyser here for good."; protected override AcceptanceReport Ok(IntVec3 c) => Map.listerThings.ThingsOfDef(ThingDefOf.SteamGeyser).Any(g => g.OccupiedRect().Contains(c)); }
     public class Designator_2SmeltItems : Designator_Arcane2 { protected override string Key => "Avir_2SmeltItems"; protected override string Label2 => "Smelt here (lava)"; protected override string Desc2 => "Weapons and apparel left on these cells are smelted down to their metal by a caster of lava (fire, earth; an adept of fire). The mark stays until the cell is empty."; }
     public class Designator_2LavaCore : Designator_Arcane2 { protected override string Key => "Avir_2LavaCore"; protected override string Label2 => "Seal a lava core (lava)"; protected override string Desc2 => "A caster of lava seals a core of lava in basalt here: a long fuel for any wood-fed forge, smelter or stove (three units of wood each)."; }
+    public class Designator_2LavaPool : Designator_Arcane2 { protected override string Key => "Avir_2LavaPool"; protected override string Label2 => "Lava pool (lava)"; protected override string Desc2 => "A caster of lava turns this ground into shallow lava for seven and a half days - heat for a forge, a trap at the gate. Before it cools the order renews itself (you are told), and a caster keeps it. To end it, mark it with \"Let the lava set\"."; public override bool Visible => base.Visible && LavaPools.Lava != null; protected override AcceptanceReport Ok(IntVec3 c) => LavaPools.CanPour(Map, c) || LavaPools.Held(Map, c); }
+    public class Designator_2LavaSet : Designator_Arcane2 { protected override string Key => "Avir_2LavaSet"; protected override string Label2 => "Let the lava set (lava)"; protected override string Desc2 => "A caster of lava lets a held pool go: it sinks into magma, which sets into stone in its own time (now and then basalt). The pool's order stops renewing."; public override bool Visible => base.Visible && LavaPools.Lava != null; protected override AcceptanceReport Ok(IntVec3 c) => LavaPools.Held(Map, c); }
     public class Designator_2Basalt : Designator_Arcane2 { protected override string Key => "Avir_2Basalt"; protected override string Label2 => "Draw basalt (volcano)"; protected override string Desc2 => "A caster of the volcano (fire, earth; an adept of earth) draws two chunks of basalt up here."; }
     public class Designator_2Obsidian : Designator_Arcane2 { protected override string Key => "Avir_2Obsidian"; protected override string Label2 => "Make obsidian (obsidian)"; protected override string Desc2 => "A caster of fire, earth and water quenches magma here into obsidian - sharp black glass for blades."; }
     public class Designator_2Ash : Designator_Arcane2 { protected override string Key => "Avir_2Ash"; protected override string Label2 => "Ash the ground (ash)"; protected override string Desc2 => "A caster of fire, earth and air lets ash fall here: a plain fertiliser, +20% fertility for ten days."; protected override AcceptanceReport Ok(IntVec3 c) => Map.terrainGrid.TerrainAt(c).fertility > 0f; }
@@ -531,6 +540,116 @@ namespace Avir.Magic
             foreach (string n in new[] { "Avir_LavaCore", "Avir_MarshGas", Works2.Def("Obsidian") != null ? "Obsidian" : "Avir_ObsidianChunk", "Avir_Brick" })
             { ThingDef d = Works2.Def(n); if (d == null) continue; Thing t = ThingMaker.MakeThing(d, d.MadeFromStuff ? GenStuff.DefaultStuffFor(d) : null); t.stackCount = Mathf.Min(10, d.stackLimit); GenPlace.TryPlaceThing(t, at, m, ThingPlaceMode.Near); }
             if (Works2.Clay != null) { Thing t = ThingMaker.MakeThing(Works2.Clay); t.stackCount = Mathf.Min(30, Works2.Clay.stackLimit); GenPlace.TryPlaceThing(t, at, m, ThingPlaceMode.Near); }
+        }
+    }
+
+    /// <summary>Lava pools (the author, Fix190): Odyssey's shallow lava, held by a caster. They last seven and a half days;
+    /// a day before they would cool the order is laid on them again, and the player told so - one of the orders that keep
+    /// a thing going without being given each time (RepeatOrders).</summary>
+    public static class LavaPools
+    {
+        public const float Days = 7.5f;
+        public static TerrainDef Lava => DefDatabase<TerrainDef>.GetNamedSilentFail("LavaShallow");
+
+        public static bool CanPour(Map m, IntVec3 c)
+        {
+            TerrainDef t = m.terrainGrid.TerrainAt(c);
+            return Lava != null && !t.IsWater && t != Lava && c.GetEdifice(m) == null && t.passability != Traversability.Impassable;
+        }
+
+        public static bool Held(Map m, IntVec3 c) => Lava != null && m.terrainGrid.TerrainAt(c) == Lava && MapComponent_TempTerrain.Of(m)?.to.TryGetValue(c, out TerrainDef d) == true && d == Lava;
+
+        public static bool Pour(Map m, IntVec3 at)
+        {
+            TerrainDef lava = Lava; var temp = MapComponent_TempTerrain.Of(m);
+            DesignationDef des = Works2.D("Avir_2LavaPool");
+            if (lava == null || temp == null || des == null) return false;
+            int n = 0, ticks = Mathf.RoundToInt(GenDate.TicksPerDay * Days);
+            foreach (IntVec3 x in GenRadial.RadialCellsAround(at, WorkSpells.Now.R(1.9f), true).Where(x => x.InBounds(m) && m.designationManager.DesignationAt(x, des) != null).ToList())
+            {
+                m.designationManager.TryRemoveDesignation(x, des);
+                if (Held(m, x)) temp.until[x] = Find.TickManager.TicksGame + ticks;            // renewed
+                else if (CanPour(m, x) && x.GetFirstPawn(m) == null) temp.Set(x, lava, ticks);
+                else continue;
+                RepeatOrders.Of(m)?.Keep(x, "Avir_2LavaPool", ticks - GenDate.TicksPerDay);
+                FleckMaker.ThrowFireGlow(x.ToVector3Shifted(), m, 1.2f);
+                n++;
+            }
+            return n > 0;
+        }
+
+        public static bool Set(Pawn p, IntVec3 at)
+        {
+            Map m = p.Map; var temp = MapComponent_TempTerrain.Of(m);
+            DesignationDef des = Works2.D("Avir_2LavaSet");
+            if (temp == null || des == null) return false;
+            int n = 0;
+            foreach (IntVec3 x in GenRadial.RadialCellsAround(at, WorkSpells.Now.R(1.9f), true).Where(x => x.InBounds(m) && m.designationManager.DesignationAt(x, des) != null).ToList())
+            {
+                m.designationManager.TryRemoveDesignation(x, des);
+                RepeatOrders.Of(m)?.Drop(x, "Avir_2LavaPool");
+                if (!Held(m, x)) continue;
+                // the lava sinks: the ground under it comes back, and magma lies on it - setting at its own pace
+                temp.until[x] = Find.TickManager.TicksGame;
+                if (temp.from.TryGetValue(x, out TerrainDef was)) m.terrainGrid.SetTerrain(x, was);
+                temp.until.Remove(x); temp.from.Remove(x); temp.to.Remove(x);
+                MagmaPool.Pour(x, m, p, 1f, 1500, true);
+                n++;
+            }
+            return n > 0;
+        }
+    }
+
+    /// <summary>Orders that renew themselves (the author, Fix190): some works keep a thing going - a lava pool, and later
+    /// others. When one is due, its mark is laid again on its cells and the player is told, once for the lot.</summary>
+    public class RepeatOrders : MapComponent
+    {
+        private List<IntVec3> cells = new List<IntVec3>();
+        private List<string> des = new List<string>();
+        private List<int> due = new List<int>();
+        public RepeatOrders(Map map) : base(map) { }
+        public static RepeatOrders Of(Map m) => m?.GetComponent<RepeatOrders>();
+
+        public void Keep(IntVec3 c, string d, int inTicks)
+        {
+            Drop(c, d);
+            cells.Add(c); des.Add(d); due.Add(Find.TickManager.TicksGame + Mathf.Max(GenDate.TicksPerHour, inTicks));
+        }
+
+        public void Drop(IntVec3 c, string d)
+        {
+            for (int i = cells.Count - 1; i >= 0; i--) if (cells[i] == c && des[i] == d) { cells.RemoveAt(i); des.RemoveAt(i); due.RemoveAt(i); }
+        }
+
+        public override void MapComponentTick()
+        {
+            if (cells.Count == 0 || Find.TickManager.TicksGame % 600 != 0) return;
+            int now = Find.TickManager.TicksGame;
+            var told = new Dictionary<string, List<IntVec3>>();
+            for (int i = cells.Count - 1; i >= 0; i--)
+            {
+                if (due[i] > now) continue;
+                IntVec3 c = cells[i]; string d = des[i];
+                cells.RemoveAt(i); des.RemoveAt(i); due.RemoveAt(i);
+                DesignationDef dd = Works2.D(d);
+                if (dd == null || !c.InBounds(map) || map.designationManager.DesignationAt(c, dd) != null) continue;
+                if (d == "Avir_2LavaPool" && !LavaPools.Held(map, c)) continue;   // gone already - nothing to keep
+                map.designationManager.AddDesignation(new Designation(c, dd));
+                if (!told.TryGetValue(d, out var l)) told[d] = l = new List<IntVec3>();
+                l.Add(c);
+            }
+            foreach (var kv in told)
+                Messages.Message("An arcane order renews itself: " + (kv.Key == "Avir_2LavaPool" ? "keep the lava pool" : kv.Key) + " (" + kv.Value.Count + " cells). A caster of lava will see to it; mark \"Let the lava set\" to end it.",
+                    new LookTargets(kv.Value.Select(x => new TargetInfo(x, map))), MessageTypeDefOf.NeutralEvent, false);
+        }
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Collections.Look(ref cells, "cells", LookMode.Value);
+            Scribe_Collections.Look(ref des, "des", LookMode.Value);
+            Scribe_Collections.Look(ref due, "due", LookMode.Value);
+            if (cells == null || des == null || due == null || cells.Count != des.Count || des.Count != due.Count) { cells = new List<IntVec3>(); des = new List<string>(); due = new List<int>(); }
         }
     }
 }

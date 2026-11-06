@@ -85,7 +85,7 @@ namespace Avir.Magic
         private static List<Pawn> Reached(Pawn caster, SpellCircle g, IEnumerable<Pawn> near)
         {
             bool shaped = SpellSculpt.Of(g), aid = SpellSculpt.AidOf(g);
-            return near.Where(p => Living(p) && !p.Dead && (!shaped || (aid ? (p == caster || !p.HostileTo(caster)) : (p != caster && p.HostileTo(caster))))).ToList();
+            return near.Where(p => Living(p) && !p.Dead && (!shaped || (aid ? SpellSculpt.Own(p, caster) : !SpellSculpt.Own(p, caster)))).ToList();
         }
 
         private static IEnumerable<Pawn> Area(IntVec3 at, float r, Map map) => GenRadial.RadialDistinctThingsAround(at, map, r, true).OfType<Pawn>();

@@ -48,7 +48,7 @@ namespace Avir.Magic
             {
                 if (w == null || w.Energy <= 0f) continue;
                 RuneKind[] k = w.Parts ?? new RuneKind[0];
-                float here = k.Contains(RuneKind.Air) && k.Contains(RuneKind.Water) ? 0f : k.Contains(RuneKind.Air) ? 0.4f : 0.75f;
+                float here = k.Contains(RuneKind.Air) ? 0f : 0.75f;   // the air's (and the storm's) hold the push wholly (Fix190); any other a quarter
                 if (here < f) { f = here; w.Energy = Mathf.Max(0f, w.Energy - s * 0.02f); }
             }
             return f;

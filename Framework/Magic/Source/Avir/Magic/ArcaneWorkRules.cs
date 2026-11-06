@@ -56,7 +56,7 @@ namespace Avir.Magic
             G("Warm", "Warm", "warmth", "Warming rooms by haze, tying heat knots, airing the rooms (only magic does this).", new[] { "Avir_ArcaneWarm", "Avir_2HeatRoom", "Avir_2Vent" }),
             G("Power", "Power", "power", "Charging batteries, driving the wind turbines (only magic does this).", new[] { "Avir_ArcaneCharge", "Avir_2Charge", "Avir_2Wind" }),
             G("Stores", "Stores", "stores", "Drying and preserving the stores (only magic does this).", new[] { "Avir_2Dry", "Avir_2Preserve" }),
-            G("Land", "Land", "land", "The arcane orders on land and water: stone and water, moats, silt, geysers, lava cores, marsh gas, rainbows (only magic does this).", new[] { "Avir_ArcaneWater", "Avir_ArcaneHotSpring", "Avir_ArcaneStone", "Avir_2Moat", "Avir_2SiltWater", "Avir_2SiltLand", "Avir_2SiltDump", "Avir_2RaiseGeyser", "Avir_2SealGeyser", "Avir_2LavaCore", "Avir_2MarshGas", "Avir_2Rainbow" }),
+            G("Land", "Land", "land", "The arcane orders on land and water: stone and water, moats, silt, geysers, lava cores, marsh gas, rainbows (only magic does this).", new[] { "Avir_ArcaneWater", "Avir_ArcaneHotSpring", "Avir_ArcaneStone", "Avir_2Moat", "Avir_2SiltWater", "Avir_2SiltLand", "Avir_2SiltDump", "Avir_2RaiseGeyser", "Avir_2SealGeyser", "Avir_2LavaCore", "Avir_2LavaPool", "Avir_2LavaSet", "Avir_2MarshGas", "Avir_2Rainbow" }),
         };
         private static List<Group> merged;
         private static List<Group> Merged => merged ?? (merged = detailed.GroupBy(g => g.parent).Select(gr =>
@@ -300,6 +300,8 @@ namespace Avir.Magic
             ["Avir_ArcaneWater"] = "turns marked stone into water for good (Blood)",
             ["Avir_ArcaneHotSpring"] = "warms marked water into a hot spring for three days (steam) - a joy to sit in, quicker meditation for casters of water and fire",
             ["Avir_ArcaneStone"] = "turns marked water into stone",
+            ["Avir_2LavaPool"] = "turns marked ground into shallow lava for seven and a half days; the order renews itself (lava)",
+            ["Avir_2LavaSet"] = "lets a held lava pool sink into magma, which sets into stone (lava)",
         };
 
         /// <summary>How the caster stands to a set of elements: 2 - well (all his own or past Novice), 1 - partly (a meeting

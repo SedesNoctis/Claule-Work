@@ -136,7 +136,7 @@ namespace Avir.Magic
         /// metal limbs are struck themselves.</summary>
         public static void Shock(Pawn p, float q, Pawn caster, bool spare)
         {
-            if (p.Dead || p == caster) return;
+            if (p.Dead) return;   // the mage too, if the charge reaches them (Fix190)
             if (spare && caster != null && !MagicFx.Foe(p, caster)) return;
             float f = 0.6f + 0.5f * OfPawn(p);
             if (p.RaceProps.IsMechanoid)
