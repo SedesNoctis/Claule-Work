@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Patch>
-  <!-- With Better Architect Menu: the arcane orders are a sub-section of the vanilla Orders (NestedCategoryExtension,
-       as BAM nests its own sub-tabs - the author, Fix162), laid out in the big grid like the orders are. -->
+  <!-- With Better Architect Menu: the arcane orders are a section of Management (Ferny_Colony), beside the vanilla
+       Orders, Zone and Locations, laid out in the big grid like the orders are (the author, Fix187). BAM nests only one
+       level deep: under Orders (itself nested in Management) they vanished. -->
   <Operation Class="PatchOperationFindMod">
     <mods><li>Better Architect Menu</li></mods>
     <match Class="PatchOperationAddModExtension">
@@ -9,7 +10,7 @@
       <value>
         <li Class="BetterArchitect.SpecialCategoryExtension" />
         <li Class="BetterArchitect.NestedCategoryExtension">
-          <parentCategory>Orders</parentCategory>
+          <parentCategory>Ferny_Colony</parentCategory>
         </li>
       </value>
     </match>
