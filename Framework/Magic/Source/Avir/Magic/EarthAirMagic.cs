@@ -617,6 +617,25 @@ namespace Avir.Magic
             Scribe_Values.Look(ref left, "left", 5000);
         }
 
+        // drawn as living wind (Fix185): two layers of rising curls, each cell out of step with its neighbours, fading
+        // in and out as they climb - a wall that moves, not a picture
+        private static Material curl;
+        private static readonly MaterialPropertyBlock block = new MaterialPropertyBlock();
+        protected override void DrawAt(Vector3 drawLoc, bool flip = false)
+        {
+            if (curl == null) curl = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Wind/WallCurl", ShaderDatabase.MoteGlow, Color.white);
+            float t = Time.realtimeSinceStartup * 0.45f + Position.x * 0.37f + Position.z * 0.61f;
+            float fade = Mathf.Clamp01(left / 300f);
+            for (int k = 0; k < 2; k++)
+            {
+                float ph = (t + k * 0.5f) % 1f;
+                Vector3 p = drawLoc + new Vector3(Mathf.Sin(t * 2.1f + k) * 0.06f, 0f, (ph - 0.5f) * 0.8f);
+                p.y = AltitudeLayer.MoteOverhead.AltitudeFor() + 0.01f * k;
+                block.SetColor(ShaderPropertyIDs.Color, new Color(0.85f, 0.93f, 1f, 0.55f * Mathf.Sin(ph * Mathf.PI) * fade));
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(p, Quaternion.AngleAxis(k == 0 ? 0f : 180f, Vector3.up), new Vector3(1.3f, 1f, 1.3f)), curl, 0, null, 0, block);
+            }
+        }
+
         protected override void Tick()
         {
             base.Tick();

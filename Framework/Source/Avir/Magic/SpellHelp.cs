@@ -266,6 +266,7 @@ namespace Avir.Magic
                 case RuneKind.Enchant: e.main = "Sets a friend's weapon burning (the caster's, if no friend stands there): blows add flame, shots may set foes alight."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Sense: e.main = "A sense of warmth on the caster for " + (4 * (1 + r.anchor)) + " h x strength: every warm body within " + (25 + 10 * r.reach) + " cells of them as they walk - through walls, the machines too, for they run hot; the unseen among them show."; break;
+                case RuneKind.Shape when verbs.Count == 0: e.main = "A wall of fire between two chosen points (or a ring round the caster): the flame is held along it and burns whoever crosses it; the wind drives it on."; break;
                 case RuneKind.Step: e.main = "The caster leaps to the target; along the way the fire " + (verbs.Count > 0 ? what : "stays held on the trail") + "."; break;
                 default:
                     if (verbs.Count == 0) { e.main = r.barrier > 0 ? "Aimed at someone - yourself or another - a ward of flame on them; aimed at the ground - a dome of flame there: whoever stands inside is warded, spells landing in it are put out." : "Fire with nothing to do: add a verb (release, hold, drain, lift, growth, purge) or a form."; break; }

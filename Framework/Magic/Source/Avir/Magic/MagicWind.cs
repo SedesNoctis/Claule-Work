@@ -297,12 +297,27 @@ namespace Avir.Magic
             IntVec3 to = (c.ToVector3Shifted() + w * (s > 30f ? 2f : 1f)).ToIntVec3();
             bool canTo = to.InBounds(map) && to != c;
             // the game's gas grid: the whole cell's gas moves on, added to what is there
-            if (canTo && map.gasGrid.AnyGasAt(c) && map.gasGrid.GasCanMoveTo(to) && Rand.Chance(Mathf.Clamp01(s / 30f)))
+            if (canTo && map.gasGrid.AnyGasAt(c) && map.gasGrid.GasCanMoveTo(to))
             {
-                uint a = map.gasGrid.GetDirect(c), b = map.gasGrid.GetDirect(to);
-                byte Sum(int sh) => (byte)Mathf.Min(255, (int)((a >> sh) & 0xFF) + (int)((b >> sh) & 0xFF));
-                map.gasGrid.SetDirect(to, (uint)(Sum(0) | (Sum(8) << 8) | (Sum(16) << 16) | (Sum(24) << 24)));
-                map.gasGrid.SetDirect(c, 0u);
+                // (Fix185) it drifts, not jumps: a share of the cell's gas goes on - more in a stronger wind - most of it
+                // downwind, some slipping aside, and the rest lingers; so a cloud stretches, frays and thins as it goes
+                float share = Mathf.Clamp(s / 45f, 0.25f, 0.8f) * Rand.Range(0.75f, 1.1f);
+                Vector3 sideDir = Quaternion.AngleAxis(Rand.Bool ? 45f : -45f, Vector3.up) * w;
+                IntVec3 side = (c.ToVector3Shifted() + sideDir).ToIntVec3();
+                bool canSide = side.InBounds(map) && side != c && map.gasGrid.GasCanMoveTo(side);
+                uint a = map.gasGrid.GetDirect(c), b = map.gasGrid.GetDirect(to), sd = canSide ? map.gasGrid.GetDirect(side) : 0u;
+                uint stay = 0u, onTo = 0u, onSide = 0u;
+                for (int sh = 0; sh < 32; sh += 8)
+                {
+                    int v = (int)((a >> sh) & 0xFF);
+                    int moved = Mathf.RoundToInt(v * share), aside = canSide ? Mathf.RoundToInt(moved * 0.3f) : 0;
+                    stay |= (uint)(v - moved) << sh;
+                    onTo |= (uint)Mathf.Min(255, (int)((b >> sh) & 0xFF) + moved - aside) << sh;
+                    onSide |= (uint)Mathf.Min(255, (int)((sd >> sh) & 0xFF) + aside) << sh;
+                }
+                map.gasGrid.SetDirect(c, stay);
+                map.gasGrid.SetDirect(to, onTo);
+                if (canSide) map.gasGrid.SetDirect(side, onSide);
             }
             var here = c.GetThingList(map);
             for (int i = here.Count - 1; i >= 0; i--)

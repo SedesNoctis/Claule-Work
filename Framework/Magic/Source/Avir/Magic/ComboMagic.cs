@@ -906,8 +906,6 @@ namespace Avir.Magic
         public static void Pour(IntVec3 c, Map map, Pawn owner, float power, int life, bool setsHard, int stoneLife = 2500, bool lava = false)
         {
             if (!c.InBounds(map) || c.Impassable(map) || ComboDefOf.Avir_Magma == null) return;
-            // never at the mage's own feet nor right beside them (Fix185: a wide beam or a near blast poured it under them)
-            if (owner != null && owner.Spawned && owner.Map == map && c.InHorDistOf(owner.Position, 1.5f)) return;
             if (Reactions.Pools(c, map).Any(t => !(t is MirePatch)))
             {
                 // poured onto water: it sets at once into black glass, in a burst of steam
@@ -1052,7 +1050,7 @@ namespace Avir.Magic
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
             {
                 // a mire with no master (a lost hold) takes anyone
-                if (p.Dead || p == owner || (owner != null && !MagicFx.Foe(p, owner)) || MagicFx.Rooted(p) || SpellWards.Stops(p, true)) continue;
+                if (p.Dead || (owner != null && !MagicFx.Foe(p, owner)) || MagicFx.Rooted(p) || SpellWards.Stops(p, true)) continue;
                 MagicFx.Give(p, ComboDefOf.Avir_Mired, 150);
                 // the longer they stay, the deeper they sink; the fallen go under fast
                 // a machine does not drown: the mire only swallows it to the joints and holds it fast, helpless, for as long

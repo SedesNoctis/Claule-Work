@@ -60,7 +60,9 @@ namespace Avir.Magic
                         { var fl = Beam(caster.Position, at, map, rf.breadth); SpellHeal.Beam(caster, s, fl, map, power, rf); Apply(caster, map, verbs, fl, at, power, rf, false); }
                         break;
                     case RuneKind.Shape:
-                        Apply(caster, map, verbs, ShapeCells(caster, at, map, rf, forms), at, power, rf, false);
+                        // a wall of fire stands even with no verb: the flame held along it (as the Step's trail; Fix185 -
+                        // before, a bare Shape lit nothing, while the earth's, the water's and the air's walls stood)
+                        Apply(caster, map, verbs.Count > 0 ? verbs : new List<RuneDef> { RuneDefOfFire.Hold }, ShapeCells(caster, at, map, rf, forms), at, power, rf, false);
                         break;
                     case RuneKind.Step:
                         var path = Beam(caster.Position, at, map, rf.breadth).Where(c => c.InBounds(map) && c != caster.Position).ToList();   // as wide as its Breadth
@@ -132,6 +134,14 @@ namespace Avir.Magic
         public static List<IntVec3> Point(IntVec3 at, Map map, float radius) =>
             GenRadial.RadialCellsAround(at, radius, true).Where(c => c.InBounds(map)).ToList();
 
+        private static bool Ahead(IntVec3 from, IntVec3 to, IntVec3 n)
+        {
+            Vector3 d = (to - from).ToVector3(); d.y = 0f;
+            if (d.sqrMagnitude < 0.01f) return true;
+            Vector3 o = (n - from).ToVector3(); o.y = 0f;
+            return Vector3.Dot(o, d.normalized) >= 0.9f;
+        }
+
         public static List<IntVec3> Beam(IntVec3 from, IntVec3 to, Map map, int breadth)
         {
             var cells = new HashSet<IntVec3>();
@@ -140,7 +150,9 @@ namespace Avir.Magic
                 if (c == from || !c.InBounds(map)) continue;
                 cells.Add(c);
                 // each Breadth one more cell to each side (Fix158: before, any Breadth gave the same three cells)
-                if (breadth > 0) foreach (IntVec3 n in GenRadial.RadialCellsAround(c, Mathf.Min(breadth, 4) + 0.5f, true)) if (n.InBounds(map) && n != from) cells.Add(n);
+                // (Fix185) only ahead of the mage: before, the widening of the first cells wrapped round the mage and poured
+                // the beam's element behind and under them
+                if (breadth > 0) foreach (IntVec3 n in GenRadial.RadialCellsAround(c, Mathf.Min(breadth, 4) + 0.5f, true)) if (n.InBounds(map) && n != from && Ahead(from, to, n)) cells.Add(n);
                 if (c.GetEdifice(map) is Building b && b.def.Fillage == FillCategory.Full) break;   // a wall stops the line
             }
             return cells.ToList();
