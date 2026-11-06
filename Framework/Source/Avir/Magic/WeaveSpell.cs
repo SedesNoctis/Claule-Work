@@ -79,6 +79,7 @@ namespace Avir.Magic
                     case RuneKind.Hold: t = take ? "vines that drink while they hold" : "a cocoon: held still and mended deep"; break;
                     case RuneKind.Growth: t = take ? "life drawn from the green only" : "growth: the plants quicken, the regrowth deepens"; break;
                     case RuneKind.Purge: t = take ? "poison drawn out into the store" : "poison and withering cleansed"; break;
+                    case RuneKind.Lift: t = a.pin ? "the body pressed down by its blood (Blood only)" : "the body thrown up by its blood (Blood only)"; break;
                     case RuneKind.Step: t = take ? "a foe dragged to the mage by its own blood (Blood only)" : "one's own drawn gently to the mage (Blood only)"; break;
                     default: t = take ? "Withering at the point" : "mending at the point"; break;
                 }

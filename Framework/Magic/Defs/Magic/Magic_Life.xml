@@ -195,4 +195,132 @@
       <li Class="Avir.Magic.CompProperties_StoredLife"><max>200</max></li>
     </comps>
   </ThingDef>
+
+  <!-- The meetings of Life as systems (LifePairs.cs) -->
+  <HediffDef>
+    <defName>Avir_WildSeed</defName>
+    <label>living flame</label>
+    <description>A spark of Wild Flame sown in the body. When its carrier touches another it bursts - petals of green-gold fire - and leaps on into the one touched. Water does not put it out: in water the carrier steams, and the steam scalds them. A smouldering heart does the same, but its bursts mend.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.85, 0.82, 0.3)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps><li Class="Avir.Magic.HediffCompProperties_WildSeed" /></comps>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_BloodLock</defName>
+    <label>blood held</label>
+    <description>The blood in the body is held still by a mage of Blood, like water in a pool: no limb answers.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.75, 0.1, 0.12)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>360~360</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li>
+    </comps>
+    <stages>
+      <li>
+        <capMods>
+          <li><capacity>Moving</capacity><setMax>0.05</setMax></li>
+          <li><capacity>Manipulation</capacity><setMax>0.1</setMax></li>
+          <li><capacity>Talking</capacity><setMax>0.1</setMax></li>
+        </capMods>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_StoneCrust</defName>
+    <label>stone crust</label>
+    <description>Stone remembers life: a crust of green stone grows on the body. It slows and weighs down, and it is hard to cut through. It slows, hardens and quiets the body - hunger, speech, hands, legs - and the body takes the stone's colour. Full, it is a living statue: it stands (or lies, if caught lying) for days without falling, its hunger at a tenth; after three days the stone lets go. Short of full, it falls away slowly.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.3, 0.65, 0.45)</defaultLabelColor>
+    <isBad>true</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps><li Class="Avir.Magic.HediffCompProperties_StoneCrust" /></comps>
+    <stages>
+      <li>
+        <label>thin</label>
+        <capMods><li><capacity>Moving</capacity><offset>-0.1</offset></li><li><capacity>Manipulation</capacity><offset>-0.05</offset></li></capMods>
+        <statOffsets><ArmorRating_Sharp>0.1</ArmorRating_Sharp><ArmorRating_Blunt>0.1</ArmorRating_Blunt></statOffsets>
+        <statFactors><HungerRateMultiplier>0.8</HungerRateMultiplier></statFactors>
+      </li>
+      <li>
+        <minSeverity>0.4</minSeverity>
+        <label>thick</label>
+        <capMods><li><capacity>Moving</capacity><offset>-0.3</offset></li><li><capacity>Manipulation</capacity><offset>-0.25</offset></li><li><capacity>Talking</capacity><offset>-0.3</offset></li></capMods>
+        <statOffsets><ArmorRating_Sharp>0.25</ArmorRating_Sharp><ArmorRating_Blunt>0.25</ArmorRating_Blunt></statOffsets>
+        <statFactors><HungerRateMultiplier>0.5</HungerRateMultiplier></statFactors>
+      </li>
+      <li>
+        <minSeverity>0.7</minSeverity>
+        <label>heavy</label>
+        <capMods><li><capacity>Moving</capacity><offset>-0.5</offset></li><li><capacity>Manipulation</capacity><offset>-0.5</offset></li><li><capacity>Talking</capacity><offset>-0.6</offset></li></capMods>
+        <statOffsets><ArmorRating_Sharp>0.4</ArmorRating_Sharp><ArmorRating_Blunt>0.4</ArmorRating_Blunt></statOffsets>
+        <statFactors><HungerRateMultiplier>0.25</HungerRateMultiplier></statFactors>
+      </li>
+      <li>
+        <minSeverity>0.999</minSeverity>
+        <label>a living statue</label>
+        <capMods>
+          <li><capacity>Moving</capacity><setMax>0.2</setMax></li>
+          <li><capacity>Manipulation</capacity><setMax>0.05</setMax></li>
+          <li><capacity>Talking</capacity><setMax>0.05</setMax></li>
+        </capMods>
+        <statOffsets><ArmorRating_Sharp>0.6</ArmorRating_Sharp><ArmorRating_Blunt>0.6</ArmorRating_Blunt></statOffsets>
+        <statFactors><HungerRateMultiplier>0.1</HungerRateMultiplier></statFactors>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_StoneCocoon</defName>
+    <label>stone cocoon</label>
+    <description>A cocoon of living stone: the body inside does not move, little gets through, and it mends.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.3, 0.65, 0.45)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>600~600</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li>
+    </comps>
+    <stages>
+      <li>
+        <capMods><li><capacity>Moving</capacity><setMax>0</setMax></li></capMods>
+        <statFactors><IncomingDamageFactor>0.25</IncomingDamageFactor><InjuryHealingFactor>3</InjuryHealingFactor></statFactors>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_FertilePoison</defName>
+    <label>fertile poison</label>
+    <description>The poison of a Pestilence fog: not a toxin, but life gone too rich. It grows fast while one stands in the fog and keeps growing, slower, after. At its end the legs stop answering for days (paralytic abasia).</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.72, 0.78, 0.32)</defaultLabelColor>
+    <isBad>true</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps><li Class="Avir.Magic.HediffCompProperties_FertilePoison" /></comps>
+    <stages>
+      <li><label>faint</label></li>
+      <li><minSeverity>0.5</minSeverity><label>spreading</label><capMods><li><capacity>Moving</capacity><offset>-0.1</offset></li></capMods></li>
+      <li><minSeverity>0.8</minSeverity><label>deep</label><capMods><li><capacity>Moving</capacity><offset>-0.25</offset></li></capMods></li>
+    </stages>
+  </HediffDef>
+
+  <!-- the fallback when Royalty's paralytic abasia is not there -->
+  <HediffDef>
+    <defName>Avir_Abasia</defName>
+    <label>paralytic abasia</label>
+    <description>The legs do not answer. It passes in a few days.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <comps>
+      <li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>180000~240000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li>
+    </comps>
+    <stages><li><capMods><li><capacity>Moving</capacity><setMax>0.1</setMax></li></capMods></li></stages>
+  </HediffDef>
 </Defs>

@@ -213,7 +213,7 @@ namespace Avir.Magic
                 }
             // Life round it: the friends this circle touched are mended now, out of the flow and the store
             SpellCircle box = c.root.ParentOf(circle);
-            if (box != null && box != c.root && LifeMagic.Is(box.element)) LifeMagic.Wrap(caster, box, c.target.Cell, 2f + 1.5f * circle.OwnRunes.Count(x => x.kind == RuneKind.Breadth) + 1f, c.power, caster.Map);
+            if (box != null && box != c.root && LifeMagic.Is(box.element)) LifeMagic.Wrap(caster, box, c.target.Cell, 2f + 1.5f * circle.OwnRunes.Count(x => x.kind == RuneKind.Breadth) + 1f, c.power, caster.Map, circle);
             // where this circle ends, the next one strikes
             bool step = r.verbs.Any(v => v.kind == RuneKind.Step);
             bool aura = r.verbs.Any(v => v.kind == RuneKind.Aura);
