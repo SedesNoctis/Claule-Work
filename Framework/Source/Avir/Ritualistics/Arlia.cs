@@ -230,7 +230,7 @@ namespace Avir.Ritualistics
             for (int i = 0; i < 3; i++)
             {
                 float tw = w - (ArlieTextL + ArlieTextR) * s;
-                h = Mathf.Max(110f, (Text.CalcHeight(body, tw) + 30f) * Plaque.height / (ArlieTextB - ArlieTextT));
+                h = Mathf.Max(110f, (Text.CalcHeight(body, tw) + 40f) * Plaque.height / (ArlieTextB - ArlieTextT));
                 s = h / Plaque.height;
             }
             return h;
@@ -258,8 +258,11 @@ namespace Avir.Ritualistics
                 PlaqueArt.Draw(pr, Plaque, ArlieCuts, ArlieStretch);
                 Rect page = new Rect(pr.x + ArlieTextL * s, pr.y + ArlieTextT * s, pr.width - (ArlieTextL + ArlieTextR) * s, (ArlieTextB - ArlieTextT) * s);
                 Text.Font = NoteFont(text, pr.width); Text.Anchor = TextAnchor.UpperLeft;
+                float room = page.height - 22f;
+                if (Text.Font == GameFont.Medium && Text.CalcHeight(body, page.width) > room) Text.Font = GameFont.Small;
+                if (Text.Font == GameFont.Small && Text.CalcHeight(body, page.width) > room) Text.Font = GameFont.Tiny;
                 GUI.color = new Color(Text_.r, Text_.g, Text_.b, a);
-                Widgets.Label(new Rect(page.x, page.y, page.width, page.height - 26f), body);
+                Widgets.Label(new Rect(page.x, page.y, page.width, Mathf.Max(room, Text.CalcHeight(body, page.width))), body);
                 Text.Font = GameFont.Small; Text.Anchor = TextAnchor.UpperRight;
                 GUI.color = new Color(1f, 0.66f, 0.7f, a);
                 Widgets.Label(new Rect(page.x, page.yMax - 26f, page.width - 380f * s, 26f), "- " + Name);

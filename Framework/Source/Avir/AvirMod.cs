@@ -80,6 +80,7 @@ namespace Avir
         public bool flowStrengthensMages = true;
         // air's momentum: seconds the wind holds between casts, share per stage, stages
         public float airMomentumSeconds = 10f, airMomentumStep = 0.15f;
+        public bool magicBarsOnPane = true;
         public int airMomentumStages = 3;
         // earth (and magma, bog) casts slower by this much
         public float earthCastFactor = 1.5f;
@@ -148,6 +149,7 @@ namespace Avir
             Scribe_Values.Look(ref magicOn, "magicOn", false);
             Scribe_Values.Look(ref flowStrengthensMages, "flowStrengthensMages", true);
             Scribe_Values.Look(ref airMomentumSeconds, "airMomentumSeconds", 10f);
+            Scribe_Values.Look(ref magicBarsOnPane, "magicBarsOnPane", true);
             Scribe_Values.Look(ref airMomentumStep, "airMomentumStep", 0.15f);
             Scribe_Values.Look(ref airMomentumStages, "airMomentumStages", 3);
             Scribe_Values.Look(ref earthCastFactor, "earthCastFactor", 1.5f);
@@ -217,6 +219,8 @@ namespace Avir
                 + "no traits, no implants, no spells, no new runes; the rest of the mod (artifacts, ritualistics, the Song) works as before. "
                 + "Left off while the system is being built. Takes effect after a restart.");
             list.Gap();
+            list.CheckboxLabeled("Arcana and Life over the pawn's panel", ref o.magicBarsOnPane,
+                "The mage's Arcana as a long plaque right above the pawn's panel at the left, and the scales of Life under it. Off - they are buttons among the gizmos, as before.");
             list.CheckboxLabeled("Hidden terms", ref o.magicHiddenTerms,
                 "On: the codex keeps some things back until they are found in play - the price of a slipped hold until the first slip of that element, and what the Thread does after a Step, a Lift, a Shaping, a Reach or a pair of Barriers until it is first cast so. What a verb does, and what a sequence of runes comes to, is always told. Off: everything is told from the start.");
             list.Label("Pace of experience in the elements: x" + o.magicXpPace.ToString("0.##"), -1f, (TipSignal?)(

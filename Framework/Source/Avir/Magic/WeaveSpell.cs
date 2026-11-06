@@ -197,12 +197,15 @@ namespace Avir.Magic
         public static void Slip(Pawn caster, SpellCircle root)
         {
             SpellLore.Slipped(root);   // the price is known now
-            if (Small(root).Any(c => FireMagic.Is(c.element))) FireMagic.Raging(caster);
-            if (Small(root).Any(c => WaterMagic.Is(c.element))) WaterMagic.Chilled(caster);
-            if (Small(root).Any(c => EarthMagic.Is(c.element))) EarthMagic.Petrified(caster);
+            // a small element in a meeting of Life pays as the meeting, not as itself (the author's rule)
+            var plain = Small(root).Where(c => LifeMagic.PairOfCircle(root, c) == LifeMagic.None).ToList();
+            if (plain.Any(c => FireMagic.Is(c.element))) FireMagic.Raging(caster);
+            if (plain.Any(c => WaterMagic.Is(c.element))) WaterMagic.Chilled(caster);
+            if (plain.Any(c => EarthMagic.Is(c.element))) EarthMagic.Petrified(caster);
             foreach (ComboKind k in Combos.Pairs(root).Values.Distinct()) ComboMagic.Price(k, caster);
+            foreach (RuneKind lp in Small(root).Select(c => LifeMagic.PairOfCircle(root, c)).Where(k => k != LifeMagic.None).Distinct()) LifeMagic.PayPair(lp, caster);
             LifeMagic.Slip(caster, root);
-            if (Small(root).Any(c => AirMagic.Is(c.element))) AirMagic.Winded(caster);
+            if (plain.Any(c => AirMagic.Is(c.element))) AirMagic.Winded(caster);
         }
 
         /// <summary>A spell that takes the mage under the ground: it can come up anywhere on the map.</summary>

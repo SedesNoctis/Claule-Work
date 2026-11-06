@@ -80,6 +80,7 @@ namespace Avir
         public bool flowStrengthensMages = true;
         // air's momentum: seconds the wind holds between casts, share per stage, stages
         public float airMomentumSeconds = 10f, airMomentumStep = 0.15f;
+        public bool magicBarsOnPane = true;
         public int airMomentumStages = 3;
         // earth (and magma, bog) casts slower by this much
         public float earthCastFactor = 1.5f;
@@ -91,6 +92,7 @@ namespace Avir
         public float magicPenDepthMax = 8f;
         public bool magicStrictMods = false;
         public bool magicHiddenTerms = true;
+        public float magicXpPace = 1f;
         public float mageFlowWeight = 3f;
         /// <summary>Where a kept spell goes: 0 the colony's book, 1 files beside the mod (every game), 2 both.</summary>
         public int spellKeep = 0;
@@ -147,6 +149,7 @@ namespace Avir
             Scribe_Values.Look(ref magicOn, "magicOn", false);
             Scribe_Values.Look(ref flowStrengthensMages, "flowStrengthensMages", true);
             Scribe_Values.Look(ref airMomentumSeconds, "airMomentumSeconds", 10f);
+            Scribe_Values.Look(ref magicBarsOnPane, "magicBarsOnPane", true);
             Scribe_Values.Look(ref airMomentumStep, "airMomentumStep", 0.15f);
             Scribe_Values.Look(ref airMomentumStages, "airMomentumStages", 3);
             Scribe_Values.Look(ref earthCastFactor, "earthCastFactor", 1.5f);
@@ -157,6 +160,7 @@ namespace Avir
             Scribe_Values.Look(ref magicPenDepthMax, "magicPenDepthMax3", 8f);
             Scribe_Values.Look(ref magicStrictMods, "magicStrictMods", false);
             Scribe_Values.Look(ref magicHiddenTerms, "magicHiddenTerms", true);
+            Scribe_Values.Look(ref magicXpPace, "magicXpPace", 1f);
             Scribe_Values.Look(ref mageFlowWeight, "mageFlowWeight", 3f);
             Scribe_Values.Look(ref spellKeep, "spellKeep", 0);
             Scribe_Values.Look(ref arliaIntroBook, "arliaIntroBook");
@@ -215,8 +219,13 @@ namespace Avir
                 + "no traits, no implants, no spells, no new runes; the rest of the mod (artifacts, ritualistics, the Song) works as before. "
                 + "Left off while the system is being built. Takes effect after a restart.");
             list.Gap();
+            list.CheckboxLabeled("Arcana and Life over the pawn's panel", ref o.magicBarsOnPane,
+                "The mage's Arcana as a long plaque right above the pawn's panel at the left, and the scales of Life under it. Off - they are buttons among the gizmos, as before.");
             list.CheckboxLabeled("Hidden terms", ref o.magicHiddenTerms,
                 "On: the codex keeps some things back until they are found in play - the price of a slipped hold until the first slip of that element, and what the Thread does after a Step, a Lift, a Shaping, a Reach or a pair of Barriers until it is first cast so. What a verb does, and what a sequence of runes comes to, is always told. Off: everything is told from the start.");
+            list.Label("Pace of experience in the elements: x" + o.magicXpPace.ToString("0.##"), -1f, (TipSignal?)(
+                "How fast casters grow in their elements (Novice 0, Apprentice 500, Adept 2000, Expert 5000, Master 12000, Grandmaster 25000 at x1). A spell gives twice its Arcana, shared among its circles' elements; a slipped one half of that; the own element a little each day."));
+            o.magicXpPace = Mathf.Round(list.Slider(o.magicXpPace, 0.25f, 4f) * 4f) / 4f;
             list.CheckboxLabeled("Strict modifiers (test)", ref o.magicStrictMods,
                 "The author's rule, on trial. Modifiers beside the element work on the whole circle; modifiers after a verb or a form work on that one only, up to the next verb or form - and nothing of them leaks to the rest: Amplify on one verb no longer drives the others deeper through armour. "
                 + "A verb written again later in the circle is its own act with its own modifiers; and it hears an echo of the copy before it - half of what that copy came to, its own modifiers and its echo together - so echoes build up: four Releases, each with a Breadth, burst each wider than the last. Reach is the cast's, never echoed.");

@@ -132,6 +132,8 @@ namespace Avir.Magic
         /// <summary>Has cast Pestilence: no poison holds in them - it goes into the store.</summary>
         public bool pestMage;
         public float VitaMax => 0.5f * Capacity * (1f + 0.1f * MageClass.Stage(MageClass.XpIn(this, RuneKind.Life)));
+        /// <summary>The store of life is shown while a spell of Life is in the book - or while there is any left in it.</summary>
+        public bool LifeShown => vita > 0.5f || Book.spells.Any(LifeMagic.IsLifeSpell);
         public bool KnowsLife => vita > 0.01f || MageClass.XpIn(this, RuneKind.Life) > 0f;
         /// <summary>Into the store; what it cannot hold spills over (Overflow).</summary>
         public void AddVita(float amount)
@@ -336,8 +338,8 @@ namespace Avir.Magic
         {
             foreach (Gizmo g in base.GetGizmos()) yield return g;
             if (!AvirMagic.On || pawn.Faction != Faction.OfPlayer) yield break;
-            if (Find.Selector.NumSelected == 1) yield return new Gizmo_Arcana { core = this };
-            if (Find.Selector.NumSelected == 1 && KnowsLife) yield return new Gizmo_Vita { core = this };
+            if (Find.Selector.NumSelected == 1 && !MagicBars.On) yield return new Gizmo_Arcana { core = this };
+            if (Find.Selector.NumSelected == 1 && !MagicBars.On && LifeShown) yield return new Gizmo_Vita { core = this };
             if (pawn.MapHeld?.GetComponent<MapComponent_Auras>()?.all.Any(a => a.beam && a.caster == pawn) == true)
                 yield return new Command_Action
                 {
@@ -414,10 +416,18 @@ namespace Avir.Magic
 
         public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
         {
-            Rect r = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
+            DrawIn(new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f));
+            return new GizmoResult(GizmoState.Clear);
+        }
+
+        /// <summary>The Arcana in any rect: as a button among the gizmos, or long over the pawn's panel (MagicBars).</summary>
+        public void DrawIn(Rect r)
+        {
             bool sorc = core.Sorcerer;
             Texture2D art = sorc ? ArtSorc : ArtMage;
-            if (art != null) { DrawArt(r, art, sorc); return new GizmoResult(GizmoState.Clear); }
+            Texture2D lng = r.width > 300f ? (sorc ? LongSorc : LongMage) : null;
+            if (lng != null) { DrawLong(r, lng, sorc); return; }
+            if (art != null) { DrawArt(r, art, sorc); return; }
             Widgets.DrawWindowBackground(r);
             Rect inner = r.ContractedBy(5f);
             Text.Font = GameFont.Tiny;
@@ -447,7 +457,6 @@ namespace Avir.Magic
                 Event.current.Use();
             }
             TooltipHandler.TipRegion(bar, () => Tip(lo, hi), core.pawn.thingIDNumber ^ 0x51A7);
-            return new GizmoResult(GizmoState.Clear);
         }
 
         // the plaques, when their art is present: a frame with an open slot for the bar (slot: 12-88% across, 52-82% down)
@@ -461,6 +470,35 @@ namespace Avir.Magic
             looked = true;
             artMage = ContentFinder<Texture2D>.Get("UI/Magic/ArcanaMage", false);
             artSorc = ContentFinder<Texture2D>.Get("UI/Magic/ArcanaSorcerer", false);
+            longMage = ContentFinder<Texture2D>.Get("UI/Magic/ArcanaBar_Mage", false);
+            longSorc = ContentFinder<Texture2D>.Get("UI/Magic/ArcanaBar_Sorcerer", false);
+        }
+        private static Texture2D longMage, longSorc;
+        private static Texture2D LongMage { get { Look(); return longMage; } }
+        private static Texture2D LongSorc { get { Look(); return longSorc; } }
+
+        // the long plaque over the pawn's panel (its own art, Лист 26): ornaments at the ends and the middle, plain lengths
+        // between them stretch; the window for the bar is 10-90% across, 38-74% down, the numbers sit in it
+        private static readonly float[] LongCuts = { 0f, 0.15f, 0.42f, 0.58f, 0.85f, 1f };
+        private void DrawLong(Rect r, Texture2D art, bool sorc)
+        {
+            float[] cuts = LongCuts.Select(f => f * art.width).ToArray();
+            float X(float frac) => PlaqueArt.MapX(r, art, cuts, Stretch, frac * art.width);
+            Rect slot = new Rect(X(0.10f), r.y + r.height * 0.38f, X(0.90f) - X(0.10f), r.height * 0.36f);
+            Widgets.FillableBar(slot, Mathf.Clamp01(core.Fill), sorc ? SorcFill : MageFill, Empty, false);
+            core.Band(out float lo, out float hi);
+            Texture2D mark = sorc ? Black : Gold;
+            GUI.DrawTexture(new Rect(slot.x + slot.width * lo - 1f, slot.y, 2f, slot.height), mark);
+            GUI.DrawTexture(new Rect(slot.x + slot.width * hi - 1f, slot.y, 2f, slot.height), mark);
+            if (core.vent) GUI.DrawTexture(new Rect(slot.x + slot.width * core.target - 1f, slot.y - 2f, 2f, slot.height + 4f), White);
+            PlaqueArt.Draw(r, art, cuts, Stretch);
+            Text.Font = GameFont.Small; Text.Anchor = TextAnchor.MiddleCenter; GUI.color = new Color(0.95f, 0.92f, 0.86f);
+            Widgets.Label(slot, "Arcana " + Mathf.FloorToInt(core.arcana) + " / " + Mathf.FloorToInt(core.Capacity));
+            GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft;
+            if (Mouse.IsOver(slot) && Event.current.type == EventType.MouseDown && Event.current.button == 0)
+            { core.target = Mathf.Clamp01((Event.current.mousePosition.x - slot.x) / slot.width); core.vent = true; Event.current.Use(); }
+            if (Mouse.IsOver(r) && Event.current.type == EventType.MouseDown && Event.current.button == 1) { core.vent = !core.vent; Event.current.Use(); }
+            TooltipHandler.TipRegion(r, () => Tip(lo, hi) + "\n\nRight-click: " + (core.vent ? "hold it all (stop letting the excess out)." : "let the excess out again."), core.pawn.thingIDNumber ^ 0x51A7);
         }
 
         // drawn wider than the picture: only the plain lengths of the frame stretch, the ornaments keep their shape

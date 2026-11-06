@@ -104,6 +104,7 @@ namespace Avir.Magic
                 Learn(k == RuneKind.Fire ? "Price:raging flame" : k == RuneKind.Water ? "Price:chilled" : k == RuneKind.Earth ? "Price:stone-bound" : k == RuneKind.Air ? "Price:winded" : null);
             }
             foreach (ComboKind k in Combos.Pairs(root).Values.Distinct()) Learn("Price:" + Combos.Label(k));
+            foreach (string lk in LifeMagic.PriceKeys(root)) Learn(lk);
         }
 
         /// <summary>The almanac's entry on the Thread, told only as far as it has been found.</summary>

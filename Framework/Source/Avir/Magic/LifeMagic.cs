@@ -923,6 +923,14 @@ namespace Avir.Magic
         [DebugAction(Cat, "Life: store full / empty (toggle)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Store(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c == null) return; c.vita = c.vita > 1f ? 0f : c.VitaMax; Messages.Message(p.LabelShort + ": store of life " + c.vita.ToString("0") + " / " + c.VitaMax.ToString("0"), MessageTypeDefOf.NeutralEvent, false); }
 
+        [DebugAction(Cat, "Life: price of a meeting (Wild Flame, Blood, Emerald, Pestilence)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void Price(Pawn p)
+        {
+            var opts = new[] { RuneKind.Fire, RuneKind.Water, RuneKind.Earth, RuneKind.Air }
+                .Select(k => new DebugMenuOption(LifeMagic.PairName(k) + " - " + LifeMagic.PairPrice(k), DebugMenuOptionMode.Action, () => LifeMagic.PayPair(k, p))).ToList();
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(opts));
+        }
+
         [DebugAction(Cat, "Life: overflow now (+50 past the top)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Over(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c == null) return; c.vita = c.VitaMax; c.AddVita(50f); }
 
