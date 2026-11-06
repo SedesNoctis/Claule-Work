@@ -672,7 +672,9 @@ namespace Avir.Magic
                 var d = (Building_ShadowDecoy)ThingMaker.MakeThing(def);
                 d.her = caster;
                 d.lure = true;
-                d.sprite = "Things/Mote/Avir/Magic/Haze/Mirage";
+                // the mage's own silhouette, projected in the haze's amber - as the Linarians project theirs (the author)
+                d.sprite = null;
+                d.glow = new Color(1f, 0.72f, 0.35f, 0.5f);
                 d.until = Find.TickManager.TicksGame + ticks;
                 foreach (Pawn q in foes) d.fooled.Add(q.thingIDNumber);
                 GenSpawn.Spawn(d, c, map, Rot4.South);

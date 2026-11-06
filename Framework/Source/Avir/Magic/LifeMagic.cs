@@ -178,8 +178,13 @@ namespace Avir.Magic
                     Pawn to = Reached(caster, g, Area(last, range, map)).Where(Hurt).OrderBy(p => p.Position.DistanceToSquared(last)).FirstOrDefault();
                     if (to != null) { Leap(map, last, to.Position); where = to.Position; }
                 }
-                if (act.side == RuneKind.Drain) Take(caster, core, g, act, where, r, power, map);
-                else gaveNothing |= !Give(caster, core, g, act, where, r, power, map);
+                if (act.side == RuneKind.Drain) { Take(caster, core, g, act, where, r, power, map); if (act.verb != RuneKind.Beam && act.verb != RuneKind.Step) MapComponent_SpellSprites.Put(map, "Life/Drain", where.ToVector3Shifted(), r * 2f, 60, -1f, -3f); }
+                else
+                {
+                    bool gave = Give(caster, core, g, act, where, r, power, map);
+                    gaveNothing |= !gave;
+                    if (gave && act.verb != RuneKind.Beam && act.verb != RuneKind.Step) MapComponent_SpellSprites.Put(map, "Life/Mend", where.ToVector3Shifted(), r * 1.8f, 70);
+                }
                 last = where;
             }
             if (gaveNothing) MoteMaker.ThrowText(at.ToVector3Shifted(), map, "No life to give", Necrotic, 3f);
@@ -214,6 +219,7 @@ namespace Avir.Magic
             if (caster?.Map == null) return;
             bool keepP = pulsing; float keepR = pulseRadius; RuneKind keepPair = pair; float keepFlow = flow;
             pulsing = true; pulseRadius = radius; pair = withPair; flow = 0f;
+            MapComponent_SpellSprites.Put(caster.Map, "Life/Burst", caster.DrawPos, radius * 2f, 45);
             try
             {
                 Hediff_ArcaneCore core = Mages.Core(caster);

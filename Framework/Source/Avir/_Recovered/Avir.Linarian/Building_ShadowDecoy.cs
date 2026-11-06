@@ -25,6 +25,9 @@ public class Building_ShadowDecoy : Building, IAttackTarget, ILoadReferenceable
 
 	public string sprite;
 
+	/// <summary>The colour the silhouette is projected in (the haze's amber mirage); none - the Linarian's own shadow.</summary>
+	public Color? glow;
+
 	public HashSet<int> fooled = new HashSet<int>();
 
 	public Thing Thing => this;
@@ -109,7 +112,7 @@ public class Building_ShadowDecoy : Building, IAttackTarget, ILoadReferenceable
 			{
 				foreach (Graphic item in LinarianFormGraphics.Layers(her, text))
 				{
-					Material material2 = MaterialPool.MatFrom(new MaterialRequest(item.MatSouth.mainTexture, ShaderDatabase.Transparent, Dark));
+					Material material2 = MaterialPool.MatFrom(new MaterialRequest(item.MatSouth.mainTexture, ShaderDatabase.Transparent, glow ?? Dark));
 					Vector2 vector = item.drawSize * num2;
 					Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos2, Quaternion.identity, new Vector3(vector.x, 1f, vector.y)), material2, 0);
 					pos2.y += 0.0005f;
@@ -123,7 +126,7 @@ public class Building_ShadowDecoy : Building, IAttackTarget, ILoadReferenceable
 				{
 					mat = new Material(ShaderDatabase.Transparent)
 					{
-						color = Dark
+						color = glow ?? Dark
 					};
 				}
 				mat.mainTexture = renderTexture;

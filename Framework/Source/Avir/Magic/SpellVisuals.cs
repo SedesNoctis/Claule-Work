@@ -62,10 +62,14 @@ namespace Avir.Magic
         {
             if (mats.TryGetValue(path, out var m)) return m;
             m = Verse.ContentFinder<UnityEngine.Texture2D>.Get("Things/Mote/Avir/Magic/" + path, false) != null
-                ? Verse.MaterialPool.MatFrom("Things/Mote/Avir/Magic/" + path, Verse.ShaderDatabase.MoteGlow) : null;
+                ? Verse.MaterialPool.MatFrom("Things/Mote/Avir/Magic/" + path, Painted(path) ? Verse.ShaderDatabase.Transparent : Verse.ShaderDatabase.MoteGlow) : null;
             mats[path] = m;
             return m;
         }
+
+        /// <summary>The sprites redrawn as pictures with their own light and alpha (Fix136): drawn as they are, so their
+        /// dark parts show; the older ones stay glow.</summary>
+        private static bool Painted(string path) => path.StartsWith("Life/") || path.StartsWith("Second/") || path.StartsWith("Storm/Bolt_Fork") || path.StartsWith("Storm/Strike") || path.StartsWith("Haze/Shimmer");
 
         /// <summary>A sprite at a point: its size in cells, how long it lasts (ticks), its angle and its turning.</summary>
         public static void Put(Verse.Map map, string path, UnityEngine.Vector3 at, float size, int life, float angle = -1f, float spin = 0f, float aspect = 1f)
