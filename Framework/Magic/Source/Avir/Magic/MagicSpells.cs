@@ -363,7 +363,14 @@ namespace Avir.Magic
             yield return cast;
             yield return Toils_General.Do(() =>
             {
-                Spells.Resolve(pawn, core, spell, job.targetA, wallEnd);
+                // (Fix193) a fault inside a spell must not throw the mage out of every job: it is written down whole
+                // (the spell, the target, the trace) and the cast simply ends
+                try { Spells.Resolve(pawn, core, spell, job.targetA, wallEnd); }
+                catch (System.Exception e)
+                {
+                    string what = "[Avir] spell failed: " + spell?.name + " by " + pawn?.LabelShort + " at " + job.targetA + "\n" + e;
+                    Log.Error(what);
+                }
                 MageBook b = core.Book;
                 if (slot >= 0 && slot < 5) b.cooldown[slot] = Find.TickManager.TicksGame + Spells.Cooldown(spell);
             });

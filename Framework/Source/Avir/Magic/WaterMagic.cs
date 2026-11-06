@@ -389,6 +389,7 @@ namespace Avir.Magic
         {
             public IntVec3 at; public float radius; public RuneDef el; public int until; public Faction owner; public int seed; public Color? tint; public string tex;
             public bool zone; public float energy, energyMax = 1f, ranged = 0.25f, melee = 0.15f; public ComboKind combo;
+            public Pawn feeds;   // a dome of Life: whose store the blows it stops feed (Fix193)
             public MapComponent_WardsDrawn of;
             /// <summary>Aura + Barrier: the dome goes with this one (a moving dome round the caster).</summary>
             public Pawn follow;
@@ -400,7 +401,7 @@ namespace Avir.Magic
             public RuneKind[] Parts => combo != ComboKind.None ? Combos.Parts(combo) : el != null ? new[] { el.kind } : new RuneKind[0];
             public bool Fiery => combo == ComboKind.Magma || combo == ComboKind.Steam || (combo == ComboKind.None && el != null && el.kind == RuneKind.Fire);
             public string Name => (combo != ComboKind.None ? Combos.Label(combo) : el?.label ?? "magic") + " dome";
-            public void Spend(float amount) { energy -= amount; if (energy <= 0.01f) Fall("Dome broken"); }
+            public void Spend(float amount) { if (el != null && el.kind == RuneKind.Life) LifeMagic.WardFeeds(feeds, amount); energy -= amount; if (energy <= 0.01f) Fall("Dome broken"); }
             public void Fall(string why)
             {
                 SpellWards.Note(Name + " at " + at + " fell: " + why);
@@ -416,6 +417,7 @@ namespace Avir.Magic
                 Scribe_Values.Look(ref zone, "zone"); Scribe_Values.Look(ref energy, "energy"); Scribe_Values.Look(ref energyMax, "energyMax", 1f);
                 Scribe_Values.Look(ref ranged, "ranged", 0.25f); Scribe_Values.Look(ref melee, "melee", 0.15f); Scribe_Values.Look(ref combo, "combo", ComboKind.None);
                 Scribe_References.Look(ref follow, "follow");
+                Scribe_References.Look(ref feeds, "feeds");
                 bool hasTint = tint.HasValue; Color tc = tint ?? Color.white;
                 Scribe_Values.Look(ref hasTint, "hasTint"); Scribe_Values.Look(ref tc, "tint");
                 if (Scribe.mode == LoadSaveMode.LoadingVars) tint = hasTint ? tc : (Color?)null;
@@ -600,7 +602,7 @@ namespace Avir.Magic
                     Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(wat, Quaternion.AngleAxis((Time.realtimeSinceStartup * -20f + p.thingIDNumber * 37f) % 360f, Vector3.up), new Vector3(wp, 1f, wp)), Mat(null, Combos.ColorOf(sw.Combo), "Dome_" + sw.Combo), 0);
                     continue;
                 }
-                if (sw != null && sw.Parts.Length == 1 && (sw.Parts[0] == RuneKind.Earth || sw.Parts[0] == RuneKind.Air)) { el = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + sw.Parts[0]); any = true; }
+                if (sw != null && sw.Parts.Length == 1 && (sw.Parts[0] == RuneKind.Earth || sw.Parts[0] == RuneKind.Air || sw.Parts[0] == RuneKind.Life)) { el = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + sw.Parts[0]); any = true; }
                 foreach (Hediff h in p.health.hediffSet.hediffs)
                 {
                     if (any) break;

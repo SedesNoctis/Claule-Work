@@ -123,10 +123,11 @@ namespace Avir.Magic
             flows.TryGetValue(caster.thingIDNumber, out flow);
             pair = PairOf(root, g.Great ? g : root?.ParentOf(g));
             aspect = AspectOf(root, g.Great ? g : root?.ParentOf(g));
+            mix = MixOf(root, g.Great ? g : root?.ParentOf(g));
             flowKinds[caster.thingIDNumber] = pair;
             if (pair != None) GameComponent_Combos.First("life" + pair, caster);
             try { Cast(caster, g, at, power, map); }
-            finally { flows[caster.thingIDNumber] = flow; flow = 0f; pair = None; aspect = None; }
+            finally { flows[caster.thingIDNumber] = flow; flow = 0f; pair = None; aspect = None; mix = LifeMix.None; }
         }
 
         // ------------------------------------------------------------------ the pairs: Life meeting a small element in its box
@@ -175,6 +176,7 @@ namespace Avir.Magic
             if (pair == RuneKind.Air) core.pestMage = true;
             // an Aura with an Anchor in a circle of Life: a living aura - its acts pulse round the mage (the general rule of auras)
             if (!pulsing) RaiseAura(caster, g, power, map);
+            if (!pulsing) LifeBarrier(caster, g, at, power, map);
             if (pair == RuneKind.Water) core.bloodMage = true;
             float r = pulsing ? pulseRadius : Radius(g);
             IntVec3 last = at;
@@ -199,6 +201,44 @@ namespace Avir.Magic
                 last = where;
             }
             if (gaveNothing) MoteMaker.ThrowText(at.ToVector3Shifted(), map, "No life to give", Necrotic, 3f);
+        }
+
+        // ------------------------------------------------------------------ the Barrier of Life (Fix193)
+
+        /// <summary>Bark and moss (the plan: "Оберег - кора"): a Barrier in a circle of Life lays a ward of bark - as everywhere,
+        /// the last rune of the circle on the mage, anywhere else a dome of branches where the spell strikes (round the mage
+        /// with an Aura). It holds by the rules of wards; every blow it stops feeds the store of life of the one who laid it.</summary>
+        private static void LifeBarrier(Pawn caster, SpellCircle g, IntVec3 at, float power, Map map)
+        {
+            bool shaped = SpellSculpt.Of(g);
+            var runes = g.sections.Select((sec, i) => new { sec, i }).SelectMany(x => (x.sec.runes ?? new List<RuneDef>()).Where(r => r != null).Select(r => new { r, outer = x.i == g.sections.Count - 1 }))
+                .Where(x => !(shaped && x.outer && (x.r.kind == RuneKind.Barrier || x.r.kind == RuneKind.Thread))).Select(x => x.r).ToList();
+            int barriers = runes.Count(x => x.kind == RuneKind.Barrier);
+            if (barriers == 0) return;
+            int amp = runes.Count(x => x.kind == RuneKind.Amplify);
+            HediffDef ward = H("Avir_LifeWard");
+            RuneDef life = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Life");
+            int ticks = Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power);
+            if (runes.Last().kind == RuneKind.Barrier)
+            {
+                SpellWards.Lay(caster, ward, power, amp, ticks);
+                if (caster.health.hediffSet.GetFirstHediffOfDef(ward) is Hediff_SpellWard w) w.feeds = caster;
+            }
+            else
+            {
+                bool aura = runes.Any(x => x.kind == RuneKind.Aura);
+                var d = MapComponent_WardsDrawn.RaiseWard(map, aura ? caster.Position : at, Mathf.Max(1.4f, Radius(g) - 0.5f), life, ComboKind.None, caster, ticks, power, amp);
+                if (d != null) { d.feeds = caster; if (ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Life_BranchDome", false) != null) d.tex = "Life_BranchDome"; if (aura) d.follow = caster; }
+            }
+        }
+
+        /// <summary>A blow stopped by bark: half its weight goes into the store of plain Life of the one who laid it.</summary>
+        public static void WardFeeds(Pawn feeds, float amount)
+        {
+            Hediff_ArcaneCore c = feeds != null ? Mages.Core(feeds) : null;
+            if (c == null || amount <= 0f) return;
+            c.AddTo(None, amount * 0.5f);
+            if (feeds.Spawned && Rand.Chance(0.3f)) Wisp(feeds.DrawPos, feeds.Map);
         }
 
         // ------------------------------------------------------------------ the living aura of Life
@@ -281,6 +321,8 @@ namespace Avir.Magic
             if (act.trans) { flow += TransmuteTake(caster, g, act, at, r, power, map); return; }
             float got = 0f;
             curVerb = act.verb;
+            mixBeamHit = false;
+            got += MixGround(at, act.verb == RuneKind.Beam ? 0f : r, map);   // Humus: the dead in reach go to the soil
             if (act.verb == RuneKind.Beam) { Line(caster, at, map, out var lc); AspectArea(lc, map); }
             else AspectArea(GenRadial.RadialCellsAround(at, act.verb == RuneKind.Release || act.verb == RuneKind.Hold ? r : Mathf.Max(1.5f, r - 1f), true), map);
             switch (act.verb)
@@ -339,6 +381,7 @@ namespace Avir.Magic
                     case RuneKind.Earth: Crust(p, dmg * 0.04f); got += dmg * 0.5f; break;                  // stone grows on it
                     case RuneKind.Air: got += p == caster ? 0f : Pestilence.TakeFrom(caster, p, dmg) + Drink(p, dmg / 6f); break;   // its sicknesses taken onto the mage (Fix160), the rest drunk
                     default:
+                        if (mix != LifeMix.None) { MixWither(caster, p, dmg); p.TakeDamage(new DamageInfo(WitherDmg, dmg * 0.6f, 2f, -1f, caster)); got += dmg; break; }
                         if (aspect != None) { AspectWither(caster, p, dmg); p.TakeDamage(new DamageInfo(WitherDmg, dmg * 0.6f, 2f, -1f, caster)); got += dmg; break; }
                         p.TakeDamage(new DamageInfo(WitherDmg, dmg, 2f, -1f, caster)); got += dmg; break;
                 }
@@ -373,7 +416,7 @@ namespace Avir.Magic
             return got;
         }
 
-        private static void Wisp(Vector3 v, Map map) { Color c = aspect != None ? AspectColor(aspect) : PairColor(pair); FleckMaker.ThrowDustPuffThick(v, map, 1f, new Color(c.r, c.g, c.b, 0.55f)); }
+        private static void Wisp(Vector3 v, Map map) { Color c = mix != LifeMix.None ? MixColor(mix) : aspect != None ? AspectColor(aspect) : PairColor(pair); FleckMaker.ThrowDustPuffThick(v, map, 1f, new Color(c.r, c.g, c.b, 0.55f)); }
 
         // ------------------------------------------------------------------ giving: Restoration, out of the flow, then the store
 
@@ -423,6 +466,7 @@ namespace Avir.Magic
             if (f <= 0f) return false;
             PairGive(caster, act, who, at, r, power * f, map);
             if (aspect != None) AspectGive(who, act.verb, power * f, map, at, r);
+            if (mix != LifeMix.None) MixGive(caster, core, who, act.verb, power * f, map, at, r);
             foreach (Pawn p in who)
             {
                 if (per > 0f) HealInjuries(p, per * power * f);

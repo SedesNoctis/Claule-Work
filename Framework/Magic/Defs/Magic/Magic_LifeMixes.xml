@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- The mixed triples of Life (Fix193): Fever, Forge, Ardour, Humus, Nerve, Decay - and Blood clotting. -->
+  <HediffDef>
+    <defName>Avir_LifeFever</defName>
+    <label>fever of Life</label>
+    <description>Life drove a fever into this body: weak, clumsy, the head dull.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Consciousness</capacity><offset>-0.15</offset></li><li><capacity>Manipulation</capacity><offset>-0.1</offset></li><li><capacity>Moving</capacity><offset>-0.1</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeFeverBoil</defName>
+    <label>stewing in sweat</label>
+    <description>Held in a fever, the body stews in its own sweat.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Consciousness</capacity><offset>-0.3</offset></li><li><capacity>Manipulation</capacity><offset>-0.15</offset></li><li><capacity>Moving</capacity><offset>-0.2</offset></li></capMods><painOffset>0.15</painOffset></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeSweat</defName>
+    <label>healing sweat</label>
+    <description>A sweat from Life: the body learns its sicknesses quicker, poison comes out with the sweat.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><statOffsets><ImmunityGainSpeed>0.3</ImmunityGainSpeed></statOffsets><hungerRateFactor>1.15</hungerRateFactor></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeSteamRoom</defName>
+    <label>steam room of Life</label>
+    <description>A held healing sweat, as in a steam room: the body fights its sicknesses hard.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><statOffsets><ImmunityGainSpeed>0.7</ImmunityGainSpeed></statOffsets><hungerRateFactor>1.3</hungerRateFactor><capMods><li><capacity>Moving</capacity><offset>-0.1</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeBaked</defName>
+    <label>joints baked</label>
+    <description>Heat baked the joints: slow, the hands do not obey.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Moving</capacity><offset>-0.2</offset></li><li><capacity>Manipulation</capacity><offset>-0.25</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeFused</defName>
+    <label>joints fused</label>
+    <description>The joints are fused while Life holds them.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Moving</capacity><offset>-0.5</offset></li><li><capacity>Manipulation</capacity><offset>-0.5</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeForged</defName>
+    <label>newly forged</label>
+    <description>Forged back by Life: the new part is still tender, and warm to the touch.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>60000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><painOffset>0.05</painOffset></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeArdour</defName>
+    <label>ardour</label>
+    <description>Life fanned the heat of the spirit: no tiredness, no fear - for now. The reckoning comes after.</description>
+    <hediffClass>Avir.Magic.Hediff_LifeArdour</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><restFallFactor>0.1</restFallFactor><capMods><li><capacity>Consciousness</capacity><offset>0.05</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeArdourSpent</defName>
+    <label>ardour spent</label>
+    <description>The ardour burnt out: tired, slow, heavy-hearted.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><restFallFactor>1.8</restFallFactor><capMods><li><capacity>Moving</capacity><offset>-0.1</offset></li><li><capacity>Consciousness</capacity><offset>-0.05</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeApathy</defName>
+    <label>apathy</label>
+    <description>The ardour blown out of the body: nothing seems worth doing.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Moving</capacity><offset>-0.3</offset></li><li><capacity>Manipulation</capacity><offset>-0.3</offset></li><li><capacity>Consciousness</capacity><offset>-0.1</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeTremor</defName>
+    <label>nerve tremor</label>
+    <description>A current ran through the nerves: the hands tremble, the aim is lost.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Manipulation</capacity><offset>-0.4</offset></li></capMods><statFactors><ShootingAccuracyPawn>0.7</ShootingAccuracyPawn></statFactors></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeShaking</defName>
+    <label>nerves seized</label>
+    <description>The nerves held in a spasm: the hands useless while it holds.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Manipulation</capacity><offset>-0.7</offset></li><li><capacity>Moving</capacity><offset>-0.2</offset></li></capMods><statFactors><ShootingAccuracyPawn>0.4</ShootingAccuracyPawn></statFactors></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeHeartStarted</defName>
+    <label>heart started</label>
+    <description>Life started the heart with a jolt: the pain dulled, the body up again.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><painFactor>0.3</painFactor><capMods><li><capacity>Consciousness</capacity><offset>0.15</offset></li><li><capacity>BloodPumping</capacity><offset>0.2</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeKeptAlive</defName>
+    <label>kept alive</label>
+    <description>Life holds this body on the edge: the heart kept going, the blood loss eased while it holds.</description>
+    <hediffClass>Avir.Magic.Hediff_LifeKeptAlive</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><painFactor>0.5</painFactor><capMods><li><capacity>BloodPumping</capacity><offset>0.4</offset></li><li><capacity>Breathing</capacity><offset>0.4</offset></li><li><capacity>Consciousness</capacity><offset>0.2</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeAgeHeld</defName>
+    <label>age held</label>
+    <description>Life holds this body's age: it does not grow older while it holds.</description>
+    <hediffClass>Avir.Magic.Hediff_LifeAgeHeld</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li></li></stages>
+  </HediffDef>
+  <DamageDef>
+    <defName>Avir_Crumble</defName>
+    <label>crumbling</label>
+    <workerClass>DamageWorker_AddInjury</workerClass>
+    <externalViolence>true</externalViolence>
+    <deathMessage>{0} has crumbled to dust.</deathMessage>
+    <hediff>Avir_CrumbleWound</hediff>
+    <harmsHealth>true</harmsHealth>
+    <defaultDamage>4</defaultDamage>
+  </DamageDef>
+  <HediffDef ParentName="InjuryBase">
+    <defName>Avir_CrumbleWound</defName>
+    <label>crumbled</label>
+    <labelNoun>a crumbling wound</labelNoun>
+    <description>Flesh grown old in a moment and crumbled to dust.</description>
+    <comps>
+      <li Class="HediffCompProperties_TendDuration"><labelTendedWell>bandaged</labelTendedWell><labelTendedWellInner>tended</labelTendedWellInner><labelSolidTendedWell>set</labelSolidTendedWell></li>
+      <li Class="HediffCompProperties_GetsPermanent"><permanentLabel>withered scar</permanentLabel></li>
+    </comps>
+    <injuryProps><painPerSeverity>0.0125</painPerSeverity><averagePainPerSeverityPermanent>0.00625</averagePainPerSeverityPermanent><canMerge>true</canMerge><destroyedLabel>crumbled away</destroyedLabel></injuryProps>
+  </HediffDef>
+  <!-- Blood: Withering with a Transmutation hardens the blood in the body (the author, Fix193). -->
+  <DamageDef>
+    <defName>Avir_Clotting</defName>
+    <label>clotting</label>
+    <workerClass>DamageWorker_AddInjury</workerClass>
+    <externalViolence>true</externalViolence>
+    <deathMessage>{0}'s blood has set like stone.</deathMessage>
+    <hediff>Avir_ClotWound</hediff>
+    <harmsHealth>true</harmsHealth>
+    <defaultDamage>4</defaultDamage>
+  </DamageDef>
+  <HediffDef ParentName="InjuryBase">
+    <defName>Avir_ClotWound</defName>
+    <label>clot</label>
+    <labelNoun>a hardened clot</labelNoun>
+    <description>Blood hardened inside the flesh: a knot that does not bleed, but hurts and does not let the blood through.</description>
+    <comps>
+      <li Class="HediffCompProperties_TendDuration"><labelTendedWell>tended</labelTendedWell><labelTendedWellInner>tended</labelTendedWellInner><labelSolidTendedWell>tended</labelSolidTendedWell></li>
+      <li Class="HediffCompProperties_GetsPermanent"><permanentLabel>old clot</permanentLabel></li>
+    </comps>
+    <injuryProps><painPerSeverity>0.015</painPerSeverity><averagePainPerSeverityPermanent>0.005</averagePainPerSeverityPermanent><canMerge>true</canMerge><destroyedLabel>turned to stone</destroyedLabel></injuryProps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_BloodClotted</defName>
+    <label>clotted blood</label>
+    <description>Life made the blood in this body set: it moves thick and slow - the heart labours, the body tires and slows. Part of the blood is spent in the clots. It thins again in its own time.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.7,0.1,0.12)</defaultLabelColor>
+    <initialSeverity>0.1</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <lethalSeverity>1</lethalSeverity>
+    <comps><li Class="HediffCompProperties_SeverityPerDay"><severityPerDay>-0.6</severityPerDay></li></comps>
+    <stages>
+      <li><label>thick</label><capMods><li><capacity>BloodPumping</capacity><offset>-0.15</offset></li><li><capacity>BloodFiltration</capacity><offset>-0.1</offset></li><li><capacity>Moving</capacity><offset>-0.05</offset></li></capMods></li>
+      <li><minSeverity>0.35</minSeverity><label>clotting</label><capMods><li><capacity>BloodPumping</capacity><offset>-0.35</offset></li><li><capacity>BloodFiltration</capacity><offset>-0.25</offset></li><li><capacity>Moving</capacity><offset>-0.15</offset></li><li><capacity>Consciousness</capacity><offset>-0.1</offset></li></capMods></li>
+      <li><minSeverity>0.7</minSeverity><label>setting</label><lifeThreatening>true</lifeThreatening><capMods><li><capacity>BloodPumping</capacity><offset>-0.6</offset></li><li><capacity>BloodFiltration</capacity><offset>-0.45</offset></li><li><capacity>Moving</capacity><offset>-0.3</offset></li><li><capacity>Consciousness</capacity><offset>-0.25</offset></li></capMods></li>
+    </stages>
+  </HediffDef>
+  <!-- The Barrier of Life (Fix193): bark and moss; the blows it stops feed the store of life. -->
+  <HediffDef>
+    <defName>Avir_LifeWard</defName>
+    <label>ward of bark</label>
+    <description>Living bark and moss over the body. Magic of other elements is put out at the cost of its charge; Life's own passes it, stronger, and the ward falls. Every blow it stops feeds the store of life of the one who laid it.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
+    <defaultLabelColor>(0.55, 0.8, 0.45)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>12000~12000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+  </HediffDef>
+</Defs>

@@ -403,7 +403,7 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Purge:
                         // clean air: small flames blown out, every gas blown off the ground, and breathed out of friends' bodies
-                        foreach (IntVec3 c in cells) foreach (Fire fire in c.GetThingList(map).OfType<Fire>().ToList()) if (fire.fireSize < 0.6f) fire.Destroy();
+                        foreach (IntVec3 c in cells) foreach (Fire fire in c.GetThingList(map).OfType<Fire>().ToList()) if (fire.fireSize < 0.6f && !fire.Destroyed) fire.Destroy();
                         Cleansing.ClearGas(cells, map);
                         foreach (Pawn p in MagicFx.PawnsIn(cells, map)) if (!p.HostileTo(caster)) Cleansing.AirOut(p, 0.2f * power);
                         break;

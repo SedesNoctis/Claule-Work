@@ -718,7 +718,7 @@ namespace Avir.Magic
                             case SecondKind.BallLightning: if (foe && Rand.Chance(0.15f)) { p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 4f * f.power * (SpellBody.Of(p).metalArmour ? 1.5f : 1f), 0f, -1f, f.owner)); FleckMaker.ThrowLightningGlow(p.DrawPos, map, 1f); } break;
                         }
                     }
-                    if (f.y == SecondKind.Deluge) foreach (Thing t in here.Where(t => t is Fire).ToList()) t.Destroy();
+                    if (f.y == SecondKind.Deluge) foreach (Thing t in here.Where(t => t is Fire).ToList()) if (!t.Destroyed) t.Destroy();
                 }
             }
         }

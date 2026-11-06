@@ -712,7 +712,8 @@ namespace Avir.Magic
             {
                 RuneKind lp = LifeMagic.Is(c.element) ? (rootNow != null ? LifeMagic.PairOf(rootNow, c) : LifeMagic.None) : LifeMagic.None;
                 RuneKind la = LifeMagic.Is(c.element) && rootNow != null ? LifeMagic.AspectOf(rootNow, c) : LifeMagic.None;
-                string nm = lp != LifeMagic.None ? LifeMagic.PairName(lp) + " (Life + " + lp + " + " + lp + ")" : la != LifeMagic.None ? LifeMagic.AspectName(la) + " (Life + " + la + ")" : c.element != null ? c.element.LabelCap.ToString() : "no seal yet";
+                LifeMix lmx = LifeMagic.Is(c.element) && rootNow != null ? LifeMagic.MixOf(rootNow, c) : LifeMix.None;
+                string nm = lp != LifeMagic.None ? LifeMagic.PairName(lp) + " (Life + " + lp + " + " + lp + ")" : la != LifeMagic.None ? LifeMagic.AspectName(la) + " (Life + " + la + ")" : lmx != LifeMix.None ? LifeMagic.MixName(lmx) + " (Life + " + string.Join(" + ", LifeMagic.MixParts(lmx)) + ")" : c.element != null ? c.element.LabelCap.ToString() : "no seal yet";
                 return "Great: " + nm + " (" + c.inner.Count + " inside)";
             }
             return c.element != null ? c.element.LabelCap.ToString() : "empty circle";
@@ -1087,7 +1088,7 @@ namespace Avir.Magic
                 if (!whole && sel.element == null && !sel.Great && s.weave.ParentOf(sel) is SpellCircle lb && lb.Great && LifeMagic.Is(lb.element))
                 {
                     LifeMagic.PairOfText = LifeMagic.PairOf(s.weave, lb);
-                    string pn = LifeMagic.PairName(LifeMagic.PairOfText) ?? LifeMagic.AspectName(LifeMagic.AspectOf(s.weave, lb));
+                    string pn = LifeMagic.PairName(LifeMagic.PairOfText) ?? LifeMagic.AspectName(LifeMagic.AspectOf(s.weave, lb)) ?? LifeMagic.MixName(LifeMagic.MixOf(s.weave, lb));
                     fx0.main = "A small circle of " + (pn ?? "Life") + ": " + WeaveSpell.LifeText(sel);
                 }
                 // a meeting of the second order: named first, its own deed told, the pair's work under it

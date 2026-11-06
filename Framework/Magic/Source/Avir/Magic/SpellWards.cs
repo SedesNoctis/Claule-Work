@@ -35,6 +35,8 @@ namespace Avir.Magic
     public class Hediff_SpellWard : HediffWithComps, IWard
     {
         public float energy, energyMax = 1f, ranged = 0.25f, melee = 0.15f;
+        /// <summary>A ward of Life: whose store the blows it stops feed (Fix193).</summary>
+        public Pawn feeds;
 
         public float Energy { get => energy; set => energy = value; }
         public float EnergyMax => energyMax;
@@ -62,6 +64,7 @@ namespace Avir.Magic
                 if (def == WaterDefOf.Avir_WaterWard) return new[] { RuneKind.Water };
                 if (def == EarthAirDefOf.Avir_EarthWard) return new[] { RuneKind.Earth };
                 if (def == EarthAirDefOf.Avir_AirWard) return new[] { RuneKind.Air };
+                if (def.defName == "Avir_LifeWard") return new[] { RuneKind.Life };
                 foreach (ComboKind k in new[] { ComboKind.Steam, ComboKind.Storm, ComboKind.Magma, ComboKind.Haze, ComboKind.Bog, ComboKind.Dust })
                     if (def == ComboDefOf.Ward(k)) return Combos.Parts(k);
                 RuneDef el = WardElement.Get(pawn);
@@ -88,6 +91,7 @@ namespace Avir.Magic
 
         public void Spend(float amount)
         {
+            if (def.defName == "Avir_LifeWard") LifeMagic.WardFeeds(feeds ?? pawn, amount);   // bark and moss: what it stops feeds the store
             energy -= amount;
             if (energy <= 0.01f) Fall("Ward broken");
         }
@@ -118,6 +122,7 @@ namespace Avir.Magic
             Scribe_Values.Look(ref energyMax, "energyMax", 1f);
             Scribe_Values.Look(ref ranged, "ranged", 0.25f);
             Scribe_Values.Look(ref melee, "melee", 0.15f);
+            Scribe_References.Look(ref feeds, "feeds");
         }
     }
 

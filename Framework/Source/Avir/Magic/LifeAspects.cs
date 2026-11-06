@@ -22,6 +22,7 @@ namespace Avir.Magic
             if (box == null || !box.Great || !Is(box.element)) return None;
             var inside = box.inner.Where(k => !k.Great).ToList();
             if (box.OwnRunes.Concat(inside.SelectMany(k => k.OwnRunes)).Any(x => x.kind == RuneKind.Closing)) return None;
+            if (MixOf(root, box) != LifeMix.None) return None;   // two different elements: a mixed triple (Fix193)
             SpellCircle first = inside.FirstOrDefault(k => Elemental(k));
             if (first == null) return None;
             return inside.Count(k => k.element == first.element) >= 2 ? None : first.element.kind;
@@ -57,7 +58,7 @@ namespace Avir.Magic
                 case RuneKind.Fire:
                     MagicFx.Give(p, HD("Avir_LifeChill"), ticks);
                     FireMagic.Extinguish(p.Position, p.Map);
-                    foreach (Fire f in p.Map.listerThings.ThingsOfDef(ThingDefOf.Fire).OfType<Fire>().Where(f => f.parent == p).ToList()) f.Destroy();
+                    foreach (Fire f in p.Map.listerThings.ThingsOfDef(ThingDefOf.Fire).OfType<Fire>().Where(f => f.parent == p && !f.Destroyed).ToList()) f.Destroy();   // Extinguish may have put it out already (Fix193: "already destroyed")
                     Hediff hyp = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Heatstroke); if (hyp != null) hyp.Severity -= 0.2f;
                     if (curVerb == RuneKind.Hold) MagicFx.Give(p, HD("Avir_LifeTorpor"), Mathf.RoundToInt(2500f * Mathf.Max(0.5f, dmg / 3f)));
                     break;

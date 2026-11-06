@@ -148,6 +148,23 @@ namespace Avir.Magic
             {
                 case RuneKind.Water:
                     ArcaneWorks.WaterToStoneAt(map, GenRadial.RadialCellsAround(at, r, true));
+                    // the blood in the bodies reached hardens (the author, Fix193): a clot - its own wound - and the blood
+                    // thickens: the heart labours, the body slows; part of the blood is spent in the clots, and Life drinks it
+                    {
+                        DamageDef clot = DefDatabase<DamageDef>.GetNamedSilentFail("Avir_Clotting");
+                        HediffDef thick = DefDatabase<HediffDef>.GetNamedSilentFail("Avir_BloodClotted");
+                        foreach (Pawn p in Reached(caster, g, Area(at, r, map)).Where(x => x.RaceProps.IsFlesh && !x.Dead).ToList())
+                        {
+                            BodyPartRecord inner = p.health.hediffSet.GetNotMissingParts().Where(b => b.depth == BodyPartDepth.Inside && b.def.bleedRate > 0f).RandomElementWithFallback();
+                            if (clot != null) p.TakeDamage(new DamageInfo(clot, 3f * power, 0f, -1f, caster, inner));
+                            if (p.Dead) { got += 3f; continue; }
+                            if (thick != null) { Hediff h = p.health.hediffSet.GetFirstHediffOfDef(thick) ?? p.health.AddHediff(thick); h.Severity += 0.15f * power; }
+                            Hediff bl = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.BloodLoss) ?? p.health.AddHediff(HediffDefOf.BloodLoss);
+                            bl.Severity += 0.06f * power;
+                            got += 4f;
+                            if (p.Spawned) MapComponent_SpellSprites.PutTinted(map, "Life/BloodHold", new Color(0.45f, 0.05f, 0.08f), p.DrawPos, 1.1f, 60);
+                        }
+                    }
                     break;
                 case RuneKind.Earth:
                     foreach (IntVec3 c in GenRadial.RadialCellsAround(at, r, true).Where(c => c.InBounds(map)).ToList())

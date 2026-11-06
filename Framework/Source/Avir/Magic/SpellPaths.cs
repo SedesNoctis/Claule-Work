@@ -155,7 +155,7 @@ namespace Avir.Magic
                     switch (f.k)
                     {
                         case ComboKind.Bog:   // moss: its own mend, foes sink, fire does not take
-                            foreach (Thing t in here.Where(t => t is Fire).ToList()) t.Destroy();
+                            foreach (Thing t in here.Where(t => t is Fire).ToList()) if (!t.Destroyed) t.Destroy();
                             foreach (Pawn p in here.OfType<Pawn>().ToList())
                             {
                                 if (f.owner != null && !p.HostileTo(f.owner)) SpellHeal.Mend(p, 1.2f * f.power);

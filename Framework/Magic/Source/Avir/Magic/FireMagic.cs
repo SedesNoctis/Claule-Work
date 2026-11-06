@@ -113,7 +113,7 @@ namespace Avir.Magic
                 .OrderBy(c => c.DistanceToSquared(at)).Take(8).ToList();
             foreach (IntVec3 c in fires)
             {
-                foreach (Fire f in c.GetThingList(map).OfType<Fire>().ToList()) f.Destroy();
+                foreach (Fire f in c.GetThingList(map).OfType<Fire>().ToList()) if (!f.Destroyed) f.Destroy();
                 FleckMaker.Static(c.ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 2f);
                 GenExplosion.DoExplosion(c, map, 1.2f, DamageDefOf.Flame, caster, Mathf.RoundToInt(6f * power), -1f,
                     null, null, null, null, null, 0f, 1, null, null, 255, false, null, 0f, 1, 0.3f, false, null, SpellSculpt.Ignored(caster, map, c, 1.2f));
@@ -298,8 +298,8 @@ namespace Avir.Magic
             float took = 0f;
             foreach (Thing t in c.GetThingList(map).ToList())
             {
-                if (t is Fire f) { took += f.fireSize; f.Destroy(); }
-                else if (t.GetAttachment(ThingDefOf.Fire) is Fire af) { took += af.fireSize; af.Destroy(); }
+                if (t is Fire f) { if (f.Destroyed) continue; took += f.fireSize; f.Destroy(); }
+                else if (t.GetAttachment(ThingDefOf.Fire) is Fire af && !af.Destroyed) { took += af.fireSize; af.Destroy(); }
                 else if (t is HeldFlame hf) { took += 0.5f; hf.Destroy(); }
             }
             return took;
@@ -537,7 +537,7 @@ namespace Avir.Magic
             foreach (var kv in noFire.ToList())
             {
                 if (kv.Value <= now) { noFire.Remove(kv.Key); continue; }
-                foreach (Fire f in kv.Key.GetThingList(map).OfType<Fire>().ToList()) f.Destroy();
+                foreach (Fire f in kv.Key.GetThingList(map).OfType<Fire>().ToList()) if (!f.Destroyed) f.Destroy();
             }
         }
 
@@ -583,7 +583,7 @@ namespace Avir.Magic
         public override void CompPostTick(ref float severityAdjustment)
         {
             if (!Pawn.IsHashIntervalTick(30) || !Pawn.Spawned) return;
-            if (Pawn.GetAttachment(ThingDefOf.Fire) is Fire f) f.Destroy();
+            if (Pawn.GetAttachment(ThingDefOf.Fire) is Fire f && !f.Destroyed) f.Destroy();
         }
     }
 

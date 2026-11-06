@@ -118,7 +118,7 @@ namespace Avir.Magic
                 if (LifeMagic.IsLink(root, c))
                 {
                     LifeMagic.PairOfText = LifeMagic.PairOf(root, c.Great ? c : root.ParentOf(c));
-                    string pn = LifeMagic.PairName(LifeMagic.PairOfText) ?? LifeMagic.AspectName(LifeMagic.AspectOf(root, c.Great ? c : root.ParentOf(c)));
+                    string pn = LifeMagic.PairName(LifeMagic.PairOfText) ?? LifeMagic.AspectName(LifeMagic.AspectOf(root, c.Great ? c : root.ParentOf(c))) ?? LifeMagic.MixName(LifeMagic.MixOf(root, c.Great ? c : root.ParentOf(c)));
                     parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + (k > 0 ? "then: " : "") + (c.Great ? "" : "a small circle of ") + (pn != null ? pn + " - " : "") + LifeText(c));
                     continue;
                 }
@@ -158,6 +158,8 @@ namespace Avir.Magic
                 e.extras.Insert(0, new KeyValuePair<string, string>(LifeMagic.PairName(lk), LifeMagic.PairText(lk)));
             foreach (PartialKind pk in Partials.InSpell(root).Distinct())
                 e.extras.Insert(0, new KeyValuePair<string, string>(pk.ToString(), Partials.Text(pk)));
+            foreach (LifeMix lm in LifeMagic.Circles(root).Select(g => LifeMagic.MixOf(root, g)).Where(k => k != LifeMix.None).Distinct())
+                e.extras.Insert(0, new KeyValuePair<string, string>(lm.ToString(), LifeMagic.MixText(lm)));
             foreach (RuneKind la in LifeMagic.Circles(root).Select(g => LifeMagic.AspectOf(root, g)).Where(k => k != LifeMagic.None).Distinct())
                 e.extras.Insert(0, new KeyValuePair<string, string>(LifeMagic.AspectName(la), LifeMagic.AspectText(la)));
             if (LifeMagic.Circles(root).Any())
