@@ -109,13 +109,20 @@ namespace Avir.Magic
             if (caster == null || !flows.TryGetValue(caster.thingIDNumber, out float f)) return;
             flows.Remove(caster.thingIDNumber);
             Hediff_ArcaneCore core = Mages.Core(caster);
-            if (core != null && f > 0f) core.AddVita(f);
+            RuneKind fk = flowKinds.TryGetValue(caster.thingIDNumber, out RuneKind k0) ? k0 : None;
+            flowKinds.Remove(caster.thingIDNumber);
+            if (core != null && f > 0f) core.AddTo(fk, f);
         }
+        /// <summary>Which store the spell's leftover flow goes into: the meeting it was cast in.</summary>
+        private static readonly Dictionary<int, RuneKind> flowKinds = new Dictionary<int, RuneKind>();
+        /// <summary>The store a cast takes from and gives into: its meeting's, plain Life's outside one.</summary>
+        public static RuneKind CurrentKind => pair;
         /// <summary>A circle of Life in its turn in the queue.</summary>
         public static void CastCircle(Pawn caster, SpellCircle root, SpellCircle g, IntVec3 at, float power, Map map)
         {
             flows.TryGetValue(caster.thingIDNumber, out flow);
             pair = PairOf(root, g.Great ? g : root?.ParentOf(g));
+            flowKinds[caster.thingIDNumber] = pair;
             if (pair != None) GameComponent_Combos.First("life" + pair, caster);
             try { Cast(caster, g, at, power, map); }
             finally { flows[caster.thingIDNumber] = flow; flow = 0f; pair = None; }
@@ -370,7 +377,8 @@ namespace Avir.Magic
             float rest = need - fromFlow;
             // Emerald: the stones near the spot and on the mage give first
             if (pair == RuneKind.Earth && rest > 0f && payAt.IsValid) { float st = Emerald.Draw(core.pawn, payAt, rest); fromFlow += st; rest -= st; }
-            float fromStore = Mathf.Min(core.vita, rest); core.vita -= fromStore;
+            float have = core.Store(pair);
+            float fromStore = Mathf.Min(have, rest); core.SetStore(pair, have - fromStore);
             return Mathf.Clamp01((fromFlow + fromStore) / need);
         }
 
@@ -472,7 +480,7 @@ namespace Avir.Magic
             bool gives = lifes.Any(g => Read(g, out _).Any(a => a.side == RuneKind.Restore)) || wraps;
             if (!gives) return null;
             bool takes = lifes.Any(g => Read(g, out _).Any(a => a.side == RuneKind.Drain));
-            if (core.vita > 0.5f) return null;
+            if (Circles(s.weave).Select(g => PairOf(s.weave, g)).Distinct().Any(k => core.Store(k) > 0.5f)) return null;
             if (takes)
             {
                 Map map = caster.Map; IntVec3 at = target.Cell;
@@ -515,7 +523,8 @@ namespace Avir.Magic
             {
                 // the Withering turns on the one who held it: the mage dries, and the store spills away
                 caster.TakeDamage(new DamageInfo(WitherDmg, 10f, 2f, -1f, caster));
-                Hediff_ArcaneCore core = Mages.Core(caster); if (core != null) core.vita *= 0.5f;
+                Hediff_ArcaneCore core = Mages.Core(caster);
+                if (core != null) foreach (RuneKind k in Circles(root).Select(g => PairOf(root, g)).Distinct()) core.SetStore(k, core.Store(k) * 0.5f);
                 for (int i = 0; i < 5; i++) Wisp(caster.DrawPos + new Vector3(Rand.Range(-1f, 1f), 0f, Rand.Range(-1f, 1f)), map);
                 Messages.Message(caster.LabelShortCap + " lost the hold on a Withering: it drank from them.", caster, MessageTypeDefOf.NegativeEvent, false);
             }
@@ -591,12 +600,17 @@ namespace Avir.Magic
             Pawn p = core.pawn;
             HediffDef flowDef = H("Avir_VitaFlow");
             Hediff flow = flowDef != null ? p.health.hediffSet.GetFirstHediffOfDef(flowDef) : null;
-            if (core.vita <= 0.01f) { core.vita = 0f; if (flow != null) p.health.RemoveHediff(flow); return; }
-            float gone = core.vita * 0.02f * hours;
-            core.vita -= gone;
+            if (core.StoreAll <= 0.01f) { core.vita = 0f; core.stores.Clear(); if (flow != null) p.health.RemoveHediff(flow); return; }
+            // every store fades by itself; what fades from all of them goes out of the mage together
+            float gone = 0f, fill = 0f;
+            foreach (RuneKind k in new[] { None }.Concat(core.stores.Keys.ToList()))
+            {
+                float v = core.Store(k), g0 = v * 0.02f * hours;
+                core.SetStore(k, v - g0); gone += g0;
+                fill = Mathf.Max(fill, core.Store(k) / Mathf.Max(1f, core.VitaMax));
+            }
             // life not given anywhere grows on the one who holds it (the druids of the Grove, eating the chimeras): above
-            // three quarters of the store, bark and moss creep over the mage
-            float fill = core.vita / Mathf.Max(1f, core.VitaMax);
+            // three quarters of a store, bark and moss creep over the mage
             if (fill > 0.75f)
             {
                 HediffDef bark = H("Avir_LifeOverflow");
@@ -612,7 +626,7 @@ namespace Avir.Magic
             if (flowDef != null)
             {
                 if (flow == null) flow = p.health.AddHediff(flowDef);
-                flow.Severity = Mathf.Clamp(core.vita / Mathf.Max(1f, core.VitaMax), 0.01f, 1f);
+                flow.Severity = Mathf.Clamp(fill, 0.01f, 1f);
             }
         }
     }
@@ -891,7 +905,7 @@ namespace Avir.Magic
                 if (h == null) { core.carried.Remove(id); Held.Remove(id); lastSev.Remove(id); lastImm.Remove(id); continue; }
                 Held.Add(id);
                 if (!lastSev.TryGetValue(id, out float ls)) ls = h.Severity;
-                if (h.Severity > ls) { core.AddVita((h.Severity - ls) * 60f); h.Severity = ls; }
+                if (h.Severity > ls) { core.AddTo(RuneKind.Air, (h.Severity - ls) * 60f); h.Severity = ls; }
                 lastSev[id] = h.Severity;
                 ImmunityRecord rec = p.health.immunity.GetImmunityRecord(h.def);
                 if (rec != null)
@@ -920,8 +934,14 @@ namespace Avir.Magic
     {
         private const string Cat = "Avir magic";
 
-        [DebugAction(Cat, "Life: store full / empty (toggle)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-        private static void Store(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c == null) return; c.vita = c.vita > 1f ? 0f : c.VitaMax; Messages.Message(p.LabelShort + ": store of life " + c.vita.ToString("0") + " / " + c.VitaMax.ToString("0"), MessageTypeDefOf.NeutralEvent, false); }
+        [DebugAction(Cat, "Life: a store full / empty (Life, Wild Flame, Blood, Emerald, Pestilence)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void Store(Pawn p)
+        {
+            Hediff_ArcaneCore c = Mages.Core(p); if (c == null) return;
+            var opts = new[] { LifeMagic.None, RuneKind.Fire, RuneKind.Water, RuneKind.Earth, RuneKind.Air }.Select(k => new DebugMenuOption((LifeMagic.PairName(k) ?? "Life") + " - full / empty", DebugMenuOptionMode.Action,
+                () => { c.SetStore(k, c.Store(k) > 1f ? 0f : c.VitaMax); Messages.Message(p.LabelShort + ": store of " + (LifeMagic.PairName(k) ?? "Life") + " " + c.Store(k).ToString("0") + " / " + c.VitaMax.ToString("0"), MessageTypeDefOf.NeutralEvent, false); })).ToList();
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(opts));
+        }
 
         [DebugAction(Cat, "Life: price of a meeting (Wild Flame, Blood, Emerald, Pestilence)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Price(Pawn p)

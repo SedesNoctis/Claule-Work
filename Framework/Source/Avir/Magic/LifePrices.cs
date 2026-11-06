@@ -65,27 +65,27 @@ namespace Avir.Magic
         }
 
         /// <summary>A lost hold on a meeting of Life: its own price, in place of its element's.</summary>
-        public static void PayPair(RuneKind k, Pawn caster)
+        public static void PayPair(RuneKind k, Pawn caster, bool quiet = false)
         {
             if (caster == null || caster.Dead) return;
             switch (k)
             {
                 case RuneKind.Fire:
                     Seed(caster, null, 1f, false, 2);
-                    Messages.Message(caster.LabelShortCap + " lost the hold on the Wild Flame: a spark took root in them.", caster, MessageTypeDefOf.NegativeEvent, false);
+                    if (!quiet) Messages.Message(caster.LabelShortCap + " lost the hold on the Wild Flame: a spark took root in them.", caster, MessageTypeDefOf.NegativeEvent, false);
                     break;
                 case RuneKind.Water:
                     HealthUtility.AdjustSeverity(caster, HediffDefOf.BloodLoss, 0.25f);
-                    Messages.Message(caster.LabelShortCap + " lost the hold on the Blood: it ran out of them.", caster, MessageTypeDefOf.NegativeEvent, false);
+                    if (!quiet) Messages.Message(caster.LabelShortCap + " lost the hold on the Blood: it ran out of them.", caster, MessageTypeDefOf.NegativeEvent, false);
                     break;
                 case RuneKind.Earth:
                     Crust(caster, 0.35f);
-                    Messages.Message(caster.LabelShortCap + " lost the hold on the Emerald: it grows on them now.", caster, MessageTypeDefOf.NegativeEvent, false);
+                    if (!quiet) Messages.Message(caster.LabelShortCap + " lost the hold on the Emerald: it grows on them now.", caster, MessageTypeDefOf.NegativeEvent, false);
                     break;
                 case RuneKind.Air:
                     HediffDef ab = H("Avir_Abasia");
                     if (ab != null) MagicFx.Give(caster, ab, 5000);
-                    Messages.Message(caster.LabelShortCap + " lost the hold on the Pestilence: their legs gave out.", caster, MessageTypeDefOf.NegativeEvent, false);
+                    if (!quiet) Messages.Message(caster.LabelShortCap + " lost the hold on the Pestilence: their legs gave out.", caster, MessageTypeDefOf.NegativeEvent, false);
                     break;
             }
         }

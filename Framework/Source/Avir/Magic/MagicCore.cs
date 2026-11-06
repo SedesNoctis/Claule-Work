@@ -133,14 +133,24 @@ namespace Avir.Magic
         public bool pestMage;
         public float VitaMax => 0.5f * Capacity * (1f + 0.1f * MageClass.Stage(MageClass.XpIn(this, RuneKind.Life)));
         /// <summary>The store of life is shown while a spell of Life is in the book - or while there is any left in it.</summary>
-        public bool LifeShown => vita > 0.5f || Book.spells.Any(LifeMagic.IsLifeSpell);
-        public bool KnowsLife => vita > 0.01f || MageClass.XpIn(this, RuneKind.Life) > 0f;
-        /// <summary>Into the store; what it cannot hold spills over (Overflow).</summary>
-        public void AddVita(float amount)
+        public bool LifeShown => StoreShown(LifeMagic.None);
+        public bool KnowsLife => StoreAll > 0.01f || MageClass.XpIn(this, RuneKind.Life) > 0f;
+
+        /// <summary>The meetings' own stores (the author, Fix145): Wild Flame, Blood, Emerald and Pestilence each keep
+        /// theirs; plain Life keeps `vita`. A spell takes from and gives into the store of its own meeting.</summary>
+        public Dictionary<RuneKind, float> stores = new Dictionary<RuneKind, float>();
+        public float Store(RuneKind k) => k == LifeMagic.None ? vita : stores.TryGetValue(k, out float f) ? f : 0f;
+        public void SetStore(RuneKind k, float v) { v = Mathf.Max(0f, v); if (k == LifeMagic.None) vita = v; else stores[k] = v; }
+        public float StoreAll => vita + stores.Values.Sum();
+        /// <summary>A store is shown while a spell of its own is in the book - or while there is any left in it.</summary>
+        public bool StoreShown(RuneKind k) => Store(k) > 0.5f || LifeMagic.KindsInBook(this).Contains(k);
+        /// <summary>Into the store of the meeting being cast (plain Life outside a cast); what it cannot hold spills over.</summary>
+        public void AddVita(float amount) => AddTo(LifeMagic.CurrentKind, amount);
+        public void AddTo(RuneKind k, float amount)
         {
-            vita += amount;
-            float max = VitaMax;
-            if (vita > max) { float over = vita - max; vita = max; LifeMagic.Overflow(pawn, over); }
+            float v = Store(k) + amount, max = VitaMax;
+            if (v > max) { SetStore(k, max); LifeMagic.Overflow(pawn, v - max); }
+            else SetStore(k, v);
         }
         public int outsideTicks;     // how long the Arcana has stood outside its band, above or below
         public float target = 0.5f;  // where the mage keeps it: past this, the excess is let out (vent)
@@ -214,6 +224,8 @@ namespace Avir.Magic
             Scribe_Values.Look(ref level, "level", 1);
             Scribe_Values.Look(ref arcana, "arcana");
             Scribe_Values.Look(ref vita, "vita");
+            Scribe_Collections.Look(ref stores, "lifeStores", LookMode.Value, LookMode.Value);
+            if (stores == null) stores = new Dictionary<RuneKind, float>();
             Scribe_Collections.Look(ref carried, "carried", LookMode.Value);
             Scribe_Values.Look(ref bloodMage, "bloodMage");
             Scribe_Values.Look(ref pestMage, "pestMage");
@@ -260,7 +272,8 @@ namespace Avir.Magic
             Pestilence.Tick(this);
             if (bloodMage) LifeMagic.BloodMend(this, hours);
             if (pestMage) LifeMagic.PestImmune(this);
-            if (vita > 0f || pawn.health.hediffSet.HasHediff(DefDatabase<HediffDef>.GetNamedSilentFail("Avir_VitaFlow") ?? MagicDefOf.Avir_ArcaneGreatness)) LifeMagic.Fade(this, hours);
+            LifeMagic.Shift(this);
+            if (StoreAll > 0f || pawn.health.hediffSet.HasHediff(DefDatabase<HediffDef>.GetNamedSilentFail("Avir_VitaFlow") ?? MagicDefOf.Avir_ArcaneGreatness)) LifeMagic.Fade(this, hours);
             // the map's stream seeps into a mage a little on its own
             Map m = pawn.MapHeld;
             if (m != null)

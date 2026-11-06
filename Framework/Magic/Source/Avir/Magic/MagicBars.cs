@@ -31,10 +31,21 @@ namespace Avir.Magic
         public static List<Scale> Scales(Hediff_ArcaneCore core)
         {
             var list = new List<Scale>();
-            if (core.LifeShown)
-                list.Add(new Scale { key = "Life", label = "Life", value = core.vita, max = Mathf.Max(1f, core.VitaMax), fill = new Color(0.55f, 0.72f, 0.46f),
-                    tip = "The store of life: what Withering took, ready to be given. Life makes nothing - it only moves (Symbiosis): no spell of Life gives anything with the store empty. It fades by 2% an hour, and what fades mends the mage and greens the plants by them. Past the top it spills over (Overflow)." });
+            foreach (RuneKind k in LifeMagic.AllKinds)
+            {
+                if (!core.StoreShown(k)) continue;
+                list.Add(new Scale { key = k == LifeMagic.None ? "Life" : LifeMagic.PairName(k).Replace(" ", ""), label = LifeMagic.StoreName(k), value = core.Store(k), max = Mathf.Max(1f, core.VitaMax),
+                    fill = k == LifeMagic.None ? new Color(0.55f, 0.72f, 0.46f) : LifeMagic.PairColor(k), tip = StoreTip(k) });
+            }
             return list;
+        }
+
+        private static string StoreTip(RuneKind k)
+        {
+            string own = k == LifeMagic.None ? "The store of life: what Withering took, ready to be given."
+                : "The store of " + LifeMagic.PairName(k) + ": what its Withering took, for its own giving.";
+            return own + " Life makes nothing - it only moves (Symbiosis): no spell gives with its store empty. It fades by 2% an hour, and what fades mends the mage and greens the plants by them. Past the top it spills over (Overflow)."
+                + "\nShown while a spell of it is in the book, or while anything is left in it. When its spells leave the book, half passes into the store that stays - the rest breaks out of the mage.";
         }
 
         public static void Draw(IInspectPane pane)

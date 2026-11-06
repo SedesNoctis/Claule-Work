@@ -200,7 +200,7 @@
   <HediffDef>
     <defName>Avir_WildSeed</defName>
     <label>living flame</label>
-    <description>A spark of Wild Flame sown in the body. When its carrier touches another it bursts - petals of green-gold fire - and leaps on into the one touched. Water does not put it out: in water the carrier steams, and the steam scalds them. A smouldering heart does the same, but its bursts mend.</description>
+    <description>A spark of Wild Flame sown in the body. It sets its carrier alight and keeps flaring while it lives (about half an hour) - water does not put it out: in water the carrier steams, and the steam scalds them. Burning, the carrier runs in panic to the others nearest, and when it touches one it bursts - petals of green-gold fire - and leaps on into the one touched. A smouldering heart neither burns nor drives anyone: its bursts mend.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(0.85, 0.82, 0.3)</defaultLabelColor>
     <isBad>true</isBad>

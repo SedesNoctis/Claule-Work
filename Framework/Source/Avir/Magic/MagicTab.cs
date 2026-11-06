@@ -214,14 +214,18 @@ namespace Avir.Magic
             Text.Font = GameFont.Small;
             if (LifeMagic.Is(e))
             {
-                // the store of life under its scale
-                Rect vb = new Rect(tx, r.y + h - 4f, tw, 16f);
-                Widgets.DrawBoxSolid(vb, new Color(0.12f, 0.1f, 0.08f, 0.55f));
-                Widgets.DrawBoxSolid(new Rect(vb.x, vb.y, vb.width * Mathf.Clamp01(core.vita / Mathf.Max(1f, core.VitaMax)), vb.height), new Color(0.35f, 0.7f, 0.3f, 0.9f));
-                GUI.color = Color.white; Text.Font = GameFont.Tiny; Text.Anchor = TextAnchor.MiddleCenter;
-                Widgets.Label(vb, "Store of life " + Mathf.FloorToInt(core.vita) + " / " + Mathf.FloorToInt(core.VitaMax));
-                Text.Anchor = TextAnchor.UpperLeft; Text.Font = GameFont.Small;
-                h += 20f;
+                // the stores of Life and its meetings under its scale, those shown
+                foreach (RuneKind sk in LifeMagic.AllKinds.Where(core.StoreShown))
+                {
+                    Rect vb = new Rect(tx, r.y + h - 4f, tw, 16f);
+                    Color sc = sk == LifeMagic.None ? new Color(0.35f, 0.7f, 0.3f, 0.9f) : LifeMagic.PairColor(sk);
+                    Widgets.DrawBoxSolid(vb, new Color(0.12f, 0.1f, 0.08f, 0.55f));
+                    Widgets.DrawBoxSolid(new Rect(vb.x, vb.y, vb.width * Mathf.Clamp01(core.Store(sk) / Mathf.Max(1f, core.VitaMax)), vb.height), new Color(sc.r, sc.g, sc.b, 0.9f));
+                    GUI.color = Color.white; Text.Font = GameFont.Tiny; Text.Anchor = TextAnchor.MiddleCenter;
+                    Widgets.Label(vb, "Store of " + LifeMagic.StoreName(sk) + " " + Mathf.FloorToInt(core.Store(sk)) + " / " + Mathf.FloorToInt(core.VitaMax));
+                    Text.Anchor = TextAnchor.UpperLeft; Text.Font = GameFont.Small;
+                    h += 20f;
+                }
             }
             GUI.color = Color.white;
             return h;

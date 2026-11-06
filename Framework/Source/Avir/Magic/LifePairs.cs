@@ -4,6 +4,7 @@ using Avir.Ritualistics;
 using RimWorld;
 using UnityEngine;
 using Verse;
+using Verse.AI;
 
 namespace Avir.Magic
 {
@@ -48,7 +49,7 @@ namespace Avir.Magic
                 else { q.TakeDamage(new DamageInfo(DamageDefOf.Burn, amt, 1f, -1f, owner)); got += amt; }
             }
             Hediff_ArcaneCore core = owner != null ? Mages.Core(owner) : null;
-            if (core != null && got > 0f) core.AddVita(got * 0.5f);
+            if (core != null && got > 0f) core.AddTo(RuneKind.Fire, got * 0.5f);
         }
 
         // ================================================================== Blood: the body is a pool
@@ -69,9 +70,10 @@ namespace Avir.Magic
         public static void BloodMend(Hediff_ArcaneCore core, float hours)
         {
             Hediff bl = core.pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.BloodLoss);
-            if (bl == null || core.vita < 1f) return;
-            float d = Mathf.Min(bl.Severity, 0.3f * hours, core.vita / 60f);
-            bl.Severity -= d; core.vita -= d * 60f;
+            float have = core.Store(RuneKind.Water);
+            if (bl == null || have < 1f) return;
+            float d = Mathf.Min(bl.Severity, 0.3f * hours, have / 60f);
+            bl.Severity -= d; core.SetStore(RuneKind.Water, have - d * 60f);
             if (bl.Severity <= 0.005f) core.pawn.health.RemoveHediff(bl);
         }
 
@@ -97,7 +99,7 @@ namespace Avir.Magic
             foreach (Hediff h in p.health.hediffSet.hediffs.Where(PoisonLike).ToList())
             {
                 if (core.carried.Contains(h.loadID)) continue;   // a sickness carried on purpose (the druids' way) stays
-                core.AddVita(h.Severity * 60f);
+                core.AddTo(RuneKind.Air, h.Severity * 60f);
                 p.health.RemoveHediff(h);
             }
         }
@@ -357,12 +359,38 @@ namespace Avir.Magic
                 p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 2f, 0f, -1f, owner));
                 return;
             }
+            // the spark sets its carrier alight (the author): they burn for as long as it lives in them - water does not
+            // keep it out, it flares again - and in their panic they run to the others, and the touch bursts it on
+            if (!heart && p != owner)
+            {
+                if (!p.IsBurning() && --relight <= 0) { relight = 4; FireUtility.TryAttachFire(p, 0.4f, owner); }
+                if (--runEvery <= 0) { runEvery = 3; RunToOthers(p); }
+            }
             Pawn touched = GenAdj.CellsAdjacent8Way(p).Where(c => c.InBounds(map)).SelectMany(c => c.GetThingList(map).OfType<Pawn>())
                 .FirstOrDefault(q => q != p && !q.Dead && q.RaceProps.IsFlesh && !q.health.hediffSet.HasHediff(parent.def));
             if (touched == null) return;
             LifeMagic.Burst(touched.Position, map, owner, power, heart, p);
             if (jumps > 0 && !touched.Dead) LifeMagic.Seed(touched, owner, power * 0.7f, heart, jumps - 1);
             if (!p.Dead) p.health.RemoveHediff(parent);
+        }
+
+        private int relight, runEvery;
+
+        /// <summary>A burning carrier in panic runs for the nearest others - its own first - seeking help, and brings
+        /// the spark to them. Drafted, downed or asleep, it does not run.</summary>
+        private void RunToOthers(Pawn p)
+        {
+            if (p.Downed || p.Drafted || !p.Awake() || p.jobs == null || p.InMentalState && !p.MentalStateDef.IsAggro && p.MentalStateDef != MentalStateDefOf.PanicFlee) return;
+            Pawn to = p.Map.mapPawns.AllPawnsSpawned.Where(q => q != p && !q.Dead && q.RaceProps.IsFlesh && q.Position.InHorDistOf(p.Position, 18f)
+                    && !q.health.hediffSet.HasHediff(parent.def))
+                .OrderBy(q => (q.Faction == p.Faction ? 0f : 40f) + q.Position.DistanceToSquared(p.Position)).FirstOrDefault();
+            if (to == null) return;
+            if (p.CurJobDef == JobDefOf.Goto && p.CurJob.targetA.Cell.AdjacentTo8WayOrInside(to.Position)) return;
+            Job job = JobMaker.MakeJob(JobDefOf.Goto, to.Position);
+            job.locomotionUrgency = LocomotionUrgency.Sprint;
+            job.expiryInterval = 120;
+            job.checkOverrideOnExpire = true;
+            p.jobs.StartJob(job, JobCondition.InterruptForced, null, false, true);
         }
 
         public override void CompExposeData()
