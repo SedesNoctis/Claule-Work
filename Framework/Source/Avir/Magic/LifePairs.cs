@@ -209,7 +209,7 @@ namespace Avir.Magic
             float f2 = Pay(core, fog.Count * 0.4f);
             if (f2 <= 0f) return false;
             int ticks = Mathf.RoundToInt(GenDate.TicksPerHour * (act.verb == RuneKind.Hold ? 3f : 1f) * power * f2);
-            MapComponent_PestFogs.Of(map)?.Lay(fog, ticks, power * f2);
+            MapComponent_PestFogs.Of(map)?.Lay(fog, ticks, power * f2, caster);
             return true;
         }
 
@@ -360,18 +360,18 @@ namespace Avir.Magic
 
     /// <summary>Fogs of fertile poison laid by Pestilence's Restoration: the ground under them is fertile for three days;
     /// the poison is the place's own - whoever is in it takes it in fast, and it keeps growing, slower, after they leave;
-    /// it ends in a paralytic abasia for days. The fog does not know friend or foe.</summary>
+    /// it ends in a paralytic abasia for days. The fog does not know friend or foe - only its own mage is untouched by it.</summary>
     public class MapComponent_PestFogs : MapComponent
     {
-        private class F { public HashSet<IntVec3> cells; public int until; public float power; }
+        private class F { public HashSet<IntVec3> cells; public int until; public float power; public Pawn owner; }
         private readonly List<F> fogs = new List<F>();
         public MapComponent_PestFogs(Map map) : base(map) { }
         public static MapComponent_PestFogs Of(Map m) => m?.GetComponent<MapComponent_PestFogs>();
         private static HediffDef Poison => DefDatabase<HediffDef>.GetNamedSilentFail("Avir_FertilePoison");
 
-        public void Lay(List<IntVec3> cells, int ticks, float power)
+        public void Lay(List<IntVec3> cells, int ticks, float power, Pawn owner = null)
         {
-            fogs.Add(new F { cells = new HashSet<IntVec3>(cells), until = Find.TickManager.TicksGame + ticks, power = power });
+            fogs.Add(new F { cells = new HashSet<IntVec3>(cells), until = Find.TickManager.TicksGame + ticks, power = power, owner = owner });
             var temp = MapComponent_TempTerrain.Of(map);
             foreach (IntVec3 c in cells)
             {
@@ -395,7 +395,8 @@ namespace Avir.Magic
                 foreach (IntVec3 c in f.cells)
                 {
                     if (!c.InBounds(map)) continue;
-                    foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().Where(p => !p.Dead && p.RaceProps.IsFlesh).ToList())
+                    // the mage of Pestilence does not suffer from their own poison, warded or not (the author)
+                    foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().Where(p => !p.Dead && p.RaceProps.IsFlesh && p != f.owner).ToList())
                     {
                         Hediff h = p.health.hediffSet.GetFirstHediffOfDef(Poison) ?? p.health.AddHediff(Poison);
                         h.Severity = Mathf.Min(1f, (h.Severity <= 0.011f ? 0f : h.Severity) + 0.03f * f.power);
