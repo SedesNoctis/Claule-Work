@@ -23,6 +23,9 @@ namespace Avir.Magic
         public static DesignationDef Growth => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneGrowth");
         public static DesignationDef Enrich => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneEnrich");
         public static DesignationDef Water => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneWater");
+        public static DesignationDef HotSpring => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneHotSpring");
+        /// <summary>Odyssey's hot spring water (null without it).</summary>
+        public static TerrainDef HotSpringWater => DefDatabase<TerrainDef>.GetNamedSilentFail("HotSpring");
         public static DesignationDef Stone => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneStone");
 
         public static Hediff_ArcaneCore Able(Pawn p, float arcana, params RuneKind[] kinds)
@@ -221,6 +224,25 @@ namespace Avir.Magic
         public override AcceptanceReport CanDesignateCell(IntVec3 c) => c.InBounds(Map) && !c.Fogged(Map) && Designation != null && Map.designationManager.DesignationAt(c, Designation) == null && c.GetEdifice(Map) == null && ArcaneWorks.NaturalStone(Map.terrainGrid.TerrainAt(c));
     }
 
+    /// <summary>A hot spring (steam): water warmed by a caster of fire and water - Odyssey's hot spring water, for three days.</summary>
+    public class Designator_ArcaneHotSpring : Designator_Arcane
+    {
+        public Designator_ArcaneHotSpring()
+        {
+            defaultLabel = "Hot spring (steam)";
+            defaultDesc = "Mark water for a caster of steam (fire and water) to warm into a hot spring - for three days, then it cools. A joy to sit in; casters of water and fire meditate quicker in it. Odyssey only.";
+            icon = ArcaneIcons.For(Designation?.defName, "UI/Designators/SmoothSurface");
+        }
+        public override bool Visible => base.Visible && Arcane.HotSpringWater != null;
+        protected override DesignationDef Designation => Arcane.HotSpring;
+        public override AcceptanceReport CanDesignateCell(IntVec3 c)
+        {
+            if (!c.InBounds(Map) || c.Fogged(Map) || Designation == null || Map.designationManager.DesignationAt(c, Designation) != null) return false;
+            TerrainDef t = Map.terrainGrid.TerrainAt(c);
+            return t != null && t.IsWater && t != Arcane.HotSpringWater && !t.defName.Contains("Ocean");
+        }
+    }
+
     /// <summary>Water to stone (earth): shallow water becomes the rough stone of this land, for good.</summary>
     public class Designator_ArcaneStone : Designator_Arcane
     {
@@ -261,6 +283,7 @@ namespace Avir.Magic
             ["Avir_ArcaneMelt"] = new ArcaneSpec { kinds = new[] { RuneKind.Fire, RuneKind.Air }, cost = 3f, xp = 6f, ticks = 120, effect = Melt, tint = new Color(1f, 0.85f, 0.4f, 0.5f) },
             ["Avir_ArcaneSteam"] = new ArcaneSpec { kinds = new[] { RuneKind.Fire, RuneKind.Water }, cost = 5f, xp = 10f, ticks = 240, effect = Steam, tint = new Color(1f, 1f, 1f, 0.6f) },
             // Blood (Life + Water) makes stone into water for good; any caster of earth makes water into stone again (the author, Fix135)
+            ["Avir_ArcaneHotSpring"] = new ArcaneSpec { kinds = new[] { RuneKind.Fire, RuneKind.Water }, cost = 8f, xp = 10f, ticks = 240, effect = HotSpring, tint = new Color(1f, 0.85f, 0.75f, 0.6f) },
             ["Avir_ArcaneWater"] = new ArcaneSpec { kinds = new[] { RuneKind.Life, RuneKind.Water }, cost = 6f, xp = 10f, ticks = 240, effect = StoneToWater, tint = new Color(0.6f, 0.1f, 0.15f, 0.6f) },
             ["Avir_ArcaneStone"] = new ArcaneSpec { kinds = new[] { RuneKind.Earth }, cost = 6f, xp = 10f, ticks = 240, effect = WaterToStone, tint = new Color(0.6f, 0.5f, 0.4f, 0.6f) },
             ["Avir_ArcaneCharge"] = new ArcaneSpec { kinds = new[] { RuneKind.Water, RuneKind.Air }, cost = 5f, xp = 10f, ticks = 240, effect = Charge, tint = new Color(0.5f, 0.5f, 1f, 0.6f) },
@@ -478,6 +501,28 @@ namespace Avir.Magic
             return n;
         }
 
+        /// <summary>Steam warms the water (the author, Fix171): marked water becomes a hot spring for three days - as Odyssey's own,
+        /// a joy to sit in, a place where casters of water and fire draw their Arcana quicker; then it cools back.</summary>
+        public const int HotSpringDays = 3;
+        private static bool HotSpring(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c)
+        {
+            TerrainDef hot = Arcane.HotSpringWater; Map map = p.Map;
+            if (hot == null) return false;
+            var temp = MapComponent_TempTerrain.Of(map);
+            int n = 0;
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(t.Cell, WorkSpells.Now.R(2.9f), true))
+            {
+                if (!cell.InBounds(map) || map.designationManager.DesignationAt(cell, Arcane.HotSpring) == null) continue;
+                map.designationManager.TryRemoveDesignation(cell, Arcane.HotSpring);
+                TerrainDef was = map.terrainGrid.TerrainAt(cell);
+                if (was == null || !was.IsWater || was == hot) continue;
+                temp?.Set(cell, hot, HotSpringDays * GenDate.TicksPerDay);
+                if (Rand.Chance(0.5f)) FleckMaker.ThrowSmoke(cell.ToVector3Shifted(), map, 1.2f);
+                n++;
+            }
+            return n > 0;
+        }
+
         private static bool StoneToWater(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c) => StoneToWaterAt(p.Map, TakeMarked(p.Map, t.Cell, Arcane.Water)) > 0;
         private static bool WaterToStone(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c) => WaterToStoneAt(p.Map, TakeMarked(p.Map, t.Cell, Arcane.Stone)) > 0;
 
@@ -639,6 +684,13 @@ namespace Avir.Magic
         protected override string Job => "Avir_ArcaneEnrich";
         public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn) => Marked(Arcane.Enrich, pawn);
         public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false) => Cells(Arcane.Enrich, pawn, c, forced);
+    }
+
+    public class WorkGiver_ArcaneHotSpring : WorkGiver_Arcane
+    {
+        protected override string Job => "Avir_ArcaneHotSpring";
+        public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn) => Marked(Arcane.HotSpring, pawn);
+        public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false) => Cells(Arcane.HotSpring, pawn, c, forced);
     }
 
     public class WorkGiver_ArcaneWater : WorkGiver_Arcane

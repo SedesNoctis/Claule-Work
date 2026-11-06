@@ -1231,6 +1231,9 @@ namespace Avir.Magic
             int tier = 0;
             if (p.MapHeld != null) { var ext = Avir.Ritualistics.MapComponent_ExternalFlow.Of(p.MapHeld); tier = ext == null ? 0 : Avir.Ritualistics.MapComponent_ExternalFlow.TierIndex(ext.Total); }
             float add = c.Capacity * 0.25f * (1f + 0.5f * tier) * ticks / (float)RimWorld.GenDate.TicksPerHour;
+            // in or beside a hot spring (Odyssey's, or one warmed by steam): casters of water and fire draw half again as fast (Fix171)
+            if (p.Spawned && Arcane.HotSpringWater != null && (MagicWork.Knows(c, RuneKind.Water) || MagicWork.Knows(c, RuneKind.Fire))
+                && GenRadial.RadialCellsAround(p.Position, 2.5f, true).Any(x => x.InBounds(p.Map) && x.GetTerrain(p.Map) == Arcane.HotSpringWater)) add *= 1.5f;
             // past the reserve the core takes it in slowly
             if (c.arcana >= c.Capacity) add *= 0.5f;
             // beside a lit sanctuary: three times as fast, drawn from its store
