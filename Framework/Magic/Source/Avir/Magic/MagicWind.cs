@@ -31,6 +31,7 @@ namespace Avir.Magic
         {
             var c = Of(map);
             if (c == null || strength <= 0f) return;
+            strength = Mathf.Min(strength, 120f);   // no wind stronger than this, whatever the runes
             c.gusts.Add(new Gust { shape = shape, at = at, dir = dir.sqrMagnitude > 0f ? dir.normalized : Vector3.forward, radius = radius, strength = strength, born = Find.TickManager.TicksGame, life = Mathf.Max(10, life), owner = owner, charged = charged });
         }
 
@@ -86,14 +87,26 @@ namespace Avir.Magic
                     if (p == g.owner || p.Dead || !p.Spawned || SpellWards.Stops(p, false)) continue;
                     float hold = Mathf.Sqrt(Mathf.Max(0.5f, p.BodySize));   // the heavier hold longer
                     float sp = s / hold;
+                    IntVec3 was = p.Position;
+                    string did = null;
                     if (sp >= 40f)
                     {
-                        IntVec3 from = (p.DrawPos - w * 2f).ToIntVec3();
+                        IntVec3 from = (p.DrawPos - w * 3f).ToIntVec3();
+                        if (from == p.Position) from = p.Position - new IntVec3(Mathf.RoundToInt(w.x * 2f), 0, Mathf.RoundToInt(w.z * 2f));
                         SpellHurl.Throw(p, from, Mathf.Clamp(Mathf.RoundToInt((sp - 34f) / 5f), 1, 6), map, g.owner, sp / 40f, 60);
+                        // nowhere to fly, or held by something: knocked down where they stand, and the wind's debris strikes
+                        if (p.Spawned && p.Position == was) { Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(p, 120); did = "felled (could not fly)"; } else did = "thrown";
+                        p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Mathf.Min(12f, (sp - 36f) * 0.35f + 2f), 0f, -1f, g.owner));
                         Rest(p, now, 90);
                     }
-                    else if (sp >= 28f && p.jobs != null) { Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(p, 90); Rest(p, now, 120); }
-                    else if (sp >= 20f) { p.stances?.stagger?.StaggerFor(60, 0.4f); Rest(p, now, 40); }
+                    else if (sp >= 28f)
+                    {
+                        Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(p, 90);
+                        if (Rand.Chance(0.5f)) p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 2f, 0f, -1f, g.owner));   // struck by what flies
+                        did = "knocked down"; Rest(p, now, 120);
+                    }
+                    else if (sp >= 20f) { p.stances?.stagger?.StaggerFor(60, 0.4f); did = "staggered"; Rest(p, now, 40); }
+                    if (did != null && Prefs.DevMode) Log.Message("[Avir wind] " + p.LabelShort + ": " + did + " at " + sp.ToString("0") + " m/s");
                     continue;
                 }
                 if (t.def.EverHaulable && !(t is Corpse k && k.InnerPawn.BodySize > 1.5f))
@@ -191,6 +204,25 @@ namespace Avir.Magic
                         MapComponent_SpellSprites.Put(map, "Storm/Strike", p.DrawPos, 1.4f, 14);
                     }
                 }
+        }
+
+        /// <summary>The wind under the mouse (Fix173): its strength in m/s and which way, while a magic wind blows.</summary>
+        public override void MapComponentOnGUI()
+        {
+            if (gusts.Count == 0 || Find.CurrentMap != map) return;
+            IntVec3 c = Verse.UI.MouseCell();
+            if (!c.InBounds(map)) return;
+            int now = Find.TickManager.TicksGame;
+            float best = 0f; Vector3 dir = Vector3.zero;
+            foreach (Gust g in gusts) { Vector3 w = WindAt(g, c, now, out float s); if (s > best) { best = s; dir = w; } }
+            if (best < 1f) return;
+            string arrow = dir.sqrMagnitude < 0.01f ? "" : " " + "→↗↑↖←↙↓↘"[Mathf.RoundToInt(((Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg) + 360f) % 360f / 45f) % 8];
+            string what = best >= 40f ? "throws" : best >= 28f ? "fells" : best >= 20f ? "staggers" : best >= 16f ? "lifts light things" : "a breeze";
+            Vector2 m = Event.current.mousePosition;
+            var r = new Rect(m.x + 18f, m.y + 14f, 220f, 22f);
+            Widgets.DrawBoxSolid(r, new Color(0f, 0f, 0f, 0.55f));
+            Text.Font = GameFont.Small;
+            Widgets.Label(new Rect(r.x + 6f, r.y + 1f, r.width - 6f, r.height), "Wind " + best.ToString("0") + " m/s" + arrow + " - " + what);
         }
 
         /// <summary>A streak of dust along the wind: what the eye sees of it.</summary>

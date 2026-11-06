@@ -325,7 +325,18 @@ namespace Avir.Magic
         internal static void Apply(Pawn caster, Map map, List<RuneDef> verbs, List<IntVec3> cells, IntVec3 from, float power, RitualReading r)
         {
             if (cells.Count == 0) return;
-            // the wind of the spell is real wind in Atmosphere Overhaul's air (Fix167): it blows out from where it came
+            // the wind of the spell is wind (Fix173): ours carries things off, staggers and fells - a line blows along it,
+            // anything else out from its middle; Amplify and the caster's power make it stronger, Hold makes it last
+            if (!AtmosphereBridge.Throws)
+            {
+                float st = 22f * power * (1f + 0.3f * r.amplify) * AtmosphereBridge.Scale;
+                bool hold = verbs.Any(x => x.kind == RuneKind.Hold);
+                Vector3 mid = Vector3.zero; foreach (IntVec3 c in cells) mid += c.ToVector3Shifted(); mid /= cells.Count;
+                Vector3 along = mid - from.ToVector3Shifted(); along.y = 0f;
+                float span = cells.Max(c => (c.ToVector3Shifted() - mid).MagnitudeHorizontal()) + 1f;
+                bool line = along.sqrMagnitude > 4f && span > 3f && cells.Count < span * 4f;
+                MapComponent_MagicWind.Blow(map, line ? MapComponent_MagicWind.Shape.Front : MapComponent_MagicWind.Shape.Out, line ? mid : mid, span, st, hold ? 300 : 40, caster, along);
+            }
             if (AtmosphereBridge.On)
                 foreach (IntVec3 c in cells) { Vector3 o = c.ToVector3Shifted() - from.ToVector3Shifted(); if (o.sqrMagnitude > 0.1f) AtmosphereBridge.Wind(map, c, new Vector2(o.x, o.z).normalized * Mathf.Min(AtmosphereBridge.MaxPush, 8f * power * AtmosphereBridge.Scale)); }
             foreach (RuneDef v in verbs)
