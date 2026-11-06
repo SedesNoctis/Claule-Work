@@ -228,22 +228,22 @@ namespace Avir.Magic
         public static void PrioBox(Rect box, Hediff_ArcaneCore c, Group g)
         {
             var can = g.givers.Where(n => CanDo(c, n)).ToList();
+            // the box itself tells how he stands to it: red - nothing of it is open to him (off by itself, and on again by
+            // itself once it opens); orange - open, but poorly (a Novice outside his own element); green - well
             int best = can.Count == 0 ? -1 : can.Max(n => Stage(c, KindsOf(n)));
-            Texture2D bg = Bg(best < 0 ? 0 : best == 0 ? 1 : best <= 2 ? 2 : 3);
-            if (bg != null) GUI.DrawTexture(box, bg); else Widgets.DrawBoxSolid(box, new Color(0.1f, 0.12f, 0.2f));
+            bool own = can.Any(n => KindsOf(n).Distinct().Count() == 1 && MageClass.Main(c)?.kind == KindsOf(n)[0]);
+            Color bg = can.Count == 0 ? new Color(0.45f, 0.1f, 0.08f) : best >= 1 || own ? new Color(0.12f, 0.38f, 0.14f) : new Color(0.6f, 0.32f, 0.04f);
+            Widgets.DrawBoxSolid(box, bg);
             Widgets.DrawBox(box);
-            int pr = Prio(c, g);
-            if (pr > 0)
-            {
-                Text.Font = GameFont.Small; Text.Anchor = TextAnchor.MiddleCenter;
-                GUI.color = can.Count == 0 ? Color.gray : ColorOfPriority(pr);
-                Widgets.Label(box.ExpandedBy(0f, 2f), pr.ToString());
-                GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft;
-            }
-            TooltipHandler.TipRegion(box, () => g.desc + "\n\n" + (can.Count == 0 ? "Nothing of it is open to this caster yet:\n" + string.Join("\n", g.givers.Select(n => "- " + Label(n) + ": " + Why(c, n)))
-                : "Can do: " + string.Join(", ", can.Select(Label)) + "." + (can.Count < g.givers.Length ? "\nNot yet: " + string.Join("; ", g.givers.Except(can).Select(n => Label(n) + " - " + Why(c, n))) + "." : ""))
-                + "\n\nClick: a higher number (1 is first); right-click: back. Off - not done at all.", c.pawn.thingIDNumber ^ g.key.GetHashCode());
-            if (Event.current.type == EventType.MouseDown && Mouse.IsOver(box))
+            int pr = can.Count == 0 ? 0 : Prio(c, g);
+            Text.Font = GameFont.Small; Text.Anchor = TextAnchor.MiddleCenter;
+            if (can.Count == 0) { GUI.color = new Color(1f, 0.75f, 0.7f); Widgets.Label(box, "-"); }
+            else if (pr > 0) { GUI.color = pr == 1 ? new Color(0.6f, 1f, 0.6f) : Color.white; Widgets.Label(box, pr.ToString()); }
+            GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft;
+            TooltipHandler.TipRegion(box, () => g.desc + "\n\n" + (can.Count == 0 ? "Off by itself - nothing of it is open to this caster yet; it turns on by itself when it opens:\n" + string.Join("\n", g.givers.Select(n => "- " + Label(n) + ": " + Why(c, n)))
+                : "Can do: " + string.Join(", ", can.Select(Label)) + "." + (can.Count < g.givers.Length ? "\nNot yet: " + string.Join("; ", g.givers.Except(can).Select(n => Label(n) + " - " + Why(c, n))) + "." : "")
+                  + "\n\nGreen - he does it well, orange - poorly (a Novice outside his own element).\nClick: a higher number (1 is first); right-click: back. Empty - off."), c.pawn.thingIDNumber ^ g.key.GetHashCode());
+            if (can.Count > 0 && Event.current.type == EventType.MouseDown && Mouse.IsOver(box))
             {
                 int v = Event.current.button == 1 ? (pr == 0 ? 4 : pr - 1) : (pr == 4 ? 0 : pr + 1);
                 SetPrio(c, g, v);
@@ -251,6 +251,22 @@ namespace Avir.Magic
                 Event.current.Use();
             }
         }
+
+        /// <summary>The school a work giver belongs to (the second order apart).</summary>
+        public static string SchoolOf(string giver) { RuneKind[] ks = KindsOf(giver); return ks == null ? null : Works2.All.ContainsKey(giver) ? "Second" : School(ks); }
+
+        /// <summary>How the caster stands to a set of elements: 2 - well (all his own or past Novice), 1 - partly (a meeting
+        /// with a poor part), 0 - poorly.</summary>
+        public static int Standing(Hediff_ArcaneCore c, RuneKind[] kinds)
+        {
+            var ks = kinds.Distinct().ToArray();
+            int good = ks.Count(k => MageClass.Main(c)?.kind == k || MageClass.Stage(MageClass.XpIn(c, k)) >= 1);
+            return good == ks.Length ? 2 : good == 0 ? 0 : 1;
+        }
+        // strong enough on the parchment (the author asked for it)
+        public static readonly Color Good = new Color(0.05f, 0.38f, 0.08f), Partly = new Color(0.7f, 0.33f, 0f), Poor = new Color(0.62f, 0.06f, 0.04f);
+        public static Color StandingColor(int st) => st == 2 ? Good : st == 1 ? Partly : Poor;
+
         public static string Label(string giver) => DefDatabase<WorkGiverDef>.GetNamedSilentFail(giver)?.label ?? giver;
 
         /// <summary>A work may slip: a plain element seldom and lightly; a meeting oftener, and at its own price.</summary>

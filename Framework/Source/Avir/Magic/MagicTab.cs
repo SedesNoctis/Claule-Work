@@ -87,11 +87,12 @@ namespace Avir.Magic
             SheetWindow.MaximizeButton(this, new Rect(box.xMax - 100f, box.y + 28f, 24f, 24f), ref sheetMax, ref sheetNormal, true);
             // the pages: the mage and their spells, or the path of the mage's growth
             float tx = inner.x;
+            Text.Font = GameFont.Small;
             foreach (int pg in new[] { 0, 1, 2 })
             {
                 string label = pg == 0 ? "Spells" : pg == 2 ? "Arcane works" : core != null && core.Sorcerer ? "Path of the sorcerer" : "Path of the wizard";
-                float w = Text.CalcSize(label).x + 40f;
-                Rect tr = new Rect(tx, inner.y, w, 30f);
+                float w = Text.CalcSize(label).x + 48f;
+                Rect tr = new Rect(tx, inner.y, w, 32f);
                 if (RitualUI.Button(tr, label, true, page == pg)) page = pg;
                 tx += w + 8f;
             }
@@ -134,94 +135,95 @@ namespace Avir.Magic
         /// <summary>The path of the mage: how they grow - levels and what each brings. Not laid out yet: the page waits.</summary>
         private Vector2 worksScroll, schoolsScroll;
         private float worksH, schoolsH;
+        private string school;
 
-        /// <summary>The caster's arcane works, laid out plainly (the author, Fix154): on the left - from what stage he takes up
-        /// the works of each school, with what that means; on the right - his works in the order of the Work tab, each
-        /// with its priority box and what of it he can do, and why not the rest.</summary>
+        /// <summary>The caster's arcane works (the author, Fix155: large, dark, readable letters; no copy of the Work tab's
+        /// boxes): on the left the schools - how he stands to each (green well, orange a meeting with a poor part, red
+        /// poorly), and from what stage he takes up its works; on the right what the chosen school opens to him.</summary>
         private void DrawArcaneWorks(Rect r, Hediff_ArcaneCore core)
         {
             GUI.color = Ink; Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(r.x, r.y, r.width, 34f), "Arcane works of " + pawn.LabelShort);
             Text.Font = GameFont.Small;
-            if (core == null) { GUI.color = InkSoft; Widgets.Label(new Rect(r.x, r.y + 40f, r.width, 30f), "No arcane core."); return; }
-            GUI.color = InkSoft;
-            string intro = "Work done by magic: the caster puts its charm together himself the first time, pays Arcana, and grows in the element. Above the lower mark of his Arcana he works by magic; below it - by hand, if the hands are good. "
-                + "The same boxes are in the Work tab (\"Arcane works\"); there, an ordinary work set past its last priority shows \"M\" - by magic.";
+            if (core == null) { Widgets.Label(new Rect(r.x, r.y + 40f, r.width, 30f), "No arcane core."); return; }
+            string intro = "Work done by magic. The caster puts its charm together himself the first time, pays Arcana and grows in the element; above the lower mark of his Arcana he works by magic, below it by hand (if his hands are good). "
+                + "The priorities are in the Work tab - the \"Arcane works\" button. Choose a school on the left to see what it opens to him.";
             float ih = Text.CalcHeight(intro, r.width);
             Widgets.Label(new Rect(r.x, r.y + 36f, r.width, ih), intro);
-            float top = r.y + 40f + ih;
-            Rect left = new Rect(r.x, top, r.width * 0.46f - 8f, r.yMax - top);
+            float top = r.y + 44f + ih;
+            Rect left = new Rect(r.x, top, r.width * 0.5f - 8f, r.yMax - top);
             Rect right = new Rect(left.xMax + 16f, top, r.xMax - left.xMax - 16f, r.yMax - top);
+            if (school == null) { RuneDef m = MageClass.Main(core); school = m != null ? m.kind.ToString() : "Fire"; }
 
-            // --- left: from what stage, by school
-            GUI.color = Ink; Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(left.x, left.y, left.width, 30f), "From what stage");
+            // --- left: the schools
+            Text.Font = GameFont.Medium; GUI.color = Ink;
+            Widgets.Label(new Rect(left.x, left.y, left.width, 32f), "Schools - from what stage");
             Text.Font = GameFont.Small;
-            Rect la = new Rect(left.x, left.y + 32f, left.width, left.height - 32f);
+            Rect la = new Rect(left.x, left.y + 34f, left.width, left.height - 34f);
             Rect lv = new Rect(0f, 0f, la.width - 16f, schoolsH > 0f ? schoolsH : 900f);
             RitualScroll.Begin(la, ref schoolsScroll, lv);
             float y = 0f, w = lv.width;
             foreach (string sc in ArcaneWork.Schools)
             {
-                RuneKind[] ks = sc == "Second" ? new RuneKind[0] : SchoolKinds(sc);
+                RuneKind[] ks = SchoolKinds(sc);
+                bool main = ks.Length == 1 && MageClass.Main(core)?.kind == ks[0];
+                int standing = ks.Length > 0 ? ArcaneWork.Standing(core, ks) : -1;
+                Color sc0 = standing < 0 ? Ink : ArcaneWork.StandingColor(standing);
                 int his = ks.Length > 0 ? ArcaneWork.Stage(core, ks) : -1;
                 int fromSt = ArcaneWork.From(core, sc);
-                Rect row = new Rect(0f, y, w, 74f);
-                Widgets.DrawBoxSolid(row, new Color(0.12f, 0.1f, 0.08f, 0.12f));
-                GUI.color = Ink; Text.Font = GameFont.Small;
-                Widgets.Label(new Rect(6f, y + 4f, w * 0.5f, 24f), ArcaneWork.SchoolLabel(sc).CapitalizeFirst());
-                Text.Anchor = TextAnchor.UpperRight; GUI.color = InkSoft;
-                Widgets.Label(new Rect(w * 0.4f, y + 4f, w * 0.6f - 6f, 24f), his >= 0 ? "his stage: " + MageClass.StageNames[Mathf.Clamp(his, 0, 5)] : "by its three elements");
+                Rect row = new Rect(0f, y, w, 64f);
+                bool chosen = school == sc;
+                Widgets.DrawBoxSolid(row, chosen ? new Color(0.25f, 0.18f, 0.08f, 0.22f) : new Color(0.12f, 0.1f, 0.08f, Mouse.IsOver(row) ? 0.16f : 0.08f));
+                if (chosen) Widgets.DrawBox(row, 2);
+                GUI.color = sc0; Text.Font = GameFont.Small;
+                Widgets.Label(new Rect(8f, y + 4f, w * 0.55f, 26f), "<b>" + ArcaneWork.SchoolLabel(sc).CapitalizeFirst() + "</b>" + (main ? "  (his own)" : ""));
+                Text.Anchor = TextAnchor.UpperRight;
+                Widgets.Label(new Rect(w * 0.4f, y + 4f, w * 0.6f - 8f, 26f), his >= 0 ? MageClass.StageNames[Mathf.Clamp(his, 0, 5)] : "by its elements");
                 Text.Anchor = TextAnchor.UpperLeft;
-                // the stages as buttons: the chosen one lit
-                float bw = (w - 12f) / 7f;
+                float bw = (w - 16f) / 7f;
                 for (int i = 0; i < 7; i++)
                 {
-                    Rect b = new Rect(6f + i * bw, y + 28f, bw - 3f, 22f);
+                    Rect b = new Rect(8f + i * bw, y + 32f, bw - 4f, 26f);
                     bool on = fromSt == i;
-                    Widgets.DrawBoxSolid(b, on ? (i == 6 ? new Color(0.55f, 0.18f, 0.12f) : new Color(0.2f, 0.35f, 0.65f)) : new Color(0.1f, 0.08f, 0.06f, Mouse.IsOver(b) ? 0.3f : 0.15f));
-                    Text.Font = GameFont.Tiny; Text.Anchor = TextAnchor.MiddleCenter; GUI.color = on ? Color.white : Ink;
-                    Widgets.Label(b, ArcaneWork.StageShort[i]);
+                    Widgets.DrawBoxSolid(b, on ? (i == 6 ? ArcaneWork.Poor : new Color(0.16f, 0.3f, 0.6f)) : new Color(0.1f, 0.08f, 0.06f, Mouse.IsOver(b) ? 0.32f : 0.16f));
+                    Text.Anchor = TextAnchor.MiddleCenter; GUI.color = on ? Color.white : Ink;
+                    Widgets.Label(b, i == 5 ? "Grandm." : ArcaneWork.StageShort[i]);
                     Text.Anchor = TextAnchor.UpperLeft;
-                    if (Widgets.ButtonInvisible(b)) { core.workFrom[sc] = i; ArcaneWork.Dirty(pawn); }
+                    if (Widgets.ButtonInvisible(b)) { core.workFrom[sc] = i; ArcaneWork.Dirty(pawn); school = sc; }
                 }
-                Text.Font = GameFont.Tiny; GUI.color = InkSoft;
-                string note = sc == "Second" ? "Three elements together, from Novice at a risk." : ks.Length == 1 ? (MageClass.Main(core)?.kind == ks[0] ? "His own element: from Novice." : "Not his own element: from Apprentice at least.") : "A meeting of two, from Novice at a risk.";
-                if (ks.Length > 0) note += "  Slip " + ArcaneWork.SlipChance(core, ks).ToStringPercent() + " a work, speed x" + ArcaneWork.Speed(core, ks).ToString("0.##") + ".";
-                if (sc == "Magma") note += " Magma slipping pours lava round the caster.";
-                Widgets.Label(new Rect(6f, y + 52f, w - 12f, 20f), note);
-                Text.Font = GameFont.Small;
-                y += 78f;
+                if (Widgets.ButtonInvisible(new Rect(row.x, row.y, row.width, 30f))) school = sc;
+                y += 68f;
             }
             schoolsH = y + 4f;
             Widgets.EndScrollView();
 
-            // --- right: his works
-            GUI.color = Ink; Text.Font = GameFont.Medium;
-            Widgets.Label(new Rect(right.x, right.y, right.width, 30f), "His works");
+            // --- right: what the chosen school opens
+            RuneKind[] sk = SchoolKinds(school);
+            Text.Font = GameFont.Medium; GUI.color = Ink;
+            Widgets.Label(new Rect(right.x, right.y, right.width, 32f), "What " + ArcaneWork.SchoolLabel(school) + " opens");
             Text.Font = GameFont.Small;
-            Rect ra = new Rect(right.x, right.y + 32f, right.width, right.height - 32f);
+            Rect ra = new Rect(right.x, right.y + 34f, right.width, right.height - 34f);
             Rect rv = new Rect(0f, 0f, ra.width - 16f, worksH > 0f ? worksH : 900f);
             RitualScroll.Begin(ra, ref worksScroll, rv);
             y = 0f; w = rv.width;
-            foreach (ArcaneWork.Group g in ArcaneWork.Groups)
+            string rule = school == "Second"
+                ? "The second order: three elements together - a meeting of two and a third beside it (lava is magma and fire, a geyser is steam and earth). The caster must know all its elements; the works are taken up from the stage chosen for \"second order\", and anything of magma (lava, basalt, obsidian) also not below the stage chosen for magma. Speed and slips go by his stage in its elements, on average; a slip is paid at the price of its meeting."
+                : sk.Length == 1 ? (MageClass.Main(core)?.kind == sk[0] ? "His own element: open from Novice." : "Not his own element: open from Apprentice at least.") + " A slip is light."
+                : "A meeting of two: open from Novice, at a risk - it slips more often, and at the meeting's own price" + (school == "Magma" ? " (magma pours lava round the caster)" : "") + ".";
+            if (sk.Length > 0) rule += "\nHim now: speed x" + ArcaneWork.Speed(core, sk).ToString("0.##") + ", a slip " + ArcaneWork.SlipChance(core, sk).ToStringPercent() + " a work.";
+            float rh = Text.CalcHeight(rule, w);
+            GUI.color = Ink;
+            Widgets.Label(new Rect(0f, 0f, w, rh), rule);
+            y = rh + 8f;
+            var givers = ArcaneWork.Groups.SelectMany(g => g.givers.Select(n => new { g, n })).Where(x => ArcaneWork.SchoolOf(x.n) == school).ToList();
+            if (givers.Count == 0) { Widgets.Label(new Rect(0f, y, w, 24f), "No works of this school yet."); y += 26f; }
+            foreach (var x in givers)
             {
-                var lines = g.givers.Select(n => { string why = ArcaneWork.Why(core, n); return (why == null ? "+ " : "- ") + ArcaneWork.Label(n) + (why == null ? "" : " (" + why + ")"); }).ToList();
-                string stands = g.vanilla.Length == 0 ? "only magic does this" : "stands for: " + string.Join(", ", g.vanilla.Select(n => DefDatabase<WorkTypeDef>.GetNamedSilentFail(n)).Where(x => x != null).Select(x => x.labelShort + (ArcaneWork.MagicOnly(core, x) ? " - M, " + (ArcaneWork.HandsNow(core, x) ? "by hand now" : "by magic now") : "")));
-                Text.Font = GameFont.Tiny;
-                float lh = Text.CalcHeight(string.Join("\n", lines), w - 40f);
-                float h = Mathf.Max(34f, 22f + 16f + lh + 6f);
-                Rect row = new Rect(0f, y, w, h);
-                Widgets.DrawBoxSolid(row, new Color(0.12f, 0.1f, 0.08f, 0.12f));
-                ArcaneWork.PrioBox(new Rect(4f, y + 5f, 25f, 25f), core, g);
-                GUI.color = Ink; Text.Font = GameFont.Small;
-                Widgets.Label(new Rect(36f, y + 4f, w * 0.45f, 22f), g.label.CapitalizeFirst());
-                Text.Font = GameFont.Tiny; GUI.color = InkSoft; Text.Anchor = TextAnchor.UpperRight;
-                Widgets.Label(new Rect(w * 0.35f, y + 6f, w * 0.65f - 6f, 18f), stands);
-                Text.Anchor = TextAnchor.UpperLeft;
-                GUI.color = Ink;
-                Widgets.Label(new Rect(36f, y + 24f, w - 40f, lh + 4f), string.Join("\n", lines));
-                Text.Font = GameFont.Small;
+                string why = ArcaneWork.Why(core, x.n);
+                GUI.color = why == null ? ArcaneWork.Good : ArcaneWork.Poor;
+                string line = (why == null ? "+ " : "- ") + ArcaneWork.Label(x.n).CapitalizeFirst() + "   [" + x.g.label + "]" + (why == null ? "" : "\n     " + why);
+                float h = Text.CalcHeight(line, w);
+                Widgets.Label(new Rect(0f, y, w, h), line);
                 y += h + 4f;
             }
             worksH = y + 4f;
@@ -233,7 +235,7 @@ namespace Avir.Magic
         {
             if (Enum.TryParse(sc, out RuneKind k) && (k == RuneKind.Fire || k == RuneKind.Water || k == RuneKind.Earth || k == RuneKind.Air)) return new[] { k };
             if (Enum.TryParse(sc, out ComboKind ck) && ck != ComboKind.None) return Combos.Parts(ck);
-            return new RuneKind[0];
+            return new RuneKind[0];   // the second order: by its three elements
         }
 
         private Vector2 pathScroll;
