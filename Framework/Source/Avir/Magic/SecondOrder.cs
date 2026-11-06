@@ -126,11 +126,39 @@ namespace Avir.Magic
             return "";
         }
 
-        public static Color ColorOf(SecondKind y, ComboKind x, RuneKind c)
+        /// <summary>Every meeting of the second order has its own colour, not a shade of its pair's (the author: each school
+        /// and sub-school - its own colour).</summary>
+        public static Color ColorOf(SecondKind y, ComboKind x, RuneKind c) => ColorOf(y);
+        public static Color ColorOf(SecondKind y)
         {
-            Color a = Combos.ColorOf(x);
-            Color b = DefDatabase<RuneDef>.AllDefsListForReading.FirstOrDefault(d => d.role == RuneRole.Element && d.kind == c)?.color ?? a;
-            return Color.Lerp(a, b, 0.35f);
+            switch (y)
+            {
+                case SecondKind.Inferno: return new Color(1f, 0.15f, 0.02f);       // scarlet heat
+                case SecondKind.Boil: return new Color(0.45f, 0.85f, 0.95f);       // hot cyan
+                case SecondKind.Geyser: return new Color(0.55f, 0.75f, 0.65f);     // steaming sage
+                case SecondKind.Typhoon: return new Color(0.2f, 0.6f, 0.75f);      // sea teal
+                case SecondKind.Lava: return new Color(1f, 0.85f, 0.2f);           // white-gold
+                case SecondKind.Volcano: return new Color(0.55f, 0.08f, 0.05f);    // dark crimson
+                case SecondKind.Obsidian: return new Color(0.38f, 0.2f, 0.55f);    // black-violet glass
+                case SecondKind.Ash: return new Color(0.58f, 0.56f, 0.55f);        // ash grey
+                case SecondKind.Deluge: return new Color(0.15f, 0.35f, 0.85f);     // rain blue
+                case SecondKind.Hurricane: return new Color(0.75f, 0.88f, 0.98f);  // pale sky
+                case SecondKind.BallLightning: return new Color(0.65f, 0.45f, 1f); // electric violet
+                case SecondKind.Mudflow: return new Color(0.45f, 0.3f, 0.15f);     // mud brown
+                case SecondKind.Swelter: return new Color(1f, 0.55f, 0.2f);        // heat orange
+                case SecondKind.Thermal: return new Color(1f, 0.92f, 0.65f);       // warm cream
+                case SecondKind.Rainbow: return new Color(1f, 0.45f, 0.85f);       // magenta
+                case SecondKind.DryWind: return new Color(0.85f, 0.68f, 0.3f);     // ochre
+                case SecondKind.Quag: return new Color(0.18f, 0.3f, 0.12f);        // deep marsh green
+                case SecondKind.Silt: return new Color(0.55f, 0.5f, 0.38f);        // grey silt
+                case SecondKind.MarshGas: return new Color(0.68f, 0.85f, 0.2f);    // acid green
+                case SecondKind.MarshHaze: return new Color(0.42f, 0.55f, 0.48f);  // murky grey-green
+                case SecondKind.Rockfall: return new Color(0.45f, 0.42f, 0.4f);    // stone grey
+                case SecondKind.Emery: return new Color(0.72f, 0.75f, 0.82f);      // steel
+                case SecondKind.BurningSand: return new Color(0.95f, 0.42f, 0.32f);// coral-hot sand
+                case SecondKind.Clay: return new Color(0.68f, 0.38f, 0.22f);       // terracotta
+            }
+            return Color.white;
         }
 
         /// <summary>The third circles of a spell and what they made with their pair (pairs from Combos.Pairs, each third
@@ -224,10 +252,14 @@ namespace Avir.Magic
             ctx.foes = all.Where(p => MagicFx.Foe(p, caster)).ToList();
             ctx.own = all.Where(p => p == caster || !p.HostileTo(caster)).ToList();
             SpellLore.Learn("Second:" + y);
+            // it shows: its name over the place once a cast, and its colour over the ground it takes
+            if (signedAt != Find.TickManager.TicksGame) { signedAt = Find.TickManager.TicksGame; MoteMaker.ThrowText(ctx.at.ToVector3Shifted(), map, Label(y).CapitalizeFirst() + "!", ColorOf(y), 3.5f); }
+            { Color sc = ColorOf(y); sc.a = 0.55f; foreach (IntVec3 x in ctx.cells) if (Rand.Chance(0.25f)) FleckMaker.ThrowDustPuffThick(x.ToVector3Shifted(), map, 1.1f, sc); }
             try { Do(y, ctx); }
             catch (Exception e) { Log.ErrorOnce("[Avir] second-order " + y + ": " + e, 0x5EC0 + (int)y); }
         }
 
+        private static int signedAt = -1;
         private static SecondFields F(Map m) => m.GetComponent<SecondFields>();
         private static int Ticks(float hours, float p) => Mathf.RoundToInt(GenDate.TicksPerHour * hours * Mathf.Max(0.5f, p));
         private static void Burn(Pawn p, float amt, Pawn by) => p.TakeDamage(new DamageInfo(DamageDefOf.Burn, amt, 0f, -1f, by));
@@ -277,7 +309,9 @@ namespace Avir.Magic
                         var where = c.beam ? FireMagic.Beam(by.Position, c.at + (c.at - by.Position), c.map, 0).Where(x => x.InBounds(c.map) && x != by.Position).ToList()
                                   : c.shape ? c.cells : FireMagic.Point(c.aura ? by.Position : c.at, c.map, c.radius * 2f).Where(x => x != by.Position && !x.AdjacentTo8Way(by.Position)).ToList();
                         int life = c.hold ? 5000 : 3000;
-                        foreach (IntVec3 x in where) if (Rand.Chance(c.aura ? 0.4f : 0.7f)) MagmaPool.Pour(x, c.map, by, c.power * 1.3f, life, true);
+                        foreach (IntVec3 x in where) if (Rand.Chance(c.aura ? 0.4f : 0.7f)) MagmaPool.Pour(x, c.map, by, c.power * 1.3f, life, true, 2500, true);
+                        // the magma the pair poured turns to lava too - the whole place is lava, not magma with a rim
+                        foreach (MagmaPool mp in c.cells.SelectMany(x => x.GetThingList(c.map).OfType<MagmaPool>()).ToList()) mp.MakeLava(life);
                         foreach (Pawn p in c.foes) MagicFx.Give(p, H("Avir_LavaMired"), 300);
                         break;
                     }

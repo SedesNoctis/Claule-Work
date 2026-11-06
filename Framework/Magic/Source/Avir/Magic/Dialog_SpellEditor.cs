@@ -1087,12 +1087,15 @@ namespace Avir.Magic
                     string pn = LifeMagic.PairName(LifeMagic.PairOfText);
                     fx0.main = "A small circle of " + (pn ?? "Life") + ": " + WeaveSpell.LifeText(sel);
                 }
+                // a meeting of the second order: named first, its own deed told, the pair's work under it
+                if (!whole && seconds.TryGetValue(sel, out SecondKind ys))
+                    fx0.main = SecondOrder.Label(ys).CapitalizeFirst() + " (" + Combos.Label(SecondOrder.PairOf(ys)) + " meeting " + SecondOrder.Third(ys).ToString().ToLower() + "): " + SecondOrder.Text(ys) + "\nUnder it, as " + Combos.Label(SecondOrder.PairOf(ys)) + ": " + fx0.main;
                 if (!whole) fx0.details = (fx0.details ?? "") + "\nThe whole spell: choose the outer rim (or click the sky).";
                 shownFx = fx0; shownSel = sel; shownWhole = whole; shownAt = Time.realtimeSinceStartup;
             }
             SpellEffect fx = shownFx;
             float ph = EffectPlaque.Height(fx, r.width);
-            EffectPlaque.Draw(new Rect(r.x, r.y + 40f, r.width, ph), fx, !whole && met.TryGetValue(sel, out ComboKind tint) ? Combos.ColorOf(tint) : Spells.ColorOf(shownSpell), whole ? "THE MAIN EFFECT" : "THIS CIRCLE ALONE");
+            EffectPlaque.Draw(new Rect(r.x, r.y + 40f, r.width, ph), fx, !whole && seconds.TryGetValue(sel, out SecondKind ty) ? SecondOrder.ColorOf(ty) : !whole && met.TryGetValue(sel, out ComboKind tint) ? Combos.ColorOf(tint) : Spells.ColorOf(shownSpell), whole ? "THE MAIN EFFECT" : "THIS CIRCLE ALONE");
             float y = r.y + 40f + ph + 10f;
             float oh = Mathf.Max(64f, Mathf.Min(r.yMax - 60f - y - 120f, 40f + 26f * OutlineRows().Count));
             DrawOutline(new Rect(r.x, y, r.width, oh)); y += oh + 10f;

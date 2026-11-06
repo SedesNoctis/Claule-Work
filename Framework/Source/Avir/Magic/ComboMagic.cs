@@ -139,6 +139,22 @@ namespace Avir.Magic
         /// <summary>Meetings Arlie has already spoken of (Life's and the second order's): she says it the first time only.</summary>
         public HashSet<string> said = new HashSet<string>();
 
+        /// <summary>The first meeting of the second order: her line and a letter for it (the pair under it is known quietly).</summary>
+        public static void MadeSecond(SecondKind y, ComboKind pair, Pawn by)
+        {
+            var c = Current.Game?.GetComponent<GameComponent_Combos>();
+            if (c == null || y == SecondKind.None) return;
+            c.known.Add(pair);
+            string key = "second" + y;
+            if (c.said.Contains(key)) return;
+            c.said.Add(key);
+            if (by == null || by.Faction != Faction.OfPlayer) return;
+            Avir.Ritualistics.Arlia.Say(key);
+            Find.LetterStack.ReceiveLetter("A new element: " + SecondOrder.Label(y).CapitalizeFirst(),
+                by.LabelShortCap + " let three elements meet: " + Combos.Label(pair) + " and " + SecondOrder.Third(y).ToString().ToLower() + " made " + SecondOrder.Label(y) + ".\n\n" + SecondOrder.Text(y),
+                LetterDefOf.PositiveEvent, by);
+        }
+
         public static void First(string key, Pawn by)
         {
             var c = Current.Game?.GetComponent<GameComponent_Combos>();
@@ -194,7 +210,8 @@ namespace Avir.Magic
         {
             Map map = caster.Map;
             if (map == null) return;
-            GameComponent_Combos.Made(k, caster);
+            if (SecondOrder.Now != SecondKind.None && SecondOrder.PairOf(SecondOrder.Now) == k) GameComponent_Combos.MadeSecond(SecondOrder.Now, k, caster);
+            else GameComponent_Combos.Made(k, caster);
             r = SpellMods.Begin(s, r);
             if (k == ComboKind.Bog) r.breadth++;   // bog is unwieldy as earth, and wide for it as by one Breadth (magma is unwieldy but not wider; dust is neither)
             IntVec3 at = target.Cell;
@@ -815,20 +832,31 @@ namespace Avir.Magic
     {
         public Pawn owner; public float power = 1f; public int left = 900; public bool setsHard; public int stoneLife = 2500;
         public int life = 900;
-        private static Graphic crust;
+        /// <summary>Lava (magma meeting fire): brighter, hotter; when its lava time is out it cools into plain magma.</summary>
+        public bool lava; public int lavaLeft;
+        private static Graphic crust, lavaG;
+
+        public void MakeLava(int ticks) { lava = true; lavaLeft = Mathf.Max(lavaLeft, ticks / 2); left = Mathf.Max(left, ticks); life = Mathf.Max(life, left); }
+        public override string Label => lava ? "lava" : base.Label;
+        public override string LabelNoCount => lava ? "lava" : base.LabelNoCount;
 
         /// <summary>The last third of its heat: a dark crust with glowing seams, no longer a pool.</summary>
         public override Graphic Graphic
         {
             get
             {
+                if (lava)
+                {
+                    if (lavaG == null) lavaG = GraphicDatabase.Get<Graphic_Random>(def.graphicData.texPath, ShaderDatabase.MoteGlow, def.graphicData.drawSize * 1.1f, new Color(1f, 0.85f, 0.35f));
+                    return lavaG;
+                }
                 if (left > life / 3) return base.Graphic;
                 if (crust == null) crust = GraphicDatabase.Get<Graphic_Random>("Things/Avir/Magic/MagmaCrust", ShaderDatabase.Transparent, new Vector2(1.6f, 1.6f), Color.white);
                 return crust;
             }
         }
 
-        public static void Pour(IntVec3 c, Map map, Pawn owner, float power, int life, bool setsHard, int stoneLife = 2500)
+        public static void Pour(IntVec3 c, Map map, Pawn owner, float power, int life, bool setsHard, int stoneLife = 2500, bool lava = false)
         {
             if (!c.InBounds(map) || c.Impassable(map) || ComboDefOf.Avir_Magma == null) return;
             if (Reactions.Pools(c, map).Any(t => !(t is MirePatch)))
@@ -841,9 +869,10 @@ namespace Avir.Magic
             }
             if (c.GetThingList(map).Any(t => t is MirePatch)) Gas_MarshGas.Release(c, map, 1, true);
             MagmaPool old = c.GetThingList(map).OfType<MagmaPool>().FirstOrDefault();
-            if (old != null) { old.left = Mathf.Max(old.left, life); old.setsHard |= setsHard; return; }
+            if (old != null) { old.left = Mathf.Max(old.left, life); old.setsHard |= setsHard; if (lava) old.MakeLava(life); return; }
             var m = (MagmaPool)ThingMaker.MakeThing(ComboDefOf.Avir_Magma);
             m.owner = owner; m.power = power; m.left = life; m.life = Mathf.Max(1, life); m.setsHard = setsHard; m.stoneLife = stoneLife;
+            if (lava) m.MakeLava(life);
             GenSpawn.Spawn(m, c, map);
             Ignite(c, map, owner, 0.5f);
         }
@@ -899,20 +928,22 @@ namespace Avir.Magic
             base.ExposeData();
             Scribe_References.Look(ref owner, "owner"); Scribe_Values.Look(ref power, "power", 1f); Scribe_Values.Look(ref left, "left", 900);
             Scribe_Values.Look(ref setsHard, "setsHard"); Scribe_Values.Look(ref stoneLife, "stoneLife", 2500); Scribe_Values.Look(ref life, "life", 900);
+            Scribe_Values.Look(ref lava, "lava"); Scribe_Values.Look(ref lavaLeft, "lavaLeft");
         }
 
         protected override void Tick()
         {
             base.Tick();
             if (--left <= 0) { Harden(false); return; }
-            if (this.IsHashIntervalTick(20) && Rand.Chance(0.3f)) FleckMaker.ThrowFireGlow(DrawPos, Map, 0.6f);
+            if (lava && --lavaLeft <= 0) lava = false;   // cooled into magma, which goes its own way
+            if (this.IsHashIntervalTick(20) && Rand.Chance(lava ? 0.7f : 0.3f)) FleckMaker.ThrowFireGlow(DrawPos, Map, lava ? 1f : 0.6f);
             if (!this.IsHashIntervalTick(60)) return;
             // the ground of magma: a ward of fire, magma or steam wades it; any other ward spends itself on it
             using (SpellWards.Of(null, ComboKind.Magma, false))
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
             {
                 if (p.Dead) continue;
-                p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 4f * power, 0f, -1f, owner));
+                p.TakeDamage(new DamageInfo(DamageDefOf.Flame, (lava ? 6f : 4f) * power, 0f, -1f, owner));
                 if (!p.Dead && p.Spawned && !SpellWards.Stops(p, true) && Rand.Chance(0.2f)) FireUtility.TryAttachFire(p, 0.3f, owner);
             }
             Ignite(Position, Map, owner, 0.35f);

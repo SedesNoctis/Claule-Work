@@ -185,7 +185,6 @@ namespace Avir.Magic
             SecondKind keepSecond = SecondOrder.Now;
             var seconds = SecondOrder.Of(c.root);
             SecondOrder.Now = seconds.TryGetValue(circle, out SecondKind sk) ? sk : SecondKind.None;
-            if (SecondOrder.Now != SecondKind.None) GameComponent_Combos.First("second" + SecondOrder.Now, caster);
             int keepExtra = SecondOrder.Extra;
             SecondOrder.Extra = SecondOrder.Now == SecondKind.None ? 0 : Mathf.Max(0, seconds.Count(kv => kv.Value == SecondOrder.Now) - 3);
             using (SpellWards.Of(circle.element?.kind, met, true))
