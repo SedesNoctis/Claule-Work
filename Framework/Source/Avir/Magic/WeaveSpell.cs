@@ -83,6 +83,7 @@ namespace Avir.Magic
                     case RuneKind.Step: t = take ? "a foe dragged to the mage by its own blood (Blood only)" : "one's own drawn gently to the mage (Blood only)"; break;
                     default: t = take ? "Withering at the point" : "mending at the point"; break;
                 }
+                if (a.trans) t = take ? TransTake(LifeMagic.PairOfText) : TransGive(LifeMagic.PairOfText);
                 if (a.hop) t += " - leaping on to the nearest wounded";
                 bits.Add(t + (take ? " (into the store)" : " (from the store)"));
             }
@@ -92,6 +93,9 @@ namespace Avir.Magic
             if (g.inner.Count > 0) return "and Life round it: " + (own != null ? own + "; and " : "") + "every friend the spell touches is mended from the store";
             return "Life: " + (own ?? "nothing tied yet - write Withering or Restoration");
         }
+
+        private static string TransTake(RuneKind p) => p == RuneKind.Water ? "water turned to stone, for good" : p == RuneKind.Earth ? "plants turned to emerald sculptures of themselves" : p == RuneKind.Fire ? "ash taken into the store" : p == RuneKind.Air ? "rot taken into the store, the ground richer for it" : "the dead turned to fertile earth";
+        private static string TransGive(RuneKind p) => p == RuneKind.Water ? "stone turned to water, for good" : p == RuneKind.Earth ? "emerald sculptures let go - plants again" : "the ground quickened - more fertile for ten days";
 
         public static bool Wraps(SpellCircle root, RuneKind k) => Greats(root).Any(c => c.element?.kind == k && c.inner.Count > 0);
 
@@ -112,7 +116,8 @@ namespace Avir.Magic
                 SpellCircle c = order[k];
                 if (LifeMagic.IsLink(root, c))
                 {
-                    string pn = LifeMagic.PairName(LifeMagic.PairOf(root, c.Great ? c : root.ParentOf(c)));
+                    LifeMagic.PairOfText = LifeMagic.PairOf(root, c.Great ? c : root.ParentOf(c));
+                    string pn = LifeMagic.PairName(LifeMagic.PairOfText);
                     parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + (k > 0 ? "then: " : "") + (c.Great ? "" : "a small circle of ") + (pn != null ? pn + " - " : "") + LifeText(c));
                     continue;
                 }

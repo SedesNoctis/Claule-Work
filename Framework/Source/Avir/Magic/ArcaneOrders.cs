@@ -22,6 +22,8 @@ namespace Avir.Magic
         public static DesignationDef Smooth => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneSmooth");
         public static DesignationDef Growth => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneGrowth");
         public static DesignationDef Enrich => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneEnrich");
+        public static DesignationDef Water => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneWater");
+        public static DesignationDef Stone => DefDatabase<DesignationDef>.GetNamedSilentFail("Avir_ArcaneStone");
 
         public static Hediff_ArcaneCore Able(Pawn p, float arcana, params RuneKind[] kinds)
         {
@@ -198,12 +200,38 @@ namespace Avir.Magic
         public Designator_ArcaneEnrich()
         {
             defaultLabel = "Enrich soil (bog)";
-            defaultDesc = "Mark ground for a caster of the bog (water and earth) to enrich: sand, gravel and poor ground become arcane soil, soil and arcane soil - rich arcane soil, damp and dark, better than any plain soil - for " + ArcaneWorks.EnrichDays + " days (two quadrums), then it goes back to what it was.";
+            defaultDesc = "Mark ground for a caster of the bog (water and earth) to enrich: sand, gravel and poor ground become arcane soil, soil and arcane soil - rich arcane soil, damp and dark, better than any plain soil - for " + ArcaneWorks.EnrichDays + " days, then it goes back to what it was.";
             icon = ContentFinder<Texture2D>.Get("UI/Designators/PlantsHarvest", false) ?? BaseContent.BadTex;
         }
         protected override DesignationDef Designation => Arcane.Enrich;
         public override AcceptanceReport CanDesignateCell(IntVec3 c) =>
             c.InBounds(Map) && !c.Fogged(Map) && Map.designationManager.DesignationAt(c, Designation) == null && ArcaneWorks.Richer(Map.terrainGrid.TerrainAt(c)) != null;
+    }
+
+    /// <summary>Arcane water (Blood): natural stone ground becomes water, for good.</summary>
+    public class Designator_ArcaneWater : Designator_Arcane
+    {
+        public Designator_ArcaneWater()
+        {
+            defaultLabel = "Arcane water (blood)";
+            defaultDesc = "Mark natural stone ground for a caster of Blood (life and water) to turn into shallow water - for good. A caster of earth can make it stone again (Water to stone).";
+            icon = ContentFinder<Texture2D>.Get("UI/Designators/SmoothSurface", false) ?? BaseContent.BadTex;
+        }
+        protected override DesignationDef Designation => Arcane.Water;
+        public override AcceptanceReport CanDesignateCell(IntVec3 c) => c.InBounds(Map) && !c.Fogged(Map) && Designation != null && Map.designationManager.DesignationAt(c, Designation) == null && c.GetEdifice(Map) == null && ArcaneWorks.NaturalStone(Map.terrainGrid.TerrainAt(c));
+    }
+
+    /// <summary>Water to stone (earth): shallow water becomes the rough stone of this land, for good.</summary>
+    public class Designator_ArcaneStone : Designator_Arcane
+    {
+        public Designator_ArcaneStone()
+        {
+            defaultLabel = "Water to stone (earth)";
+            defaultDesc = "Mark shallow water for a caster of earth to turn into the rough stone of this land - for good.";
+            icon = ContentFinder<Texture2D>.Get("UI/Designators/SmoothSurface", false) ?? BaseContent.BadTex;
+        }
+        protected override DesignationDef Designation => Arcane.Stone;
+        public override AcceptanceReport CanDesignateCell(IntVec3 c) => c.InBounds(Map) && !c.Fogged(Map) && Designation != null && Map.designationManager.DesignationAt(c, Designation) == null && ArcaneWorks.PlainWater(Map.terrainGrid.TerrainAt(c));
     }
 
     // ================================================================== the work itself
@@ -232,6 +260,9 @@ namespace Avir.Magic
             ["Avir_ArcaneWarm"] = new ArcaneSpec { kinds = new[] { RuneKind.Fire, RuneKind.Air }, cost = 4f, xp = 8f, ticks = 180, effect = Warm, tint = new Color(1f, 0.85f, 0.4f, 0.5f) },
             ["Avir_ArcaneMelt"] = new ArcaneSpec { kinds = new[] { RuneKind.Fire, RuneKind.Air }, cost = 3f, xp = 6f, ticks = 120, effect = Melt, tint = new Color(1f, 0.85f, 0.4f, 0.5f) },
             ["Avir_ArcaneSteam"] = new ArcaneSpec { kinds = new[] { RuneKind.Fire, RuneKind.Water }, cost = 5f, xp = 10f, ticks = 240, effect = Steam, tint = new Color(1f, 1f, 1f, 0.6f) },
+            // Blood (Life + Water) makes stone into water for good; any caster of earth makes water into stone again (the author, Fix135)
+            ["Avir_ArcaneWater"] = new ArcaneSpec { kinds = new[] { RuneKind.Life, RuneKind.Water }, cost = 6f, xp = 10f, ticks = 240, effect = StoneToWater, tint = new Color(0.6f, 0.1f, 0.15f, 0.6f) },
+            ["Avir_ArcaneStone"] = new ArcaneSpec { kinds = new[] { RuneKind.Earth }, cost = 6f, xp = 10f, ticks = 240, effect = WaterToStone, tint = new Color(0.6f, 0.5f, 0.4f, 0.6f) },
             ["Avir_ArcaneCharge"] = new ArcaneSpec { kinds = new[] { RuneKind.Water, RuneKind.Air }, cost = 5f, xp = 10f, ticks = 240, effect = Charge, tint = new Color(0.5f, 0.5f, 1f, 0.6f) },
         };
 
@@ -388,7 +419,7 @@ namespace Avir.Magic
             return true;
         }
 
-        public const int EnrichDays = 30;
+        public const int EnrichDays = 15;   // the author: thirty was too long a boon (Fix135)
 
         /// <summary>What the bog makes of this ground: poor ground - soil, soil - rich soil; nothing of water, rock or floors.</summary>
         /// <summary>The arcane soil (the author): the bog makes its own ground, not plain soil - in two looks each, chosen at
@@ -405,6 +436,50 @@ namespace Avir.Magic
             if (IsArcane(t) || t.fertility >= TerrainDefOf.Soil.fertility) return ArcaneSoilRich;
             return ArcaneSoil;
         }
+
+        public static bool NaturalStone(TerrainDef t) => t != null && !t.IsWater && (t.smoothedTerrain != null || t.defName.EndsWith("_Smooth") || t.defName.EndsWith("_Rough") || t.defName.EndsWith("_RoughHewn"));
+        public static bool PlainWater(TerrainDef t) => t != null && t.IsWater && !t.defName.Contains("Ocean") && !t.defName.Contains("Deep");
+        public static TerrainDef RoughStone(Map map)
+        {
+            ThingDef rock = Find.World.NaturalRockTypesIn(map.Tile).FirstOrDefault() ?? ThingDefOf.Granite;
+            return rock.building?.naturalTerrain ?? DefDatabase<TerrainDef>.GetNamedSilentFail("Granite_Rough");
+        }
+
+        /// <summary>The cells round a mark that are marked too, the mark taken off each.</summary>
+        private static List<IntVec3> TakeMarked(Map map, IntVec3 at, DesignationDef d)
+        {
+            var l = new List<IntVec3>();
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(at, WorkSpells.Now.R(2.9f), true))
+                if (cell.InBounds(map) && d != null && map.designationManager.DesignationAt(cell, d) != null) { map.designationManager.TryRemoveDesignation(cell, d); l.Add(cell); }
+            return l;
+        }
+
+        public static int StoneToWaterAt(Map map, IEnumerable<IntVec3> cells)
+        {
+            int n = 0;
+            foreach (IntVec3 cell in cells)
+            {
+                if (!cell.InBounds(map) || cell.GetEdifice(map) != null || !NaturalStone(map.terrainGrid.TerrainAt(cell))) continue;
+                map.terrainGrid.SetTerrain(cell, TerrainDefOf.WaterShallow); n++;
+                if (Rand.Chance(0.4f)) FleckMaker.Static(cell, map, FleckDefOf.WaterSplash, 0.7f);
+            }
+            return n;
+        }
+
+        public static int WaterToStoneAt(Map map, IEnumerable<IntVec3> cells)
+        {
+            TerrainDef stone = RoughStone(map); int n = 0;
+            foreach (IntVec3 cell in cells)
+            {
+                if (!cell.InBounds(map) || stone == null || !PlainWater(map.terrainGrid.TerrainAt(cell)) || cell.GetFirstPawn(map) != null) continue;
+                map.terrainGrid.SetTerrain(cell, stone); n++;
+                if (Rand.Chance(0.4f)) FleckMaker.ThrowDustPuffThick(cell.ToVector3Shifted(), map, 0.7f, MagicFx.EarthDust);
+            }
+            return n;
+        }
+
+        private static bool StoneToWater(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c) => StoneToWaterAt(p.Map, TakeMarked(p.Map, t.Cell, Arcane.Water)) > 0;
+        private static bool WaterToStone(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c) => WaterToStoneAt(p.Map, TakeMarked(p.Map, t.Cell, Arcane.Stone)) > 0;
 
         private static bool Enrich(Pawn p, LocalTargetInfo t, Hediff_ArcaneCore c)
         {
@@ -564,6 +639,20 @@ namespace Avir.Magic
         protected override string Job => "Avir_ArcaneEnrich";
         public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn) => Marked(Arcane.Enrich, pawn);
         public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false) => Cells(Arcane.Enrich, pawn, c, forced);
+    }
+
+    public class WorkGiver_ArcaneWater : WorkGiver_Arcane
+    {
+        protected override string Job => "Avir_ArcaneWater";
+        public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn) => Marked(Arcane.Water, pawn);
+        public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false) => Cells(Arcane.Water, pawn, c, forced);
+    }
+
+    public class WorkGiver_ArcaneStone : WorkGiver_Arcane
+    {
+        protected override string Job => "Avir_ArcaneStone";
+        public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn) => Marked(Arcane.Stone, pawn);
+        public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false) => Cells(Arcane.Stone, pawn, c, forced);
     }
 
     public class WorkGiver_ArcaneGrowth : WorkGiver_Arcane

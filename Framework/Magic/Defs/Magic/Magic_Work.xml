@@ -243,6 +243,8 @@
       <li>Avir.Magic.Designator_ArcaneSmooth</li>
       <li>Avir.Magic.Designator_ArcaneGrowth</li>
       <li>Avir.Magic.Designator_ArcaneEnrich</li>
+      <li>Avir.Magic.Designator_ArcaneWater</li>
+      <li>Avir.Magic.Designator_ArcaneStone</li>
       <li>Avir.Magic.Designator_2RaiseGeyser</li>
       <li>Avir.Magic.Designator_2SealGeyser</li>
       <li>Avir.Magic.Designator_2SmeltItems</li>
@@ -283,6 +285,48 @@
   <DesignationDef>
     <defName>Avir_ArcaneEnrich</defName>
     <texturePath>UI/Designations/Harvest</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneWater</defName>
+    <label>make arcane water</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneWater</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>turn</verb>
+    <gerund>turning stone to water</gerund>
+    <priorityInType>8</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_ArcaneWater</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>turning stone to water by blood.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_ArcaneWater</defName>
+    <texturePath>UI/Designations/Harvest</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_ArcaneStone</defName>
+    <label>turn water to stone</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneStone</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>turn</verb>
+    <gerund>turning water to stone</gerund>
+    <priorityInType>8</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_ArcaneStone</defName>
+    <driverClass>Avir.Magic.JobDriver_Arcane</driverClass>
+    <reportString>turning water to stone.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_ArcaneStone</defName>
+    <texturePath>UI/Designations/Mine</texturePath>
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>

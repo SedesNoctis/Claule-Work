@@ -323,4 +323,44 @@
     </comps>
     <stages><li><capMods><li><capacity>Moving</capacity><setMax>0.1</setMax></li></capMods></li></stages>
   </HediffDef>
+  <!-- Emerald plants: what the Emerald's Transmutation leaves of a plant. The picture is taken from the plant and tinted
+       (EmeraldPlant.Graphic); this graphic is only a fallback. Fixed worth, no quality, no art; light and portable. -->
+  <ThingDef Name="Avir_EmeraldPlantBase" Abstract="True">
+    <thingClass>Avir.Magic.EmeraldPlant</thingClass>
+    <category>Building</category>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>PassThroughOnly</passability>
+    <selectable>true</selectable>
+    <rotatable>false</rotatable>
+    <useHitPoints>true</useHitPoints>
+    <drawerType>MapMeshAndRealTime</drawerType>
+    <minifiedDef>MinifiedThing</minifiedDef>
+    <thingCategories><li>BuildingsArt</li></thingCategories>
+    <tradeability>Sellable</tradeability>
+    <graphicData>
+      <texPath>Things/Item/Resource/Jade/Jade_a</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <color>(90,200,120)</color>
+    </graphicData>
+    <building><isInert>true</isInert></building>
+    <description>A plant turned to green stone by a caster of the Emerald: leaf, then stone. Its life went into an emerald; what is left is fair to look at, and can be carried and set anywhere. A caster of the Emerald can let the plant go again.</description>
+  </ThingDef>
+  <ThingDef ParentName="Avir_EmeraldPlantBase">
+    <defName>Avir_EmeraldSprig</defName>
+    <label>emerald sprig</label>
+    <fillPercent>0.15</fillPercent>
+    <statBases><MaxHitPoints>60</MaxHitPoints><Beauty>8</Beauty><MarketValue>80</MarketValue><Mass>1</Mass><Flammability>0</Flammability></statBases>
+  </ThingDef>
+  <ThingDef ParentName="Avir_EmeraldPlantBase">
+    <defName>Avir_EmeraldBush</defName>
+    <label>emerald bush</label>
+    <fillPercent>0.25</fillPercent>
+    <statBases><MaxHitPoints>120</MaxHitPoints><Beauty>16</Beauty><MarketValue>250</MarketValue><Mass>3</Mass><Flammability>0</Flammability></statBases>
+  </ThingDef>
+  <ThingDef ParentName="Avir_EmeraldPlantBase">
+    <defName>Avir_EmeraldTree</defName>
+    <label>emerald tree</label>
+    <fillPercent>0.35</fillPercent>
+    <statBases><MaxHitPoints>300</MaxHitPoints><Beauty>30</Beauty><MarketValue>600</MarketValue><Mass>8</Mass><Flammability>0</Flammability></statBases>
+  </ThingDef>
 </Defs>

@@ -49,12 +49,12 @@ namespace Avir.Magic
 
         /// <summary>One act of a Life circle: a verb (or none) tied to its side; `hop` - the energy goes on at once
         /// along a Reach and a Thread written before it (the leap rule), to the nearest wounded one of the struck.</summary>
-        public class Act { public RuneKind verb = (RuneKind)(-1); public RuneKind side; public bool hop; public int reach; public bool pin; }
+        public class Act { public RuneKind verb = (RuneKind)(-1); public RuneKind side; public bool hop; public int reach; public bool pin; public bool trans; }
 
         public static List<Act> Read(SpellCircle g, out List<RuneKind> untied)
         {
             var acts = new List<Act>(); untied = new List<RuneKind>();
-            RuneKind? pending = null; bool thread = false; int reach = 0;
+            RuneKind? pending = null; bool thread = false, lastSide = false; int reach = 0;
             var runes = g.sections.Select((sec, i) => new { sec, i }).SelectMany(x => (x.sec.runes ?? new List<RuneDef>()).Where(r => r != null)
                 .Select(r => new { r, outer = x.i == g.sections.Count - 1 })).ToList();
             bool shaped = SpellSculpt.Of(g);
@@ -64,10 +64,14 @@ namespace Avir.Magic
                 if (shaped && x.outer && (k == RuneKind.Barrier || k == RuneKind.Thread)) continue;   // the shaping, not runes of its own
                 if (k == RuneKind.Reach) { reach++; continue; }
                 if (k == RuneKind.Thread) { thread = true; continue; }
+                // Transmutation right after an act: that act works on matter - its side decides which way (the author)
+                if (k == RuneKind.Transmute) { if (acts.Count > 0 && lastSide) acts[acts.Count - 1].trans = true; else untied.Add(k); lastSide = false; continue; }
+                lastSide = false;
                 if (Verb(k)) { if (pending != null) untied.Add(pending.Value); pending = k; continue; }
                 if (Side(k))
                 {
                     acts.Add(new Act { verb = pending ?? (RuneKind)(-1), side = k, hop = thread && reach > 0 && acts.Count > 0, reach = reach, pin = thread && reach == 0 });
+                    lastSide = true;
                     pending = null; thread = false; reach = 0;
                 }
             }
@@ -133,6 +137,9 @@ namespace Avir.Magic
             SpellCircle first = inside.FirstOrDefault(k => k.element != null && (k.element.kind == RuneKind.Fire || k.element.kind == RuneKind.Water || k.element.kind == RuneKind.Earth || k.element.kind == RuneKind.Air));
             return first?.element.kind ?? None;
         }
+
+        /// <summary>The meeting being explained now (for the words of a Transmutation).</summary>
+        public static RuneKind PairOfText = None;
 
         public static string PairText(RuneKind k)
         {
@@ -254,6 +261,7 @@ namespace Avir.Magic
 
         private static void Take(Pawn caster, Hediff_ArcaneCore core, SpellCircle g, Act act, IntVec3 at, float r, float power, Map map)
         {
+            if (act.trans) { flow += TransmuteTake(caster, g, act, at, r, power, map); return; }
             float got = 0f;
             switch (act.verb)
             {
@@ -360,6 +368,7 @@ namespace Avir.Magic
 
         private static bool Give(Pawn caster, Hediff_ArcaneCore core, SpellCircle g, Act act, IntVec3 at, float r, float power, Map map)
         {
+            if (act.trans) return TransmuteGive(caster, core, g, act, at, r, power, map);
             // Wild Flame gives smouldering hearts, Pestilence gives its fertile poison - not plain mending
             if (pair == RuneKind.Fire || pair == RuneKind.Air) return GiveOwn(caster, core, g, act, at, r, power, map);
             List<Pawn> who; float per = 12f, regen = 0.25f;
@@ -983,6 +992,12 @@ namespace Avir.Magic
                 Spell("TEST Life aura: withering round the mage, foes only", "Aura,Anchor,Breadth|Release,Drain|Barrier,Barrier"),
                 Spell("TEST Life aura: mending round the mage, own only", "Aura,Anchor|Release,Restore|Barrier,Barrier,Thread"),
                 Spell("TEST Emerald aura: stone circle", "Aura,Anchor|Release,Drain|Barrier,Barrier", "Earth:Hold"),
+                Spell("TEST Life: the dead into fertile earth", "Release,Drain,Transmute,Breadth"),
+                Spell("TEST Life: quicken the ground", "Release,Restore,Transmute,Breadth"),
+                Spell("TEST Emerald: plants into emerald sculptures", "Release,Drain,Transmute,Breadth", "Earth:Hold"),
+                Spell("TEST Emerald: sculptures back to life", "Release,Restore,Transmute,Breadth", "Earth:Hold"),
+                Spell("TEST Blood: stone into water (for good)", "Release,Restore,Transmute,Breadth", "Water:Hold"),
+                Spell("TEST Blood: water into stone (for good)", "Release,Drain,Transmute,Breadth", "Water:Hold"),
             };
             foreach (RitualSchema s in list) core.Book.spells.Add(s);
             Messages.Message(list.Count + " test spells of Life written into " + p.LabelShort + "'s book.", MessageTypeDefOf.NeutralEvent, false);

@@ -114,6 +114,80 @@ namespace Avir.Magic
             return got;
         }
 
+
+        // ================================================================== Transmutation in Life: the act works on matter
+
+        /// <summary>Taking, on matter. Life: the dead into fertile earth (a boon to the ground, the ground itself unchanged);
+        /// Wild Flame: ash into the store; Blood: water into stone, for good; Emerald: leaf into stone - the plants become
+        /// emerald sculptures of themselves, their life sealed in emeralds; Pestilence: rot into the store and a richer ground.</summary>
+        private static float TransmuteTake(Pawn caster, SpellCircle g, Act act, IntVec3 at, float r, float power, Map map)
+        {
+            float got = 0f;
+            var fert = MapComponent_LifeFertility.Of(map);
+            switch (pair)
+            {
+                case RuneKind.Water:
+                    ArcaneWorks.WaterToStoneAt(map, GenRadial.RadialCellsAround(at, r, true));
+                    break;
+                case RuneKind.Earth:
+                    foreach (IntVec3 c in GenRadial.RadialCellsAround(at, r, true).Where(c => c.InBounds(map)).ToList())
+                    {
+                        Plant pl = c.GetPlant(map);
+                        if (pl == null || !Sculptable(pl)) continue;
+                        got += EmeraldPlant.Make(pl, map);
+                    }
+                    if (got > 0.5f) { Emerald.Charge(at, map, got * 0.5f); got *= 0.5f; }
+                    break;
+                case RuneKind.Fire:
+                    foreach (Thing t in GenRadial.RadialDistinctThingsAround(at, map, r, true).Where(t => t.def == ThingDefOf.Filth_Ash).ToList()) { got += 1.5f; fert?.Add(t.Position, 0.3f, 5); t.Destroy(); }
+                    break;
+                case RuneKind.Air:
+                    foreach (Thing t in GenRadial.RadialDistinctThingsAround(at, map, r, true).Where(t => (t.TryGetComp<CompRottable>()?.Stage ?? RotStage.Fresh) != RotStage.Fresh).ToList())
+                    { got += 5f; foreach (IntVec3 c in GenRadial.RadialCellsAround(t.Position, 1.5f, true)) fert?.Add(c, 0.5f, 5); t.Destroy(); }
+                    break;
+                default:
+                    foreach (Corpse k in GenRadial.RadialDistinctThingsAround(at, map, r, true).OfType<Corpse>().Where(k => k.InnerPawn != null && k.InnerPawn.RaceProps.IsFlesh).ToList())
+                    { got += 10f; foreach (IntVec3 c in GenRadial.RadialCellsAround(k.Position, 2.5f, true)) fert?.Add(c, 0.5f, 5); FleckMaker.ThrowDustPuffThick(k.DrawPos, map, 1.2f, new Color(0.45f, 0.35f, 0.25f, 0.6f)); k.Destroy(); }
+                    break;
+            }
+            return got * power;
+        }
+
+        /// <summary>Giving, on matter. Life, Wild Flame, Pestilence: the ground is quickened - a boon to its fertility for
+        /// ten days, the ground itself unchanged, the dead ground made living again; Blood: stone into water, for good;
+        /// Emerald: the emerald sculptures in reach come back to life as plants.</summary>
+        private static bool TransmuteGive(Pawn caster, Hediff_ArcaneCore core, SpellCircle g, Act act, IntVec3 at, float r, float power, Map map)
+        {
+            var cells = GenRadial.RadialCellsAround(at, r, true).Where(c => c.InBounds(map)).ToList();
+            switch (pair)
+            {
+                case RuneKind.Water:
+                    { float f = Pay(core, cells.Count * 0.5f); if (f <= 0f) return false; ArcaneWorks.StoneToWaterAt(map, cells.Take(Mathf.CeilToInt(cells.Count * f))); return true; }
+                case RuneKind.Earth:
+                    {
+                        var stones = GenRadial.RadialDistinctThingsAround(at, map, r, true).OfType<EmeraldPlant>().ToList();
+                        if (stones.Count == 0) return true;
+                        float f = Pay(core, stones.Count * 4f); if (f <= 0f) return false;
+                        foreach (EmeraldPlant e in stones.Take(Mathf.CeilToInt(stones.Count * f))) e.Revive();
+                        return true;
+                    }
+                default:
+                    {
+                        float f = Pay(core, cells.Count * 0.2f); if (f <= 0f) return false;
+                        var fert = MapComponent_LifeFertility.Of(map); var temp = MapComponent_TempTerrain.Of(map);
+                        foreach (IntVec3 c in cells)
+                        {
+                            fert?.Add(c, 0.4f * power * f, 10);
+                            if (temp != null && temp.to.TryGetValue(c, out TerrainDef t) && t == DeadGround) temp.until[c] = Find.TickManager.TicksGame;   // the dead ground lives again
+                            if (Rand.Chance(0.15f)) Wisp(c.ToVector3Shifted(), map);
+                        }
+                        return true;
+                    }
+            }
+        }
+
+        private static bool Sculptable(Plant pl) => pl.def.plant != null && (pl.def.plant.IsTree || pl.def.plant.harvestedThingDef != null || pl.def.GetStatValueAbstract(StatDefOf.Beauty) > 0f) && pl.Growth > 0.3f;
+
         // ================================================================== the meetings' answers to each rune: taking
 
         private static float PairTakeNow(Pawn caster, Hediff_ArcaneCore core, SpellCircle g, Act act, IntVec3 at, float r, float power, Map map, ref float got)
@@ -441,5 +515,99 @@ namespace Avir.Magic
             if (ab != null && !p.health.hediffSet.HasHediff(ab)) p.health.AddHediff(ab);
             p.health.RemoveHediff(parent);
         }
+    }
+}
+
+namespace Avir.Magic
+{
+    /// <summary>A boon to the ground's fertility for some days, the ground itself unchanged (the author: the dead into
+    /// fertilizer without turning the land arcane).</summary>
+    public class MapComponent_LifeFertility : MapComponent
+    {
+        private Dictionary<IntVec3, float> bonus = new Dictionary<IntVec3, float>();
+        private Dictionary<IntVec3, int> until = new Dictionary<IntVec3, int>();
+        public MapComponent_LifeFertility(Map map) : base(map) { }
+        public static MapComponent_LifeFertility Of(Map m) => m?.GetComponent<MapComponent_LifeFertility>();
+        public static float At(Map m, IntVec3 c) { var f = Of(m); return f != null && f.bonus.TryGetValue(c, out float b) ? b : 0f; }
+
+        public void Add(IntVec3 c, float b, int days)
+        {
+            if (!c.InBounds(map)) return;
+            bonus[c] = Mathf.Min(1f, (bonus.TryGetValue(c, out float o) ? o : 0f) + b);
+            until[c] = Mathf.Max(until.TryGetValue(c, out int u) ? u : 0, Find.TickManager.TicksGame + days * GenDate.TicksPerDay);
+        }
+
+        public override void MapComponentTick()
+        {
+            if (until.Count == 0 || Find.TickManager.TicksGame % 2500 != 0) return;
+            int now = Find.TickManager.TicksGame;
+            foreach (IntVec3 c in until.Where(kv => kv.Value <= now).Select(kv => kv.Key).ToList()) { until.Remove(c); bonus.Remove(c); }
+        }
+
+        public override void ExposeData()
+        {
+            Scribe_Collections.Look(ref bonus, "lifeFertBonus", LookMode.Value, LookMode.Value);
+            Scribe_Collections.Look(ref until, "lifeFertUntil", LookMode.Value, LookMode.Value);
+            if (bonus == null) bonus = new Dictionary<IntVec3, float>();
+            if (until == null) until = new Dictionary<IntVec3, int>();
+        }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(FertilityGrid), nameof(FertilityGrid.FertilityAt))]
+    public static class Patch_LifeFertility
+    {
+        public static void Postfix(FertilityGrid __instance, IntVec3 loc, ref float __result, Map ___map)
+        {
+            if (__result <= 0f || ___map == null) return;
+            float b = MapComponent_LifeFertility.At(___map, loc);
+            if (b > 0f) __result += b;
+        }
+    }
+
+    /// <summary>An emerald plant: what the Emerald's Transmutation leaves of a plant - a sculpture of it in green stone. Its
+    /// picture is the plant's own, tinted; it is light and can be carried; its worth is fixed (no quality, no art).</summary>
+    public class EmeraldPlant : Building
+    {
+        public ThingDef plant;
+        private Graphic cached;
+        private static readonly Color Stone = new Color(0.45f, 0.8f, 0.58f);
+
+        public static float Make(Plant pl, Map map)
+        {
+            string size = pl.def.plant.IsTree ? "Avir_EmeraldTree" : pl.def.plant.harvestedThingDef != null && pl.def.plant.harvestYield >= 6f ? "Avir_EmeraldBush" : "Avir_EmeraldSprig";
+            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(size);
+            if (def == null) return 0f;
+            IntVec3 at = pl.Position; ThingDef from = pl.def;
+            float life = (pl.def.plant.IsTree ? 12f : 4f) * Mathf.Max(0.3f, pl.Growth);
+            pl.Destroy();
+            var e = (EmeraldPlant)ThingMaker.MakeThing(def);
+            e.plant = from;
+            e.SetFaction(Faction.OfPlayer);
+            GenSpawn.Spawn(e, at, map);
+            FleckMaker.ThrowDustPuffThick(at.ToVector3Shifted(), map, 1.3f, new Color(0.3f, 0.75f, 0.45f, 0.6f));
+            return life;
+        }
+
+        /// <summary>The stone lets the plant go again (the Emerald's Restoration with Transmutation).</summary>
+        public void Revive()
+        {
+            if (plant == null || !Spawned) return;
+            IntVec3 at = Position; Map map = Map; ThingDef p = plant;
+            Destroy();
+            if (at.GetPlant(map) == null) { Plant np = (Plant)GenSpawn.Spawn(p, at, map); np.Growth = 1f; }
+        }
+
+        public override Graphic Graphic
+        {
+            get
+            {
+                if (cached == null && plant?.graphicData != null) cached = plant.graphicData.Graphic.GetColoredVersion(ShaderDatabase.Cutout, Stone, Stone);
+                return cached ?? base.Graphic;
+            }
+        }
+
+        public override string LabelNoCount => plant != null ? "emerald " + plant.label : base.LabelNoCount;
+
+        public override void ExposeData() { base.ExposeData(); Scribe_Defs.Look(ref plant, "plant"); }
     }
 }
