@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- The works of Life (Fix194). -->
+  <WorkGiverDef>
+    <defName>Avir_LifeHeal</defName>
+    <label>heal by Life</label>
+    <giverClass>Avir.Magic.WorkGiver_LifeHeal</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>heal</verb>
+    <gerund>healing by Life</gerund>
+    <priorityInType>38</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_LifeHeal</defName>
+    <driverClass>Avir.Magic.JobDriver_LifeHeal</driverClass>
+    <reportString>healing TargetA by Life.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_LifeCure</defName>
+    <label>take sickness (Pestilence)</label>
+    <giverClass>Avir.Magic.WorkGiver_LifeCure</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>take the sickness of</verb>
+    <gerund>taking sickness</gerund>
+    <priorityInType>37</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_LifeCure</defName>
+    <driverClass>Avir.Magic.JobDriver_LifeCure</driverClass>
+    <reportString>taking TargetA's sickness onto himself.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_LifeCrops</defName>
+    <label>tend crops by Life</label>
+    <giverClass>Avir.Magic.WorkGiver_LifeCrops</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>tend</verb>
+    <gerund>tending crops by Life</gerund>
+    <priorityInType>6</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_LifeCrops</defName>
+    <driverClass>Avir.Magic.JobDriver_LifeCrops</driverClass>
+    <reportString>tending the crops by Life.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_LifeGather</defName>
+    <label>gather from animals by Life</label>
+    <giverClass>Avir.Magic.WorkGiver_LifeGather</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>gather from</verb>
+    <gerund>gathering by Life</gerund>
+    <priorityInType>8</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_LifeGather</defName>
+    <driverClass>Avir.Magic.JobDriver_LifeGather</driverClass>
+    <reportString>gathering from TargetA by Life.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_LifeEmerald</defName>
+    <label>make emerald statues</label>
+    <giverClass>Avir.Magic.WorkGiver_LifeEmerald</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>turn to emerald</verb>
+    <gerund>making an emerald statue</gerund>
+    <priorityInType>5</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_LifeEmerald</defName>
+    <driverClass>Avir.Magic.JobDriver_LifeEmerald</driverClass>
+    <reportString>turning a plant to emerald.</reportString>
+  </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_LifeSoothe</defName>
+    <label>soothe by Life</label>
+    <giverClass>Avir.Magic.WorkGiver_LifeSoothe</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>soothe</verb>
+    <gerund>soothing by Life</gerund>
+    <priorityInType>3</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_LifeSoothe</defName>
+    <driverClass>Avir.Magic.JobDriver_LifeSoothe</driverClass>
+    <reportString>soothing TargetA by Life.</reportString>
+  </JobDef>
+  <DesignationDef>
+    <defName>Avir_LifeEmerald</defName>
+    <texturePath>Designations/HarvestPlant</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <HediffDef>
+    <defName>Avir_LifeMended</defName>
+    <label>mended by Life</label>
+    <description>Life mended this body: it goes on mending quicker for a while.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>30000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><statOffsets><InjuryHealingFactor>0.3</InjuryHealingFactor></statOffsets></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeEmberHeart</defName>
+    <label>smouldering heart</label>
+    <description>A healing of Wild Flame left a smouldering heart: warm through, the pain dulled.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>30000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><painFactor>0.8</painFactor><statOffsets><ComfyTemperatureMin>-8</ComfyTemperatureMin><InjuryHealingFactor>0.2</InjuryHealingFactor></statOffsets></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeRichBlood</defName>
+    <label>rich blood</label>
+    <description>A healing of Blood: the blood comes back quick and strong.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>30000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>BloodPumping</capacity><offset>0.1</offset></li><li><capacity>BloodFiltration</capacity><offset>0.1</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeStoneCalm</defName>
+    <label>stone calm</label>
+    <description>A healing of Emerald: the body slows and hardens - little hunger, a little armour.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>30000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><hungerRateFactor>0.75</hungerRateFactor><statOffsets><ArmorRating_Blunt>0.08</ArmorRating_Blunt></statOffsets></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeTaught</defName>
+    <label>taught by Pestilence</label>
+    <description>A healer of Pestilence taught this body its sicknesses: it learns to fight them quicker.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>60000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><statOffsets><ImmunityGainSpeed>0.25</ImmunityGainSpeed></statOffsets></li></stages>
+  </HediffDef>
+  <ThoughtDef>
+    <defName>Avir_LifeSoothed</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>1</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages>
+      <li>
+        <label>soothed by Life</label>
+        <description>A caster of Life sat with me a while. Something knotted came loose.</description>
+        <baseMoodEffect>5</baseMoodEffect>
+      </li>
+    </stages>
+  </ThoughtDef>
+</Defs>

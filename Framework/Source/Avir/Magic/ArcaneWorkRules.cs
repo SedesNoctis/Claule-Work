@@ -39,12 +39,15 @@ namespace Avir.Magic
         {
             G("Fire", "Fire", "firefight", "Putting out fires by water (or smothering them by the wind), from a few cells off.", new[] { "Avir_ArcaneFirefight" }, "Firefighter"),
             G("Tend", "Tend", "tend", "Tending the wounded by water: no medicine needed.", new[] { "Avir_MagicTend" }, "Doctor", "FSFNurse"),
+            G("Heal", "Tend", "heal", "Healing by Life out of its store, each kind of healing with its own after-gift; a healer of Pestilence takes the sicknesses onto himself.", new[] { "Avir_LifeHeal", "Avir_LifeCure" }, "Doctor", "FSFNurse"),
+            G("Soothe", "Soothe", "soothe", "Easing the others by Life: a quiet touch for the tired and the low (only magic does this).", new[] { "Avir_LifeSoothe" }),
+            G("Animals", "Animals", "animals", "Gathering from the animals at a touch of Life - milk, wool and the like, whatever the hand.", new[] { "Avir_LifeGather" }, "Handling"),
             G("Cook", "Stores", "cook", "Purifying food.", new[] { "Avir_2Purify" }, "Cooking"),
             G("Hunt", "Hunt", "hunt", "Hunting the marked animals with the battle charm - no gun needed.", new[] { "Avir_ArcaneHunt" }, "Hunting"),
             G("Fish", "Fish", "fish", "Drawing fish out of a fishing zone from the shore: water closes a bubble round a few and lifts it out, the wind yanks one out from farther off. No line, no waiting. Odyssey's fishing.", new[] { "Avir_ArcaneFish" }, "Fishing"),
             G("Build", "Build", "build", "Raising rock where the arcane orders say, drawing basalt.", new[] { "Avir_ArcaneRaiseRock", "Avir_2Basalt" }, "Construction"),
             G("Smooth", "Build", "smooth", "Smoothing floors and walls by earth.", new[] { "Avir_MagicSmooth" }, "Construction"),
-            G("Grow", "Grow", "grow", "Quickening growth, enriching soil by bog, watering the fields, ashing the ground.", new[] { "Avir_ArcaneGrowth", "Avir_ArcaneEnrich", "Avir_2Water", "Avir_2Ash" }, "Growing", "FSFHarvesting"),
+            G("Grow", "Grow", "grow", "Quickening growth, enriching soil by bog, watering the fields, ashing the ground.", new[] { "Avir_ArcaneGrowth", "Avir_ArcaneEnrich", "Avir_2Water", "Avir_2Ash", "Avir_LifeCrops", "Avir_LifeEmerald" }, "Growing", "FSFHarvesting"),
             G("Clear", "Grow", "clear land", "Clearing land of plants.", new[] { "Avir_2Clear" }, "PlantCutting"),
             G("Mine", "Mine", "mine", "Drawing ore up, quarrying rock, drawing clay.", new[] { "Avir_ArcaneDrill", "Avir_2Quarry", "Avir_2DigClay" }, "Mining", "FSFDrilling"),
             G("StoneCut", "Mine", "stone cut", "Cutting stone into blocks by dust.", new[] { "Avir_ArcaneCut" }, "FSFStoneCut", "Crafting"),
@@ -265,6 +268,12 @@ namespace Avir.Magic
             ["Avir_ArcaneHunt"] = "the marked animals hunted with the battle charm from range - no gun, no closing in",
             ["Avir_ArcaneFirefight"] = "every fire in a radius goes out at once, from a few cells off - no walking into the flames",
             ["Avir_MagicTend"] = "tends wounds with no medicine at all; the better the stage, the better the tending",
+            ["Avir_LifeHeal"] = "heals the wounded out of the store of life; what it leaves after depends on the healer (Life, Warmth, Sap, Frame, Breath, Wild Flame, Blood, Emerald, Pestilence)",
+            ["Avir_LifeCure"] = "a healer of Pestilence takes the sicknesses of the sick onto himself, as fuel",
+            ["Avir_LifeCrops"] = "takes the blight off the crops and quickens the growing patch, once a day each",
+            ["Avir_LifeGather"] = "milks, shears and gathers from the animals at a touch - they stand still for Life",
+            ["Avir_LifeEmerald"] = "turns marked plants into emerald statues (Emerald)",
+            ["Avir_LifeSoothe"] = "eases the tired and the low: recreation, a little rest, a good memory",
             ["Avir_2Purify"] = "takes the food poisoning out of meals and food - no sickness from a careless cook",
             ["Avir_ArcaneRaiseRock"] = "raises natural rock where marked - walls of real stone of the kind chosen, no materials",
             ["Avir_2Basalt"] = "draws chunks of basalt up out of the ground - stone for building where there is none",
@@ -365,6 +374,9 @@ namespace Avir.Magic
                 case "Avir_MagicClean": case "Avir_MagicTend": case "Avir_ArcaneFirefight": return new[] { RuneKind.Water };
                 case "Avir_MagicHaul": return new[] { RuneKind.Air };
                 case "Avir_MagicSmooth": return new[] { RuneKind.Earth };
+                case "Avir_LifeHeal": case "Avir_LifeCrops": case "Avir_LifeGather": case "Avir_LifeSoothe": return new[] { RuneKind.Life };
+                case "Avir_LifeCure": return new[] { RuneKind.Life, RuneKind.Air };
+                case "Avir_LifeEmerald": return new[] { RuneKind.Life, RuneKind.Earth };
             }
             if (Works2.All.TryGetValue(giver, out Work2 w)) return Works2.Kinds(w.y);
             if (ArcaneWorks.Specs.TryGetValue(giver, out ArcaneSpec s)) return s.kinds;

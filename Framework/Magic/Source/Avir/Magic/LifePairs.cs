@@ -223,7 +223,7 @@ namespace Avir.Magic
             }
         }
 
-        private static bool Sculptable(Plant pl) => pl.def.plant != null && (pl.def.plant.IsTree || pl.def.plant.harvestedThingDef != null || pl.def.GetStatValueAbstract(StatDefOf.Beauty) > 0f) && pl.Growth > 0.3f;
+        internal static bool Sculptable(Plant pl) => pl.def.plant != null && (pl.def.plant.IsTree || pl.def.plant.harvestedThingDef != null || pl.def.GetStatValueAbstract(StatDefOf.Beauty) > 0f) && pl.Growth > 0.3f;
 
         // ================================================================== the meetings' answers to each rune: taking
 
