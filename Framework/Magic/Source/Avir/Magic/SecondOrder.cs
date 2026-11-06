@@ -341,7 +341,7 @@ namespace Avir.Magic
                         {
                             // our own wind (Fix169): a blast out from the middle - things fly, people are thrown, light walls break
                             float rad = c.cells.Count > 0 ? c.cells.Max(x => x.DistanceTo(c.aura ? by.Position : c.at)) + 1.5f : 4f;
-                            MapComponent_MagicWind.Blow(c.map, MapComponent_MagicWind.Shape.Out, (c.aura ? by.Position : c.at).ToVector3Shifted(), rad, 72f * c.power * AtmosphereBridge.Scale, 70, by, default, true);   // a hurricane: three times the wind of plain air (the author, Fix174)
+                            MapComponent_MagicWind.Blow(c.map, MapComponent_MagicWind.Shape.Out, (c.aura ? by.Position : c.at).ToVector3Shifted(), rad, MapComponent_MagicWind.HurricaneStrength(c.power, c.map), 70, by, default, true, MapComponent_MagicWind.HurricaneMax);   // a hurricane: three times the wind of plain air (the author, Fix174)
                         }
                         if (AtmosphereBridge.On)
                         {
@@ -590,7 +590,7 @@ namespace Avir.Magic
                     f.cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(f.center.ToIntVec3(), 2f, true).Where(x => x.InBounds(map)));
 
                     foreach (IntVec3 x in f.cells.InRandomOrder().Take(3)) FleckMaker.ThrowDustPuffThick(x.ToVector3Shifted(), map, 1.1f, new Color(0.8f, 0.86f, 0.92f, 0.6f));
-                    if (!AtmosphereBridge.Throws) MapComponent_MagicWind.Blow(map, MapComponent_MagicWind.Shape.Round, f.center, 2.6f, 56f * f.power * AtmosphereBridge.Scale, 64, f.owner, default, true);
+                    if (!AtmosphereBridge.Throws) MapComponent_MagicWind.Blow(map, MapComponent_MagicWind.Shape.Round, f.center, 2.6f, MapComponent_MagicWind.HurricaneStrength(f.power, map, true), 64, f.owner, default, true, MapComponent_MagicWind.HurricaneMax);
                 }
                 foreach (IntVec3 c in f.cells)
                 {

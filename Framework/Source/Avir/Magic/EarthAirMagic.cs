@@ -329,7 +329,7 @@ namespace Avir.Magic
             // anything else out from its middle; Amplify and the caster's power make it stronger, Hold makes it last
             if (!AtmosphereBridge.Throws)
             {
-                float st = 22f * power * (1f + 0.3f * r.amplify) * AtmosphereBridge.Scale;
+                float st = MapComponent_MagicWind.AirStrength(power, r.amplify, map);
                 bool hold = verbs.Any(x => x.kind == RuneKind.Hold);
                 Vector3 mid = Vector3.zero; foreach (IntVec3 c in cells) mid += c.ToVector3Shifted(); mid /= cells.Count;
                 Vector3 along = mid - from.ToVector3Shifted(); along.y = 0f;

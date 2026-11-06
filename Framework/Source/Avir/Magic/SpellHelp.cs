@@ -30,6 +30,25 @@ namespace Avir.Magic
                 d += "\nCast - " + Caster.LabelShortCap + ", " + (c.Sorcerer ? "sorcerer" : "caster") + ": " + sec(Spells.CastTicks(c, s))
                    + " · hold " + Spells.HoldChance(Caster, s).ToStringPercent();
             else d += "\nCast: sorcerer " + sec(Spells.CastTicks(true, s)) + " · caster " + sec(Spells.CastTicks(false, s));
+            // the wind the spell makes (the author, Fix176): its strength, by this caster, here
+            try
+            {
+                Map wm = Caster?.Map ?? Find.CurrentMap;
+                float pw = c != null ? MagicConductors.PowerFactor(Caster, c) : 1f;
+                var y2 = SecondOrder.Of(s.weave);
+                if (y2.Values.Contains(SecondKind.Hurricane))
+                {
+                    float hs = MapComponent_MagicWind.HurricaneStrength(pw * 1.25f, wm), ws = MapComponent_MagicWind.HurricaneStrength(pw * 1.25f, wm, true);
+                    d += "\nWind: hurricane " + hs.ToString("0") + " m/s - " + MapComponent_MagicWind.What(hs) + "; its whirls " + ws.ToString("0") + " m/s (a ward of the storm holds it off)";
+                }
+                else if (s.weave != null && s.weave.Working.Any(k => k.element?.kind == RuneKind.Air))
+                {
+                    var air = s.weave.Working.Where(k => k.element?.kind == RuneKind.Air).ToList();
+                    float best = air.Max(k => MapComponent_MagicWind.AirStrength(pw, k.OwnRunes.Count(x => x.kind == RuneKind.Amplify), wm));
+                    d += "\nWind: up to " + best.ToString("0") + " m/s - " + MapComponent_MagicWind.What(best) + " (more with Amplify and a strong stream; " + MapComponent_MagicWind.AirMax.ToString("0") + " at most)";
+                }
+            }
+            catch (System.Exception) { }
             string life = null;
             try { life = LifeMagic.Ledger(s?.weave, Caster); } catch (System.Exception) { life = null; }
             if (life != null) d += "\n" + life;

@@ -4,6 +4,7 @@ using RimWorld;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using Avir.Ritualistics;
 
 namespace Avir.Magic
 {
@@ -27,11 +28,37 @@ namespace Avir.Magic
         public static MapComponent_MagicWind Of(Map m) => m?.GetComponent<MapComponent_MagicWind>();
 
         /// <summary>charged - a storm's wind (a hurricane is a storm's): it carries lightning (Fix170).</summary>
-        public static void Blow(Map map, Shape shape, Vector3 at, float radius, float strength, int life, Pawn owner, Vector3 dir = default, bool charged = false)
+        /// <summary>How strong a wind magic makes (Fix176), for the spell and for the editor alike. Plain air: 22 m/s by the
+        /// caster's power, +30% an Amplify; the stream of the place (its tier) adds a fifth each; at most 120. A hurricane:
+        /// 72 (its whirls 56), the stream as well - and it may go past the limit, up to 200: winds that spare no one
+        /// but those under a ward of the storm.</summary>
+        public const float AirMax = 120f, HurricaneMax = 200f;
+        public static float AirStrength(float power, int amplify, Map map) =>
+            Mathf.Min(AirMax, 22f * power * (1f + 0.3f * amplify) * (1f + 0.2f * Spells.FlowTierAny(map)) * AtmosphereBridge.Scale);
+        public static float HurricaneStrength(float power, Map map, bool whirl = false) =>
+            Mathf.Min(HurricaneMax, (whirl ? 56f : 72f) * power * (1f + 0.2f * Spells.FlowTierAny(map)) * AtmosphereBridge.Scale);
+        public static string What(float s) => s >= 90f ? "tears everything up, throws everyone far" : s >= 40f ? "throws" : s >= 28f ? "fells" : s >= 20f ? "staggers" : s >= 16f ? "carries light things off" : "a breeze";
+
+        /// <summary>Wards hold the wind off (Fix176): a ward of the storm (water and air - a hurricane's own) - entirely;
+        /// one of the air (or of dust) - most of it; any other - a quarter. Holding it costs the ward a little.</summary>
+        public static float Held(Pawn p, float s)
+        {
+            float f = 1f;
+            foreach (IWard w in SpellWards.Layers(p).ToList())
+            {
+                if (w == null || w.Energy <= 0f) continue;
+                RuneKind[] k = w.Parts ?? new RuneKind[0];
+                float here = k.Contains(RuneKind.Air) && k.Contains(RuneKind.Water) ? 0f : k.Contains(RuneKind.Air) ? 0.4f : 0.75f;
+                if (here < f) { f = here; w.Energy = Mathf.Max(0f, w.Energy - s * 0.02f); }
+            }
+            return f;
+        }
+
+        public static void Blow(Map map, Shape shape, Vector3 at, float radius, float strength, int life, Pawn owner, Vector3 dir = default, bool charged = false, float max = AirMax)
         {
             var c = Of(map);
             if (c == null || strength <= 0f) return;
-            strength = Mathf.Min(strength, 120f);   // no wind stronger than this, whatever the runes
+            strength = Mathf.Min(strength, max);
             c.gusts.Add(new Gust { shape = shape, at = at, dir = dir.sqrMagnitude > 0f ? dir.normalized : Vector3.forward, radius = radius, strength = strength, born = Find.TickManager.TicksGame, life = Mathf.Max(10, life), owner = owner, charged = charged });
         }
 
@@ -86,7 +113,7 @@ namespace Avir.Magic
                 {
                     if (p == g.owner || p.Dead || !p.Spawned || SpellWards.Stops(p, false)) continue;
                     float hold = Mathf.Sqrt(Mathf.Max(0.5f, p.BodySize));   // the heavier hold longer
-                    float sp = s / hold;
+                    float sp = s / hold * Held(p, s);
                     IntVec3 was = p.Position;
                     string did = null;
                     if (sp >= 40f)
@@ -224,7 +251,7 @@ namespace Avir.Magic
             float s = comp.At(c, out Vector3 dir);
             if (s < 1f) return null;
             string arrow = dir.sqrMagnitude < 0.01f ? "" : " " + "→↗↑↖←↙↓↘"[Mathf.RoundToInt(((Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg) + 360f) % 360f / 45f) % 8];
-            string what = s >= 40f ? "throws" : s >= 28f ? "fells" : s >= 20f ? "staggers" : s >= 16f ? "lifts light things" : "a breeze";
+            string what = What(s);
             return "Magic wind " + s.ToString("0") + " m/s" + arrow + " (" + what + ")";
         }
 
