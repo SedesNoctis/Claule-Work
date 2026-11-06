@@ -102,10 +102,11 @@ namespace Avir.Magic
                     if (!c.InBounds(map)) continue;
                     Vector3 w = WindAt(g, c, now, out float s);
                     if (s < 12f || w.sqrMagnitude < 0.01f) continue;
-                    if (g.weather)
+                    // the weather's wind is out of doors; and any wind but a whirl's is broken by a wall upwind - what is behind a
+                    // solid wall (or a mountain) is in its lee (Fix179)
+                    if (g.weather && c.Roofed(map)) continue;
+                    if (g.shape != Shape.Round)
                     {
-                        // the weather's wind is out of doors, and a wall upwind shelters what is behind it
-                        if (c.Roofed(map)) continue;
                         IntVec3 up = (c.ToVector3Shifted() - w * 1.2f).ToIntVec3();
                         if (up.InBounds(map) && up.GetEdifice(map) is Building wb && wb.def.Fillage == FillCategory.Full) s *= 0.35f;
                         if (s < 12f) continue;
@@ -210,8 +211,11 @@ namespace Avir.Magic
                 }
                 if (t is Building b && b.def.useHitPoints && s >= 30f)
                 {
-                    // the load on what stands: light things and walls break first, doors are battered
-                    float light = b.MaxHitPoints <= 120 ? 2f : b.MaxHitPoints <= 300 ? 1f : 0.35f;
+                    // the load on what stands: light things break first, doors are battered; the mountain's own rock never
+                    // (Fix179), and a sturdy wall (over 300) only in a hurricane's wind (60+), and slowly
+                    if (b.def.building != null && (b.def.building.isNaturalRock || b.def.building.isResourceRock)) continue;
+                    if (b.MaxHitPoints > 300 && s < 60f) continue;
+                    float light = b.MaxHitPoints <= 120 ? 2f : b.MaxHitPoints <= 300 ? 1f : 0.25f;
                     if (b.def.Fillage == FillCategory.Full || b is Building_Door || b.MaxHitPoints <= 300)
                     {
                         b.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (s - 28f) * 0.35f * light, 0f, -1f, g.owner));
@@ -364,7 +368,7 @@ namespace Avir.Magic
                 IntVec3 n = (start.ToVector3Shifted() + dir * i).ToIntVec3();
                 if (!n.InBounds(map)) break;
                 Building e = n.GetEdifice(map);
-                if (e != null && e.def.Fillage == FillCategory.Full) { wall = true; if (e.def.useHitPoints) e.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Mathf.Min(20f, thing.GetStatValue(StatDefOf.Mass) * windSpeed * 0.05f), 0f, -1f, by)); break; }
+                if (e != null && e.def.Fillage == FillCategory.Full) { wall = true; if (e.def.useHitPoints && !(e.def.building?.isNaturalRock ?? false)) e.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Mathf.Min(20f, thing.GetStatValue(StatDefOf.Mass) * windSpeed * 0.05f), 0f, -1f, by)); break; }
                 end = n;
             }
             if (end == start) return;
