@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Partial meetings (Fix183): a Focus beside a verb narrows a meeting to one of its cases. Thunder - dust (earth and
+       air) with a Focus beside Release: a shockwave of sound. -->
+  <DamageDef>
+    <defName>Avir_Sonic</defName>
+    <label>thunderclap</label>
+    <workerClass>DamageWorker_AddInjury</workerClass>
+    <externalViolence>true</externalViolence>
+    <deathMessage>{0} has been killed by a thunderclap.</deathMessage>
+    <hediff>Avir_SonicRupture</hediff>
+    <armorCategory>Blunt</armorCategory>
+    <makesAnimalsFlee>true</makesAnimalsFlee>
+    <harmsHealth>true</harmsHealth>
+  </DamageDef>
+
+  <HediffDef ParentName="InjuryBase">
+    <defName>Avir_SonicRupture</defName>
+    <label>ruptured by sound</label>
+    <labelNoun>a rupture from a thunderclap</labelNoun>
+    <description>Torn from inside by a blast of sound: the ear bleeds and rings.</description>
+    <comps>
+      <li Class="HediffCompProperties_TendDuration">
+        <labelTendedWell>bandaged</labelTendedWell>
+        <labelTendedWellInner>tended</labelTendedWellInner>
+        <labelSolidTendedWell>set</labelSolidTendedWell>
+      </li>
+      <li Class="HediffCompProperties_GetsPermanent">
+        <permanentLabel>deafening scar</permanentLabel>
+      </li>
+    </comps>
+    <injuryProps>
+      <painPerSeverity>0.0125</painPerSeverity>
+      <averagePainPerSeverityPermanent>0.00625</averagePainPerSeverityPermanent>
+      <bleedRate>0.03</bleedRate>
+      <canMerge>true</canMerge>
+      <destroyedLabel>blasted out</destroyedLabel>
+    </injuryProps>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_Deafened</defName>
+    <label>deafened</label>
+    <description>Deafened by a thunderclap: the world is muffled, a ringing fills the head.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.75, 0.6, 1)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>30000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Hearing</capacity><offset>-0.6</offset></li><li><capacity>Consciousness</capacity><offset>-0.05</offset></li></capMods></li></stages>
+  </HediffDef>
+</Defs>

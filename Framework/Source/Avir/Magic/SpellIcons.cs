@@ -75,7 +75,13 @@ namespace Avir.Magic
         /// <summary>The spell's sign: the one the player made, else its element on a dark disc.</summary>
         public static void Draw(Rect r, RitualSchema s)
         {
-            if (s?.icon == null) { SpellGlyph.Draw(r.ContractedBy(r.width * 0.06f), DefaultGlyph(s)); return; }
+            if (s?.icon == null)
+            {
+                // a spell of a meeting signs itself with the meeting's rune (Fix183)
+                Texture2D mg = FlowStyle.Pick(MeetingGlyphs.ForSpell(s, true), MeetingGlyphs.ForSpell(s, false));
+                if (mg != null) { Color k0 = GUI.color; GUI.color = Color.white; GUI.DrawTexture(r.ContractedBy(r.width * 0.06f), mg, ScaleMode.ScaleToFit); GUI.color = k0; return; }
+                SpellGlyph.Draw(r.ContractedBy(r.width * 0.06f), DefaultGlyph(s)); return;
+            }
             Draw(r, s.icon, DefaultGlyph(s));
         }
 

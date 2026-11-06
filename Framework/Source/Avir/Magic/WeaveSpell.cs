@@ -156,6 +156,8 @@ namespace Avir.Magic
             if (Wraps(root, RuneKind.Life)) e.extras.Insert(0, new KeyValuePair<string, string>("Life Wraps", "Friends within the spell's reach are mended as it strikes - out of the store of life."));
             foreach (RuneKind lk in LifeMagic.Circles(root).Select(g => LifeMagic.PairOf(root, g)).Where(k => k != LifeMagic.None).Distinct())
                 e.extras.Insert(0, new KeyValuePair<string, string>(LifeMagic.PairName(lk), LifeMagic.PairText(lk)));
+            foreach (PartialKind pk in Partials.InSpell(root).Distinct())
+                e.extras.Insert(0, new KeyValuePair<string, string>(pk.ToString(), Partials.Text(pk)));
             foreach (RuneKind la in LifeMagic.Circles(root).Select(g => LifeMagic.AspectOf(root, g)).Where(k => k != LifeMagic.None).Distinct())
                 e.extras.Insert(0, new KeyValuePair<string, string>(LifeMagic.AspectName(la), LifeMagic.AspectText(la)));
             if (LifeMagic.Circles(root).Any())

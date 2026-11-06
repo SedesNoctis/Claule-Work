@@ -241,10 +241,14 @@ namespace Avir.Magic
                 .Where(p => !p.Dead && p.Position != at && p != caster && p.HostileTo(caster))   // the storm aims at foes; what it falls on, it strikes
                 .OrderBy(p => p.Position.DistanceToSquared(at)).Take(count).ToList();
 
+        /// <summary>The verbs of the circle being cast that have a Focus beside them (Partials, Fix183).</summary>
+        public static HashSet<RuneKind> Focused = new HashSet<RuneKind>();
+
         public static void Cast(ComboKind k, Pawn caster, RitualSchema s, RitualReading r, LocalTargetInfo target, float power)
         {
             Map map = caster.Map;
             if (map == null) return;
+            Focused = Partials.FocusedVerbs(s);
             if (SecondOrder.Now != SecondKind.None && SecondOrder.PairOf(SecondOrder.Now) == k) GameComponent_Combos.MadeSecond(SecondOrder.Now, k, caster);
             else GameComponent_Combos.Made(k, caster);
             r = SpellMods.Begin(s, r);
@@ -355,6 +359,12 @@ namespace Avir.Magic
             {
                 RitualReading rv = SpellMods.Verb(r, v);
                 float amp = 1f + 0.3f * rv.amplify;
+                // a partial meeting: a Focus beside this verb narrows the meeting to its one case (Fix183)
+                if (Focused.Contains(v.kind))
+                {
+                    PartialKind pk = Partials.Of(k, v.kind);
+                    if (pk == PartialKind.Thunder) { Partials.Thunder(caster, map, cells, Center(cells), power * amp); continue; }
+                }
                 switch (v.kind)
                 {
                     case RuneKind.Release: Release(k, caster, map, cells, from, power * amp, rv); break;

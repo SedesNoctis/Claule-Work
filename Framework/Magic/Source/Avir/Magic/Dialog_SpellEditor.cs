@@ -792,10 +792,10 @@ namespace Avir.Magic
                 // its great element sits as a seal on the top of its rim
                 float sr = Mathf.Clamp(GreatBand * 0.42f * scale, 6f, 40f);
                 Plate(c + new Vector2(0f, -R), sr, col, n.c.element, new Hit { c = n.c, section = -1, rune = -1, slot = -1 },
-                      "The seal of this great circle: write a great element here - Life, Light, Time, Space or Darkness.");
+                      "The seal of this great circle: write a great element here - Life, Light, Time, Space or Darkness.", MeetingGlyphs.For(rootNow, n.c, false));
             }
             else Plate(c, n.core * 0.78f * scale, col, n.c.element, new Hit { c = n.c, section = -1, rune = -1, slot = -1 },
-                       "The centre: this circle's element - fire, water, earth or air (or a great one, if it stands round the heart alone).");
+                       "The centre: this circle's element - fire, water, earth or air (or a great one, if it stands round the heart alone).", MeetingGlyphs.For(rootNow, n.c, false));
             if (orderOf.TryGetValue(n.c, out int nth))
             {
                 // its place in the chain, just off the top-left of its rim
@@ -863,7 +863,7 @@ namespace Avir.Magic
 
         private bool IsPicked(Hit h) => pickC == h.c && pickSec == h.section && (h.section < 0 || pickK == h.slot);
 
-        private void Plate(Vector2 p, float r, Color col, RuneDef rune, Hit hit, string emptyTip)
+        private void Plate(Vector2 p, float r, Color col, RuneDef rune, Hit hit, string emptyTip, Texture2D over = null)
         {
             Rect box = new Rect(p.x - r, p.y - r, r * 2f, r * 2f);
             bool picked = IsPicked(hit);
@@ -873,7 +873,7 @@ namespace Avir.Magic
                 DrawAt(p, r, Ring(ref disc, 0f), Dark(col));
                 DrawAt(p, r, Ring(ref outline, 0.86f), Light(col, 0.35f));
                 GUI.color = rune.role == RuneRole.Element ? Light(rune.color, 0.25f) : Light(col, 0.3f);
-                GUI.DrawTexture(box.ContractedBy(r * 0.22f), rune.Glow, ScaleMode.ScaleToFit);
+                GUI.DrawTexture(box.ContractedBy(r * 0.22f), over ?? rune.Glow, ScaleMode.ScaleToFit);   // a meeting's own rune, if drawn (Fix183)
                 if (Mouse.IsOver(box))
                 {
                     DrawAt(p, r, Ring(ref disc, 0f), picked ? new Color(0.8f, 0.2f, 0.15f, 0.35f) : new Color(1f, 0.85f, 0.4f, 0.25f));

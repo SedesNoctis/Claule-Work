@@ -104,6 +104,21 @@ namespace Avir.Magic
             c.sprites.Add(new Sprite { mat = m, at = at, w = size, h = size, angle = Verse.Rand.Range(0f, 360f), spin = 0f, grow = grow, born = Verse.Find.TickManager.TicksGame, life = life });
         }
 
+        /// <summary>A coloured sprite that spreads as it fades (Fix183: thunder's violet rings).</summary>
+        public static void PutTintedGrowing(Verse.Map map, string path, UnityEngine.Color tint, UnityEngine.Vector3 at, float size, int life, float grow)
+        {
+            var c = map?.GetComponent<MapComponent_SpellSprites>();
+            string key = path + "#" + UnityEngine.ColorUtility.ToHtmlStringRGBA(tint) + "#glow";
+            if (!mats.TryGetValue(key, out var m))
+            {
+                m = Verse.ContentFinder<UnityEngine.Texture2D>.Get("Things/Mote/Avir/Magic/" + path, false) != null
+                    ? Verse.MaterialPool.MatFrom("Things/Mote/Avir/Magic/" + path, Verse.ShaderDatabase.MoteGlow, tint) : null;
+                mats[key] = m;
+            }
+            if (c == null || m == null) return;
+            c.sprites.Add(new Sprite { mat = m, at = at, w = size, h = size, angle = Verse.Rand.Range(0f, 360f), spin = 0f, grow = grow, born = Verse.Find.TickManager.TicksGame, life = life });
+        }
+
         /// <summary>A bolt stretched from one point to another.</summary>
         public static void Bolt(Verse.Map map, UnityEngine.Vector3 from, UnityEngine.Vector3 to, int life = 18)
         {
