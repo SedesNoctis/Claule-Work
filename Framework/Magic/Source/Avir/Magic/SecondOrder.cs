@@ -107,7 +107,7 @@ namespace Avir.Magic
                 case SecondKind.Obsidian: return "Magma quenched: a burst of steam and black glass, sharp and brittle.";
                 case SecondKind.Ash: return "A scorching cloud: it blinds and chokes the unsealed, and the ash it lets fall feeds the ground a little (+20% fertility for ten days).";
                 case SecondKind.Deluge: return "Weather on the spot: rain over the place for a while - everything wet, fires out, lightning through the pools.";
-                case SecondKind.Hurricane: return "Wind: it throws everyone, breaks what is light, and knocks shots out of the air - an aura of it shields one's own. Every throw in the spell flies half again as far and strikes harder; every Lift goes 1.6 times higher, and the fall is as much harder.";
+                case SecondKind.Hurricane: return "Wind: it throws everyone, breaks what is light, and knocks shots out of the air - an aura of it shields one's own. Every throw in the spell flies half again as far and strikes harder; every Lift goes 1.6 times higher, and the fall is as much harder. It is unstable: it leaves whirls behind (two; one when held; three with Growth) that wander for a while and spin whoever they catch round - friend or foe, all but the one who made them.";
                 case SecondKind.BallLightning: return "Slow globes that seek the foes and burst in a discharge - metal on the body takes half again as much. Along a beam, one globe rolls and strikes every foe it passes.";
                 case SecondKind.Mudflow: return "A wave of mud: it carries foes away and buries the fallen.";
                 case SecondKind.Swelter: return "Exhausting heat: foes tire fast and suffer the heat; one's own beside the caster do not.";
@@ -329,6 +329,16 @@ namespace Avir.Magic
                     foreach (Building b in c.cells.Select(x => x.GetEdifice(c.map)).Where(b => b != null && b.def.useHitPoints && b.MaxHitPoints <= 300).Distinct().ToList())
                         b.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 15f * c.power, 0f, -1f, by));
                     Field(c, y, c.hold || c.aura || c.shape ? Ticks(0.5f, c.power) : 600);
+                    // unstable (the author, Fix166): it leaves whirls behind that wander and spin whoever they catch round
+                    {
+                        int whirls = c.hold || c.aura ? 1 : c.growth ? 3 : 2;
+                        for (int i = 0; i < whirls; i++)
+                        {
+                            IntVec3 w0 = c.cells.Count > 0 ? c.cells.RandomElement() : c.at;
+                            F(c.map)?.AddWhirl(w0, by, c.power, c.hold ? 1800 : 900);
+                        }
+                        if (AtmosphereBridge.On) foreach (IntVec3 x in c.cells) { Vector3 o = (x.ToVector3Shifted() - c.at.ToVector3Shifted()); if (o.sqrMagnitude > 0.1f) AtmosphereBridge.Wind(c.map, x, new Vector2(o.x, o.z).normalized * 12f * c.power); }
+                    }
                     break;
                 case SecondKind.BallLightning:
                     {
@@ -507,6 +517,22 @@ namespace Avir.Magic
         public void AddMoving(SecondKind y, IntVec3 at, Vector3 dir, float speed, int ticks, Pawn owner, float power) =>
             fields.Add(new Fld { y = y, center = at.ToVector3Shifted(), dir = dir, speed = speed, cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(at, 2.5f, true)), until = Find.TickManager.TicksGame + ticks, owner = owner, power = power });
 
+        /// <summary>A whirl left by a hurricane: it wanders, and spins whoever it catches round its middle.</summary>
+        public void AddWhirl(IntVec3 at, Pawn owner, float power, int ticks)
+        {
+            float a = Rand.Range(0f, 360f);
+            fields.Add(new Fld { y = SecondKind.Hurricane, center = at.ToVector3Shifted(), dir = Quaternion.AngleAxis(a, Vector3.up) * Vector3.forward, speed = 0.7f, cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(at, 2f, true).Where(x => x.InBounds(map))), until = Find.TickManager.TicksGame + ticks, owner = owner, power = power });
+        }
+
+        /// <summary>Spun round: thrown a little along the whirl's turning, not out of it.</summary>
+        private void Spin(Fld f, Pawn p)
+        {
+            Vector3 off = p.DrawPos - f.center; off.y = 0f;
+            Vector3 tan = off.sqrMagnitude < 0.05f ? Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * Vector3.forward : new Vector3(-off.z, 0f, off.x).normalized;
+            IntVec3 from = (p.DrawPos - tan * 1.5f + off.normalized * 0.4f).ToIntVec3();
+            SpellHurl.Throw(p, from, 2, map, f.owner, f.power * 0.5f);
+        }
+
         public void Later(int ticks, Action a) => later.Add(new KeyValuePair<int, Action>(Find.TickManager.TicksGame + ticks, a));
 
         public static Fld At(Map m, IntVec3 c, SecondKind y) => m?.GetComponent<SecondFields>()?.fields.FirstOrDefault(f => f.y == y && f.cells.Contains(c));
@@ -531,6 +557,18 @@ namespace Avir.Magic
                     IntVec3 c0 = f.center.ToIntVec3();
                     f.cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(c0, 2.5f, true).Where(x => x.InBounds(map)));
                 }
+                if (f.y == SecondKind.Hurricane && f.speed > 0f)
+                {
+                    // a whirl wanders: it turns this way and that, and is turned back by walls and the map's edge
+                    f.dir = Quaternion.AngleAxis(Rand.Range(-50f, 50f), Vector3.up) * f.dir;
+                    Vector3 next = f.center + f.dir * f.speed;
+                    IntVec3 nc = next.ToIntVec3();
+                    if (!nc.InBounds(map) || nc.Impassable(map)) { f.dir = -f.dir; next = f.center + f.dir * f.speed; nc = next.ToIntVec3(); }
+                    if (nc.InBounds(map)) f.center = next;
+                    f.cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(f.center.ToIntVec3(), 2f, true).Where(x => x.InBounds(map)));
+                    if (AtmosphereBridge.On) foreach (IntVec3 x in f.cells) { Vector3 o = x.ToVector3Shifted() - f.center; AtmosphereBridge.Wind(map, x, new Vector2(-o.z, o.x).normalized * 8f * f.power); }
+                    foreach (IntVec3 x in f.cells.InRandomOrder().Take(3)) FleckMaker.ThrowDustPuffThick(x.ToVector3Shifted(), map, 1.1f, new Color(0.8f, 0.86f, 0.92f, 0.6f));
+                }
                 foreach (IntVec3 c in f.cells)
                 {
                     if (!c.InBounds(map)) continue;
@@ -541,6 +579,7 @@ namespace Avir.Magic
                         bool foe = f.owner == null || MagicFx.Foe(p, f.owner);
                         switch (f.y)
                         {
+                            case SecondKind.Hurricane: if (f.speed > 0f && p != f.owner && !p.Dead && Rand.Chance(0.55f)) Spin(f, p); break;   // the whirl spares no one but its maker
                             case SecondKind.Inferno: if (foe) HealthUtility.AdjustSeverity(p, HediffDefOf.Heatstroke, 0.02f * f.power * (SecondOrder.Sealed(p) ? 2f : 1f)); break;
                             case SecondKind.Boil: if (foe && (p.health.hediffSet.HasHediff(WaterDefOf.Avir_Soaked) || Reactions.Wet(c, map))) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 1.5f * f.power * (SecondOrder.Sealed(p) ? 0.4f : 1.4f), 0f, -1f, f.owner)); break;
                             case SecondKind.Typhoon: if (foe) { WaterMagic.Soak(p, f.power); p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 1.5f * f.power * (SecondOrder.Sealed(p) ? 0.7f : 1.4f), 0f, -1f, f.owner)); if (Rand.Chance(0.3f)) SpellHurl.Throw(p, f.center.ToIntVec3(), 2, map, f.owner, f.power); } break;
@@ -568,6 +607,9 @@ namespace Avir.Magic
             return m;
         }
 
+        private static Material auraHurricane;
+        private static Material AuraMat(SecondKind y) => auraHurricane ?? (auraHurricane = ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Aura_Hurricane", false) != null ? MaterialPool.MatFrom("Things/Mote/Avir/Magic/Aura_Hurricane", ShaderDatabase.Transparent, Color.white) : null);
+
         public override void MapComponentUpdate()
         {
             if (fields.Count == 0 || Find.CurrentMap != map) return;
@@ -576,7 +618,7 @@ namespace Avir.Magic
             foreach (Fld f in fields)
             {
                 if (f.cells == null || f.cells.Count == 0) continue;
-                Material m = FieldMat(f.y);
+                Material m = FieldMat(f.y) ?? (f.speed > 0f && f.y == SecondKind.Hurricane ? AuraMat(f.y) : null);
                 if (m == null) continue;
                 if (f.rad <= 0f || f.speed > 0f)
                 {
@@ -590,7 +632,8 @@ namespace Avir.Magic
                 Color col = Color.white; col.a = 0.55f * Mathf.Clamp01((f.until - now) / 600f) + 0.05f * Mathf.Sin(t * 1.3f);
                 block.SetColor(ShaderPropertyIDs.Color, col);
                 float size = f.rad * 2f;
-                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis((t * 4f + f.mid.x * 13f) % 360f, Vector3.up), new Vector3(size, 1f, size)), m, 0, null, 0, block);
+                float turn = f.y == SecondKind.Hurricane && f.speed > 0f ? t * 140f : t * 4f;   // a whirl spins fast
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis((turn + f.mid.x * 13f) % 360f, Vector3.up), new Vector3(size, 1f, size)), m, 0, null, 0, block);
             }
         }
 

@@ -306,7 +306,8 @@ namespace Avir.Magic
                         foreach (Hediff h in p.health.hediffSet.hediffs.Where(h => h.def == HediffDefOf.FoodPoisoning || h.def == HediffDefOf.ToxicBuildup).ToList())
                         { float d = Mathf.Min(h.Severity, 0.3f * power); h.Severity -= d; got += 20f * d; if (h.Severity <= 0.01f && p.health.hediffSet.hediffs.Contains(h)) p.health.RemoveHediff(h); }
                     break;
-                case RuneKind.Lift:      // Blood only: the body is a pool - thrown up, or with a Thread pressed down
+                case RuneKind.Lift:      // Blood: the body is a pool - thrown up, or pressed down; the wide meetings - their own (Fix166)
+                    if (aspect != None) AspectLift(Reached(caster, g, Area(at, r, map)).ToList(), act.pin, power, map, at, r);
                     break;
                 case RuneKind.Step:      // Blood only: the foe dragged to the mage by its own blood
                     if (pair == RuneKind.Water) got += BloodPull(caster, g, at, power, map, false);
@@ -404,6 +405,9 @@ namespace Avir.Magic
                 case RuneKind.Hold: who = Reached(caster, g, Area(at, r, map)); per = 6f; regen = 0.4f; break;     // a cocoon: held still, mended deep
                 case RuneKind.Growth: who = Reached(caster, g, Area(at, r, map)); per = 3f; regen = 0.15f; break;
                 case RuneKind.Purge: who = Reached(caster, g, Area(at, r, map)); per = 0f; regen = 0f; break;
+                case RuneKind.Lift when aspect != None:
+                    AspectLift(Reached(caster, g, Area(at, r, map)).ToList(), act.pin, power, map, at, r);
+                    return true;
                 case RuneKind.Step:
                     if (pair != RuneKind.Water) return true;
                     payAt = at; float pulled = BloodPull(caster, g, at, power, map, true); payAt = IntVec3.Invalid; return pulled >= 0f;
@@ -418,7 +422,7 @@ namespace Avir.Magic
             payAt = IntVec3.Invalid;
             if (f <= 0f) return false;
             PairGive(caster, act, who, at, r, power * f, map);
-            if (aspect != None) AspectGive(who, act.verb, power * f);
+            if (aspect != None) AspectGive(who, act.verb, power * f, map, at, r);
             foreach (Pawn p in who)
             {
                 if (per > 0f) HealInjuries(p, per * power * f);

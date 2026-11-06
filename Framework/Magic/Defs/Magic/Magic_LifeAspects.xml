@@ -101,4 +101,24 @@
     <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
     <stages><li><statOffsets><ToxicEnvironmentResistance>0.6</ToxicEnvironmentResistance></statOffsets></li></stages>
   </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeRooted</defName>
+    <label>rooted frame</label>
+    <description>The frame drawn down into the ground: slow, but hard to knock over.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>900</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Moving</capacity><offset>-0.2</offset></li></capMods><statOffsets><ArmorRating_Blunt>0.1</ArmorRating_Blunt></statOffsets></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeGasp</defName>
+    <label>deep breath</label>
+    <description>A deep breath of Life: a burst of speed.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>900</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Moving</capacity><offset>0.3</offset></li></capMods></li></stages>
+  </HediffDef>
 </Defs>

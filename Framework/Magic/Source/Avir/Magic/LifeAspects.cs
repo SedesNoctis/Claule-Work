@@ -35,10 +35,10 @@ namespace Avir.Magic
         {
             switch (k)
             {
-                case RuneKind.Fire: return "Warmth - the body's own heat. Withering takes it: the reached are chilled, slow, hardly hungry; fire on them and round them goes out (a burning friend can be saved by it). Restoration gives it: quicker mending, quicker steps, more hunger, no fear of cold. Withering with Hold - torpor: the held sleep, not dying, not starving.";
-                case RuneKind.Water: return "Sap - the fluids of all that lives, plants as much as creatures. Withering dries the reached: thirst, weakness, the green wilts. Restoration waters them: burns mend first, poison is washed out, the green swells. Restoration with Hold - a cocoon of water.";
-                case RuneKind.Earth: return "Frame - what the body stands on. Withering softens it: the reached are slower and take blows harder; with Hold they cannot get up. Restoration hardens it: a little armour for a time; with Hold - a splint, the body mends deep.";
-                case RuneKind.Air: return "Breath. Withering takes it from the reached - those sealed from the air (a gas mask, a sealed suit) are not touched; with Hold, held breath - no running. Restoration gives it: easier breathing, the smoke and gas cleared out of the lungs; with Hold, a bubble of air that keeps off gas and smoke.";
+                case RuneKind.Fire: return "Warmth - the body's own heat. Withering takes it: the reached are chilled, slow, hardly hungry; fire on them and round them goes out (a burning friend can be saved by it). Restoration gives it: quicker mending, quicker steps, more hunger, no fear of cold. Withering with Hold - torpor: the held sleep, not dying, not starving. Lift - a warm updraft: a fall does not maim; Lift with a Thread - a cold weight. Purge - the heat drives infection out. Growth - the green ripens a little quicker.";
+                case RuneKind.Water: return "Sap - the fluids of all that lives, plants as much as creatures. Withering dries the reached: thirst, weakness, the green wilts. Restoration waters them: burns mend first, poison is washed out, the green swells. Restoration with Hold - a cocoon of water. Lift - the sap rises in the plants, they ripen; Lift with a Thread - the creatures sink and wade. Growth - the green swells.";
+                case RuneKind.Earth: return "Frame - what the body stands on. Withering softens it: the reached are slower and take blows harder; with Hold they cannot get up. Restoration hardens it: a little armour for a time; with Hold - a splint, the body mends deep. Lift - the felled stand up, the stunned come to; Lift with a Thread - rooted: slow, but hard to knock over. Purge - bruises and crushes mend. Growth - bark and hide: the animals harden.";
+                case RuneKind.Air: return "Breath. Withering takes it from the reached - those sealed from the air (a gas mask, a sealed suit) are not touched; with Hold, held breath - no running. Restoration gives it: easier breathing, the smoke and gas cleared out of the lungs; with Hold, a bubble of air that keeps off gas and smoke. Lift - a deep breath: a burst of speed; Lift with a Thread - a heavy breath out: they cough. Purge - the lungs cleared of what was breathed in. Growth - pollen: the green ripens.";
             }
             return null;
         }
@@ -50,6 +50,7 @@ namespace Avir.Magic
         /// <summary>What a wide meeting does to one body a Withering reached; the plain withering is then at 60%.</summary>
         private static void AspectWither(Pawn caster, Pawn p, float dmg)
         {
+            if (p.Spawned) MapComponent_SpellSprites.PutTinted(p.Map, aspect == RuneKind.Fire ? "Life/Petals" : aspect == RuneKind.Water ? "Life/BloodHold" : aspect == RuneKind.Earth ? "Life/StoneCrust" : "Life/PoisonFog", Color.Lerp(AspectColor(aspect), Color.black, 0.35f), p.DrawPos, 1.2f, 55);
             int ticks = Mathf.RoundToInt(900f * Mathf.Max(0.5f, dmg / 6f));
             switch (aspect)
             {
@@ -73,14 +74,17 @@ namespace Avir.Magic
         }
 
         /// <summary>What a wide meeting gives to the bodies a Restoration reached (on top of plain mending).</summary>
-        private static void AspectGive(List<Pawn> who, RuneKind verb, float pw)
+        private static void AspectGive(List<Pawn> who, RuneKind verb, float pw, Map map, IntVec3 at, float r)
         {
             int ticks = Mathf.RoundToInt(1500f * Mathf.Max(0.5f, pw));
+            AspectPlants(verb, pw, map, at, r);
+            AspectPicture(map, at, r, who, false);
             foreach (Pawn p in who)
             {
                 switch (aspect)
                 {
                     case RuneKind.Fire:
+                        if (verb == RuneKind.Purge) { Hediff inf = p.health.hediffSet.hediffs.FirstOrDefault(h => h.def.defName == "WoundInfection"); if (inf != null) inf.Severity -= 0.2f * pw; }   // the heat drives infection out
                         MagicFx.Give(p, HD("Avir_LifeWarmth"), ticks * (verb == RuneKind.Hold ? 2 : 1));
                         Hediff hy = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Hypothermia); if (hy != null) hy.Severity -= 0.3f * pw;
                         RemoveOf(p, HD("Avir_LifeChill"));
@@ -94,15 +98,70 @@ namespace Avir.Magic
                     case RuneKind.Earth:
                         MagicFx.Give(p, HD("Avir_LifeHardened"), ticks);
                         RemoveOf(p, HD("Avir_LifeSoftened"));
+                        if (verb == RuneKind.Purge) foreach (Hediff_Injury b in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => i.def.defName == "Bruise" || i.def.defName == "Crush").ToList()) b.Heal(4f * pw);   // the blows struck into the frame
                         if (verb == RuneKind.Hold) AddRegen(p, 0.35f * pw);   // a splint: the body mends deep
                         break;
                     case RuneKind.Air:
                         MagicFx.Give(p, HD("Avir_LifeBreath"), ticks);
+                        if (verb == RuneKind.Purge) { Hediff tx = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.ToxicBuildup); if (tx != null) tx.Severity -= 0.15f * pw; }   // the lungs cleared of what was breathed in
                         RemoveOf(p, HD("Avir_LifeBreathless")); RemoveOf(p, HD("Avir_LifeBreathHeld"));
                         if (verb == RuneKind.Hold) MagicFx.Give(p, HD("Avir_LifeAirBubble"), ticks);
                         break;
                 }
             }
+        }
+
+        /// <summary>Lifting in the wide meetings (Fix166) - not the same throw four times over, each by its nature:
+        ///   Warmth - a warm updraft: a fall from a height does not maim; with a Thread, a cold weight: they freeze to the ground.
+        ///   Sap - the sap rises: the plants reach up and ripen; with a Thread it grows heavy: the creatures sink and wade.
+        ///   Frame - the body draws itself up: the felled stand, the stunned come to; with a Thread it is rooted: slow, hard to fell.
+        ///   Breath - a deep breath: a burst of speed; with a Thread, a heavy breath out: coughing, the aim lost.</summary>
+        private static void AspectLift(List<Pawn> who, bool press, float pw, Map map, IntVec3 at, float r)
+        {
+            int ticks = Mathf.RoundToInt(900f * Mathf.Max(0.5f, pw));
+            switch (aspect)
+            {
+                case RuneKind.Fire: foreach (Pawn p in who) MagicFx.Give(p, HD(press ? "Avir_LifeChill" : "Avir_Updraft"), ticks); break;
+                case RuneKind.Water:
+                    if (press) foreach (Pawn p in who) MagicFx.Give(p, HD("Avir_Mired"), ticks / 2);
+                    else foreach (IntVec3 c in GenRadial.RadialCellsAround(at, r, true)) { Plant pl = c.InBounds(map) ? c.GetPlant(map) : null; if (pl != null && pl.LifeStage == PlantLifeStage.Growing) pl.Growth = Mathf.Min(1f, pl.Growth + 0.2f * pw); }
+                    break;
+                case RuneKind.Earth:
+                    foreach (Pawn p in who)
+                    {
+                        if (press) { MagicFx.Give(p, HD("Avir_LifeRooted"), ticks); continue; }
+                        p.stances?.stunner?.StopStun();
+                        RemoveOf(p, HD("Avir_LifeSoftened"));
+                    }
+                    break;
+                case RuneKind.Air: foreach (Pawn p in who) { if (press && SecondOrder.Masked(p)) continue; MagicFx.Give(p, HD(press ? "Avir_LifeBreathless" : "Avir_LifeGasp"), press ? ticks : ticks / 3); } break;
+            }
+            AspectPicture(map, at, r, who, press);
+        }
+
+        /// <summary>Growth in the wide meetings: the green answers each its own way.</summary>
+        private static void AspectPlants(RuneKind verb, float pw, Map map, IntVec3 at, float r)
+        {
+            if (verb != RuneKind.Growth || map == null) return;
+            float more = aspect == RuneKind.Water ? 0.15f : aspect == RuneKind.Air ? 0.1f : aspect == RuneKind.Fire ? 0.08f : 0f;
+            foreach (IntVec3 c in GenRadial.RadialCellsAround(at, r, true))
+            {
+                if (!c.InBounds(map)) continue;
+                Plant pl = c.GetPlant(map);
+                if (more > 0f && pl != null && pl.LifeStage == PlantLifeStage.Growing) pl.Growth = Mathf.Min(1f, pl.Growth + more * pw);
+                // Frame: bark and hide - the animals there harden
+                if (aspect == RuneKind.Earth) foreach (Pawn a in c.GetThingList(map).OfType<Pawn>().Where(a => a.RaceProps.Animal).ToList()) MagicFx.Give(a, HD("Avir_LifeHardened"), Mathf.RoundToInt(2500f * pw));
+            }
+        }
+
+        /// <summary>The wide meetings' pictures: Life's own, recoloured and combined (the author: no new assets for Life).</summary>
+        private static void AspectPicture(Map map, IntVec3 at, float r, List<Pawn> who, bool dark)
+        {
+            if (map == null || aspect == None) return;
+            Color col = AspectColor(aspect); if (dark) col = Color.Lerp(col, Color.black, 0.35f);
+            string pic = aspect == RuneKind.Fire ? "Life/Petals" : aspect == RuneKind.Water ? "Life/BloodHold" : aspect == RuneKind.Earth ? "Life/StoneCrust" : "Life/PoisonFog";
+            MapComponent_SpellSprites.PutTinted(map, pic, col, at.ToVector3Shifted(), Mathf.Max(1.5f, r * 1.6f), 70, -1f, aspect == RuneKind.Air ? 0.4f : 1f);
+            foreach (Pawn p in who.Take(8)) if (p.Spawned) MapComponent_SpellSprites.PutTinted(map, aspect == RuneKind.Fire ? "Life/Heart" : "Life/Mend", col, p.DrawPos, 0.9f, 50);
         }
 
         /// <summary>Warmth taken over an area puts the fires there out (Release, a bare Withering, the Beam's line).</summary>

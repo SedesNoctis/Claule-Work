@@ -72,6 +72,21 @@ namespace Avir.Magic
         private static bool Painted(string path) => path.StartsWith("Life/") || path.StartsWith("Second/") || path.StartsWith("Storm/Bolt_Fork") || path.StartsWith("Storm/Bolt_Line") || path.StartsWith("Storm/Strike") || path.StartsWith("Haze/Shimmer");
 
         /// <summary>A sprite at a point: its size in cells, how long it lasts (ticks), its angle and its turning.</summary>
+        /// <summary>A sprite in a colour of its own (Fix166): a Life picture recoloured for a meeting.</summary>
+        public static void PutTinted(Verse.Map map, string path, UnityEngine.Color tint, UnityEngine.Vector3 at, float size, int life, float angle = -1f, float spin = 0f)
+        {
+            var c = map?.GetComponent<MapComponent_SpellSprites>();
+            string key = path + "#" + UnityEngine.ColorUtility.ToHtmlStringRGBA(tint);
+            if (!mats.TryGetValue(key, out var m))
+            {
+                m = Verse.ContentFinder<UnityEngine.Texture2D>.Get("Things/Mote/Avir/Magic/" + path, false) != null
+                    ? Verse.MaterialPool.MatFrom("Things/Mote/Avir/Magic/" + path, Verse.ShaderDatabase.Transparent, tint) : null;
+                mats[key] = m;
+            }
+            if (c == null || m == null) return;
+            c.sprites.Add(new Sprite { mat = m, at = at, w = size, h = size, angle = angle < 0f ? Verse.Rand.Range(0f, 360f) : angle, spin = spin, born = Verse.Find.TickManager.TicksGame, life = life });
+        }
+
         public static void Put(Verse.Map map, string path, UnityEngine.Vector3 at, float size, int life, float angle = -1f, float spin = 0f, float aspect = 1f)
         {
             var c = map?.GetComponent<MapComponent_SpellSprites>();
