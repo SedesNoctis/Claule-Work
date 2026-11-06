@@ -187,6 +187,19 @@ namespace Avir.Magic
             public bool release, hold, growth, lift, drain, purge, restore, aura, beam, shape, enchant;
         }
 
+        /// <summary>While the pair under a second-order meeting is cast as its background (Fix191).</summary>
+        public static bool Background;
+        public const float BackgroundShare = 0.33f;
+
+        /// <summary>Does this part strike as a second-order meeting (the same rule as Apply: a meeting, and a deed)?</summary>
+        public static bool Takes(RitualReading r)
+        {
+            if (Now == SecondKind.None || r == null) return false;
+            var v = new HashSet<RuneKind>(r.verbs.Select(x => x.kind));
+            return v.Contains(RuneKind.Release) || v.Contains(RuneKind.Beam) || v.Contains(RuneKind.Hold) || v.Contains(RuneKind.Growth) || v.Contains(RuneKind.Lift)
+                || v.Contains(RuneKind.Drain) || v.Contains(RuneKind.Purge) || v.Contains(RuneKind.Aura) || v.Contains(RuneKind.Shape) || v.Contains(RuneKind.Enchant);
+        }
+
         /// <summary>A part of a second-order meeting has been cast: its signature, through its runes.</summary>
         public static void Apply(Pawn caster, RitualSchema part, RitualReading r, LocalTargetInfo target, float power)
         {
@@ -601,6 +614,32 @@ namespace Avir.Magic
             SpellHurl.Throw(p, from, 2, map, f.owner, f.power * 0.5f);
         }
 
+        // boiling puddles left by a typhoon (Fix191)
+        private readonly Dictionary<IntVec3, int> boiling = new Dictionary<IntVec3, int>();
+        private readonly Dictionary<IntVec3, Pawn> boilBy = new Dictionary<IntVec3, Pawn>();
+        private readonly Dictionary<IntVec3, float> boilPower = new Dictionary<IntVec3, float>();
+        private void Boil(int now)
+        {
+            if (boiling.Count == 0) return;
+            DamageDef rain = DefDatabase<DamageDef>.GetNamedSilentFail("Avir_BoilingRain") ?? DamageDefOf.Burn;
+            foreach (IntVec3 c in boiling.Keys.ToList())
+            {
+                if (boiling[c] <= now || !Reactions.Pools(c, map).Any()) { boiling.Remove(c); boilBy.Remove(c); boilPower.Remove(c); continue; }
+                Vector3 v = c.ToVector3Shifted();
+                if (Rand.Chance(0.5f)) MapComponent_SpellSprites.PutTintedGrowing(map, "Wave/Ripple", new Color(0.8f, 0.95f, 1f), v + new Vector3(Rand.Range(-0.25f, 0.25f), 0f, Rand.Range(-0.25f, 0.25f)), 0.5f, 40, 1.4f);
+                if (Rand.Chance(0.35f)) FleckMaker.ThrowDustPuffThick(v, map, 0.7f, new Color(1f, 1f, 1f, 0.35f));
+                if (Rand.Chance(0.12f)) Gas_ScaldingSteam.Release(c, map, 1);
+                boilBy.TryGetValue(c, out Pawn by); float pw = boilPower.TryGetValue(c, out float q) ? q : 1f;
+                foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList())
+                {
+                    if (p.Dead) continue;
+                    if (by != null && !MagicFx.Foe(p, by)) continue;
+                    BodyPartRecord foot = p.health.hediffSet.GetNotMissingParts().Where(b => b.height == BodyPartHeight.Bottom && b.depth == BodyPartDepth.Outside).RandomElementWithFallback();
+                    p.TakeDamage(new DamageInfo(rain, 1.2f * pw * (SecondOrder.Sealed(p) ? 0.4f : 1f), 0f, -1f, by, foot));
+                }
+            }
+        }
+
         public void Later(int ticks, Action a) => later.Add(new KeyValuePair<int, Action>(Find.TickManager.TicksGame + ticks, a));
 
         public static Fld At(Map m, IntVec3 c, SecondKind y) => m?.GetComponent<SecondFields>()?.fields.FirstOrDefault(f => f.y == y && f.cells.Contains(c));
@@ -614,7 +653,7 @@ namespace Avir.Magic
                     later.Remove(kv);
                     try { kv.Value(); } catch (Exception e) { Log.ErrorOnce("[Avir] second-order later: " + e, 0x5EC1); }
                 }
-            if (fields.Count == 0) return;
+            if (fields.Count == 0 && boiling.Count == 0) return;
             fields.RemoveAll(f => f.until <= now);
             // the whirls blow real wind round themselves in Atmosphere Overhaul's air, four times a second, so it builds up
             if (now % 15 == 0 && AtmosphereBridge.Throws)
@@ -626,6 +665,7 @@ namespace Avir.Magic
                         AtmosphereBridge.Wind(map, x, new Vector2(v.x, v.z) * Mathf.Min(AtmosphereBridge.MaxPush, MapComponent_MagicWind.HurricaneStrength(w.power, map, true) / 5f));
                     }
             if (now % 60 != 0) return;
+            Boil(now);
             foreach (Fld f in fields)
             {
                 if (f.y == SecondKind.Typhoon && f.speed > 0f)
@@ -633,6 +673,13 @@ namespace Avir.Magic
                     f.center += f.dir * f.speed;
                     IntVec3 c0 = f.center.ToIntVec3();
                     f.cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(c0, 2.5f, true).Where(x => x.InBounds(map)));
+                }
+                if (f.y == SecondKind.Typhoon)
+                {
+                    // its rain lies in puddles, and they boil a while: steam over them, a scald to the feet that wade (Fix191)
+                    foreach (IntVec3 x in f.cells.InRandomOrder().Take(3))
+                        if (x.Standable(map) && !Reactions.Wet(x, map)) { WaterMagic.Puddle(x, map); boiling[x] = Find.TickManager.TicksGame + 1500; boilBy[x] = f.owner; boilPower[x] = f.power; }
+                        else if (Reactions.Pools(x, map).Any()) { boiling[x] = Find.TickManager.TicksGame + 1500; boilBy[x] = f.owner; boilPower[x] = f.power; }
                 }
                 if (f.y == SecondKind.Typhoon)
                     foreach (IntVec3 x in f.cells.InRandomOrder().Take(6))

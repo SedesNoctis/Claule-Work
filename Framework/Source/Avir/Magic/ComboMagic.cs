@@ -731,7 +731,7 @@ namespace Avir.Magic
             {
                 if (!c.InBounds(map) || !Rand.Chance(share)) continue;
                 GasUtility.AddGas(c, map, GasType.BlindSmoke, 1.2f);
-                if (scalding) Gas_ScaldingSteam.Release(c, map, 1);
+                if (scalding && !SecondOrder.Background) Gas_ScaldingSteam.Release(c, map, 1);   // under a meeting of the second order the pair's steam is only a veil
             }
         }
 

@@ -524,8 +524,12 @@ namespace Avir.Magic
                 if (!cell.InBounds(map) || map.designationManager.DesignationAt(cell, Arcane.HotSpring) == null) continue;
                 map.designationManager.TryRemoveDesignation(cell, Arcane.HotSpring);
                 TerrainDef was = map.terrainGrid.TerrainAt(cell);
-                if (was == null || !was.IsWater || was == hot) continue;
-                temp?.Set(cell, hot, HotSpringDays * GenDate.TicksPerDay);
+                int ticks = HotSpringDays * GenDate.TicksPerDay;
+                // a spring kept warm (the order renewed, Fix191): its time runs on
+                if (was == hot && temp != null && temp.to.TryGetValue(cell, out TerrainDef kept) && kept == hot) temp.until[cell] = Find.TickManager.TicksGame + ticks;
+                else if (was == null || !was.IsWater || was == hot) continue;
+                else temp?.Set(cell, hot, ticks);
+                RepeatOrders.Of(map)?.Keep(cell, "Avir_ArcaneHotSpring", ticks - GenDate.TicksPerDay / 4);
                 if (Rand.Chance(0.5f)) FleckMaker.ThrowSmoke(cell.ToVector3Shifted(), map, 1.2f);
                 n++;
             }

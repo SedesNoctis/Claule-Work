@@ -301,10 +301,19 @@ namespace Avir.Magic
             foreach (IntVec3 x in GenRadial.RadialCellsAround(at, WorkSpells.Now.R(1.9f), true).Where(x => x.InBounds(m) && m.designationManager.DesignationAt(x, D(des)) != null))
             {
                 Unmark(m, x, des);
-                if (x.GetEdifice(m) != null || x.GetFirstPawn(m) != null) continue;
-                if (to.IsWater) { var tr = m.terrainGrid.TerrainAt(x); if (tr.IsWater) continue; }
-                else if (!m.terrainGrid.TerrainAt(x).IsWater) continue;
-                ForceTemp(temp, m, x, to, GenDate.TicksPerDay * days); n++;
+                if (x.GetEdifice(m) != null) continue;
+                int ticks = GenDate.TicksPerDay * days;
+                // kept (the order renewed, Fix191): the time runs on
+                if (temp != null && temp.to.TryGetValue(x, out TerrainDef kept) && kept == to && m.terrainGrid.TerrainAt(x) == to) temp.until[x] = Find.TickManager.TicksGame + ticks;
+                else
+                {
+                    if (x.GetFirstPawn(m) != null) continue;
+                    if (to.IsWater) { var tr = m.terrainGrid.TerrainAt(x); if (tr.IsWater) continue; }
+                    else if (!m.terrainGrid.TerrainAt(x).IsWater) continue;
+                    ForceTemp(temp, m, x, to, ticks);
+                }
+                RepeatOrders.Of(m)?.Keep(x, des, ticks - GenDate.TicksPerDay);
+                n++;
                 if (Rand.Chance(0.3f)) FleckMaker.Static(x, m, FleckDefOf.WaterSplash, 0.6f);
             }
             return n > 0;
@@ -616,6 +625,8 @@ namespace Avir.Magic
             cells.Add(c); des.Add(d); due.Add(Find.TickManager.TicksGame + Mathf.Max(GenDate.TicksPerHour, inTicks));
         }
 
+        private static string Label(string d) => d == "Avir_2LavaPool" ? "keep the lava pool" : d == "Avir_ArcaneHotSpring" ? "keep the hot spring warm" : d == "Avir_2Moat" ? "keep the moat" : d == "Avir_2SiltWater" ? "keep the silt water" : d == "Avir_2SiltLand" ? "keep the silt ground" : d;
+
         public void Drop(IntVec3 c, string d)
         {
             for (int i = cells.Count - 1; i >= 0; i--) if (cells[i] == c && des[i] == d) { cells.RemoveAt(i); des.RemoveAt(i); due.RemoveAt(i); }
@@ -633,13 +644,14 @@ namespace Avir.Magic
                 cells.RemoveAt(i); des.RemoveAt(i); due.RemoveAt(i);
                 DesignationDef dd = Works2.D(d);
                 if (dd == null || !c.InBounds(map) || map.designationManager.DesignationAt(c, dd) != null) continue;
-                if (d == "Avir_2LavaPool" && !LavaPools.Held(map, c)) continue;   // gone already - nothing to keep
+                var temp = MapComponent_TempTerrain.Of(map);
+                if (temp == null || !temp.to.TryGetValue(c, out TerrainDef held) || map.terrainGrid.TerrainAt(c) != held) continue;   // gone already - nothing to keep
                 map.designationManager.AddDesignation(new Designation(c, dd));
                 if (!told.TryGetValue(d, out var l)) told[d] = l = new List<IntVec3>();
                 l.Add(c);
             }
             foreach (var kv in told)
-                Messages.Message("An arcane order renews itself: " + (kv.Key == "Avir_2LavaPool" ? "keep the lava pool" : kv.Key) + " (" + kv.Value.Count + " cells). A caster of lava will see to it; mark \"Let the lava set\" to end it.",
+                Messages.Message("An arcane order renews itself: " + Label(kv.Key) + " (" + kv.Value.Count + " cells). " + (kv.Key == "Avir_2LavaPool" ? "Mark \"Let the lava set\" to end it." : "Cancel the mark to let it lapse."),
                     new LookTargets(kv.Value.Select(x => new TargetInfo(x, map))), MessageTypeDefOf.NeutralEvent, false);
         }
 

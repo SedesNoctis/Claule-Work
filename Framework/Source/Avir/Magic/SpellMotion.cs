@@ -163,7 +163,12 @@ namespace Avir.Magic
                 // strict modifiers (on trial): each later copy of a verb acts with its own modifiers and an echo of the one before
                 List<KeyValuePair<RitualSchema, float>> repeats = SpellMods.Strict ? SpellMods.Echoes(ref part) : SpellWear.Split(ref part);
                 if (repeats != null) r = RitualEvaluator.Read(part);
-                Dispatch(caster, part, r, k, el, target, power);
+                // a meeting of the second order is the blow (the author, Fix191): the pair under it only shows, as a
+                // background - a third of its strength, and its steam harmless - while the meeting strikes with its own
+                bool second = SecondOrder.Takes(r);
+                SecondOrder.Background = second;
+                try { Dispatch(caster, part, r, k, el, target, second ? power * SecondOrder.BackgroundShare : power); }
+                finally { SecondOrder.Background = false; }
                 // a meeting of the second order: what the three circles make, through the runes of this part
                 SecondOrder.Apply(caster, part, r, target, power);
                 if (repeats != null)
