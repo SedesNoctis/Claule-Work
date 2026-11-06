@@ -994,6 +994,18 @@ namespace Avir.Magic
             else Messages.Message(mage.LabelShortCap + " carries every sickness they can grow already.", mage, MessageTypeDefOf.RejectInput, false);
         }
 
+        /// <summary>A blow of a small circle of air in a box of Pestilence carries a sickness (Fix197): one of the sowable,
+        /// lightly, if the struck has it not.</summary>
+        public static void SowOn(Pawn p, Pawn by, float severity)
+        {
+            if (p == null || p.Dead || !Rand.Chance(0.5f)) return;
+            HediffDef d = Sowable.Select(x => DefDatabase<HediffDef>.GetNamedSilentFail(x)).Where(x => x != null && (x.defName.StartsWith("Animal_") == !p.RaceProps.Humanlike) && p.health.hediffSet.GetFirstHediffOfDef(x) == null).RandomElementWithFallback();
+            if (d == null) return;
+            Hediff h = HediffMaker.MakeHediff(d, p); h.Severity = Mathf.Max(severity, d.initialSeverity);
+            p.health.AddHediff(h);
+            if (p.Spawned) MapComponent_SpellSprites.PutTinted(p.Map, "Life/PoisonFog", LifeMagic.PairColor(RuneKind.Air), p.DrawPos, 1f, 50);
+        }
+
         /// <summary>A sickness grown on the mage on purpose: the flu, if nothing is carried yet.</summary>
         public static void GrowOn(Pawn mage)
         {

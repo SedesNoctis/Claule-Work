@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- The bath of Fever and the couch of Life care (Fix198). -->
+  <JoyKindDef>
+    <defName>Avir_Care</defName>
+    <label>bodily ease</label>
+  </JoyKindDef>
+
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_BathSteam</defName>
+    <label>bath steam</label>
+    <description>A light magical steam raised by a caster of Fever: it warms a close room and fills it with steam. In a small room with seats (about ten cells to a source) the colonists come to bathe. A caster of Fever renews it when it runs low.</description>
+    <thingClass>Avir.Magic.Building_BathSteam</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Bog/Bubbles</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.1,1.1)</drawSize>
+      <color>(0.95,0.95,1)</color>
+    </graphicData>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>PassThroughOnly</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <useHitPoints>false</useHitPoints>
+    <selectable>true</selectable>
+    <statBases><Beauty>4</Beauty></statBases>
+    <building><isInert>true</isInert><claimable>false</claimable><deconstructible>true</deconstructible><expandHomeArea>false</expandHomeArea></building>
+  </ThingDef>
+  <DesignationDef>
+    <defName>Avir_LifeBathSteam</defName>
+    <texturePath>Designations/HarvestPlant</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_LifeBathSteam</defName>
+    <label>raise bath steam (Fever)</label>
+    <giverClass>Avir.Magic.WorkGiver_LifeBathSteam</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>raise steam at</verb>
+    <gerund>raising bath steam</gerund>
+    <priorityInType>4</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_LifeBathSteam</defName>
+    <driverClass>Avir.Magic.JobDriver_LifeBathSteam</driverClass>
+    <reportString>raising bath steam.</reportString>
+  </JobDef>
+
+  <JobDef>
+    <defName>Avir_Bathe</defName>
+    <driverClass>Avir.Magic.JobDriver_Bathe</driverClass>
+    <reportString>steaming in the bath.</reportString>
+    <joyDuration>2500</joyDuration>
+    <joyKind>Avir_Care</joyKind>
+    <joyMaxParticipants>8</joyMaxParticipants>
+  </JobDef>
+  <JoyGiverDef>
+    <defName>Avir_Bathe</defName>
+    <giverClass>Avir.Magic.JoyGiver_Bathe</giverClass>
+    <baseChance>3</baseChance>
+    <jobDef>Avir_Bathe</jobDef>
+    <joyKind>Avir_Care</joyKind>
+    <requiredCapacities><li>Moving</li></requiredCapacities>
+  </JoyGiverDef>
+
+  <ThingDef ParentName="FurnitureBase">
+    <defName>Avir_LifeCouch</defName>
+    <label>couch of Life care</label>
+    <description>A low couch for the care of a caster of Life. A colonist lies down on it and waits; a caster comes and works over them - kneading, warmth, slow hands. Recreation and rest, better than a passing soothing.</description>
+    <thingClass>Avir.Magic.Building_LifeCouch</thingClass>
+    <graphicData>
+      <texPath>Things/Building/Furniture/Bed/Bed</texPath>
+      <graphicClass>Graphic_Multi</graphicClass>
+      <drawSize>(3,4)</drawSize>
+      <color>(0.55,0.75,0.5)</color>
+    </graphicData>
+    <size>(1,2)</size>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>PassThroughOnly</passability>
+    <rotatable>true</rotatable>
+    <castEdgeShadows>true</castEdgeShadows>
+    <fillPercent>0.4</fillPercent>
+    <pathCost>42</pathCost>
+    <statBases>
+      <MaxHitPoints>120</MaxHitPoints>
+      <WorkToBuild>1200</WorkToBuild>
+      <Mass>20</Mass>
+      <Flammability>1</Flammability>
+      <Beauty>2</Beauty>
+      <Comfort>0.7</Comfort>
+    </statBases>
+    <stuffCategories><li>Woody</li><li>Fabric</li></stuffCategories>
+    <costStuffCount>50</costStuffCount>
+    <designationCategory>Furniture</designationCategory>
+    <building><isSittable>false</isSittable></building>
+  </ThingDef>
+  <JobDef>
+    <defName>Avir_LieForCare</defName>
+    <driverClass>Avir.Magic.JobDriver_LieForCare</driverClass>
+    <reportString>lying on the couch, waiting for care.</reportString>
+    <joyDuration>3000</joyDuration>
+    <joyKind>Avir_Care</joyKind>
+    <casualInterruptible>true</casualInterruptible>
+  </JobDef>
+  <JoyGiverDef>
+    <defName>Avir_LieForCare</defName>
+    <giverClass>Avir.Magic.JoyGiver_LieForCare</giverClass>
+    <baseChance>2</baseChance>
+    <jobDef>Avir_LieForCare</jobDef>
+    <joyKind>Avir_Care</joyKind>
+  </JoyGiverDef>
+  <WorkGiverDef>
+    <defName>Avir_LifeCare</defName>
+    <label>care on the couch by Life</label>
+    <giverClass>Avir.Magic.WorkGiver_LifeCare</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>care for</verb>
+    <gerund>caring by Life</gerund>
+    <priorityInType>36</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_LifeCare</defName>
+    <driverClass>Avir.Magic.JobDriver_LifeCare</driverClass>
+    <reportString>caring for the one on TargetA.</reportString>
+  </JobDef>
+
+  <HediffDef>
+    <defName>Avir_Bathed</defName>
+    <label>steamed</label>
+    <description>Fresh from the bath: heat and cold both bear easier for a while, and the body fights its sicknesses better.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>60000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><statOffsets><ComfyTemperatureMin>-8</ComfyTemperatureMin><ComfyTemperatureMax>8</ComfyTemperatureMax><ImmunityGainSpeed>0.1</ImmunityGainSpeed></statOffsets></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeCared</defName>
+    <label>cared for by Life</label>
+    <description>Worked over by a caster of Life: the body loose and light, the aches quiet.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>45000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><painFactor>0.8</painFactor><capMods><li><capacity>Moving</capacity><offset>0.05</offset></li><li><capacity>Manipulation</capacity><offset>0.05</offset></li></capMods></li></stages>
+  </HediffDef>
+  <ThoughtDef>
+    <defName>Avir_LifeCaredFor</defName>
+    <thoughtClass>Thought_Memory</thoughtClass>
+    <durationDays>1.5</durationDays>
+    <stackLimit>1</stackLimit>
+    <stages><li><label>cared for on the couch</label><description>A caster of Life worked the knots out of me. I feel new.</description><baseMoodEffect>8</baseMoodEffect></li></stages>
+  </ThoughtDef>
+</Defs>

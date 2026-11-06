@@ -91,6 +91,21 @@
     <driverClass>Avir.Magic.JobDriver_LifeSoothe</driverClass>
     <reportString>soothing TargetA by Life.</reportString>
   </JobDef>
+  <WorkGiverDef>
+    <defName>Avir_LifeAge</defName>
+    <label>age the brew by Decay</label>
+    <giverClass>Avir.Magic.WorkGiver_LifeAge</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>age</verb>
+    <gerund>ageing the brew</gerund>
+    <priorityInType>5</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_LifeAge</defName>
+    <driverClass>Avir.Magic.JobDriver_LifeAge</driverClass>
+    <reportString>ageing the brew in TargetA.</reportString>
+  </JobDef>
   <DesignationDef>
     <defName>Avir_LifeEmerald</defName>
     <texturePath>Designations/HarvestPlant</texturePath>

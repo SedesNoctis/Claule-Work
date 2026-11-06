@@ -84,6 +84,10 @@ namespace Avir.Magic
                 }
         }
 
+        /// <summary>A caster of Decay (Life with earth and air, the mixed triple): the works of rot and of time are theirs -
+        /// the blight taken off the plants, the brew aged (the author: the works shared out among the druids, Fix197).</summary>
+        public static bool Decay(Hediff_ArcaneCore c) => c != null && MagicWork.Knows(c, RuneKind.Earth) && MagicWork.Knows(c, RuneKind.Air) && MagicWork.Knows(c, RuneKind.Life);
+
         public static float Quality(Hediff_ArcaneCore c) => Mathf.Clamp(0.5f + 0.15f * Arcane.Stage(c, RuneKind.Life), 0.4f, 1.3f);
     }
 
@@ -185,7 +189,7 @@ namespace Avir.Magic
         public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
         {
             if (!(t is Plant pl) || pl.IsForbidden(pawn) || !(pawn.Map.zoneManager.ZoneAt(pl.Position) is Zone_Growing)) return false;
-            bool sick = pl.Blighted;
+            bool sick = pl.Blighted && LifeWorks.Decay(Mages.Core(pawn));   // the blight is Decay's to take off (Fix197)
             bool due = pl.LifeStage == PlantLifeStage.Growing && pl.Growth < 0.85f && (!tended.TryGetValue(pl.thingIDNumber, out int u) || u <= Find.TickManager.TicksGame);
             return (sick || due) && pawn.CanReserve(pl, 1, -1, null, forced) && LifeWorks.Able(pawn, Store) != null;
         }
@@ -214,7 +218,7 @@ namespace Avir.Magic
                 if (f <= 0f) return;
                 foreach (Plant p in plants)
                 {
-                    if (p.Blighted) p.Blight?.Destroy();
+                    if (p.Blighted && LifeWorks.Decay(c)) p.Blight?.Destroy();
                     if (p.LifeStage == PlantLifeStage.Growing) p.Growth = Mathf.Min(1f, p.Growth + 0.08f * f * LifeWorks.Quality(c));
                     WorkGiver_LifeCrops.Mark(p);
                     if (Rand.Chance(0.3f)) FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 0.8f, new Color(0.6f, 0.9f, 0.5f, 0.45f));
@@ -368,6 +372,48 @@ namespace Avir.Magic
                 WorkGiver_LifeSoothe.Mark(p);
                 MapComponent_SpellSprites.PutTinted(p.Map, "Life/Petals", new Color(0.75f, 0.95f, 0.65f), p.DrawPos, 1.2f, 70);
                 MagicWork.Done(c, RuneKind.Life, LifeWorks.Arcana, LifeWorks.Xp * 0.6f);
+            };
+            done.defaultCompleteMode = ToilCompleteMode.Instant;
+            yield return done;
+        }
+    }
+
+    // ------------------------------------------------------------------ Decay: ageing the brew
+
+    /// <summary>Time on what ripens (Decay, Fix197): a fermenting barrel is aged on by a quarter - the brew ripens without
+    /// waiting. Out of the store of life.</summary>
+    public class WorkGiver_LifeAge : WorkGiver_Scanner
+    {
+        public const float Store = 3f;
+        public override PathEndMode PathEndMode => PathEndMode.Touch;
+        public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial);
+        private static bool Able(Pawn pawn) { Hediff_ArcaneCore c = LifeWorks.Able(pawn, Store); return c != null && LifeWorks.Decay(c); }
+        public override bool ShouldSkip(Pawn pawn, bool forced = false) => !Able(pawn);
+        /// <summary>Wort in it (its own 'Empty' is not ours to call).</summary>
+        public static bool Has(Building_FermentingBarrel b) => b.SpaceLeftForWort < 25;
+        public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false) =>
+            t is Building_FermentingBarrel b && Has(b) && !b.Fermented && b.Progress < 0.9f && !b.IsForbidden(pawn) && pawn.CanReserve(b, 1, -1, null, forced) && Able(pawn);
+        public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false) => JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("Avir_LifeAge"), t);
+    }
+
+    public class JobDriver_LifeAge : JobDriver
+    {
+        public override bool TryMakePreToilReservations(bool errorOnFailed) => pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
+        protected override IEnumerable<Toil> MakeNewToils()
+        {
+            this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
+            yield return WorkSpells.GoTo(this, false, 0f);
+            yield return ArcaneChannel.Channel(this, 300, WorkSpells.Charm("Avir_LifeAge", new[] { RuneKind.Life, RuneKind.Earth, RuneKind.Air }), false, new Color(0.72f, 0.68f, 0.55f, 0.5f));
+            Toil done = ToilMaker.MakeToil("LifeAge");
+            done.initAction = () =>
+            {
+                Hediff_ArcaneCore c = MagicWork.Able(pawn, RuneKind.Life, LifeWorks.Arcana);
+                if (c == null || !(TargetA.Thing is Building_FermentingBarrel b) || !WorkGiver_LifeAge.Has(b) || b.Fermented) return;
+                float f = LifeWorks.Spend(c, WorkGiver_LifeAge.Store);
+                if (f <= 0f) return;
+                b.Progress = Mathf.Min(1f, b.Progress + 0.25f * f * LifeWorks.Quality(c));
+                FleckMaker.ThrowDustPuffThick(b.DrawPos, b.Map, 1f, new Color(0.72f, 0.68f, 0.55f, 0.45f));
+                MagicWork.Done(c, RuneKind.Life, LifeWorks.Arcana, LifeWorks.Xp * 0.7f);
             };
             done.defaultCompleteMode = ToilCompleteMode.Instant;
             yield return done;

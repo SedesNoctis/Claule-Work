@@ -187,6 +187,10 @@ namespace Avir.Magic
             SecondOrder.Now = seconds.TryGetValue(circle, out SecondKind sk) ? sk : SecondKind.None;
             int keepExtra = SecondOrder.Extra;
             SecondOrder.Extra = SecondOrder.Now == SecondKind.None ? 0 : Mathf.Max(0, seconds.Count(kv => kv.Value == SecondOrder.Now) - 3);
+            // a deep meeting of Life colours its own small circles: their blows come out as the meeting's (Fix197)
+            SpellCircle lifeBox = c.root.ParentOf(circle);
+            RuneKind deepOf = lifeBox != null && circle.element != null ? LifeMagic.PairOf(c.root, lifeBox) : LifeMagic.None;
+            using (deepOf != LifeMagic.None && deepOf == circle.element.kind ? LifePaint.Paint(deepOf, caster) : null)
             using (SpellWards.Of(circle.element?.kind, met, true))
             using (shaped ? SpellSculpt.Spare(aid) : null)
             try

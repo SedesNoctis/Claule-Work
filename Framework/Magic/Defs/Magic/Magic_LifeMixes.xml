@@ -227,4 +227,21 @@
       </li>
     </comps>
   </HediffDef>
+  <!-- Emerald's own blow (Fix197): a part turned to stone. -->
+  <HediffDef>
+    <defName>Avir_PetrifiedPart</defName>
+    <label>turned to stone</label>
+    <description>Emerald turned this part to living stone: it works worse the deeper the stone went, and it is never torn off. No medicine helps; the stone lets go by itself, slowly. Stone is hard to cut - and cracks under blunt blows.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.3, 0.65, 0.45)</defaultLabelColor>
+    <isBad>true</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>0.95</maxSeverity>
+    <comps><li Class="HediffCompProperties_SeverityPerDay"><severityPerDay>-0.35</severityPerDay></li></comps>
+    <stages>
+      <li><label>a skin of stone</label><partEfficiencyOffset>-0.25</partEfficiencyOffset><statOffsets><ArmorRating_Sharp>0.03</ArmorRating_Sharp></statOffsets></li>
+      <li><minSeverity>0.35</minSeverity><label>stone</label><partEfficiencyOffset>-0.55</partEfficiencyOffset><statOffsets><ArmorRating_Sharp>0.06</ArmorRating_Sharp></statOffsets></li>
+      <li><minSeverity>0.7</minSeverity><label>stone through</label><partEfficiencyOffset>-0.85</partEfficiencyOffset><statOffsets><ArmorRating_Sharp>0.1</ArmorRating_Sharp></statOffsets></li>
+    </stages>
+  </HediffDef>
 </Defs>
