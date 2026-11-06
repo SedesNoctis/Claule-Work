@@ -619,7 +619,14 @@ namespace Avir.Magic
             if (met.TryGetValue(c, out ComboKind k)) return Combos.ColorOf(k);
             // a great circle of Life with an element inside takes its meeting's colour (the author's rule)
             if (c.Great && LifeMagic.Is(c.element) && rootNow != null) { RuneKind lp = LifeMagic.PairOf(rootNow, c); if (lp != LifeMagic.None) return LifeMagic.PairColor(lp); }
-            if (c.element == null && !c.Great && rootNow?.ParentOf(c) is SpellCircle b && b.Great && LifeMagic.Is(b.element)) return b.element.color;
+            // inside a great circle of Life: the small circles of Life take the meeting's colour, the element that met it leans toward it
+            if (!c.Great && rootNow?.ParentOf(c) is SpellCircle b && b.Great && LifeMagic.Is(b.element))
+            {
+                RuneKind bp = LifeMagic.PairOf(rootNow, b);
+                Color lc = bp != LifeMagic.None ? LifeMagic.PairColor(bp) : b.element.color;
+                if (c.element == null) return lc;
+                if (bp != LifeMagic.None && c.element.kind == bp) return Color.Lerp(c.element.color, lc, 0.5f);
+            }
             return c.element?.color ?? new Color(0.85f, 0.78f, 0.62f);
         }
         private static readonly Dictionary<SpellCircle, SecondKind> seconds = new Dictionary<SpellCircle, SecondKind>();

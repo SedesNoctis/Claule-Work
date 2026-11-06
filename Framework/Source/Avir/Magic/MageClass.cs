@@ -148,7 +148,7 @@ namespace Avir.Magic
             RuneDef m = Main(c);
             var lines = new List<string>
             {
-                (c.Sorcerer ? "Sorcerer" : "Wizard") + " · main element: " + (m != null ? m.LabelCap.ToString() : "none yet (the first cast decides)"),
+                (c.Sorcerer ? "Sorcerer" : "Wizard") + " · main element: " + (m != null ? m.LabelCap.ToString() : "none yet (a path ritual decides)"),
                 "Core level " + c.level + " · free points of the path: " + c.points + " · reserve " + Mathf.FloorToInt(c.Capacity) + " Arcana (a point not wanted on a path may go into the reserve: +" + (100f * ArcanaIntake.PerPoint).ToString("0") + "% of the first)",
                 ""
             };

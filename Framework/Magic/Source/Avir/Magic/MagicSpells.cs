@@ -113,6 +113,10 @@ namespace Avir.Magic
             if (s.weave == null) return RitualAspects.ColorOfRitual(s);
             // a spell that opens with two elements met takes the colour of what they made
             SpellCircle first = MapComponent_SpellChain.Order(s.weave).FirstOrDefault();
+            // a meeting of the second order, or Life with its partner, gives the whole spell its colour
+            if (first != null && SecondOrder.Of(s.weave).TryGetValue(first, out SecondKind y)) return SecondOrder.ColorOf(y, SecondOrder.PairOf(y), SecondOrder.Third(y));
+            SpellCircle box = LifeMagic.Circles(s.weave).FirstOrDefault();
+            if (box != null) { RuneKind lp = LifeMagic.PairOf(s.weave, box); return lp != LifeMagic.None ? LifeMagic.PairColor(lp) : box.element.color; }
             ComboKind k = Combos.Of(s.weave, first);
             return k != ComboKind.None ? Combos.ColorOf(k) : Element(s)?.color ?? new Color(0.9f, 0.8f, 0.6f);
         }

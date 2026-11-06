@@ -134,7 +134,7 @@ namespace Avir.Magic
             if (core == null) { GUI.color = InkSoft; Widgets.Label(new Rect(r.x, r.y + 40f, r.width, 30f), "No arcane core."); return; }
             RuneDef main = MageClass.Main(core);
             GUI.color = SpellGlyph.Ink(core.Sorcerer ? Hediff_ArcaneCore.SorcererColor : Hediff_ArcaneCore.MageColor);
-            Widgets.Label(new Rect(r.x, r.y + 32f, r.width, 24f), (core.Sorcerer ? "Sorcerer" : "Wizard") + " - main element: " + (main != null ? main.LabelCap.ToString() : "none yet, the first cast decides"));
+            Widgets.Label(new Rect(r.x, r.y + 32f, r.width, 24f), (core.Sorcerer ? "Sorcerer" : "Wizard") + " - main element: " + (main != null ? main.LabelCap.ToString() : "none yet - a path ritual decides"));
 
             // the core's level: one long bar to the next level
             float all = MageClass.All(core);
@@ -237,7 +237,12 @@ namespace Avir.Magic
             Widgets.Label(new Rect(r.x, r.y, r.width, 34f), pawn.LabelShortCap);
             Text.Font = GameFont.Small;
             GUI.color = SpellGlyph.Ink(sorc ? Hediff_ArcaneCore.SorcererColor : Hediff_ArcaneCore.MageColor);
-            Widgets.Label(new Rect(r.x, r.y + 34f, r.width, 24f), sorc ? "Sorcerer - born with magic" : "Wizard - magic taken in");
+            // the element the mage belongs to stands right under the name, with its rune
+            RuneDef el = core != null ? MageClass.Main(core) : null;
+            string of = el != null ? " of " + el.LabelCap : "";
+            float gx = r.x;
+            if (el != null) { SpellGlyph.Draw(new Rect(r.x, r.y + 34f, 24f, 24f), el); gx += 28f; }
+            Widgets.Label(new Rect(gx, r.y + 34f, r.width - (gx - r.x), 24f), sorc ? "Sorcerer" + of + " - born with magic" : "Wizard" + of + " - magic taken in");
             if (core == null) { GUI.color = InkSoft; Widgets.Label(new Rect(r.x, r.y + 64f, r.width, 60f), "No arcane core - the gift will grow it back."); return; }
             // the Arcana, large
             Rect bar = new Rect(r.x, r.y + 70f, r.width, 34f);
