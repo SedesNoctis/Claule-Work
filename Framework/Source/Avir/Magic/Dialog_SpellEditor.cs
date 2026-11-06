@@ -618,12 +618,14 @@ namespace Avir.Magic
             if (seconds.TryGetValue(c, out SecondKind y)) return SecondOrder.ColorOf(y, SecondOrder.PairOf(y), SecondOrder.Third(y));
             if (met.TryGetValue(c, out ComboKind k)) return Combos.ColorOf(k);
             // a great circle of Life with an element inside takes its meeting's colour (the author's rule)
-            if (c.Great && LifeMagic.Is(c.element) && rootNow != null) { RuneKind lp = LifeMagic.PairOf(rootNow, c); if (lp != LifeMagic.None) return LifeMagic.PairColor(lp); }
+            if (c.Great && LifeMagic.Is(c.element) && rootNow != null) { RuneKind lp = LifeMagic.PairOf(rootNow, c); if (lp != LifeMagic.None) return LifeMagic.PairColor(lp); RuneKind la = LifeMagic.AspectOf(rootNow, c); if (la != LifeMagic.None) return LifeMagic.AspectColor(la); }
             // inside a great circle of Life: the small circles of Life take the meeting's colour, the element that met it leans toward it
             if (!c.Great && rootNow?.ParentOf(c) is SpellCircle b && b.Great && LifeMagic.Is(b.element))
             {
                 RuneKind bp = LifeMagic.PairOf(rootNow, b);
-                Color lc = bp != LifeMagic.None ? LifeMagic.PairColor(bp) : b.element.color;
+                RuneKind ba = LifeMagic.AspectOf(rootNow, b);
+                Color lc = bp != LifeMagic.None ? LifeMagic.PairColor(bp) : ba != LifeMagic.None ? LifeMagic.AspectColor(ba) : b.element.color;
+                if (bp == LifeMagic.None) bp = ba;
                 if (c.element == null) return lc;
                 if (bp != LifeMagic.None && c.element.kind == bp) return Color.Lerp(c.element.color, lc, 0.5f);
             }
@@ -709,7 +711,8 @@ namespace Avir.Magic
             if (c.Great)
             {
                 RuneKind lp = LifeMagic.Is(c.element) ? (rootNow != null ? LifeMagic.PairOf(rootNow, c) : LifeMagic.None) : LifeMagic.None;
-                string nm = lp != LifeMagic.None ? LifeMagic.PairName(lp) + " (Life + " + lp + ")" : c.element != null ? c.element.LabelCap.ToString() : "no seal yet";
+                RuneKind la = LifeMagic.Is(c.element) && rootNow != null ? LifeMagic.AspectOf(rootNow, c) : LifeMagic.None;
+                string nm = lp != LifeMagic.None ? LifeMagic.PairName(lp) + " (Life + " + lp + " + " + lp + ")" : la != LifeMagic.None ? LifeMagic.AspectName(la) + " (Life + " + la + ")" : c.element != null ? c.element.LabelCap.ToString() : "no seal yet";
                 return "Great: " + nm + " (" + c.inner.Count + " inside)";
             }
             return c.element != null ? c.element.LabelCap.ToString() : "empty circle";
@@ -1084,7 +1087,7 @@ namespace Avir.Magic
                 if (!whole && sel.element == null && !sel.Great && s.weave.ParentOf(sel) is SpellCircle lb && lb.Great && LifeMagic.Is(lb.element))
                 {
                     LifeMagic.PairOfText = LifeMagic.PairOf(s.weave, lb);
-                    string pn = LifeMagic.PairName(LifeMagic.PairOfText);
+                    string pn = LifeMagic.PairName(LifeMagic.PairOfText) ?? LifeMagic.AspectName(LifeMagic.AspectOf(s.weave, lb));
                     fx0.main = "A small circle of " + (pn ?? "Life") + ": " + WeaveSpell.LifeText(sel);
                 }
                 // a meeting of the second order: named first, its own deed told, the pair's work under it

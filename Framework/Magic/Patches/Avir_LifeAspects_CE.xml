@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- With Combat Extended: the Frame of Life gives and takes armour in CE's own measure (a little - the author). -->
+  <Operation Class="PatchOperationFindMod">
+    <mods><li>Combat Extended</li></mods>
+    <match Class="PatchOperationSequence">
+      <operations>
+        <li Class="PatchOperationReplace"><xpath>Defs/HediffDef[defName="Avir_LifeHardened"]/stages/li/statOffsets</xpath><value><statOffsets><ArmorRating_Sharp>1</ArmorRating_Sharp><ArmorRating_Blunt>2</ArmorRating_Blunt></statOffsets></value></li>
+        <li Class="PatchOperationReplace"><xpath>Defs/HediffDef[defName="Avir_LifeSoftened"]/stages/li/statOffsets</xpath><value><statOffsets><ArmorRating_Sharp>-1</ArmorRating_Sharp><ArmorRating_Blunt>-2</ArmorRating_Blunt></statOffsets></value></li>
+      </operations>
+    </match>
+  </Operation>
+</Patch>

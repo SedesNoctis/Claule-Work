@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- The wide meetings of Life (Fix165): Warmth, Sap, Frame, Breath - what they leave on the bodies they reach. -->
+  <HediffDef>
+    <defName>Avir_LifeChill</defName>
+    <label>chilled by Life</label>
+    <description>Life took the warmth out of this body: slow, hardly hungry, mending slowly.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><hungerRateFactor>0.5</hungerRateFactor><capMods><li><capacity>Moving</capacity><offset>-0.15</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeTorpor</defName>
+    <label>torpor</label>
+    <description>The warmth held out of the body: it sleeps, not dying, hardly hungry.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><hungerRateFactor>0.1</hungerRateFactor><capMods><li><capacity>Consciousness</capacity><setMax>0.1</setMax></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeWarmth</defName>
+    <label>warmth of Life</label>
+    <description>Life gave warmth to this body: it mends and moves quicker, and is hungrier; the cold does not bite.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><hungerRateFactor>1.3</hungerRateFactor><capMods><li><capacity>Moving</capacity><offset>0.08</offset></li></capMods><statOffsets><ComfyTemperatureMin>-10</ComfyTemperatureMin><InjuryHealingFactor>0.4</InjuryHealingFactor></statOffsets></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeDried</defName>
+    <label>dried by Life</label>
+    <description>The sap was taken out of this body: thirst and weakness.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Moving</capacity><offset>-0.1</offset></li><li><capacity>Manipulation</capacity><offset>-0.1</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeSoftened</defName>
+    <label>frame softened</label>
+    <description>Life softened what this body stands on: slower, and blows go deeper.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Moving</capacity><offset>-0.1</offset></li></capMods><statOffsets><ArmorRating_Sharp>-0.1</ArmorRating_Sharp><ArmorRating_Blunt>-0.1</ArmorRating_Blunt></statOffsets></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeHardened</defName>
+    <label>frame hardened</label>
+    <description>Life hardened what this body stands on: a little armour, for a time.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><statOffsets><ArmorRating_Sharp>0.12</ArmorRating_Sharp><ArmorRating_Blunt>0.12</ArmorRating_Blunt></statOffsets></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeBreathless</defName>
+    <label>breath taken</label>
+    <description>Life took the breath out of this body.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Breathing</capacity><offset>-0.25</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeBreathHeld</defName>
+    <label>breath held</label>
+    <description>The breath is held out of this body: no running, no shouting.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>true</isBad>
+    <defaultLabelColor>(0.85,0.55,0.4)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><capMods><li><capacity>Breathing</capacity><offset>-0.4</offset></li><li><capacity>Moving</capacity><offset>-0.25</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeBreath</defName>
+    <label>breath of Life</label>
+    <description>Life gave breath to this body: easier breathing, slower tiring.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><restFallFactor>0.8</restFallFactor><capMods><li><capacity>Breathing</capacity><offset>0.15</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeAirBubble</defName>
+    <label>bubble of air</label>
+    <description>A bubble of clean air round the head: gas and smoke do not reach the lungs.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>1500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><statOffsets><ToxicEnvironmentResistance>0.6</ToxicEnvironmentResistance></statOffsets></li></stages>
+  </HediffDef>
+</Defs>

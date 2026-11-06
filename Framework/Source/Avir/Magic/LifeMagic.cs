@@ -122,10 +122,11 @@ namespace Avir.Magic
         {
             flows.TryGetValue(caster.thingIDNumber, out flow);
             pair = PairOf(root, g.Great ? g : root?.ParentOf(g));
+            aspect = AspectOf(root, g.Great ? g : root?.ParentOf(g));
             flowKinds[caster.thingIDNumber] = pair;
             if (pair != None) GameComponent_Combos.First("life" + pair, caster);
             try { Cast(caster, g, at, power, map); }
-            finally { flows[caster.thingIDNumber] = flow; flow = 0f; pair = None; }
+            finally { flows[caster.thingIDNumber] = flow; flow = 0f; pair = None; aspect = None; }
         }
 
         // ------------------------------------------------------------------ the pairs: Life meeting a small element in its box
@@ -143,7 +144,9 @@ namespace Avir.Magic
             var inside = box.inner.Where(k => !k.Great).ToList();
             if (box.OwnRunes.Concat(inside.SelectMany(k => k.OwnRunes)).Any(x => x.kind == RuneKind.Closing)) return None;
             SpellCircle first = inside.FirstOrDefault(k => k.element != null && (k.element.kind == RuneKind.Fire || k.element.kind == RuneKind.Water || k.element.kind == RuneKind.Earth || k.element.kind == RuneKind.Air));
-            return first?.element.kind ?? None;
+            // the deep meeting needs two circles of the element (the author's ladder, Fix165); one is the wide meeting (AspectOf)
+            if (first == null || inside.Count(k => k.element == first.element) < 2) return None;
+            return first.element.kind;
         }
 
         /// <summary>The meeting being explained now (for the words of a Transmutation).</summary>
@@ -277,6 +280,9 @@ namespace Avir.Magic
         {
             if (act.trans) { flow += TransmuteTake(caster, g, act, at, r, power, map); return; }
             float got = 0f;
+            curVerb = act.verb;
+            if (act.verb == RuneKind.Beam) { Line(caster, at, map, out var lc); AspectArea(lc, map); }
+            else AspectArea(GenRadial.RadialCellsAround(at, act.verb == RuneKind.Release || act.verb == RuneKind.Hold ? r : Mathf.Max(1.5f, r - 1f), true), map);
             switch (act.verb)
             {
                 case RuneKind.Release:   // a burst of withering
@@ -331,7 +337,9 @@ namespace Avir.Magic
                     case RuneKind.Water: got += Suck(p, dmg); break;                                       // part of its blood
                     case RuneKind.Earth: Crust(p, dmg * 0.04f); got += dmg * 0.5f; break;                  // stone grows on it
                     case RuneKind.Air: got += p == caster ? 0f : Pestilence.TakeFrom(caster, p, dmg) + Drink(p, dmg / 6f); break;   // its sicknesses taken onto the mage (Fix160), the rest drunk
-                    default: p.TakeDamage(new DamageInfo(WitherDmg, dmg, 2f, -1f, caster)); got += dmg; break;
+                    default:
+                        if (aspect != None) { AspectWither(caster, p, dmg); p.TakeDamage(new DamageInfo(WitherDmg, dmg * 0.6f, 2f, -1f, caster)); got += dmg; break; }
+                        p.TakeDamage(new DamageInfo(WitherDmg, dmg, 2f, -1f, caster)); got += dmg; break;
                 }
                 Wisp(p.DrawPos, map);
             }
@@ -364,7 +372,7 @@ namespace Avir.Magic
             return got;
         }
 
-        private static void Wisp(Vector3 v, Map map) { Color c = PairColor(pair); FleckMaker.ThrowDustPuffThick(v, map, 1f, new Color(c.r, c.g, c.b, 0.55f)); }
+        private static void Wisp(Vector3 v, Map map) { Color c = aspect != None ? AspectColor(aspect) : PairColor(pair); FleckMaker.ThrowDustPuffThick(v, map, 1f, new Color(c.r, c.g, c.b, 0.55f)); }
 
         // ------------------------------------------------------------------ giving: Restoration, out of the flow, then the store
 
@@ -410,6 +418,7 @@ namespace Avir.Magic
             payAt = IntVec3.Invalid;
             if (f <= 0f) return false;
             PairGive(caster, act, who, at, r, power * f, map);
+            if (aspect != None) AspectGive(who, act.verb, power * f);
             foreach (Pawn p in who)
             {
                 if (per > 0f) HealInjuries(p, per * power * f);
@@ -1060,31 +1069,40 @@ namespace Avir.Magic
                 Spell("TEST Life round fire (mends whom it touches)", "", "Fire:Release"),
                 Spell("TEST Life box: beam drinks the foes, then a burst mends own", "", "None:Beam,Drain|Barrier,Barrier", "None:Release,Restore,Breadth|Barrier,Barrier,Thread"),
                 Spell("TEST Life box: fire inside first, then Life's own runes", "Release,Drain,Breadth|Barrier,Barrier", "Fire:Release"),
-                Spell("TEST Wild Flame: living bombs in a crowd (foes only)", "Release,Drain,Breadth|Barrier,Barrier", "Fire:Release"),
-                Spell("TEST Wild Flame: bushes that burst", "Growth,Drain,Breadth", "Fire:Release"),
-                Spell("TEST Wild Flame: set them all off", "Purge,Drain,Breadth", "Fire:Release"),
-                Spell("TEST Wild Flame: smouldering hearts (own only)", "Release,Restore,Breadth|Barrier,Barrier,Thread", "Fire:Release"),
-                Spell("TEST Blood: drink and paralyse", "Release,Drain,Breadth|Barrier,Barrier", "Water:Hold"),
-                Spell("TEST Blood: hold the blood still", "Hold,Drain", "Water:Hold"),
-                Spell("TEST Blood: throw up / press down", "Lift,Drain|Lift,Thread,Drain", "Water:Hold"),
-                Spell("TEST Blood: drag a foe by its blood", "Step,Drain", "Water:Hold"),
-                Spell("TEST Blood: give back the blood (own only)", "Release,Restore,Breadth|Barrier,Barrier,Thread", "Water:Hold"),
-                Spell("TEST Emerald: stone wave", "Release,Drain,Breadth", "Earth:Hold"),
-                Spell("TEST Emerald: one to stone fast", "Hold,Drain,Amplify,Amplify", "Earth:Hold"),
-                Spell("TEST Emerald: shatter the crusts", "Purge,Drain,Breadth", "Earth:Hold"),
-                Spell("TEST Emerald: stone cocoon", "Hold,Restore", "Earth:Hold"),
-                Spell("TEST Pestilence: drink the sicknesses", "Release,Drain,Breadth", "Air:Release"),
-                Spell("TEST Pestilence: fertile poison fog", "Release,Restore,Breadth", "Air:Release"),
-                Spell("TEST Pestilence: lingering fog", "Hold,Restore", "Air:Release"),
+                Spell("TEST Wild Flame: living bombs in a crowd (foes only)", "Release,Drain,Breadth|Barrier,Barrier", "Fire:Release", "Fire:Release"),
+                Spell("TEST Wild Flame: bushes that burst", "Growth,Drain,Breadth", "Fire:Release", "Fire:Release"),
+                Spell("TEST Wild Flame: set them all off", "Purge,Drain,Breadth", "Fire:Release", "Fire:Release"),
+                Spell("TEST Wild Flame: smouldering hearts (own only)", "Release,Restore,Breadth|Barrier,Barrier,Thread", "Fire:Release", "Fire:Release"),
+                Spell("TEST Blood: drink and paralyse", "Release,Drain,Breadth|Barrier,Barrier", "Water:Hold", "Water:Hold"),
+                Spell("TEST Blood: hold the blood still", "Hold,Drain", "Water:Hold", "Water:Hold"),
+                Spell("TEST Blood: throw up / press down", "Lift,Drain|Lift,Thread,Drain", "Water:Hold", "Water:Hold"),
+                Spell("TEST Blood: drag a foe by its blood", "Step,Drain", "Water:Hold", "Water:Hold"),
+                Spell("TEST Blood: give back the blood (own only)", "Release,Restore,Breadth|Barrier,Barrier,Thread", "Water:Hold", "Water:Hold"),
+                Spell("TEST Emerald: stone wave", "Release,Drain,Breadth", "Earth:Hold", "Earth:Hold"),
+                Spell("TEST Emerald: one to stone fast", "Hold,Drain,Amplify,Amplify", "Earth:Hold", "Earth:Hold"),
+                Spell("TEST Emerald: shatter the crusts", "Purge,Drain,Breadth", "Earth:Hold", "Earth:Hold"),
+                Spell("TEST Emerald: stone cocoon", "Hold,Restore", "Earth:Hold", "Earth:Hold"),
+                Spell("TEST Pestilence: drink the sicknesses", "Release,Drain,Breadth", "Air:Release", "Air:Release"),
+                Spell("TEST Pestilence: fertile poison fog", "Release,Restore,Breadth", "Air:Release", "Air:Release"),
+                Spell("TEST Pestilence: lingering fog", "Hold,Restore", "Air:Release", "Air:Release"),
                 Spell("TEST Life aura: withering round the mage, foes only", "Aura,Anchor,Breadth|Release,Drain|Barrier,Barrier"),
                 Spell("TEST Life aura: mending round the mage, own only", "Aura,Anchor|Release,Restore|Barrier,Barrier,Thread"),
-                Spell("TEST Emerald aura: stone circle", "Aura,Anchor|Release,Drain|Barrier,Barrier", "Earth:Hold"),
+                Spell("TEST Emerald aura: stone circle", "Aura,Anchor|Release,Drain|Barrier,Barrier", "Earth:Hold", "Earth:Hold"),
                 Spell("TEST Life: the dead into fertile earth", "Release,Drain,Transmute,Breadth"),
                 Spell("TEST Life: quicken the ground", "Release,Restore,Transmute,Breadth"),
-                Spell("TEST Emerald: plants into emerald sculptures", "Release,Drain,Transmute,Breadth", "Earth:Hold"),
-                Spell("TEST Emerald: sculptures back to life", "Release,Restore,Transmute,Breadth", "Earth:Hold"),
-                Spell("TEST Blood: stone into water (for good)", "Release,Restore,Transmute,Breadth", "Water:Hold"),
-                Spell("TEST Blood: water into stone (for good)", "Release,Drain,Transmute,Breadth", "Water:Hold"),
+                Spell("TEST Emerald: plants into emerald sculptures", "Release,Drain,Transmute,Breadth", "Earth:Hold", "Earth:Hold"),
+                Spell("TEST Emerald: sculptures back to life", "Release,Restore,Transmute,Breadth", "Earth:Hold", "Earth:Hold"),
+                Spell("TEST Blood: stone into water (for good)", "Release,Restore,Transmute,Breadth", "Water:Hold", "Water:Hold"),
+                Spell("TEST Blood: water into stone (for good)", "Release,Drain,Transmute,Breadth", "Water:Hold", "Water:Hold"),
+                Spell("TEST Warmth: chill the crowd, put out the fire (everyone)", "Release,Drain,Breadth", "Fire:Release"),
+                Spell("TEST Warmth: torpor - the held sleep", "Hold,Drain", "Fire:Release"),
+                Spell("TEST Warmth: warm our own", "Release,Restore,Breadth|Barrier,Barrier,Thread", "Fire:Release"),
+                Spell("TEST Sap: dry the foes", "Release,Drain,Breadth|Barrier,Barrier", "Water:Release"),
+                Spell("TEST Sap: water cocoon", "Hold,Restore", "Water:Release"),
+                Spell("TEST Frame: soften and fell", "Hold,Drain", "Earth:Release"),
+                Spell("TEST Frame: harden our own, splint", "Hold,Restore", "Earth:Release"),
+                Spell("TEST Breath: take the breath (foes)", "Beam,Drain|Barrier,Barrier", "Air:Release"),
+                Spell("TEST Breath: air bubble (own)", "Hold,Restore|Barrier,Barrier,Thread", "Air:Release"),
             };
             foreach (RitualSchema s in list) core.Book.spells.Add(s);
             Messages.Message(list.Count + " test spells of Life written into " + p.LabelShort + "'s book.", MessageTypeDefOf.NeutralEvent, false);

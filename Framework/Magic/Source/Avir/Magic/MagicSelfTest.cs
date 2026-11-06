@@ -107,9 +107,14 @@ namespace Avir.Magic
                 box.inner.Add(C(Name(k)));
                 var root = new SpellCircle { binding = true };
                 root.inner.Add(box);
-                RuneKind got = LifeMagic.PairOf(root, box);
-                Check("life + " + k, got == k, got.ToString());
+                // one circle: the wide meeting (Warmth, Sap, Frame, Breath); two: the deep one (Fix165)
+                RuneKind wide = LifeMagic.AspectOf(root, box), deep0 = LifeMagic.PairOf(root, box);
+                Check("life + " + k + " = " + LifeMagic.AspectName(k), wide == k && deep0 == LifeMagic.None, "wide " + wide + ", deep " + deep0);
                 Explains("life + " + k, root);
+                box.inner.Add(C(Name(k)));
+                RuneKind deep = LifeMagic.PairOf(root, box);
+                Check("life + " + k + " + " + k + " = " + LifeMagic.PairName(k), deep == k && LifeMagic.AspectOf(root, box) == LifeMagic.None, "deep " + deep);
+                Explains("life + " + k + " + " + k, root);
             }
 
             var sb = new StringBuilder();

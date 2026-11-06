@@ -118,7 +118,7 @@ namespace Avir.Magic
                 if (LifeMagic.IsLink(root, c))
                 {
                     LifeMagic.PairOfText = LifeMagic.PairOf(root, c.Great ? c : root.ParentOf(c));
-                    string pn = LifeMagic.PairName(LifeMagic.PairOfText);
+                    string pn = LifeMagic.PairName(LifeMagic.PairOfText) ?? LifeMagic.AspectName(LifeMagic.AspectOf(root, c.Great ? c : root.ParentOf(c)));
                     parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + (k > 0 ? "then: " : "") + (c.Great ? "" : "a small circle of ") + (pn != null ? pn + " - " : "") + LifeText(c));
                     continue;
                 }
@@ -156,6 +156,8 @@ namespace Avir.Magic
             if (Wraps(root, RuneKind.Life)) e.extras.Insert(0, new KeyValuePair<string, string>("Life Wraps", "Friends within the spell's reach are mended as it strikes - out of the store of life."));
             foreach (RuneKind lk in LifeMagic.Circles(root).Select(g => LifeMagic.PairOf(root, g)).Where(k => k != LifeMagic.None).Distinct())
                 e.extras.Insert(0, new KeyValuePair<string, string>(LifeMagic.PairName(lk), LifeMagic.PairText(lk)));
+            foreach (RuneKind la in LifeMagic.Circles(root).Select(g => LifeMagic.AspectOf(root, g)).Where(k => k != LifeMagic.None).Distinct())
+                e.extras.Insert(0, new KeyValuePair<string, string>(LifeMagic.AspectName(la), LifeMagic.AspectText(la)));
             if (LifeMagic.Circles(root).Any())
             {
                 e.extras.Insert(0, new KeyValuePair<string, string>("Symbiosis", "Life makes nothing; it only moves. Withering fills the store of life, the other verbs give it away - with the store empty they give nothing."));
