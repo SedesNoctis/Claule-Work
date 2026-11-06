@@ -233,8 +233,8 @@ namespace Avir
             list.CheckboxLabeled("Arcane works in detail", ref o.magicWorkDetail,
                 "The arcane works split as finely as Complex Jobs splits the ordinary ones (smooth apart from build, stone cut apart from mining, smelting apart from craft, the mortuary apart from hauling, cooking apart from the stores). Off - merged as the vanilla work types.");
             list.CheckboxLabeled("Hurricane winds by Atmosphere Overhaul", ref o.atmoWind,
-                "With Atmosphere Overhaul loaded, the hurricane and its whirls blow that mod's own wind, and its wind throws, knocks down and breaks with its own animations. Off - our own throws, as without it.");
-            list.Label("Strength of magic wind in Atmosphere Overhaul: x" + o.atmoWindScale.ToString("0.0"));
+                "With Atmosphere Overhaul loaded, the hurricane and its whirls blow that mod's own wind, and its wind throws, knocks down and breaks with its own animations. Off (or without it) - our own wind: things fly tumbling, people stagger, fall and are thrown, light walls and doors break, plants snap.");
+            list.Label("Strength of magic wind (ours, or Atmosphere Overhaul's): x" + o.atmoWindScale.ToString("0.0"));
             o.atmoWindScale = list.Slider(o.atmoWindScale, 0.3f, 3f);
             list.CheckboxLabeled("Painted mire", ref o.paintedMire,
                 "The mire of a bog spell drawn by the new painted pictures. Off - the old plain stand-in. Patches already lying change when the map is reloaded.");
