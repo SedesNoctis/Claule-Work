@@ -107,6 +107,8 @@ namespace Avir.Magic
                     // a hurricane's wind (or a storm's, 45+) tears off a built roof at its edge (Fix180)
                     if (s >= 45f && (g.charged || g.weather) && c.Roofed(map)) Roof(c, s, g);
                     if (g.weather && c.Roofed(map)) continue;
+                    // under a shelter tree's canopy (Fix181): the great trees make a zone the wind hardly enters
+                    if (Canopy(c, now, out float canopy)) { s *= canopy; if (s < 12f) continue; }
                     if (g.shape != Shape.Round)
                     {
                         // the lee (Fix180): looking up to three cells upwind - a solid wall breaks the wind (a third gets
@@ -167,6 +169,27 @@ namespace Avir.Magic
             FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.8f, new Color(0.65f, 0.6f, 0.55f, 0.8f));
             foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList()) p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Rand.Range(3f, 8f), 0f, -1f, g.owner));
             if (Prefs.DevMode) Log.Message("[Avir wind] roof torn off at " + c + " (" + s.ToString("0") + " m/s)");
+        }
+
+        // the shelter trees' canopies on this map, looked up again every few seconds
+        private Dictionary<IntVec3, float> canopies = new Dictionary<IntVec3, float>();
+        private int canopiesAt = -9999;
+
+        /// <summary>Is the cell under a grown shelter tree's canopy? It lets through 40% of the wind (a great tree 30%) -
+        /// open or closed, by day and by night: the trunk and the wings stand all the same.</summary>
+        private bool Canopy(IntVec3 c, int now, out float factor)
+        {
+            if (now - canopiesAt > 250)
+            {
+                canopiesAt = now; canopies.Clear();
+                foreach (Avir.North.Plant_ShelterTree t in map.listerThings.ThingsInGroup(ThingRequestGroup.Plant).OfType<Avir.North.Plant_ShelterTree>())
+                {
+                    if (!t.CastsShade) continue;
+                    float f = t.def.defName.Contains("Great") ? 0.3f : 0.4f;
+                    foreach (IntVec3 x in t.CanopyCells()) if (!canopies.TryGetValue(x, out float old) || f < old) canopies[x] = f;
+                }
+            }
+            return canopies.TryGetValue(c, out factor);
         }
 
         private static bool AvirBodyIs(Pawn p) { try { return Avir.AvirBody.IsAvir(p); } catch { return false; } }
@@ -235,8 +258,14 @@ namespace Avir.Magic
                 {
                     // the green bends; the weak snap, trees take the load
                     if (!pl.def.plant.IsTree && pl.def.plant.harvestYield <= 0f && Rand.Chance(0.25f)) pl.Destroy(DestroyMode.KillFinalize);
-                    // a tree holds by its size: a sapling snaps at ~40 m/s, a grown tree only in a hurricane's wind (~60+)
-                    else if (pl.def.plant.IsTree && s >= 38f + 25f * pl.Growth) pl.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (s - 36f - 25f * pl.Growth) * 0.6f, 0f, -1f, g.owner));
+                    // a tree holds by its size and weight: a sapling snaps at ~40 m/s, a grown tree only in a hurricane's wind
+                    // (~60+), a big one later still; a shelter tree is rooted like a hill - only past 95 m/s (Fix181)
+                    else if (pl.def.plant.IsTree)
+                    {
+                        float big = Mathf.Clamp((pl.def.graphicData?.drawSize.x ?? 1.5f) - 1.5f, 0f, 4f) * 6f;
+                        float holds = pl is Avir.North.Plant_ShelterTree ? 95f : 38f + 25f * pl.Growth + big;
+                        if (s >= holds) pl.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (s - holds + 2f) * 0.6f, 0f, -1f, g.owner));
+                    }
                     continue;
                 }
                 if (t is Building b && b.def.useHitPoints && s >= 30f)
