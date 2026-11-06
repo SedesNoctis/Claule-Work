@@ -143,6 +143,9 @@ namespace Avir.Magic
         /// and the stage from which the caster takes up the works of each school.</summary>
         public Dictionary<string, int> arcanePrio = new Dictionary<string, int>();
         public HashSet<string> magicOnly = new HashSet<string>();
+        /// <summary>Ordinary works the player took "M" off: not taken up again by itself. And the last M state (hand/magic).</summary>
+        public HashSet<string> magicDeclined = new HashSet<string>();
+        public string mState;
         public Dictionary<string, int> workFrom = new Dictionary<string, int>();
         public bool HeldByGreatness(WorkTypeDef w) => w != null && heldWork.ContainsKey(w);
         public float Store(RuneKind k) => k == LifeMagic.None ? vita : stores.TryGetValue(k, out float f) ? f : 0f;
@@ -234,6 +237,8 @@ namespace Avir.Magic
             Scribe_Collections.Look(ref arcanePrio, "arcanePrio", LookMode.Value, LookMode.Value);
             Scribe_Collections.Look(ref magicOnly, "magicOnly", LookMode.Value);
             Scribe_Collections.Look(ref workFrom, "workFrom", LookMode.Value, LookMode.Value);
+            Scribe_Collections.Look(ref magicDeclined, "magicDeclined", LookMode.Value);
+            if (magicDeclined == null) magicDeclined = new HashSet<string>();
             if (arcanePrio == null) arcanePrio = new Dictionary<string, int>();
             if (magicOnly == null) magicOnly = new HashSet<string>();
             if (workFrom == null) workFrom = new Dictionary<string, int>();
@@ -285,6 +290,7 @@ namespace Avir.Magic
             if (bloodMage) LifeMagic.BloodMend(this, hours);
             if (pestMage) LifeMagic.PestImmune(this);
             LifeMagic.Shift(this);
+            if (pawn.Faction == Faction.OfPlayer) ArcaneWork.Tick(this);
             if (StoreAll > 0f || pawn.health.hediffSet.HasHediff(DefDatabase<HediffDef>.GetNamedSilentFail("Avir_VitaFlow") ?? MagicDefOf.Avir_ArcaneGreatness)) LifeMagic.Fade(this, hours);
             // the map's stream seeps into a mage a little on its own
             Map m = pawn.MapHeld;

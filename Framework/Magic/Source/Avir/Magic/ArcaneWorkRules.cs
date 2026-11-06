@@ -66,9 +66,56 @@ namespace Avir.Magic
         public static bool MagicOnly(Hediff_ArcaneCore c, WorkTypeDef w) => c != null && w != null && OfVanilla(w) != null && (c.magicOnly.Contains(w.defName) || c.HeldByGreatness(w));
         public static void SetMagicOnly(Hediff_ArcaneCore c, WorkTypeDef w, bool on)
         {
-            if (on) { c.magicOnly.Add(w.defName); c.pawn.workSettings?.SetPriority(w, 0); Group g = OfVanilla(w); if (Prio(c, g) == 0) c.arcanePrio[g.key] = 3; EnsureCharms(c, g); }
-            else c.magicOnly.Remove(w.defName);
+            if (on)
+            {
+                c.magicOnly.Add(w.defName); c.magicDeclined.Remove(w.defName);
+                // the hands stay ready for when the Arcana runs low (Fix153): the work keeps a priority of its own
+                if (c.pawn.workSettings != null && c.pawn.workSettings.GetPriority(w) == 0 && !c.pawn.WorkTypeIsDisabled(w)) c.pawn.workSettings.SetPriority(w, Find.PlaySettings.useWorkPriorities ? 4 : 3);
+                Group g = OfVanilla(w); if (Prio(c, g) == 0) c.arcanePrio[g.key] = 3; EnsureCharms(c, g);
+            }
+            else { c.magicOnly.Remove(w.defName); c.magicDeclined.Add(w.defName); }
             Dirty(c.pawn);
+        }
+
+        /// <summary>Good hands: the skills of the work at 6 and above (on average).</summary>
+        public const float HandSkill = 6f;
+        public static float Hands(Pawn p, WorkTypeDef w) => w == null || w.relevantSkills.NullOrEmpty() || p.skills == null ? 10f : (float)w.relevantSkills.Average(s => p.skills.GetSkill(s)?.Level ?? 0);
+
+        /// <summary>Can the caster do this group by magic right now: something in it he may do, and the Arcana above its
+        /// lower mark (the author, Fix153: rather than drain the core below its band, a caster with good hands works by hand).</summary>
+        public static bool MagicNow(Hediff_ArcaneCore c, Group g)
+        {
+            if (c == null || g == null) return false;
+            c.Band(out float lo, out _);
+            if (c.Fill <= lo) return false;
+            return g.givers.Any(n => { var ks = KindsOf(n); return ks != null && ks.All(k => MagicWork.Knows(c, k)) && StageOk(c, ks, Works2.All.ContainsKey(n)); });
+        }
+
+        /// <summary>Does the caster work this ordinary work by hand now? Not "M" - as usual; "M" - only while magic cannot,
+        /// and only with good hands; forbidden by greatness - never by hand.</summary>
+        public static bool HandsNow(Hediff_ArcaneCore c, WorkTypeDef w)
+        {
+            if (!MagicOnly(c, w)) return true;
+            if (c.HeldByGreatness(w)) return false;
+            return !MagicNow(c, OfVanilla(w)) && Hands(c.pawn, w) >= HandSkill;
+        }
+
+        /// <summary>Hourly: the "M" state follows the Arcana (the work lists are made again when it turns), and - if the
+        /// player allows it (on by default) - a caster with poor hands takes up "M" by himself where magic serves him.</summary>
+        public static void Tick(Hediff_ArcaneCore c)
+        {
+            Pawn p = c.pawn;
+            if (p?.workSettings == null || !p.workSettings.EverWork) return;
+            if (AvirMod.Settings == null || AvirMod.Settings.magicAutoM)
+                foreach (Group g in Groups)
+                    foreach (string wn in g.vanilla)
+                    {
+                        WorkTypeDef w = DefDatabase<WorkTypeDef>.GetNamedSilentFail(wn);
+                        if (w == null || c.magicOnly.Contains(wn) || c.magicDeclined.Contains(wn) || p.WorkTypeIsDisabled(w) || p.workSettings.GetPriority(w) == 0) continue;
+                        if (Hands(p, w) < HandSkill && MagicNow(c, g)) SetMagicOnly(c, w, true);
+                    }
+            string state = string.Join(",", DefDatabase<WorkTypeDef>.AllDefsListForReading.Where(w => MagicOnly(c, w)).Select(w => w.defName + (HandsNow(c, w) ? "h" : "m")));
+            if (state != c.mState) { c.mState = state; Dirty(p); }
         }
 
         private static readonly AccessTools.FieldRef<Pawn_WorkSettings, bool> dirty = AccessTools.FieldRefAccess<Pawn_WorkSettings, bool>("workGiversDirty");
@@ -233,10 +280,14 @@ namespace Avir.Magic
                 bool isEmerg = list == emerg(__instance);
                 list.RemoveAll(w => w.def.workType == magic);
                 if (c == null || p.WorkTypeIsDisabled(magic)) continue;
+                list.RemoveAll(w => w.def.workType != null && ArcaneWork.MagicOnly(c, w.def.workType) && !ArcaneWork.HandsNow(c, w.def.workType));
                 foreach (WorkGiverDef d in magic.workGiversByPriority.Where(d => !isEmerg || d.emergency))
                 {
-                    int pr = ArcaneWork.Prio(c, ArcaneWork.OfGiver(d));
+                    ArcaneWork.Group g = ArcaneWork.OfGiver(d);
+                    int pr = ArcaneWork.Prio(c, g);
                     if (pr <= 0) continue;
+                    // a group standing for an "M" work: not while the Arcana is low (the hands take over, if good)
+                    if (g != null && g.vanilla.Any(n => c.magicOnly.Contains(n)) && !ArcaneWork.MagicNow(c, g)) continue;
                     int at = list.FindIndex(w => w.def.workType != magic && __instance.GetPriority(w.def.workType) > pr);
                     if (at < 0) list.Add(d.Worker); else list.Insert(at, d.Worker);
                 }
@@ -266,13 +317,13 @@ namespace Avir.Magic
                 Text.Font = GameFont.Small; Text.Anchor = TextAnchor.MiddleCenter; GUI.color = new Color(0.85f, 0.9f, 1f);
                 Widgets.Label(box, "M");
                 GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft;
-                TooltipHandler.TipRegion(box, "By magic only: " + g.desc + "\nNever by hand; if magic cannot do it now, it is not done. The order among the arcane works - in the Arcane works tab."
-                    + (held ? "\nGreatness forbids this work by hand - by magic it may." : "\nClick: back to off; right-click: back to by hand."));
+                TooltipHandler.TipRegion(box, "By magic: " + g.desc + "\nWhile the Arcana is above its lower mark the work is done by magic; below it - by hand, if the hands are good (skill 6+), else not at all. The order among the arcane works - in the Arcane works tab."
+                    + (held ? "\nGreatness forbids this work by hand: only by magic, and this \"M\" cannot be taken off." : "\nNow: " + (ArcaneWork.HandsNow(c, w) ? "by hand" : "by magic") + ".\nClick: off; right-click: back to by hand only."));
                 if (!held && Event.current.type == EventType.MouseDown && Mouse.IsOver(box))
                 {
                     bool right = Event.current.button == 1;
                     ArcaneWork.SetMagicOnly(c, w, false);
-                    if (right) pawn.workSettings.SetPriority(w, Find.PlaySettings.useWorkPriorities ? 4 : 3);
+                    pawn.workSettings.SetPriority(w, right ? (Find.PlaySettings.useWorkPriorities ? 4 : 3) : 0);
                     SoundDefOf.Tick_Low.PlayOneShotOnCamera();
                     Event.current.Use();
                 }
@@ -382,6 +433,15 @@ namespace Avir.Magic
     /// <summary>Casters meditate on their own in free time, to fill the Arcana up to its white mark (the author, Fix152).</summary>
     public class JoyGiver_ArcaneMeditate : JoyGiver
     {
+        /// <summary>The emptier the core, the likelier: with no Arcana it is among the first things a caster turns to.</summary>
+        public override float GetChance(Pawn pawn)
+        {
+            Hediff_ArcaneCore c = AvirMagic.On ? Mages.Core(pawn) : null;
+            if (c == null || c.arcana >= c.target * c.Capacity - 1f) return 0f;
+            float lack = 1f - Mathf.Clamp01(c.Fill / Mathf.Max(0.05f, c.target));
+            return base.GetChance(pawn) * (1f + 14f * lack * lack);
+        }
+
         public override Job TryGiveJob(Pawn pawn)
         {
             if (!AvirMagic.On) return null;
