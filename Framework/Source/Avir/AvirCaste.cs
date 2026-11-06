@@ -326,3 +326,26 @@ namespace Avir
         }
     }
 }
+
+namespace Avir
+{
+    /// <summary>Setting an Avir's caste by hand (the author: Arlie was born the central one, an only chick - and must be so).
+    /// Sets the caste she was born to, takes away any apostasy, clears the foreign experience.</summary>
+    public static class AvirCasteDev
+    {
+        [LudeonTK.DebugAction("Avir", "Avir: set caste of birth...", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void SetCaste(Pawn p)
+        {
+            if (!AvirCasteUtility.HasCaste(p)) { Messages.Message(p.LabelShortCap + " has no caste (not an Avir, or a harpy).", MessageTypeDefOf.RejectInput, false); return; }
+            var opts = new[] { AvirCaste.Elder, AvirCaste.Central, AvirCaste.Younger }.Select(c => new LudeonTK.DebugMenuOption(AvirCasteUtility.Label(c) + " caste", LudeonTK.DebugMenuOptionMode.Action, () =>
+            {
+                Hediff_AvirCaste h = AvirCasteUtility.Assign(p, c);
+                if (h == null) return;
+                h.caste = c; h.bornCaste = c; h.apostate = false;
+                for (int i = 0; i < h.foreign.Length; i++) h.foreign[i] = 0f;
+                Messages.Message(p.LabelShortCap + " was born to the " + AvirCasteUtility.Label(c) + " caste.", p, MessageTypeDefOf.NeutralEvent, false);
+            })).ToList();
+            Find.WindowStack.Add(new LudeonTK.Dialog_DebugOptionListLister(opts));
+        }
+    }
+}

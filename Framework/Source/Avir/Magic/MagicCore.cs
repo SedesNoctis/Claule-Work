@@ -1244,7 +1244,8 @@ namespace Avir.Magic
 namespace Avir.Magic
 {
     /// <summary>A person long under living magic takes it in: every ritual stood in leaves its measure; past a threshold,
-    /// each further one may make a mage of them (learned). The Avir and the Singers have their own magic.</summary>
+    /// each further one may wake magic in them - a SORCERER (the author, Fix157): the sorcerer gains magic without trying,
+    /// the wizard learns it. The Avir and the Singers have their own magic.</summary>
     public static class MagicExposure
     {
         public const float Threshold = 1500f, ChanceAfter = 0.3f;
@@ -1255,10 +1256,10 @@ namespace Avir.Magic
             if (p.genes?.Xenotype?.defName?.StartsWith("Avir") == true) return;
             float total = GameComponent_ArcaneMemory.Expose(p, amount);
             if (total < Threshold || !Verse.Rand.Chance(ChanceAfter)) return;
-            Mages.Gift(p, Mages.Learned, 1, 0.3f);
+            Mages.Gift(p, Mages.Born, 1, 0.3f);
             if (p.Faction == RimWorld.Faction.OfPlayer)
-                Find.LetterStack.ReceiveLetter("Magic taken in: " + p.LabelShort,
-                    p.LabelShortCap + " has stood in living magic long enough to take it in. " + p.LabelShortCap + " is a wizard now - an arcane core has formed in the brain, and its Arcana must be kept within its edges.",
+                Find.LetterStack.ReceiveLetter("Magic woken: " + p.LabelShort,
+                    p.LabelShortCap + " has stood in living magic long enough for it to wake in them, unasked. " + p.LabelShortCap + " is a sorcerer now - an arcane core has formed in the brain, and its Arcana must be kept within its edges.",
                     RimWorld.LetterDefOf.PositiveEvent, p);
         }
     }
