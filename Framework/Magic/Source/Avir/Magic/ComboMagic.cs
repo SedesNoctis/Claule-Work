@@ -364,6 +364,8 @@ namespace Avir.Magic
                 {
                     PartialKind pk = Partials.Of(k, v.kind);
                     if (pk == PartialKind.Thunder) { Partials.Thunder(caster, map, cells, Center(cells), power * amp); continue; }
+                    if (pk == PartialKind.Whirl) { Partials.Spout(caster, map, Center(cells), Spread(cells), power * amp); continue; }
+                    if (pk == PartialKind.Veil) { Partials.Veil(caster, map, cells, power * amp, Mathf.RoundToInt(2400f * power * (1 + rv.anchor))); continue; }
                 }
                 switch (v.kind)
                 {

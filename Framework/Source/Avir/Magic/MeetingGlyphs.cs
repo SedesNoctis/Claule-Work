@@ -37,7 +37,7 @@ namespace Avir.Magic
             if (Combos.Pairs(root, false).TryGetValue(c, out ComboKind k) && k != ComboKind.None)
             {
                 // a partial meeting shows its own rune (Thunder for dust with a Focus beside Release)
-                foreach (RuneKind v in Partials.FocusedVerbs(new RitualSchema { rings = c.sections })) { PartialKind pk = Partials.Of(k, v); if (pk != PartialKind.None) return pk.ToString(); }
+                foreach (RuneKind v in Partials.FocusedVerbs(new RitualSchema { rings = c.sections })) { PartialKind pk = Partials.Of(k, v); if (pk != PartialKind.None && Get(pk.ToString(), false) != null) return pk.ToString(); }
                 return k.ToString();
             }
             return null;

@@ -538,6 +538,18 @@ namespace Avir.Magic
             fields.Add(new Fld { y = SecondKind.Hurricane, center = at.ToVector3Shifted(), dir = Quaternion.AngleAxis(a, Vector3.up) * Vector3.forward, speed = 0.7f, cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(at, 2f, true).Where(x => x.InBounds(map))), until = Find.TickManager.TicksGame + ticks, owner = owner, power = power });
         }
 
+        /// <summary>A whirl wanders (shared with the sand spout, Fix184): it turns this way and that, and is turned back by
+        /// walls and the map's edge. lure - a place it leans towards, if any.</summary>
+        public static void Wander(Map map, ref Vector3 center, ref Vector3 dir, float speed, IntVec3 lure = default)
+        {
+            dir = Quaternion.AngleAxis(Rand.Range(-50f, 50f), Vector3.up) * dir;
+            if (lure.IsValid && lure != default(IntVec3)) { Vector3 to = lure.ToVector3Shifted() - center; to.y = 0f; if (to.sqrMagnitude > 0.5f) dir = Vector3.Slerp(dir, to.normalized, 0.5f).normalized; }
+            Vector3 next = center + dir * speed;
+            IntVec3 nc = next.ToIntVec3();
+            if (!nc.InBounds(map) || nc.Impassable(map)) { dir = -dir; next = center + dir * speed; nc = next.ToIntVec3(); }
+            if (nc.InBounds(map) && !nc.Impassable(map)) center = next;
+        }
+
         /// <summary>Spun round: thrown a little along the whirl's turning, not out of it.</summary>
         private void Spin(Fld f, Pawn p)
         {
@@ -583,11 +595,7 @@ namespace Avir.Magic
                 if (f.y == SecondKind.Hurricane && f.speed > 0f)
                 {
                     // a whirl wanders: it turns this way and that, and is turned back by walls and the map's edge
-                    f.dir = Quaternion.AngleAxis(Rand.Range(-50f, 50f), Vector3.up) * f.dir;
-                    Vector3 next = f.center + f.dir * f.speed;
-                    IntVec3 nc = next.ToIntVec3();
-                    if (!nc.InBounds(map) || nc.Impassable(map)) { f.dir = -f.dir; next = f.center + f.dir * f.speed; nc = next.ToIntVec3(); }
-                    if (nc.InBounds(map)) f.center = next;
+                    Wander(map, ref f.center, ref f.dir, f.speed);
                     f.cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(f.center.ToIntVec3(), 2f, true).Where(x => x.InBounds(map)));
 
                     foreach (IntVec3 x in f.cells.InRandomOrder().Take(3)) FleckMaker.ThrowDustPuffThick(x.ToVector3Shifted(), map, 1.1f, new Color(0.8f, 0.86f, 0.92f, 0.6f));
