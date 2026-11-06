@@ -356,6 +356,7 @@ namespace Avir.Magic
                         p.stances?.stunner?.StunFor(40, g.owner, false, false);
                         FleckMaker.ThrowLightningGlow(p.DrawPos, map, 1.2f);
                         MapComponent_SpellSprites.Put(map, "Storm/Strike", p.DrawPos, 1.4f, 14);
+                        Electricity.Spread(p.Position, map, 0.6f, g.owner, false);   // and runs on (Fix182)
                     }
                 }
         }

@@ -500,6 +500,7 @@ namespace Avir.Magic
             if (p.RaceProps.IsMechanoid) { p.TakeDamage(new DamageInfo(DamageDefOf.EMP, 12f * power, 0f, -1f, by)); return; }
             float metal = b.metalArmour ? 1.5f : 1f, bio = b.bionicLimb ? 1.25f : 1f;
             Burn(p, 6f * power * metal * bio, by);
+            if (p.Spawned) Reactions.Conduct(p.Position, p.Map, by, power * 0.6f);   // the globe's charge runs on (Fix182)
             MagicFx.Stun(p, 60, by);
             if (b.bionicLimb && Rand.Chance(0.5f)) MagicFx.Give(p, H("Avir_Glitched"), 300);
         }

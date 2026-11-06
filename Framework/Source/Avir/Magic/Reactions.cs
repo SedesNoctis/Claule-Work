@@ -111,7 +111,10 @@ namespace Avir.Magic
         /// standing in it (the mage's own side spared).</summary>
         public static void Conduct(IntVec3 from, Map map, Pawn caster, float power)
         {
-            if (map == null || !Wet(from, map)) return;
+            // the charge runs on along all that conducts - water, metal, wires, mechanoids (Electricity, Fix182)
+            if (map == null) return;
+            if (AvirMod.Settings == null || AvirMod.Settings.electricity) { Electricity.Spread(from, map, power, caster, true); return; }
+            if (!Wet(from, map)) return;
             var seen = new HashSet<IntVec3> { from };
             var open = new Queue<IntVec3>(); open.Enqueue(from);
             while (open.Count > 0 && seen.Count < 80)
@@ -121,16 +124,12 @@ namespace Avir.Magic
                     if (!seen.Contains(n) && Wet(n, map)) { seen.Add(n); open.Enqueue(n); }
             }
             foreach (IntVec3 c in seen)
-            {
-                if (Rand.Chance(0.15f)) FleckMaker.ThrowLightningGlow(c.ToVector3Shifted(), map, 0.7f);
-                if (Rand.Chance(0.12f)) MapComponent_SpellSprites.Put(map, "Storm/Bolt_Fork", c.ToVector3Shifted(), 1.6f, 16);
                 foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList())
                 {
                     if (p.Dead || p == caster || (caster != null && !MagicFx.Foe(p, caster))) continue;
                     p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 5f * power, 0f, -1f, caster));
                     if (!p.Dead) MagicFx.Stun(p, 45, caster);
                 }
-            }
         }
 
         /// <summary>How much standing water lies round a point: water spells draw on it (up to +40%).</summary>
