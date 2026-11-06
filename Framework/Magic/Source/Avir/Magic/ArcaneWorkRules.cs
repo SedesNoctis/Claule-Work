@@ -50,7 +50,7 @@ namespace Avir.Magic
             G("Smith", "Smith", "craft", "Making obsidian, firing bricks, honing blades.", new[] { "Avir_2Obsidian", "Avir_2Bricks", "Avir_2Hone" }, "Smithing", "Crafting"),
             G("Haul", "Haul", "haul", "Carrying by the wind - a heap at once.", new[] { "Avir_MagicHaul" }, "Hauling", "FSFHauling", "FSFTransport"),
             G("Mortuary", "Haul", "mortuary", "Cremating the dead.", new[] { "Avir_2Cremate" }, "FSFCremating"),
-            G("Clean", "Clean", "clean", "Washing the floor by water, a room by steam, the home by a rinse; melting snow.", new[] { "Avir_MagicClean", "Avir_ArcaneSteam", "Avir_2Rinse", "Avir_ArcaneMelt" }, "Cleaning"),
+            G("Clean", "Clean", "clean", "Washing the floor by water (a patch), a whole room by steam, a wide area by a rinse; melting snow.", new[] { "Avir_MagicClean", "Avir_ArcaneSteam", "Avir_2Rinse", "Avir_ArcaneMelt" }, "Cleaning"),
             G("Warm", "Warm", "warmth", "Warming rooms by haze, tying heat knots, airing the rooms (only magic does this).", new[] { "Avir_ArcaneWarm", "Avir_2HeatRoom", "Avir_2Vent" }),
             G("Power", "Power", "power", "Charging batteries, driving the wind turbines (only magic does this).", new[] { "Avir_ArcaneCharge", "Avir_2Charge", "Avir_2Wind" }),
             G("Stores", "Stores", "stores", "Drying and preserving the stores (only magic does this).", new[] { "Avir_2Dry", "Avir_2Preserve" }),
@@ -113,7 +113,7 @@ namespace Avir.Magic
             if (c == null || g == null) return false;
             c.Band(out float lo, out _);
             if (c.Fill <= lo) return false;
-            return g.givers.Any(n => { var ks = KindsOf(n); return ks != null && ks.All(k => MagicWork.Knows(c, k)) && StageOk(c, ks, Works2.All.ContainsKey(n)); });
+            return g.givers.Any(n => { var ks = KindsOf(n, c); return ks != null && ks.All(k => MagicWork.Knows(c, k)) && StageOk(c, ks, Works2.All.ContainsKey(n)); });
         }
 
         /// <summary>Does the caster work this ordinary work by hand now? Not "M" - as usual; "M" - only while magic cannot,
@@ -196,7 +196,7 @@ namespace Avir.Magic
         /// <summary>What stands between this caster and a work giver, in words (null - nothing: he can do it).</summary>
         public static string Why(Hediff_ArcaneCore c, string giver)
         {
-            RuneKind[] ks = KindsOf(giver);
+            RuneKind[] ks = KindsOf(giver, c);
             if (ks == null) return "not made for casters yet";
             var unknown = ks.Distinct().Where(k => !MagicWork.Knows(c, k)).ToList();
             if (unknown.Count > 0) return "does not know " + string.Join(", ", unknown.Select(k => k.ToString().ToLower()));
@@ -230,8 +230,8 @@ namespace Avir.Magic
             var can = g.givers.Where(n => CanDo(c, n)).ToList();
             // the box itself tells how he stands to it: red - nothing of it is open to him (off by itself, and on again by
             // itself once it opens); orange - open, but poorly (a Novice outside his own element); green - well
-            int best = can.Count == 0 ? -1 : can.Max(n => Stage(c, KindsOf(n)));
-            bool own = can.Any(n => KindsOf(n).Distinct().Count() == 1 && MageClass.Main(c)?.kind == KindsOf(n)[0]);
+            int best = can.Count == 0 ? -1 : can.Max(n => Stage(c, KindsOf(n, c)));
+            bool own = can.Any(n => KindsOf(n, c).Distinct().Count() == 1 && MageClass.Main(c)?.kind == KindsOf(n, c)[0]);
             Color bg = can.Count == 0 ? new Color(0.45f, 0.1f, 0.08f) : best >= 1 || own ? new Color(0.12f, 0.38f, 0.14f) : new Color(0.6f, 0.32f, 0.04f);
             Widgets.DrawBoxSolid(box, bg);
             Widgets.DrawBox(box);
@@ -254,6 +254,48 @@ namespace Avir.Magic
 
         /// <summary>The school a work giver belongs to (the second order apart).</summary>
         public static string SchoolOf(string giver) { RuneKind[] ks = KindsOf(giver); return ks == null ? null : Works2.All.ContainsKey(giver) ? "Second" : School(ks); }
+        public static IEnumerable<string> SchoolsOf(string giver) => giver == "Avir_ArcaneGrowth" ? new[] { "Water", "Earth" } : new[] { SchoolOf(giver) };
+
+        /// <summary>What each work gives - why it is worth the Arcana (the author asked: why steam, if water washes too?).</summary>
+        public static readonly Dictionary<string, string> Gives = new Dictionary<string, string>
+        {
+            ["Avir_ArcaneFirefight"] = "every fire in a radius goes out at once, from a few cells off - no walking into the flames",
+            ["Avir_MagicTend"] = "tends wounds with no medicine at all; the better the stage, the better the tending",
+            ["Avir_2Purify"] = "takes the food poisoning out of meals and food - no sickness from a careless cook",
+            ["Avir_ArcaneRaiseRock"] = "raises natural rock where marked - walls of real stone of the kind chosen, no materials",
+            ["Avir_2Basalt"] = "draws chunks of basalt up out of the ground - stone for building where there is none",
+            ["Avir_MagicSmooth"] = "smooths floors and walls from afar, much quicker than by hand",
+            ["Avir_ArcaneGrowth"] = "quickens the growth of the marked plants (by water or earth)",
+            ["Avir_ArcaneEnrich"] = "turns poor ground into rich arcane soil for fifteen days",
+            ["Avir_2Water"] = "waters a whole field patch at once - the crops grow faster",
+            ["Avir_2Ash"] = "feeds the ground a little: +20% fertility for ten days",
+            ["Avir_2Clear"] = "a mudflow clears a wide patch of plants at once",
+            ["Avir_ArcaneDrill"] = "draws a sensed ore vein up to the surface - no deep drill",
+            ["Avir_2Quarry"] = "brings rock down as chunks, ready to be cut",
+            ["Avir_2DigClay"] = "draws clay out of the ground",
+            ["Avir_ArcaneCut"] = "cuts stone chunks into blocks with no stonecutter's table",
+            ["Avir_ArcaneSmelt"] = "smelts slag into steel with no smelter and no power",
+            ["Avir_2SmeltItems"] = "smelts the marked things down to their metal",
+            ["Avir_2Obsidian"] = "quenches magma into obsidian - sharp black glass for blades",
+            ["Avir_2Bricks"] = "fires stone into bricks",
+            ["Avir_2Hone"] = "hones a colonist's blades - sharper for a day",
+            ["Avir_MagicHaul"] = "carries a whole heap to the stockpile at once, from afar",
+            ["Avir_2Cremate"] = "burns the dead where they lie - no crematorium, no hauling",
+            ["Avir_MagicClean"] = "washes all the filth round a spot at once (about 4 cells round)",
+            ["Avir_ArcaneSteam"] = "washes a WHOLE ROOM at once - better than water where filth has piled up indoors (taken only for a room with 5+ filth)",
+            ["Avir_2Rinse"] = "a whirl of rain rinses a large dirty area at once (taken only where 8+ filth lies close)",
+            ["Avir_ArcaneMelt"] = "melts the snow off paths and fields",
+            ["Avir_ArcaneWarm"] = "warms a cold room for hours - no heater, no fuel",
+            ["Avir_2HeatRoom"] = "ties a heat knot - a room stays warm for ten hours",
+            ["Avir_2Vent"] = "airs a room: clears the gas and cools it if overheated",
+            ["Avir_ArcaneCharge"] = "charges batteries by a storm",
+            ["Avir_2Charge"] = "charges the batteries harder (ball lightning)",
+            ["Avir_2Wind"] = "drives the wind turbines at full even in still air",
+            ["Avir_2Dry"] = "dries the stores - rot is set back",
+            ["Avir_2Preserve"] = "keeps stores and corpses on the edge of rotting from rotting",
+            ["Avir_ArcaneWater"] = "turns marked stone into water for good (Blood)",
+            ["Avir_ArcaneStone"] = "turns marked water into stone",
+        };
 
         /// <summary>How the caster stands to a set of elements: 2 - well (all his own or past Novice), 1 - partly (a meeting
         /// with a poor part), 0 - poorly.</summary>
@@ -264,7 +306,7 @@ namespace Avir.Magic
             return good == ks.Length ? 2 : good == 0 ? 0 : 1;
         }
         // strong enough on the parchment (the author asked for it)
-        public static readonly Color Good = new Color(0.05f, 0.38f, 0.08f), Partly = new Color(0.7f, 0.33f, 0f), Poor = new Color(0.62f, 0.06f, 0.04f);
+        public static readonly Color Good = new Color(0.05f, 0.38f, 0.08f), Partly = new Color(0.55f, 0.22f, 0f), Poor = new Color(0.62f, 0.06f, 0.04f);
         public static Color StandingColor(int st) => st == 2 ? Good : st == 1 ? Partly : Poor;
 
         public static string Label(string giver) => DefDatabase<WorkGiverDef>.GetNamedSilentFail(giver)?.label ?? giver;
@@ -305,8 +347,10 @@ namespace Avir.Magic
         public const string SelfMade = "self-made";
 
         /// <summary>The elements a work giver needs.</summary>
-        public static RuneKind[] KindsOf(string giver)
+        public static RuneKind[] KindsOf(string giver, Hediff_ArcaneCore c = null)
         {
+            // growth is water's or earth's - whichever the caster knows (water first)
+            if (giver == "Avir_ArcaneGrowth") return (c != null ? ArcaneWorks.Grower(c) : null) ?? new[] { RuneKind.Water };
             switch (giver)
             {
                 case "Avir_MagicClean": case "Avir_MagicTend": case "Avir_ArcaneFirefight": return new[] { RuneKind.Water };
@@ -359,7 +403,7 @@ namespace Avir.Magic
             if (c == null || g == null) return;
             foreach (string w in g.givers)
             {
-                RuneKind[] ks = KindsOf(w);
+                RuneKind[] ks = KindsOf(w, c);
                 if (ks != null && ks.All(k => MagicWork.Knows(c, k)) && StageOk(c, ks, Works2.All.ContainsKey(w))) EnsureCharm(c, w, ks);
             }
         }

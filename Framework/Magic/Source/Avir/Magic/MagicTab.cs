@@ -160,7 +160,7 @@ namespace Avir.Magic
             Widgets.Label(new Rect(left.x, left.y, left.width, 32f), "Schools - from what stage");
             Text.Font = GameFont.Small;
             Rect la = new Rect(left.x, left.y + 34f, left.width, left.height - 34f);
-            Rect lv = new Rect(0f, 0f, la.width - 16f, schoolsH > 0f ? schoolsH : 900f);
+            Rect lv = new Rect(0f, 0f, la.width - 30f, schoolsH > 0f ? schoolsH : 900f);
             RitualScroll.Begin(la, ref schoolsScroll, lv);
             float y = 0f, w = lv.width;
             foreach (string sc in ArcaneWork.Schools)
@@ -203,7 +203,7 @@ namespace Avir.Magic
             Widgets.Label(new Rect(right.x, right.y, right.width, 32f), "What " + ArcaneWork.SchoolLabel(school) + " opens");
             Text.Font = GameFont.Small;
             Rect ra = new Rect(right.x, right.y + 34f, right.width, right.height - 34f);
-            Rect rv = new Rect(0f, 0f, ra.width - 16f, worksH > 0f ? worksH : 900f);
+            Rect rv = new Rect(0f, 0f, ra.width - 30f, worksH > 0f ? worksH : 900f);
             RitualScroll.Begin(ra, ref worksScroll, rv);
             y = 0f; w = rv.width;
             string rule = school == "Second"
@@ -215,13 +215,14 @@ namespace Avir.Magic
             GUI.color = Ink;
             Widgets.Label(new Rect(0f, 0f, w, rh), rule);
             y = rh + 8f;
-            var givers = ArcaneWork.Groups.SelectMany(g => g.givers.Select(n => new { g, n })).Where(x => ArcaneWork.SchoolOf(x.n) == school).ToList();
+            var givers = ArcaneWork.Groups.SelectMany(g => g.givers.Select(n => new { g, n })).Where(x => ArcaneWork.SchoolsOf(x.n).Contains(school)).ToList();
             if (givers.Count == 0) { Widgets.Label(new Rect(0f, y, w, 24f), "No works of this school yet."); y += 26f; }
             foreach (var x in givers)
             {
                 string why = ArcaneWork.Why(core, x.n);
                 GUI.color = why == null ? ArcaneWork.Good : ArcaneWork.Poor;
-                string line = (why == null ? "+ " : "- ") + ArcaneWork.Label(x.n).CapitalizeFirst() + "   [" + x.g.label + "]" + (why == null ? "" : "\n     " + why);
+                string line = "<b>" + (why == null ? "+ " : "- ") + ArcaneWork.Label(x.n).CapitalizeFirst() + "</b>   [" + x.g.label + "]"
+                    + (ArcaneWork.Gives.TryGetValue(x.n, out string gives) ? "\n     " + gives.CapitalizeFirst() + "." : "") + (why == null ? "" : "\n     Not yet: " + why + ".");
                 float h = Text.CalcHeight(line, w);
                 Widgets.Label(new Rect(0f, y, w, h), line);
                 y += h + 4f;
@@ -406,6 +407,22 @@ namespace Avir.Magic
             }
             TooltipHandler.TipRegion(now, held < 1f ? "No charge in the artifacts worn." : !can ? "The reserve is full." : "Take the artifacts' charge back now.");
             GUI.color = Ink;
+            vt.width = r.width;
+            // battle charms (Fix156): put together and used by himself; the dangerous ones only if allowed
+            vt = new Rect(r.x, vt.yMax + 2f, r.width, 24f);
+            bool bc = core.battleCharms;
+            Widgets.CheckboxLabeled(vt, "Battle charms - puts one together, uses it himself", ref bc);
+            core.battleCharms = bc;
+            TooltipHandler.TipRegion(vt, "He puts a battle charm together by his element and stage (a burst, a line, a hold or a throw - his own manner), with two Barriers so his own are spared, and casts it by himself: hunting, drafted with fire at will, and - if allowed below - at a foe that comes near while undrafted.");
+            vt = new Rect(r.x, vt.yMax + 2f, r.width * 0.5f - 4f, 24f);
+            bool dc = core.dangerousCharms, fu = core.fightUndrafted;
+            Widgets.CheckboxLabeled(vt, "Dangerous allowed", ref dc);
+            TooltipHandler.TipRegion(vt, "Lets him build dangerous charms: amplified bursts (explosions). Off - he keeps them tame.");
+            Rect vt2 = new Rect(r.x + r.width * 0.5f + 4f, vt.y, r.width * 0.5f - 4f, 24f);
+            Widgets.CheckboxLabeled(vt2, "Fights undrafted", ref fu);
+            TooltipHandler.TipRegion(vt2, "Undrafted, he casts his charm at a foe that comes within 14 cells.");
+            if (dc != core.dangerousCharms) { core.dangerousCharms = dc; if (core.battleCharms) CombatCharms.Ensure(core, dc); }
+            core.fightUndrafted = fu;
             vt.width = r.width;
             // below: six blocks - the path, the Arcana coming in, the core, the casting, what steadies, what happened
             Rect card = new Rect(r.x, vt.yMax + 8f, r.width, r.yMax - vt.yMax - 8f);

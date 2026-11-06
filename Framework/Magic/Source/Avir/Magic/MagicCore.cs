@@ -146,6 +146,9 @@ namespace Avir.Magic
         /// <summary>Ordinary works the player took "M" off: not taken up again by itself. And the last M state (hand/magic).</summary>
         public HashSet<string> magicDeclined = new HashSet<string>();
         public string mState;
+        /// <summary>Battle charms (CombatCharms): put together and used by himself; dangerous ones allowed; fights a foe that
+        /// comes near while undrafted.</summary>
+        public bool battleCharms = true, dangerousCharms, fightUndrafted = true;
         public Dictionary<string, int> workFrom = new Dictionary<string, int>();
         public bool HeldByGreatness(WorkTypeDef w) => w != null && heldWork.ContainsKey(w);
         public float Store(RuneKind k) => k == LifeMagic.None ? vita : stores.TryGetValue(k, out float f) ? f : 0f;
@@ -238,6 +241,7 @@ namespace Avir.Magic
             Scribe_Collections.Look(ref magicOnly, "magicOnly", LookMode.Value);
             Scribe_Collections.Look(ref workFrom, "workFrom", LookMode.Value, LookMode.Value);
             Scribe_Collections.Look(ref magicDeclined, "magicDeclined", LookMode.Value);
+            Scribe_Values.Look(ref battleCharms, "battleCharms", true); Scribe_Values.Look(ref dangerousCharms, "dangerousCharms"); Scribe_Values.Look(ref fightUndrafted, "fightUndrafted", true);
             if (magicDeclined == null) magicDeclined = new HashSet<string>();
             if (arcanePrio == null) arcanePrio = new Dictionary<string, int>();
             if (magicOnly == null) magicOnly = new HashSet<string>();
