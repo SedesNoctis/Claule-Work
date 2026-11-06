@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- The arcane works sub-tab of Work (ArcaneWorkRules.cs): casters by rows, groups of arcane works by columns.
+       Opened by the "Arcane works" button in the Work tab; no button of its own on the bar. -->
+  <MainButtonDef>
+    <defName>Avir_ArcaneWork</defName>
+    <label>arcane works</label>
+    <description>Which arcane works each caster takes up, and in what order.</description>
+    <tabWindowClass>Avir.Magic.MainTabWindow_ArcaneWork</tabWindowClass>
+    <order>36</order>
+    <buttonVisible>false</buttonVisible>
+  </MainButtonDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Clean</defName>
+    <label>clean</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Haul</defName>
+    <label>haul</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Tend</defName>
+    <label>tend</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Build</defName>
+    <label>build</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Mine</defName>
+    <label>mine</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Grow</defName>
+    <label>grow</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Smith</defName>
+    <label>smith</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Warm</defName>
+    <label>warmth</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Power</defName>
+    <label>power</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Stores</defName>
+    <label>stores</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Land</defName>
+    <label>land</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnTableDef>
+    <defName>Avir_ArcaneWork</defName>
+    <columns>
+      <li>Label</li>
+      <li>Avir_ArcaneCol_Clean</li>
+      <li>Avir_ArcaneCol_Haul</li>
+      <li>Avir_ArcaneCol_Tend</li>
+      <li>Avir_ArcaneCol_Build</li>
+      <li>Avir_ArcaneCol_Mine</li>
+      <li>Avir_ArcaneCol_Grow</li>
+      <li>Avir_ArcaneCol_Smith</li>
+      <li>Avir_ArcaneCol_Warm</li>
+      <li>Avir_ArcaneCol_Power</li>
+      <li>Avir_ArcaneCol_Stores</li>
+      <li>Avir_ArcaneCol_Land</li>
+      <li>RemainingSpace</li>
+    </columns>
+  </PawnTableDef>
+
+  <!-- casters meditate in their free time to fill the Arcana up to its white mark -->
+  <JoyKindDef>
+    <defName>Avir_ArcaneMeditation</defName>
+    <label>arcane meditation</label>
+  </JoyKindDef>
+  <JoyGiverDef>
+    <defName>Avir_ArcaneMeditate</defName>
+    <giverClass>Avir.Magic.JoyGiver_ArcaneMeditate</giverClass>
+    <jobDef>Meditate</jobDef>
+    <joyKind>Avir_ArcaneMeditation</joyKind>
+    <baseChance>8.0</baseChance>
+    <desireSit>false</desireSit>
+  </JoyGiverDef>
+</Defs>

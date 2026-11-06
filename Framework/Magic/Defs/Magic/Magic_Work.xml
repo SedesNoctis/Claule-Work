@@ -8,7 +8,7 @@
     <description>Work done by magic: water tends the wounded with no medicine and washes the floor round a spot clean, the wind carries a heap of things to the stockpile at once, earth raises rock, smooths, draws ore up and quickens growth where the arcane orders say; the meetings of two elements smelt, cut stone, warm, wash by steam and charge batteries. Each pays Arcana and teaches its element. Casters only.</description>
     <verb>Work magic</verb>
     <naturalPriority>500</naturalPriority>
-    <visible>true</visible>
+    <visible>false</visible>
   </WorkTypeDef>
 
   <WorkGiverDef>

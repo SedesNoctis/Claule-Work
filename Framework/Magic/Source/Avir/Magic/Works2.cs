@@ -41,11 +41,12 @@ namespace Avir.Magic
         /// <summary>Able: knows every element of the meeting; for A-B-A at least an adept in the doubled one; Arcana to pay.</summary>
         public static Hediff_ArcaneCore Able(Pawn p, SecondKind y, float cost)
         {
-            Hediff_ArcaneCore c = Arcane.Able(p, cost, Kinds(y));
-            if (c == null) return null;
-            RuneKind third = SecondOrder.Third(y);
-            if (Combos.Parts(SecondOrder.PairOf(y)).Contains(third) && MageClass.Stage(MageClass.XpIn(c, third)) < 2) return null;
-            return c;
+            // the author (Fix152): the second order from Novice too, like the meetings - at a risk, and from the stage set
+            // on the Path page ("Second", lava at least as magma)
+            if (!AvirMagic.On || p == null) return null;
+            Hediff_ArcaneCore c = Mages.Core(p);
+            RuneKind[] ks = Kinds(y);
+            return c != null && c.arcana >= cost && ks.All(k => MagicWork.Knows(c, k)) && ArcaneWork.StageOk(c, ks, true) ? c : null;
         }
 
         public static DesignationDef D(string n) => DefDatabase<DesignationDef>.GetNamedSilentFail(n);

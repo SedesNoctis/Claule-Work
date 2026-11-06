@@ -26,7 +26,7 @@ namespace Avir.Magic
         {
             if (!AvirMagic.On) return null;
             Hediff_ArcaneCore c = Mages.Core(p);
-            return c != null && Knows(c, k) && c.arcana >= arcana ? c : null;
+            return c != null && Knows(c, k) && c.arcana >= arcana && ArcaneWork.StageOk(c, new[] { k }) ? c : null;
         }
 
         /// <summary>The quickening of ordinary work: +15%, and +10% for each stage past Novice (Grandmaster +65%).</summary>

@@ -160,6 +160,37 @@ namespace Avir.Magic
             RuneDef life = DefDatabase<RuneDef>.AllDefsListForReading.FirstOrDefault(x => x.role == RuneRole.Element && x.kind == RuneKind.Life);
             if (life != null && !els.Contains(life) && core.KnowsLife) els.Add(life);
             foreach (RuneDef e in els) y += Scale(new Rect(0f, y, w, 0f), core, e, e == main);
+            // from what stage the caster takes up the works of each school (the author): click - higher, right-click - lower
+            y += 6f;
+            GUI.color = Ink; Text.Font = GameFont.Small;
+            Widgets.Label(new Rect(0f, y, w, 24f), "Arcane works - taken up from:");
+            y += 24f;
+            Text.Font = GameFont.Tiny;
+            int cols = 3; float cw = w / cols;
+            for (int i = 0; i < ArcaneWork.Schools.Length; i++)
+            {
+                string sc = ArcaneWork.Schools[i];
+                Rect cell = new Rect((i % cols) * cw, y + (i / cols) * 24f, cw - 6f, 22f);
+                int fromSt = ArcaneWork.From(core, sc);
+                Widgets.DrawBoxSolid(cell, new Color(0.12f, 0.1f, 0.08f, Mouse.IsOver(cell) ? 0.35f : 0.2f));
+                GUI.color = Ink;
+                Widgets.Label(new Rect(cell.x + 4f, cell.y + 3f, cell.width * 0.5f, 18f), sc == "Second" ? "second order" : sc.ToLower());
+                Text.Anchor = TextAnchor.UpperRight;
+                GUI.color = fromSt >= 6 ? new Color(0.6f, 0.2f, 0.15f) : SpellGlyph.Ink(new Color(0.3f, 0.5f, 0.9f));
+                Widgets.Label(new Rect(cell.x, cell.y + 3f, cell.width - 4f, 18f), ArcaneWork.StageShort[Mathf.Clamp(fromSt, 0, 6)]);
+                Text.Anchor = TextAnchor.UpperLeft;
+                TooltipHandler.TipRegion(cell, "The works of " + (sc == "Second" ? "the second order" : sc.ToLower()) + " are taken up from this stage (and never below the rule: one's own element from Novice, another from Apprentice). "
+                    + "Click - a higher stage, right-click - a lower one; past Grandmaster - never. The meetings and magma can hurt the caster when a work slips.");
+                if (Event.current.type == EventType.MouseDown && Mouse.IsOver(cell))
+                {
+                    int v = Event.current.button == 1 ? Mathf.Max(0, fromSt - 1) : Mathf.Min(6, fromSt + 1);
+                    core.workFrom[sc] = v;
+                    ArcaneWork.Dirty(pawn);
+                    Event.current.Use();
+                }
+            }
+            y += Mathf.Ceil(ArcaneWork.Schools.Length / (float)cols) * 24f + 4f;
+            Text.Font = GameFont.Small;
             GUI.color = InkSoft; Text.Font = GameFont.Tiny;
             y += 4f;
             float th = Text.CalcHeight("A meeting of two elements is not a scale of its own: its experience goes to both, shared.", w);

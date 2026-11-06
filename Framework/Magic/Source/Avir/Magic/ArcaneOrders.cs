@@ -29,7 +29,7 @@ namespace Avir.Magic
         {
             if (!AvirMagic.On || p == null) return null;
             Hediff_ArcaneCore c = Mages.Core(p);
-            return c != null && c.arcana >= arcana && kinds.All(k => MagicWork.Knows(c, k)) ? c : null;
+            return c != null && c.arcana >= arcana && kinds.All(k => MagicWork.Knows(c, k)) && ArcaneWork.StageOk(c, kinds) ? c : null;
         }
 
         /// <summary>Paid and learnt: the experience shared among the elements the work needed.</summary>

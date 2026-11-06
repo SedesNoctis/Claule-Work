@@ -84,6 +84,7 @@ namespace Avir.Magic
 
         public static WorkCast Make(Hediff_ArcaneCore c, string work, RuneKind[] kinds, float plainCost)
         {
+            ArcaneWork.EnsureCharm(c, work, kinds);   // the caster puts the charm together himself, the first time (and betters it as he grows)
             RitualSchema s = Find(c, work, kinds);
             if (s == null) return new WorkCast { cost = plainCost };
             RitualReading r = Reading(s);
@@ -145,7 +146,13 @@ namespace Avir.Magic
         /// target, with motes running between); it ends the drawing when done.</summary>
         public static Toil Channel(JobDriver d, int ticks, RitualSchema schema, bool far, Color tint)
         {
+            // quicker by the stage (x0.7 Novice ... x1.6 Grandmaster), and it may slip at the end
+            RuneKind[] kinds = schema != null ? WorkSpells.Elements(schema).ToArray() : new RuneKind[0];
+            Hediff_ArcaneCore core = Mages.Core(d.pawn);
+            if (kinds.Length > 0 && core != null) ticks = Mathf.Max(20, Mathf.RoundToInt(ticks / ArcaneWork.Speed(core, kinds)));
             Toil t = Toils_General.Wait(ticks).WithProgressBarToilDelay(TargetIndex.A);
+            bool rolled = false;   // the slip is weighed once, as the work is let go
+            if (kinds.Length > 0) t.AddEndCondition(() => { if (rolled || d.ticksLeftThisToil > 1) return JobCondition.Ongoing; rolled = true; return ArcaneWork.Slip(d.pawn, kinds) ? JobCondition.Incompletable : JobCondition.Ongoing; });
             t.initAction = () =>
             {
                 Pawn p = d.pawn;

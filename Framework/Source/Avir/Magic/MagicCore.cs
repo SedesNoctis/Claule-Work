@@ -139,6 +139,12 @@ namespace Avir.Magic
         /// <summary>The meetings' own stores (the author, Fix145): Wild Flame, Blood, Emerald and Pestilence each keep
         /// theirs; plain Life keeps `vita`. A spell takes from and gives into the store of its own meeting.</summary>
         public Dictionary<RuneKind, float> stores = new Dictionary<RuneKind, float>();
+        /// <summary>The arcane works (ArcaneWork): a priority for each group, the ordinary works done by magic only ("M"),
+        /// and the stage from which the caster takes up the works of each school.</summary>
+        public Dictionary<string, int> arcanePrio = new Dictionary<string, int>();
+        public HashSet<string> magicOnly = new HashSet<string>();
+        public Dictionary<string, int> workFrom = new Dictionary<string, int>();
+        public bool HeldByGreatness(WorkTypeDef w) => w != null && heldWork.ContainsKey(w);
         public float Store(RuneKind k) => k == LifeMagic.None ? vita : stores.TryGetValue(k, out float f) ? f : 0f;
         public void SetStore(RuneKind k, float v) { v = Mathf.Max(0f, v); if (k == LifeMagic.None) vita = v; else stores[k] = v; }
         public float StoreAll => vita + stores.Values.Sum();
@@ -225,6 +231,12 @@ namespace Avir.Magic
             Scribe_Values.Look(ref arcana, "arcana");
             Scribe_Values.Look(ref vita, "vita");
             Scribe_Collections.Look(ref stores, "lifeStores", LookMode.Value, LookMode.Value);
+            Scribe_Collections.Look(ref arcanePrio, "arcanePrio", LookMode.Value, LookMode.Value);
+            Scribe_Collections.Look(ref magicOnly, "magicOnly", LookMode.Value);
+            Scribe_Collections.Look(ref workFrom, "workFrom", LookMode.Value, LookMode.Value);
+            if (arcanePrio == null) arcanePrio = new Dictionary<string, int>();
+            if (magicOnly == null) magicOnly = new HashSet<string>();
+            if (workFrom == null) workFrom = new Dictionary<string, int>();
             if (stores == null) stores = new Dictionary<RuneKind, float>();
             Scribe_Collections.Look(ref carried, "carried", LookMode.Value);
             Scribe_Values.Look(ref bloodMage, "bloodMage");
