@@ -499,9 +499,9 @@ namespace Avir.Magic
             float X(float frac) => PlaqueArt.MapX(r, art, cuts, Stretch, frac * art.width);
             Rect slot = sorc ? new Rect(X(0.094f), r.y + r.height * 0.46f, X(0.906f) - X(0.094f), r.height * 0.245f)
                              : new Rect(X(0.097f), r.y + r.height * 0.447f, X(0.902f) - X(0.097f), r.height * 0.24f);
-            // the glass bar sits a little inside the window, so the frame's own rim shows round it
-            Rect glass = slot.ContractedBy(2f);
-            GlassBar.Draw(glass, core.Fill, sorc ? new Color(0.95f, 0.66f, 0.12f) : new Color(0.22f, 0.42f, 1f), 0.85f);
+            // the fill lies under the frame, filling the whole window; the frame's rim hides its edges
+            Rect glass = slot;
+            GlassBar.Under(glass, core.Fill, sorc ? new Color(0.95f, 0.66f, 0.12f) : new Color(0.22f, 0.42f, 1f));
             core.Band(out float lo, out float hi);
             Color mk = sorc ? new Color(0.1f, 0.06f, 0.02f, 0.8f) : new Color(1f, 0.85f, 0.4f, 0.85f);
             Widgets.DrawBoxSolid(new Rect(glass.x + glass.width * lo - 1f, glass.y + 2f, 2f, glass.height - 4f), mk);

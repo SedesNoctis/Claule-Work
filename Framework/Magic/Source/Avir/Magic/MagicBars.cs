@@ -19,14 +19,16 @@ namespace Avir.Magic
 
         public class Scale { public string key, label, tip; public float value, max; public Color fill; }
 
-        private const float ArcanaH = 84f, ScaleH = 30f, Gap = 2f;
+        private const float ArcanaH = 84f, ScaleH = 40f, Gap = 2f;
         // the slim scales (Лист 26): the ends keep their shape, the length stretches; the band the bar lies on (measured)
         private static readonly float[] SlimCutsF = { 0f, 0.12f, 0.88f, 1f };
         private static readonly bool[] SlimStretch = { false, true, false };
-        private static readonly Dictionary<string, Vector2> Band = new Dictionary<string, Vector2>
+        // the window cut in each slim scale (x0, y0, x1, y1 of the picture), the fill lies under it
+        private static readonly Dictionary<string, Vector4> Win = new Dictionary<string, Vector4>
         {
-            { "Life", new Vector2(0.236f, 0.640f) }, { "WildFlame", new Vector2(0.258f, 0.667f) }, { "Blood", new Vector2(0.268f, 0.670f) },
-            { "Emerald", new Vector2(0.217f, 0.707f) }, { "Pestilence", new Vector2(0.233f, 0.640f) },
+            { "Life", new Vector4(0.115f, 0.2845f, 0.885f, 0.5915f) }, { "WildFlame", new Vector4(0.115f, 0.3071f, 0.885f, 0.6179f) },
+            { "Blood", new Vector4(0.115f, 0.3162f, 0.885f, 0.6218f) }, { "Emerald", new Vector4(0.115f, 0.2758f, 0.885f, 0.6482f) },
+            { "Pestilence", new Vector4(0.115f, 0.2818f, 0.885f, 0.5912f) },
         };
         private static readonly Dictionary<string, float> shownY = new Dictionary<string, float>();
         private static int pawnShown = -1;
@@ -97,15 +99,13 @@ namespace Avir.Magic
             Rect bar;
             if (frame != null)
             {
-                // its own slim plaque: the band has no hole - the fill lies over it, half see-through, so its pattern shows
+                // its own slim plaque with a window: the fill under it, the frame over it, the words over all
                 float[] cuts = SlimCutsF.Select(f => f * frame.width).ToArray();
+                Vector4 wn = Win.TryGetValue(sc.key, out Vector4 w0) ? w0 : new Vector4(0.115f, 0.3f, 0.885f, 0.6f);
+                float x0 = PlaqueArt.MapX(r, frame, cuts, SlimStretch, wn.x * frame.width), x1 = PlaqueArt.MapX(r, frame, cuts, SlimStretch, wn.z * frame.width);
+                bar = new Rect(x0 - 2f, r.y + r.height * wn.y - 2f, x1 - x0 + 4f, r.height * (wn.w - wn.y) + 4f);
+                GlassBar.Under(bar, sc.value / sc.max, sc.fill);
                 PlaqueArt.Draw(r, frame, cuts, SlimStretch);
-                Vector2 bd = Band.TryGetValue(sc.key, out Vector2 b0) ? b0 : new Vector2(0.25f, 0.65f);
-                float x0 = PlaqueArt.MapX(r, frame, cuts, SlimStretch, 0.12f * frame.width), x1 = PlaqueArt.MapX(r, frame, cuts, SlimStretch, 0.88f * frame.width);
-                float y0 = r.y + r.height * bd.x, y1 = r.y + r.height * bd.y, pad = (y1 - y0) * 0.16f;
-                bar = new Rect(x0 + 2f, y0 + pad, x1 - x0 - 4f, y1 - y0 - 2f * pad);
-                // a glass capsule over the band: the empty part only shades it, so its pattern stays to be seen
-                GlassBar.Draw(bar, sc.value / sc.max, sc.fill, 0.4f, 0.78f);
             }
             else
             {
@@ -115,8 +115,11 @@ namespace Avir.Magic
                 bar = new Rect(r.x + 4f, r.y + 4f, r.width - 8f, r.height - 8f);
                 GlassBar.Draw(bar, sc.value / sc.max, sc.fill);
             }
-            Text.Font = GameFont.Tiny; Text.Anchor = TextAnchor.MiddleCenter; GUI.color = new Color(0.95f, 0.97f, 0.9f);
-            Widgets.Label(bar, sc.label + "  " + Mathf.FloorToInt(sc.value) + " / " + Mathf.FloorToInt(sc.max));
+            Text.Font = GameFont.Tiny; Text.Anchor = TextAnchor.MiddleCenter;
+            string words = sc.label + "  " + Mathf.FloorToInt(sc.value) + " / " + Mathf.FloorToInt(sc.max);
+            Rect tr = new Rect(bar.x, bar.center.y - 10f, bar.width, 20f);
+            GUI.color = new Color(0f, 0f, 0f, 0.85f); Widgets.Label(new Rect(tr.x + 1f, tr.y + 1f, tr.width, tr.height), words);
+            GUI.color = new Color(0.95f, 0.97f, 0.9f); Widgets.Label(tr, words);
             GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft; Text.Font = GameFont.Small;
             if (!sc.tip.NullOrEmpty()) TooltipHandler.TipRegion(r, sc.tip);
         }

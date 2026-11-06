@@ -43,6 +43,38 @@ namespace Avir.Magic
             GUI.DrawTextureWithTexCoords(new Rect(r.xMax - cap, r.y, cap, r.height), t, new Rect(1f - u, 0f, u, 1f));
         }
 
+        private static Texture2D flat;
+        /// <summary>A fill for under a frame's window (the author: fill under the scale, the words over it): a plain
+        /// rectangle - the frame hides its edges - lit above, darker below, a soft streak along the top.</summary>
+        public static void Under(Rect r, float frac, Color col)
+        {
+            if (flat == null)
+            {
+                flat = new Texture2D(4, H, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+                for (int y = 0; y < H; y++)
+                {
+                    float v = 1f - (y + 0.5f) / H;
+                    float b = Mathf.Lerp(1f, 0.55f, Mathf.SmoothStep(0.25f, 1f, v)), s = Mathf.Exp(-Mathf.Pow((v - 0.28f) / 0.12f, 2f)) * 0.45f;
+                    for (int x = 0; x < 4; x++) flat.SetPixel(x, y, new Color(b, s, 0f, 1f));   // r: shade, g: streak (mixed below)
+                }
+                flat.Apply();
+            }
+            Widgets.DrawBoxSolid(r, new Color(0.04f, 0.04f, 0.06f, 1f));
+            frac = Mathf.Clamp01(frac);
+            if (frac <= 0.002f) return;
+            Rect f = new Rect(r.x, r.y, r.width * frac, r.height);
+            // shade and streak drawn as thin rows, so one small texture serves any colour
+            int rows = Mathf.Max(4, Mathf.RoundToInt(f.height));
+            for (int i = 0; i < rows; i++)
+            {
+                Color px = flat.GetPixelBilinear(0.5f, 1f - (i + 0.5f) / rows);
+                Color c = col * px.r; c = Color.Lerp(c, Color.white, px.g); c.a = 1f;
+                Widgets.DrawBoxSolid(new Rect(f.x, f.y + f.height * i / rows, f.width, f.height / rows + 0.5f), c);
+            }
+            // a soft glow at the leading edge
+            Widgets.DrawBoxSolid(new Rect(f.xMax - 2f, f.y, 2f, f.height), new Color(Mathf.Min(1f, col.r + 0.45f), Mathf.Min(1f, col.g + 0.45f), Mathf.Min(1f, col.b + 0.45f), 0.6f));
+        }
+
         /// <summary>The bar in r, filled to frac with col. trough: how dark the empty part is; a: how solid the fill.</summary>
         public static void Draw(Rect r, float frac, Color col, float trough = 0.75f, float a = 1f)
         {
