@@ -98,6 +98,16 @@ namespace Avir.Magic
             Put(map, "Life/Vein", (from + to) / 2f, len, life, d.AngleFlat() - 90f, 0f, len / UnityEngine.Mathf.Max(0.6f, len * 0.25f));
         }
 
+        /// <summary>A curving stream laid along a line in short pieces (Fix158: the blood stream is not a thin strip).</summary>
+        public static void Stream(Verse.Map map, string path, UnityEngine.Vector3 from, UnityEngine.Vector3 to, int life = 50)
+        {
+            UnityEngine.Vector3 d = to - from; d.y = 0f;
+            float len = d.magnitude;
+            if (len < 0.5f) return;
+            int n = UnityEngine.Mathf.Max(1, UnityEngine.Mathf.CeilToInt(len / 1.4f));
+            for (int i = 0; i < n; i++) Put(map, path, from + d * ((i + 0.5f) / n), 1.9f, life + 3 * i, d.AngleFlat() - 90f, 0f, 1.32f);
+        }
+
         public override void MapComponentUpdate()
         {
             if (sprites.Count == 0 || Verse.Find.CurrentMap != map) return;

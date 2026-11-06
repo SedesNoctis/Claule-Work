@@ -512,7 +512,7 @@ namespace Avir.Magic
                 case ComboKind.Steam: foreach (Pawn p in foes) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, caster)); Smoke(map, line, 1f, true); break;
                 // a stream of lava: it burns all on it and sets into a path of rubble
                 case ComboKind.Magma:
-                    if (line.Count > 1) { Vector3 a0 = line[0].ToVector3Shifted(), a1 = line[line.Count - 1].ToVector3Shifted(); Vector3 d = a1 - a0; MapComponent_SpellSprites.Put(map, "Magma/Fissure", (a0 + a1) / 2f, d.MagnitudeHorizontal() + 1f, 240, d.AngleFlat() - 90f, 0f, 4f); }
+                    if (line.Count > 1) { Vector3 a0 = line[0].ToVector3Shifted(), a1 = line[line.Count - 1].ToVector3Shifted(); Vector3 d = a1 - a0; MapComponent_SpellSprites.Put(map, "Magma/Fissure", (a0 + a1) / 2f, d.MagnitudeHorizontal() + 1f, 240, d.AngleFlat() - 90f, 0f, Mathf.Max(1.5f, 4f / (1 + r.breadth))); }
                     foreach (IntVec3 c in line) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(600f * power), false);
                     break;
                 // a ray of heat: all on it dazzled, the first burnt through
@@ -957,6 +957,19 @@ namespace Avir.Magic
     public class MirePatch : ThingWithComps
     {
         public Pawn owner; public float power = 1f; public int left = 5000;
+
+        /// <summary>The painted mire (Fix158), when the setting asks for it and the pictures are there; else the old one,
+        /// kept on purpose (the author: the stand-in looked unexpectedly good).</summary>
+        private static Graphic painted; private static bool looked;
+        public override Graphic Graphic
+        {
+            get
+            {
+                if (AvirMod.Settings == null || !AvirMod.Settings.paintedMire) return base.Graphic;
+                if (!looked) { looked = true; if (ContentFinder<Texture2D>.GetAllInFolder("Things/Avir/Magic/MirePainted").Any()) painted = GraphicDatabase.Get<Graphic_Random>("Things/Avir/Magic/MirePainted", ShaderDatabase.Transparent, def.graphicData.drawSize, Color.white); }
+                return painted ?? base.Graphic;
+            }
+        }
 
         public static void Spread(IntVec3 c, Map map, Pawn owner, float power, int life)
         {

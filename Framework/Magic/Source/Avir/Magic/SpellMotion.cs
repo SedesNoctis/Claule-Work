@@ -345,7 +345,7 @@ namespace Avir.Magic
             Scribe_Values.Look(ref origin, "origin", IntVec3.Invalid);
         }
 
-        private static Material waveMat;
+        private static Material waveMat, wakeMat;
 
         public override void DynamicDrawPhaseAt(DrawPhase phase, Vector3 drawLoc, bool flip = false)
         {
@@ -360,6 +360,10 @@ namespace Avir.Magic
                     float ang = dir.AngleFlat();
                     Vector3 at = drawLoc + dir.normalized * 0.7f; at.y = AltitudeLayer.MoteOverhead.AltitudeFor();
                     Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(at, Quaternion.AngleAxis(ang, Vector3.up), new Vector3(3f, 1f, 3f)), waveMat, 0);
+                    // and the foam it leaves behind
+                    if (wakeMat == null) wakeMat = ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Wake_Water", false) != null ? MaterialPool.MatFrom("Things/Mote/Avir/Magic/Wake_Water", ShaderDatabase.Transparent) : BaseContent.ClearMat;
+                    Vector3 back = drawLoc - dir.normalized * 1.3f; back.y = AltitudeLayer.MoteOverhead.AltitudeFor() - 0.01f;
+                    Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(back, Quaternion.AngleAxis(ang, Vector3.up), new Vector3(1.8f, 1f, 2.6f)), wakeMat, 0);
                 }
             }
             base.DynamicDrawPhaseAt(phase, drawLoc, flip);

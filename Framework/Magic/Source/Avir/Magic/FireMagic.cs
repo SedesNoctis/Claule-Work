@@ -139,7 +139,8 @@ namespace Avir.Magic
             {
                 if (c == from || !c.InBounds(map)) continue;
                 cells.Add(c);
-                if (breadth > 0) foreach (IntVec3 n in GenAdj.CellsAdjacent8Way(new TargetInfo(c, map))) if (n.InBounds(map) && n != from) cells.Add(n);
+                // each Breadth one more cell to each side (Fix158: before, any Breadth gave the same three cells)
+                if (breadth > 0) foreach (IntVec3 n in GenRadial.RadialCellsAround(c, Mathf.Min(breadth, 4) + 0.5f, true)) if (n.InBounds(map) && n != from) cells.Add(n);
                 if (c.GetEdifice(map) is Building b && b.def.Fillage == FillCategory.Full) break;   // a wall stops the line
             }
             return cells.ToList();

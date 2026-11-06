@@ -227,7 +227,7 @@ namespace Avir.Magic
 
         private class Ctx
         {
-            public Pawn caster; public Map map; public IntVec3 at; public float radius, power; public List<IntVec3> cells; public List<Pawn> foes, own;
+            public Pawn caster; public Map map; public IntVec3 at; public float radius, power; public int breadth; public List<IntVec3> cells; public List<Pawn> foes, own;
             public bool release, hold, growth, lift, drain, purge, restore, aura, beam, shape, enchant;
         }
 
@@ -247,6 +247,7 @@ namespace Avir.Magic
             // spell poured lava round its caster)
             bool acts = ctx.release || ctx.beam || ctx.hold || ctx.growth || ctx.lift || ctx.drain || ctx.purge || ctx.aura || ctx.shape || ctx.enchant;
             if (!acts && (!ctx.restore || (y != SecondKind.Boil && y != SecondKind.Geyser && y != SecondKind.Mudflow))) return;
+            ctx.breadth = r.breadth;
             ctx.radius = FireMagic.PointRadius(r) * (ctx.growth ? 1.5f : 1f);
             if (ctx.aura) ctx.cells = FireMagic.Point(caster.Position, map, SpellAura.Pulsing ? SpellAura.PulseRadius : ctx.radius + 1.5f).Where(c => c != caster.Position).ToList();
             else if (ctx.beam) ctx.cells = FireMagic.Beam(caster.Position, ctx.at, map, r.breadth).Where(c => c != caster.Position).ToList();
@@ -315,7 +316,7 @@ namespace Avir.Magic
                     break;
                 case SecondKind.Lava:
                     {
-                        var where = c.beam ? FireMagic.Beam(by.Position, c.at + (c.at - by.Position), c.map, 0).Where(x => x.InBounds(c.map) && x != by.Position).ToList()
+                        var where = c.beam ? FireMagic.Beam(by.Position, c.at + (c.at - by.Position), c.map, c.breadth).Where(x => x.InBounds(c.map) && x != by.Position).ToList()
                                   : c.shape ? c.cells : FireMagic.Point(c.aura ? by.Position : c.at, c.map, c.radius * 2f).Where(x => x != by.Position && !x.AdjacentTo8Way(by.Position)).ToList();
                         int life = c.hold ? 5000 : 3000;
                         foreach (IntVec3 x in where) if (Rand.Chance(c.aura ? 0.4f : 0.7f)) MagmaPool.Pour(x, c.map, by, c.power * 1.3f, life, c.shape, 2500, true);   // it sets into basalt only when shaped

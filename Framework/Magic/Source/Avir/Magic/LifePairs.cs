@@ -32,6 +32,7 @@ namespace Avir.Magic
             HediffComp_WildSeed c = h.TryGetComp<HediffComp_WildSeed>();
             if (c == null) return;
             c.owner = owner; c.power = Mathf.Max(c.power, power); c.heart = heart; c.jumps = Mathf.Max(c.jumps, jumps); c.Renew();
+            if (p.Spawned) MapComponent_SpellSprites.Put(p.Map, heart ? "Life/Heart" : "Life/Spark", p.DrawPos, heart ? 1.1f : 0.8f, 70, 0f);
         }
 
         /// <summary>A burst of living flame round a cell: petals of green-gold fire, not an explosion of fire.</summary>
@@ -41,6 +42,7 @@ namespace Avir.Magic
             float rad = 1.5f + 0.6f * fed;   // a fed spark bursts wider
             for (int i = 0; i < 6 + 3 * fed; i++) FleckMaker.ThrowFireGlow(at.ToVector3Shifted() + new Vector3(Rand.Range(-rad, rad) * 0.6f, 0f, Rand.Range(-rad, rad) * 0.6f), map, 0.7f + 0.2f * fed);
             FleckMaker.ThrowDustPuffThick(at.ToVector3Shifted(), map, 1.4f, new Color(0.85f, 0.85f, 0.3f, 0.6f));
+            MapComponent_SpellSprites.Put(map, heart ? "Life/Heart" : "Life/Petals", at.ToVector3Shifted(), rad * 2f, 50, -1f, 1.5f);
             float got = 0f;
             foreach (Pawn q in GenRadial.RadialDistinctThingsAround(at, map, rad, true).OfType<Pawn>().Where(Living).ToList())
             {
@@ -99,6 +101,7 @@ namespace Avir.Magic
             if (CrustDef == null || p == null || p.Dead || amount <= 0f) return;
             Hediff h = p.health.hediffSet.GetFirstHediffOfDef(CrustDef) ?? p.health.AddHediff(CrustDef);
             h.Severity = Mathf.Min(1f, (h.Severity <= 0.011f ? 0f : h.Severity) + amount);
+            if (p.Spawned) MapComponent_SpellSprites.Put(p.Map, "Life/StoneCrust", p.DrawPos, 1.5f, 60, -1f, -1f);
         }
 
         // ================================================================== Pestilence: Withering drinks sickness
@@ -241,8 +244,8 @@ namespace Avir.Magic
                     switch (act.verb)
                     {
                         case RuneKind.Release: foreach (Pawn q in area) MagicFx.Stun(q, Mathf.RoundToInt(120f * power), caster); break;
-                        case RuneKind.Beam: foreach (Pawn q in Reached(caster, g, Line(caster, at, map, out _)).Where(q => q != caster)) MagicFx.Stun(q, Mathf.RoundToInt(180f * power), caster); break;
-                        case RuneKind.Hold: foreach (Pawn q in area) MagicFx.Give(q, BloodLock, Mathf.RoundToInt(360f * power)); break;
+                        case RuneKind.Beam: MapComponent_SpellSprites.Stream(map, "Life/BloodStream", caster.DrawPos, at.ToVector3Shifted(), 60); foreach (Pawn q in Reached(caster, g, Line(caster, at, map, out _)).Where(q => q != caster)) MagicFx.Stun(q, Mathf.RoundToInt(180f * power), caster); break;
+                        case RuneKind.Hold: foreach (Pawn q in area) { MagicFx.Give(q, BloodLock, Mathf.RoundToInt(360f * power)); if (q.Spawned) MapComponent_SpellSprites.Put(map, "Life/BloodHold", q.DrawPos, 1.4f, 90, -1f, 2f); } break;
                         case RuneKind.Lift: foreach (Pawn q in area.Where(q => q != caster)) { if (act.pin) SpellHurl.Press(q, caster, power, false); else SpellHurl.Lift(q, caster, power); } break;
                     }
                     break;
@@ -375,6 +378,7 @@ namespace Avir.Magic
             if (p == null || !p.Spawned || p.Dead) return;
             Map map = p.Map;
             if (Rand.Chance(0.3f)) FleckMaker.ThrowFireGlow(p.DrawPos, map, 0.4f);
+            if (Rand.Chance(0.25f)) MapComponent_SpellSprites.Put(map, heart ? "Life/Heart" : "Life/Spark", p.DrawPos + new Vector3(0f, 0f, 0.3f), heart ? 0.6f : 0.45f, 35, 0f);
             if (!heart && map.terrainGrid.TerrainAt(p.Position).IsWater)
             {
                 Gas_ScaldingSteam.Release(p.Position, map, 1);
@@ -472,6 +476,7 @@ namespace Avir.Magic
             // a statue does not act and does not fall: held still where it is
             if (p.Spawned) { p.stances?.stunner?.StunFor(320, null, false, false); p.pather?.StopDead(); }
             if (p.Spawned && Rand.Chance(0.1f)) FleckMaker.ThrowDustPuffThick(p.DrawPos, p.Map, 0.6f, new Color(0.3f, 0.65f, 0.45f, 0.5f));
+            if (p.Spawned && Rand.Chance(0.2f)) MapComponent_SpellSprites.Put(p.Map, "Life/Statue", p.DrawPos, 1.2f, 80);
             if (statueTicks >= GenDate.TicksPerDay * StatueDays) severityAdjustment -= 0.05f;
         }
         public override void CompExposeData() { Scribe_Values.Look(ref statueTicks, "statueTicks"); }
@@ -530,7 +535,7 @@ namespace Avir.Magic
             foreach (F f in fogs)
             {
                 foreach (IntVec3 c in f.cells.InRandomOrder().Take(Mathf.Max(2, f.cells.Count / 6)))
-                    if (c.InBounds(map)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.6f, new Color(0.72f, 0.78f, 0.32f, 0.35f));
+                    if (c.InBounds(map)) { FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.6f, new Color(0.72f, 0.78f, 0.32f, 0.35f)); if (Rand.Chance(0.35f)) MapComponent_SpellSprites.Put(map, "Life/PoisonFog", c.ToVector3Shifted(), 2.2f, 140, -1f, 0.3f); }
                 if (Poison == null) continue;
                 foreach (IntVec3 c in f.cells)
                 {
