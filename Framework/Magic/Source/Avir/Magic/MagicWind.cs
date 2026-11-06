@@ -91,6 +91,12 @@ namespace Avir.Magic
             foreach (Gust g in gusts.ToList())
             {
                 IntVec3 mid = g.at.ToIntVec3();
+                // a whirl shows itself: a spinning spiral of wind (drawn by code, Fix178)
+                if (g.shape == Shape.Round && now % 20 == 0)
+                {
+                    if (g.tint.a > 0f) MapComponent_SpellSprites.PutTinted(map, "Wind/Swirl", g.tint, g.at, g.radius * 2.4f, 30, -1f, g.strength > 60f ? -900f : -600f);
+                    else MapComponent_SpellSprites.Put(map, "Wind/Swirl", g.at, g.radius * 2.4f, 30, -1f, g.strength > 60f ? -900f : -600f);
+                }
                 foreach (IntVec3 c in GenRadial.RadialCellsAround(mid, g.radius, true))
                 {
                     if (!c.InBounds(map)) continue;
@@ -136,6 +142,8 @@ namespace Avir.Magic
             return false;
         }
 
+        private static bool AvirBodyIs(Pawn p) { try { return Avir.AvirBody.IsAvir(p); } catch { return false; } }
+
         private bool Resting(Thing t, int now) => rest.TryGetValue(t.thingIDNumber, out int until) && until > now;
         private void Rest(Thing t, int now, int ticks) => rest[t.thingIDNumber] = now + ticks;
 
@@ -149,6 +157,18 @@ namespace Avir.Magic
                     if (p == g.owner || p.Dead || !p.Spawned || SpellWards.Stops(p, false)) continue;
                     float hold = Mathf.Sqrt(Mathf.Max(0.5f, p.BodySize));   // the heavier hold longer
                     float sp = s / hold * Held(p, s);
+                    // the Avir fly: the wind is their element - they ride an ordinary wind (60% off), a hurricane less (25%)
+                    if (AvirBodyIs(p)) sp *= g.charged ? 0.75f : 0.4f;
+                    // a hurricane (a storm's wind, 60+): it does not throw, it lifts - high, and lets fall; no body is too heavy
+                    // for it - the heavy go up less, but the fall (or the blow, if it cannot lift them) still finds them
+                    // a whirl of it mostly spins them round (thrown along its turning again and again), now and then takes them up
+                    if (g.charged && s >= 60f && sp >= 25f && (g.shape != Shape.Round || Rand.Chance(0.3f)))
+                    {
+                        SpellHurl.Lift(p, g.owner, sp / 40f * SpellHurl.HurricaneLift);
+                        Rest(p, now, g.shape == Shape.Round ? 45 : 120);   // a whirl takes them up again and again
+                        if (Prefs.DevMode) Log.Message("[Avir wind] " + p.LabelShort + ": lifted by the hurricane at " + sp.ToString("0") + " m/s");
+                        continue;
+                    }
                     IntVec3 was = p.Position;
                     string did = null;
                     if (sp >= 40f && Smash(g, p, w, sp)) { Rest(p, now, 90); did = "smashed into another"; }
@@ -161,7 +181,7 @@ namespace Avir.Magic
                         if (p.Spawned && p.Position == was) { Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(p, 120); did = "felled (could not fly)"; } else did = "thrown";
                         // lifted and dropped: a bruise from the landing at least, more the harder it blew (debris)
                         p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Mathf.Min(14f, 3f + (sp - 40f) * 0.3f), 0f, -1f, g.owner));
-                        Rest(p, now, 90);
+                        Rest(p, now, g.shape == Shape.Round ? 30 : 90);   // a whirl keeps them going round
                     }
                     else if (sp >= 28f)
                     {
@@ -301,6 +321,12 @@ namespace Avir.Magic
         /// <summary>A streak of dust along the wind: what the eye sees of it.</summary>
         private void Streak(IntVec3 c, Vector3 w, float s, Color tint)
         {
+            // a thin line of wind along it (drawn by code, Fix178), and now and then a puff of dust
+            Vector3 at = c.ToVector3Shifted() + new Vector3(Rand.Range(-0.4f, 0.4f), 0f, Rand.Range(-0.4f, 0.4f));
+            float len = Mathf.Clamp(s / 12f, 1.5f, 4.5f);
+            if (tint.a > 0f) MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", tint, at, len, 22, w.AngleFlat() - 90f, 0f, 5.3f);
+            else MapComponent_SpellSprites.Put(map, "Wind/Streak", at, len, 22, w.AngleFlat() - 90f, 0f, 5.3f);
+            if (!Rand.Chance(0.35f)) return;
             FleckCreationData d = FleckMaker.GetDataStatic(c.ToVector3Shifted() + new Vector3(Rand.Range(-0.4f, 0.4f), 0f, Rand.Range(-0.4f, 0.4f)), map, FleckDefOf.DustPuffThick, Rand.Range(0.6f, 1.1f));
             if (tint.a > 0f) d.instanceColor = tint;
             d.velocityAngle = w.AngleFlat();

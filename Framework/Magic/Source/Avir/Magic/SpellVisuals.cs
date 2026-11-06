@@ -73,7 +73,7 @@ namespace Avir.Magic
 
         /// <summary>A sprite at a point: its size in cells, how long it lasts (ticks), its angle and its turning.</summary>
         /// <summary>A sprite in a colour of its own (Fix166): a Life picture recoloured for a meeting.</summary>
-        public static void PutTinted(Verse.Map map, string path, UnityEngine.Color tint, UnityEngine.Vector3 at, float size, int life, float angle = -1f, float spin = 0f)
+        public static void PutTinted(Verse.Map map, string path, UnityEngine.Color tint, UnityEngine.Vector3 at, float size, int life, float angle = -1f, float spin = 0f, float aspect = 1f)
         {
             var c = map?.GetComponent<MapComponent_SpellSprites>();
             string key = path + "#" + UnityEngine.ColorUtility.ToHtmlStringRGBA(tint);
@@ -84,7 +84,7 @@ namespace Avir.Magic
                 mats[key] = m;
             }
             if (c == null || m == null) return;
-            c.sprites.Add(new Sprite { mat = m, at = at, w = size, h = size, angle = angle < 0f ? Verse.Rand.Range(0f, 360f) : angle, spin = spin, born = Verse.Find.TickManager.TicksGame, life = life });
+            c.sprites.Add(new Sprite { mat = m, at = at, w = size, h = size / aspect, angle = angle < 0f ? Verse.Rand.Range(0f, 360f) : angle, spin = spin, born = Verse.Find.TickManager.TicksGame, life = life });
         }
 
         public static void Put(Verse.Map map, string path, UnityEngine.Vector3 at, float size, int life, float angle = -1f, float spin = 0f, float aspect = 1f)
