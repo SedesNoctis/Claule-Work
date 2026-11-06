@@ -45,6 +45,73 @@ namespace Avir.Magic
 
         public static Texture2D For(SpellCircle root, SpellCircle c, bool asInk) => Get(NameOf(root, c), asInk);
 
+        /// <summary>Every meeting rune there is (the author's sheets), by name - for the sign editor (Fix192).</summary>
+        public static List<string> All
+        {
+            get
+            {
+                if (all == null)
+                    all = ContentFinder<Texture2D>.GetAllInFolder("UI/Ritualistics/Runes/Glow").Where(t => t != null && t.name.StartsWith("Combo_")).Select(t => t.name.Substring(6)).Distinct().OrderBy(n => n).ToList();
+                return all;
+            }
+        }
+        private static List<string> all;
+
+        /// <summary>A meeting's own colour, by its name: the pair's, the second order's, Life's, a partial's.</summary>
+        public static Color ColorOf(string name)
+        {
+            if (name == null) return Color.white;
+            if (System.Enum.TryParse(name, out SecondKind y) && y != SecondKind.None) return SecondOrder.ColorOf(y);
+            if (System.Enum.TryParse(name, out ComboKind k) && k != ComboKind.None) return Combos.ColorOf(k);
+            if (name == "Thunder") return Partials.ThunderColor;
+            if (name == "Whirl" || name == "Veil") return Partials.SandColor;
+            foreach (RuneKind e in new[] { RuneKind.Fire, RuneKind.Water, RuneKind.Earth, RuneKind.Air })
+            {
+                if (LifeMagic.PairName(e)?.Replace(" ", "") == name) return LifeMagic.PairColor(e);
+                if (LifeMagic.AspectName(e) == name) return LifeMagic.AspectColor(e);
+            }
+            return Color.white;
+        }
+
+        /// <summary>A spell's own meeting, by name (for the default sign and its colour).</summary>
+        public static string NameForSpell(RitualSchema s)
+        {
+            if (s?.weave == null) return null;
+            SpellCircle root = s.weave;
+            foreach (SecondKind y in SecondOrder.Of(root).Values.Distinct()) if (Get(y.ToString(), false) != null) return y.ToString();
+            foreach (SpellCircle g in LifeMagic.Circles(root)) { string n = NameOf(root, g); if (Get(n, false) != null) return n; }
+            foreach (var kv in Combos.Pairs(root, false))
+            {
+                string n = NameOf(root, kv.Key);
+                if (Get(n, false) != null) return n;
+            }
+            return null;
+        }
+
+        private static readonly Dictionary<RitualSchema, KeyValuePair<int, string>> nameCache = new Dictionary<RitualSchema, KeyValuePair<int, string>>();
+        public static string NameForSpellCached(RitualSchema s)
+        {
+            if (s == null) return null;
+            int now = Time.frameCount;
+            if (nameCache.TryGetValue(s, out var kv) && now - kv.Key < 60) return kv.Value;
+            string n = NameForSpell(s);
+            nameCache[s] = new KeyValuePair<int, string>(now, n);
+            return n;
+        }
+
+        /// <summary>The meeting's sign drawn as the elements' are: its rune in its own colour (glowing on the dark, inked on
+        /// the parchment) - not black.</summary>
+        public static void DrawSign(Rect r, string name)
+        {
+            Texture2D glow = Get(name, false), ink = Get(name, true);
+            if (glow == null) return;
+            Color keep = GUI.color, c = ColorOf(name);
+            bool light = FlowStyle.Pick(ink, glow) == glow;
+            GUI.color = light || ink == null ? Color.Lerp(c, Color.white, 0.15f) : SpellGlyph.Ink(c);
+            GUI.DrawTexture(r, light || ink == null ? glow : ink, ScaleMode.ScaleToFit);
+            GUI.color = keep;
+        }
+
         private static readonly Dictionary<RitualSchema, KeyValuePair<int, Texture2D>> cache = new Dictionary<RitualSchema, KeyValuePair<int, Texture2D>>();
         /// <summary>The same, looked up again at most once a second (a gizmo is drawn every frame).</summary>
         public static Texture2D ForSpellCached(RitualSchema s)

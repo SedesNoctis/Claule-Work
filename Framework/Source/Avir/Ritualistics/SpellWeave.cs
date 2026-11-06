@@ -130,15 +130,18 @@ namespace Avir.Ritualistics
         public enum Shape { None, Diamond, Shield, Circle }
         public Shape shape = Shape.Circle;
         public RuneDef main, second;
+        public string mainMeeting, secondMeeting;   // a meeting's own rune (Combo_<name>) in place of a rune (Fix192)
         public Color plate = Color.white, rim = Color.white, glyph = new Color(0.12f, 0.08f, 0.14f), glyph2 = new Color(0.12f, 0.08f, 0.14f);
 
-        public SpellIcon Copy() => new SpellIcon { shape = shape, main = main, second = second, plate = plate, rim = rim, glyph = glyph, glyph2 = glyph2 };
+        public SpellIcon Copy() => new SpellIcon { shape = shape, main = main, second = second, mainMeeting = mainMeeting, secondMeeting = secondMeeting, plate = plate, rim = rim, glyph = glyph, glyph2 = glyph2 };
 
         public void ExposeData()
         {
             Scribe_Values.Look(ref shape, "shape", Shape.Circle);
             Scribe_Defs.Look(ref main, "main");
             Scribe_Defs.Look(ref second, "second");
+            Scribe_Values.Look(ref mainMeeting, "mainMeeting");
+            Scribe_Values.Look(ref secondMeeting, "secondMeeting");
             Scribe_Values.Look(ref plate, "plate");
             Scribe_Values.Look(ref rim, "rim");
             Scribe_Values.Look(ref glyph, "glyph");

@@ -78,8 +78,9 @@ namespace Avir.Magic
             if (s?.icon == null)
             {
                 // a spell of a meeting signs itself with the meeting's rune (Fix183)
-                Texture2D mg = FlowStyle.Pick(MeetingGlyphs.ForSpell(s, true), MeetingGlyphs.ForSpell(s, false));
-                if (mg != null) { Color k0 = GUI.color; GUI.color = Color.white; GUI.DrawTexture(r.ContractedBy(r.width * 0.06f), mg, ScaleMode.ScaleToFit); GUI.color = k0; return; }
+                // (Fix192) in the meeting's own colour - before, the inked rune came out black
+                string mn = MeetingGlyphs.NameForSpellCached(s);
+                if (mn != null) { MeetingGlyphs.DrawSign(r.ContractedBy(r.width * 0.06f), mn); return; }
                 SpellGlyph.Draw(r.ContractedBy(r.width * 0.06f), DefaultGlyph(s)); return;
             }
             Draw(r, s.icon, DefaultGlyph(s));
@@ -93,21 +94,23 @@ namespace Avir.Magic
                 GUI.color = ic.plate; GUI.DrawTexture(r, Plate(ic.shape), ScaleMode.ScaleToFit);
                 GUI.color = ic.rim; GUI.DrawTexture(r, Rim(ic.shape), ScaleMode.ScaleToFit);
             }
-            RuneDef main = ic.main ?? fallback;
-            if (main != null)
+            RuneDef main = ic.main ?? (ic.mainMeeting == null ? fallback : null);
+            Texture2D mainTex = ic.mainMeeting != null ? MeetingGlyphs.Get(ic.mainMeeting, Dark(ic.glyph)) ?? MeetingGlyphs.Get(ic.mainMeeting, false) : main == null ? null : Dark(ic.glyph) ? main.Ink : main.Glow;
+            if (mainTex != null)
             {
                 float k = ic.shape == SpellIcon.Shape.None ? 0.06f : ic.shape == SpellIcon.Shape.Shield ? 0.27f : 0.24f;
                 Rect g = r.ContractedBy(r.width * k);
                 if (ic.shape == SpellIcon.Shape.Shield) g.y -= r.height * 0.04f;
-                GUI.color = ic.glyph; GUI.DrawTexture(g, Dark(ic.glyph) ? main.Ink : main.Glow, ScaleMode.ScaleToFit);
+                GUI.color = ic.glyph; GUI.DrawTexture(g, mainTex, ScaleMode.ScaleToFit);
             }
-            if (ic.second != null)
+            Texture2D secondTex = ic.secondMeeting != null ? MeetingGlyphs.Get(ic.secondMeeting, Dark(ic.glyph2)) ?? MeetingGlyphs.Get(ic.secondMeeting, false) : ic.second == null ? null : Dark(ic.glyph2) ? ic.second.Ink : ic.second.Glow;
+            if (secondTex != null)
             {
                 float w = r.width * 0.36f;
                 Rect c = new Rect(r.xMax - w, r.yMax - w, w, w);
                 GUI.color = Dark(ic.glyph2) ? new Color(0.95f, 0.9f, 0.82f, 0.95f) : new Color(0.08f, 0.06f, 0.10f, 0.9f);
                 GUI.DrawTexture(c, RitualTex.Disc, ScaleMode.StretchToFill);
-                GUI.color = ic.glyph2; GUI.DrawTexture(c.ContractedBy(w * 0.14f), Dark(ic.glyph2) ? ic.second.Ink : ic.second.Glow, ScaleMode.ScaleToFit);
+                GUI.color = ic.glyph2; GUI.DrawTexture(c.ContractedBy(w * 0.14f), secondTex, ScaleMode.ScaleToFit);
             }
             GUI.color = keep;
         }
@@ -135,7 +138,8 @@ namespace Avir.Magic
         {
             this.s = s;
             this.done = done;
-            ic = s.icon?.Copy() ?? new SpellIcon { main = SpellIconArt.DefaultGlyph(s) };
+            string mn = MeetingGlyphs.NameForSpell(s);
+            ic = s.icon?.Copy() ?? (mn != null ? new SpellIcon { mainMeeting = mn, glyph = MeetingGlyphs.ColorOf(mn) } : new SpellIcon { main = SpellIconArt.DefaultGlyph(s) });
             doWindowBackground = false;
             doCloseX = true;
             absorbInputAroundWindow = true;
@@ -202,10 +206,10 @@ namespace Avir.Magic
             List<RuneDef> runes = RuneDef.All.Where(x2 => x2.Glow != BaseContent.BadTex).ToList();
             float gridH = (r.yMax - y - 170f) / 2f;
             GUI.color = Ink; ArtInk.Label(new Rect(r.x, y, r.width, 26f), "Main sign"); y += 28f;
-            RuneGrid(new Rect(r.x, y, r.width, gridH - 30f), runes, ic.main ?? SpellIconArt.DefaultGlyph(s), d => ic.main = d, ref scrollMain, false);
+            RuneGrid(new Rect(r.x, y, r.width, gridH - 30f), runes, ic.mainMeeting != null ? null : ic.main ?? SpellIconArt.DefaultGlyph(s), ic.mainMeeting, (d, m) => { ic.main = d; ic.mainMeeting = m; }, ref scrollMain, false);
             y += gridH;
             GUI.color = Ink; ArtInk.Label(new Rect(r.x, y, r.width, 26f), "Corner sign (small, lower right)"); y += 28f;
-            RuneGrid(new Rect(r.x, y, r.width, gridH - 30f), runes, ic.second, d => ic.second = d, ref scrollSecond, true);
+            RuneGrid(new Rect(r.x, y, r.width, gridH - 30f), runes, ic.secondMeeting != null ? null : ic.second, ic.secondMeeting, (d, m) => { ic.second = d; ic.secondMeeting = m; }, ref scrollSecond, true);
             y += gridH;
             // colours: choose what to paint, then the colour
             GUI.color = Ink; ArtInk.Label(new Rect(r.x, y, 120f, 30f), "Colour of");
@@ -235,19 +239,34 @@ namespace Avir.Magic
             GUI.color = Color.white;
         }
 
-        private void RuneGrid(Rect r, List<RuneDef> runes, RuneDef chosen, System.Action<RuneDef> pick, ref Vector2 scroll, bool allowNone)
+        /// <summary>The runes, then the meetings' own runes (Fix192: the sign editor had none of them).</summary>
+        private void RuneGrid(Rect r, List<RuneDef> runes, RuneDef chosen, string chosenMeeting, System.Action<RuneDef, string> pick, ref Vector2 scroll, bool allowNone)
         {
             const float cell = 52f;
             int per = Mathf.Max(1, Mathf.FloorToInt((r.width - 16f) / cell));
-            int count = runes.Count + (allowNone ? 1 : 0);
+            List<string> meets = MeetingGlyphs.All;
+            int count = runes.Count + (allowNone ? 1 : 0) + meets.Count;
             Rect view = new Rect(0f, 0f, r.width - 16f, Mathf.CeilToInt(count / (float)per) * cell);
             Widgets.DrawBoxSolid(r, new Color(0.16f, 0.13f, 0.20f, 0.85f));
             RitualScroll.Begin(r, ref scroll, view);
             for (int i = 0; i < count; i++)
             {
                 Rect c = new Rect((i % per) * cell + 3f, (i / per) * cell + 3f, cell - 6f, cell - 6f);
-                RuneDef d = allowNone ? (i == 0 ? null : runes[i - 1]) : runes[i];
-                bool on = d == chosen;
+                int ri = allowNone ? i - 1 : i;
+                string mname = ri >= runes.Count ? meets[ri - runes.Count] : null;
+                RuneDef d = mname != null || ri < 0 ? null : runes[ri];
+                bool on = mname != null ? mname == chosenMeeting : d == chosen && chosenMeeting == null;
+                if (mname != null)
+                {
+                    if (on) Widgets.DrawBoxSolid(c, new Color(1f, 0.85f, 0.4f, 0.35f));
+                    else if (Mouse.IsOver(c)) Widgets.DrawBoxSolid(c, new Color(1f, 1f, 1f, 0.12f));
+                    GUI.color = Color.Lerp(MeetingGlyphs.ColorOf(mname), Color.white, 0.2f);
+                    Texture2D mt = MeetingGlyphs.Get(mname, false);
+                    if (mt != null) GUI.DrawTexture(c.ContractedBy(5f), mt, ScaleMode.ScaleToFit);
+                    TooltipHandler.TipRegion(c, GenText.SplitCamelCase(mname));
+                    if (Widgets.ButtonInvisible(c)) { pick(null, mname); SoundDefOf.Tick_Tiny.PlayOneShotOnCamera(); }
+                    continue;
+                }
                 if (on) Widgets.DrawBoxSolid(c, new Color(1f, 0.85f, 0.4f, 0.35f));
                 else if (Mouse.IsOver(c)) Widgets.DrawBoxSolid(c, new Color(1f, 1f, 1f, 0.12f));
                 if (d == null)
@@ -261,7 +280,7 @@ namespace Avir.Magic
                     GUI.DrawTexture(c.ContractedBy(5f), d.Glow, ScaleMode.ScaleToFit);
                     TooltipHandler.TipRegion(c, d.LabelCap);
                 }
-                if (Widgets.ButtonInvisible(c)) { pick(d); SoundDefOf.Tick_Tiny.PlayOneShotOnCamera(); }
+                if (Widgets.ButtonInvisible(c)) { pick(d, null); SoundDefOf.Tick_Tiny.PlayOneShotOnCamera(); }
             }
             GUI.color = Color.white;
             Widgets.EndScrollView();

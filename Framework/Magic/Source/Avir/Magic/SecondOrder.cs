@@ -700,7 +700,7 @@ namespace Avir.Magic
                 {
                     if (!c.InBounds(map)) continue;
                     List<Thing> here = c.GetThingList(map);
-                    if (Rand.Chance(0.06f)) Visual(f, c);
+                    if (Rand.Chance(0.12f)) Visual(f, c);
                     foreach (Pawn p in here.OfType<Pawn>().ToList())
                     {
                         bool foe = f.owner == null || MagicFx.Foe(p, f.owner);
@@ -754,7 +754,8 @@ namespace Avir.Magic
             if (rain == null) rain = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Wind/Rain", ShaderDatabase.MoteGlow, Color.white);
             var block = new MaterialPropertyBlock();
             float fade = Mathf.Clamp01((f.until - now) / 300f);
-            for (int i = 0; i < 46; i++)
+            int drops = f.y == SecondKind.Deluge ? Mathf.Clamp(Mathf.RoundToInt(f.rad * f.rad * 4f), 30, 160) : 46;
+            for (int i = 0; i < drops; i++)
             {
                 float h1 = Mathf.Repeat(i * 0.6180339f, 1f), h2 = Mathf.Repeat(i * 0.3819660f + 0.17f, 1f), h3 = Mathf.Repeat(i * 0.7548776f, 1f);
                 float ang = h1 * 6.2831853f, rr = Mathf.Sqrt(h2) * f.rad * 0.9f;
@@ -777,7 +778,7 @@ namespace Avir.Magic
                 // a hurricane shows where it rages (Fix185): its edge, as long as it lasts
                 if (f.y == SecondKind.Hurricane && f.speed <= 0f) GenDraw.DrawFieldEdges(f.cells.ToList(), new Color(0.55f, 0.75f, 1f, 0.6f));
                 Material m = FieldMat(f.y) ?? (Whirls(f) ? AuraMat(f.y) : null);
-                if (m == null) continue;
+                if (m == null && f.y != SecondKind.Deluge) continue;
                 if (f.rad <= 0f || f.speed > 0f)
                 {
                     Vector3 sum = Vector3.zero; foreach (IntVec3 c in f.cells) sum += c.ToVector3Shifted();
@@ -791,22 +792,78 @@ namespace Avir.Magic
                 block.SetColor(ShaderPropertyIDs.Color, col);
                 float size = f.rad * 2f;
                 float turn = f.y == SecondKind.Hurricane && f.speed > 0f ? t * 140f : f.y == SecondKind.Typhoon ? t * 95f : t * 4f;   // a whirl spins fast
-                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis((turn + f.mid.x * 13f) % 360f, Vector3.up), new Vector3(size, 1f, size)), m, 0, null, 0, block);
-                if (f.y == SecondKind.Typhoon) Rain(f, t, now);
+                if (m != null) Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis((turn + f.mid.x * 13f) % 360f, Vector3.up), new Vector3(size, 1f, size)), m, 0, null, 0, block);
+                if (f.y == SecondKind.Typhoon || f.y == SecondKind.Deluge) Rain(f, t, now);
             }
         }
 
+        /// <summary>Each field its own look (the author, Fix192: every meeting strikes with its own and looks its own - not
+        /// the grey puffs of steam). Drawn from the sprites we have, tinted and moved; the art for them is in the prompts.</summary>
         private void Visual(Fld f, IntVec3 c)
         {
-            Vector3 v = c.ToVector3Shifted();
+            Vector3 v = c.ToVector3Shifted() + new Vector3(Rand.Range(-0.3f, 0.3f), 0f, Rand.Range(-0.3f, 0.3f));
+            Color col = SecondOrder.ColorOf(f.y);
             switch (f.y)
             {
-                case SecondKind.Deluge: case SecondKind.Typhoon: FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 0.6f); break;
-                case SecondKind.Rainbow: if (Rand.Chance(0.15f)) MapComponent_SpellSprites.Put(map, "Second/Rainbow", v, 3f, 120, Rand.Range(0f, 360f), 0f, 2f); else FleckMaker.ThrowDustPuffThick(v, map, 0.8f, new Color(0.95f, 0.9f, 1f, 0.35f)); break;
-                case SecondKind.Ash: case SecondKind.MarshHaze: FleckMaker.ThrowSmoke(v, map, 1.4f); break;
-                case SecondKind.Inferno: case SecondKind.Swelter: FleckMaker.ThrowHeatGlow(c, map, 1f); break;
-                case SecondKind.BallLightning: FleckMaker.ThrowLightningGlow(v, map, 0.8f); if (Rand.Chance(0.25f)) MapComponent_SpellSprites.Put(map, "Second/BallLightning", v, 1.4f, 40, -1f, 4f); break;
-                default: FleckMaker.ThrowDustPuffThick(v, map, 0.8f, new Color(0.85f, 0.85f, 0.85f, 0.4f)); break;
+                // steam's: the inferno roars - shimmering orange heat, sparks flung up; the boil bubbles white and rings
+                case SecondKind.Inferno:
+                    MapComponent_SpellSprites.PutTinted(map, "Haze/Shimmer", new Color(1f, 0.55f, 0.2f, 0.8f), v, 1.6f, 70, -1f, 1.2f);
+                    FleckMaker.ThrowMicroSparks(v, map); FleckMaker.ThrowHeatGlow(c, map, 1f); break;
+                case SecondKind.Boil:
+                    MapComponent_SpellSprites.PutTinted(map, "Bog/Bubbles", new Color(0.92f, 0.97f, 1f, 0.9f), v, 0.8f, 60);
+                    MapComponent_SpellSprites.PutTintedGrowing(map, "Wave/Ripple", new Color(0.9f, 0.97f, 1f), v, 0.7f, 45, 1.5f);
+                    if (Rand.Chance(0.4f)) FleckMaker.ThrowDustPuffThick(v, map, 0.7f, new Color(1f, 1f, 1f, 0.3f)); break;
+                case SecondKind.Geyser: case SecondKind.Typhoon:
+                    FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 0.6f); break;
+                // magma's: ash falls in flakes, dark and slow
+                case SecondKind.Ash:
+                    MapComponent_SpellSprites.PutTinted(map, "Ash/Ash_" + "ABC"[Rand.Range(0, 3)], new Color(0.35f, 0.33f, 0.32f, 0.85f), v, 0.9f, 110, Rand.Range(0f, 360f), 0.6f);
+                    if (Rand.Chance(0.3f)) FleckMaker.ThrowSmoke(v, map, 1f); break;
+                case SecondKind.Lava: case SecondKind.Volcano:
+                    FleckMaker.ThrowFireGlow(v, map, 0.8f); if (Rand.Chance(0.3f)) FleckMaker.ThrowMicroSparks(v, map); break;
+                case SecondKind.Obsidian:
+                    MapComponent_SpellSprites.PutTinted(map, "Haze/Shimmer", new Color(0.55f, 0.4f, 0.75f, 0.6f), v, 0.9f, 50, -1f, 0.8f); break;
+                // storm's: the deluge's own rain is drawn over it (Rain); here - splashes and rings
+                case SecondKind.Deluge:
+                    FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 0.7f);
+                    MapComponent_SpellSprites.PutTintedGrowing(map, "Wave/Ripple", new Color(0.6f, 0.8f, 1f), v, 0.8f, 50, 1.6f); break;
+                case SecondKind.Hurricane:
+                    MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", new Color(0.8f, 0.9f, 1f, 0.75f), v, 1.6f, 25, Rand.Range(0f, 360f), 0f, 4f); break;
+                case SecondKind.Mudflow:
+                    MapComponent_SpellSprites.PutTinted(map, "Bog/Splash", new Color(0.45f, 0.32f, 0.2f, 0.9f), v, 1.1f, 50);
+                    MapComponent_SpellSprites.PutTintedGrowing(map, "Wave/Ripple", new Color(0.55f, 0.4f, 0.25f), v, 0.8f, 50, 1.5f); break;
+                case SecondKind.BallLightning:
+                    FleckMaker.ThrowLightningGlow(v, map, 0.8f); if (Rand.Chance(0.25f)) MapComponent_SpellSprites.Put(map, "Second/BallLightning", v, 1.4f, 40, -1f, 4f); break;
+                // haze's: the swelter shimmers orange, the thermal lifts pale gold wisps, the dry wind drives ochre grit
+                case SecondKind.Swelter:
+                    MapComponent_SpellSprites.PutTinted(map, "Haze/Shimmer", new Color(1f, 0.7f, 0.35f, 0.7f), v, 1.8f, 90, -1f, 0.8f);
+                    FleckMaker.ThrowHeatGlow(c, map, 0.8f); break;
+                case SecondKind.Thermal:
+                    MapComponent_SpellSprites.PutTintedGrowing(map, "Wind/Wisp", new Color(1f, 0.92f, 0.65f), v, 0.9f, 60, 1.8f); break;
+                case SecondKind.DryWind:
+                    MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", new Color(0.85f, 0.68f, 0.42f, 0.8f), v, 1.4f, 30, 90f + Rand.Range(-15f, 15f), 0f, 4f);
+                    if (Rand.Chance(0.4f)) FleckMaker.ThrowDustPuffThick(v, map, 0.8f, new Color(0.8f, 0.65f, 0.4f, 0.4f)); break;
+                case SecondKind.Rainbow:
+                    if (Rand.Chance(0.15f)) MapComponent_SpellSprites.Put(map, "Second/Rainbow", v, 3f, 120, Rand.Range(0f, 360f), 0f, 2f); else FleckMaker.ThrowDustPuffThick(v, map, 0.8f, new Color(0.95f, 0.9f, 1f, 0.35f)); break;
+                // bog's: silt clouds the water grey-brown, marsh gas and haze have their own sheets
+                case SecondKind.Silt: case SecondKind.Quag:
+                    MapComponent_SpellSprites.PutTintedGrowing(map, "Wave/Ripple", new Color(0.55f, 0.5f, 0.38f), v, 0.9f, 60, 1.4f);
+                    if (Rand.Chance(0.3f)) MapComponent_SpellSprites.PutTinted(map, "Bog/Bubbles", new Color(0.6f, 0.55f, 0.4f, 0.8f), v, 0.6f, 60); break;
+                case SecondKind.MarshGas: case SecondKind.MarshHaze:
+                    FleckMaker.ThrowSmoke(v, map, 1.2f); break;
+                // dust's: emery grinds - sand streaks and the sparks of the grinding; burning sand glows and smokes; clay
+                case SecondKind.Emery:
+                    MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", new Color(0.9f, 0.82f, 0.62f, 0.85f), v, 1.1f, 20, Rand.Range(0f, 360f), 0f, 4f);
+                    if (Rand.Chance(0.5f)) FleckMaker.ThrowMicroSparks(v, map); break;
+                case SecondKind.BurningSand:
+                    FleckMaker.ThrowDustPuffThick(v, map, 0.8f, new Color(1f, 0.55f, 0.25f, 0.45f));
+                    FleckMaker.ThrowFireGlow(v, map, 0.5f); break;
+                case SecondKind.Clay:
+                    MapComponent_SpellSprites.PutTinted(map, "Bog/Bubbles", new Color(0.7f, 0.42f, 0.3f, 0.9f), v, 0.7f, 60);
+                    FleckMaker.ThrowDustPuffThick(v, map, 0.6f, new Color(0.65f, 0.4f, 0.3f, 0.35f)); break;
+                case SecondKind.Rockfall:
+                    FleckMaker.ThrowDustPuffThick(v, map, 1f, MagicFx.EarthDust); break;
+                default: FleckMaker.ThrowDustPuffThick(v, map, 0.8f, new Color(col.r, col.g, col.b, 0.4f)); break;
             }
         }
     }
