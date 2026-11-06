@@ -410,7 +410,9 @@ namespace Avir.Magic
                     default:
                         if (mix != LifeMix.None) { MixWither(caster, p, dmg); p.TakeDamage(new DamageInfo(WitherDmg, dmg * 0.6f, 2f, -1f, caster)); got += dmg; break; }
                         if (aspect != None) { AspectWither(caster, p, dmg); p.TakeDamage(new DamageInfo(WitherDmg, dmg * 0.6f, 2f, -1f, caster)); got += dmg; break; }
-                        p.TakeDamage(new DamageInfo(WitherDmg, dmg, 2f, -1f, caster)); got += dmg; break;
+                        p.TakeDamage(new DamageInfo(WitherDmg, dmg, 2f, -1f, caster)); got += dmg;
+                        Desiccation.Dry(p, 0.04f * dmg / 6f, false, caster);   // plain Life dries the flesh, slowly (Fix200)
+                        break;
                 }
                 Wisp(p.DrawPos, map);
             }
@@ -640,6 +642,7 @@ namespace Avir.Magic
 
         public static void HealInjuries(Pawn p, float amount)
         {
+            Desiccation.Undo(p, amount * 0.02f);   // magic healing turns the drying back (Fix200)
             float left = amount;
             foreach (Hediff_Injury inj in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => !i.IsPermanent()).OrderByDescending(i => i.Bleeding ? 1 : 0).ThenByDescending(i => i.Severity).ToList())
             {

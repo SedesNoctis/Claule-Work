@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Fix200: the stone curse of Emerald; desiccation (Life slow, Decay to the bone); the petal fire of Wild Flame. -->
+  <HediffDef>
+    <defName>Avir_StoneCurse</defName>
+    <label>stone curse</label>
+    <description>A curse of Emerald, working like a sickness: stone creeps through the body. If the body fights it off, it passes; if not, the cursed does not die - they turn to stone, a statue. Whoever dies while it is on them dies into stone.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.3, 0.65, 0.45)</defaultLabelColor>
+    <isBad>true</isBad>
+    <makesSickThought>true</makesSickThought>
+    <lethalSeverity>1</lethalSeverity>
+    <initialSeverity>0.05</initialSeverity>
+    <tendable>false</tendable>
+    <comps>
+      <li Class="HediffCompProperties_Immunizable">
+        <severityPerDayNotImmune>0.3</severityPerDayNotImmune>
+        <immunityPerDaySick>0.22</immunityPerDaySick>
+        <severityPerDayImmune>-0.5</severityPerDayImmune>
+        <immunityPerDayNotSick>-0.1</immunityPerDayNotSick>
+      </li>
+    </comps>
+    <stages>
+      <li><label>creeping</label><capMods><li><capacity>Moving</capacity><offset>-0.05</offset></li></capMods></li>
+      <li><minSeverity>0.4</minSeverity><label>spreading</label><capMods><li><capacity>Moving</capacity><offset>-0.15</offset></li><li><capacity>Manipulation</capacity><offset>-0.1</offset></li></capMods></li>
+      <li><minSeverity>0.75</minSeverity><label>near stone</label><lifeThreatening>true</lifeThreatening><capMods><li><capacity>Moving</capacity><offset>-0.3</offset></li><li><capacity>Manipulation</capacity><offset>-0.25</offset></li><li><capacity>Talking</capacity><offset>-0.3</offset></li></capMods></li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_Desiccated</defName>
+    <label>dried by Life</label>
+    <description>Life drew the moisture out of this part: shrunken, stiff. No medicine helps; it fills out again by itself in time, and Restoration turns it back.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.8, 0.7, 0.5)</defaultLabelColor>
+    <isBad>true</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>0.9</maxSeverity>
+    <comps><li Class="HediffCompProperties_SeverityPerDay"><severityPerDay>-0.25</severityPerDay></li></comps>
+    <stages>
+      <li><label>shrunken</label><partEfficiencyOffset>-0.2</partEfficiencyOffset></li>
+      <li><minSeverity>0.4</minSeverity><label>withered</label><partEfficiencyOffset>-0.5</partEfficiencyOffset></li>
+      <li><minSeverity>0.75</minSeverity><label>dry as wood</label><partEfficiencyOffset>-0.8</partEfficiencyOffset></li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_DesiccatedDecay</defName>
+    <label>dried to the bone</label>
+    <description>Decay drew the flesh out of this part, down to the bone. It does not come back by itself and no medicine helps - only magic healing of any kind. Dried through, the part is useless, though it stays. A body dried through dies, and nothing is left to rot.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.72, 0.68, 0.55)</defaultLabelColor>
+    <isBad>true</isBad>
+    <initialSeverity>0.01</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <stages>
+      <li><label>drying</label><partEfficiencyOffset>-0.25</partEfficiencyOffset></li>
+      <li><minSeverity>0.4</minSeverity><label>parched</label><partEfficiencyOffset>-0.55</partEfficiencyOffset></li>
+      <li><minSeverity>0.75</minSeverity><label>skin and bone</label><partEfficiencyOffset>-0.85</partEfficiencyOffset></li>
+      <li><minSeverity>0.999</minSeverity><label>dried through</label><partEfficiencyOffset>-1</partEfficiencyOffset></li>
+    </stages>
+  </HediffDef>
+  <DamageDef>
+    <defName>Avir_PetalFire</defName>
+    <label>petal fire</label>
+    <workerClass>DamageWorker_AddInjury</workerClass>
+    <externalViolence>true</externalViolence>
+    <deathMessage>{0} has burst in living flame.</deathMessage>
+    <hediff>Avir_PetalBurn</hediff>
+    <harmsHealth>true</harmsHealth>
+    <defaultDamage>6</defaultDamage>
+  </DamageDef>
+  <HediffDef ParentName="InjuryBase">
+    <defName>Avir_PetalBurn</defName>
+    <label>petal burn</label>
+    <labelNoun>a burn of living flame</labelNoun>
+    <description>Burnt by the petals of a living bomb: green-gold flame that clings and sears in streaks.</description>
+    <comps>
+      <li Class="HediffCompProperties_TendDuration"><labelTendedWell>dressed</labelTendedWell><labelTendedWellInner>tended</labelTendedWellInner><labelSolidTendedWell>dressed</labelSolidTendedWell></li>
+      <li Class="HediffCompProperties_Infecter"><infectionChance>0.25</infectionChance></li>
+      <li Class="HediffCompProperties_GetsPermanent"><permanentLabel>petal scar</permanentLabel></li>
+    </comps>
+    <injuryProps><painPerSeverity>0.0175</painPerSeverity><averagePainPerSeverityPermanent>0.00625</averagePainPerSeverityPermanent><canMerge>true</canMerge><destroyedLabel>burned off</destroyedLabel></injuryProps>
+  </HediffDef>
+</Defs>

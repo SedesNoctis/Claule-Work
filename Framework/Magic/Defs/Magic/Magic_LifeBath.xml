@@ -140,8 +140,8 @@
   </HediffDef>
   <HediffDef>
     <defName>Avir_LifeCared</defName>
-    <label>cared for by Life</label>
-    <description>Worked over by a caster of Life: the body loose and light, the aches quiet.</description>
+    <label>back worked loose</label>
+    <description>A caster of Life kneaded the back loose: the body light, the aches quiet.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <isBad>false</isBad>
     <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
@@ -157,13 +157,13 @@
   </ThoughtDef>
   <HediffDef>
     <defName>Avir_StoneMassaged</defName>
-    <label>warmed by stones</label>
-    <description>Warm stones laid along the back by a caster of earth: the body heavy and easy, the aches gone deep and quiet.</description>
+    <label>back worked loose</label>
+    <description>A caster of earth worked the back loose - kneaded and pressed with smooth stones in the hands. The knots are gone, the body moves easier.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <isBad>false</isBad>
     <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
     <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>45000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
-    <stages><li><painFactor>0.85</painFactor><statOffsets><ComfyTemperatureMin>-4</ComfyTemperatureMin></statOffsets><capMods><li><capacity>Moving</capacity><offset>0.04</offset></li></capMods></li></stages>
+    <stages><li><painFactor>0.85</painFactor><capMods><li><capacity>Moving</capacity><offset>0.05</offset></li><li><capacity>Manipulation</capacity><offset>0.04</offset></li></capMods></li></stages>
   </HediffDef>
   <HediffDef>
     <defName>Avir_LifeKinship</defName>

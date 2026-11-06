@@ -118,6 +118,7 @@ namespace Avir.Magic
                     if (hold) { DamageDef crumble = DefDatabase<DamageDef>.GetNamedSilentFail("Avir_Crumble"); if (crumble != null) p.TakeDamage(new DamageInfo(crumble, dmg * 0.6f, 0f, -1f, caster)); }
                     if (beam && p.apparel != null) foreach (Apparel a in p.apparel.WornApparel.ToList()) if (a.def.useHitPoints) a.HitPoints = Mathf.Max(1, a.HitPoints - Mathf.RoundToInt(a.MaxHitPoints * 0.1f * dmg / 6f));
                     if (p.ageTracker != null) p.ageTracker.AgeBiologicalTicks += (long)(GenDate.TicksPerYear * 0.08f * dmg / 6f);   // slowly, dearly
+                    Desiccation.Dry(p, 0.18f * dmg / 6f, true, caster);   // dried to the bone (Fix200)
                     break;
             }
         }

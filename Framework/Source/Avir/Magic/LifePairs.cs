@@ -49,7 +49,7 @@ namespace Avir.Magic
                 if (q.Dead) continue;
                 float amt = (q == carrier ? 0.4f : 1f) * power;
                 if (heart) { HealInjuries(q, amt); AddRegen(q, 0.05f); }
-                else { q.TakeDamage(new DamageInfo(DamageDefOf.Burn, amt, 1f, -1f, owner)); got += amt; }
+                else { q.TakeDamage(new DamageInfo(DefDatabase<DamageDef>.GetNamedSilentFail("Avir_PetalFire") ?? DamageDefOf.Burn, amt, 1f, -1f, owner)); got += amt; }   // its own wound (Fix200)
             }
             Hediff_ArcaneCore core = owner != null ? Mages.Core(owner) : null;
             if (core != null && got > 0f) core.AddTo(RuneKind.Fire, got * 0.5f);
@@ -174,6 +174,8 @@ namespace Avir.Magic
                         got += EmeraldPlant.Make(pl, map);
                     }
                     if (got > 0.5f) { Emerald.Charge(at, map, got * 0.5f); got *= 0.5f; }
+                    // the living reached: the stone curse, a sickness of stone (Fix200) - dear: the Emerald store pays for each
+                    StoneCurse.Lay(caster, Reached(caster, g, Area(at, r, map)).Where(x => x != caster));
                     break;
                 case RuneKind.Fire:
                     foreach (Thing t in GenRadial.RadialDistinctThingsAround(at, map, r, true).Where(t => t.def == ThingDefOf.Filth_Ash).ToList()) { got += 1.5f; fert?.Add(t.Position, 0.3f, 5); t.Destroy(); }

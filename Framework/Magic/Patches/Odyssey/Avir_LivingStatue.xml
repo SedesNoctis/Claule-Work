@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- The living statue of Emerald's stone curse (Fix200): built on Odyssey's statue (its art of a person). Without
+       Odyssey the cursed simply die. -->
+  <Operation Class="PatchOperationFindMod">
+    <mods><li>Odyssey</li></mods>
+    <match Class="PatchOperationAdd">
+      <xpath>Defs</xpath>
+      <value>
+        <ThingDef ParentName="ArtBuildingBase">
+          <defName>Avir_LivingStatue</defName>
+          <label>living statue</label>
+          <description>Someone who lost to Emerald's stone curse: turned to stone where they stood, every line of them kept. The body is inside the stone. It can be moved like any statue.</description>
+          <thingClass>Avir.Magic.Building_LivingStatue</thingClass>
+          <minifiedDef>MinifiedThingRealtimeDraw</minifiedDef>
+          <minifiedManualDraw>true</minifiedManualDraw>
+          <drawerType>RealtimeOnly</drawerType>
+          <thingCategories><li>BuildingsArt</li></thingCategories>
+          <graphicData>
+            <texPath>Things/Building/GenericStatue</texPath>
+            <graphicClass>Graphic_Single</graphicClass>
+            <addTopAltitudeBias>true</addTopAltitudeBias>
+            <drawSize>(1.6,1.6)</drawSize>
+          </graphicData>
+          <altitudeLayer>Building</altitudeLayer>
+          <statBases>
+            <SellPriceFactor>1</SellPriceFactor>
+            <MaxHitPoints>150</MaxHitPoints>
+            <Mass>40</Mass>
+            <Beauty>60</Beauty>
+            <WorkToMake>1</WorkToMake>
+          </statBases>
+          <fillPercent>0.5</fillPercent>
+          <stuffCategories><li>Stony</li></stuffCategories>
+          <costStuffCount>65</costStuffCount>
+          <comps>
+            <li Class="CompProperties_Statue">
+              <compClass>CompStatue</compClass>
+              <nameMaker>NamerStatue</nameMaker>
+              <descriptionMaker>ArtDescription_Statue</descriptionMaker>
+              <canBeEnjoyedAsArt>true</canBeEnjoyedAsArt>
+              <statueBaseGraphic>
+                <texPath>Things/Building/StatueBase</texPath>
+                <graphicClass>Graphic_Single</graphicClass>
+                <drawSize>(1.5, 1.5)</drawSize>
+              </statueBaseGraphic>
+            </li>
+          </comps>
+          <tradeTags><li>Art</li></tradeTags>
+        </ThingDef>
+      </value>
+    </match>
+  </Operation>
+</Patch>

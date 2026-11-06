@@ -299,7 +299,7 @@ namespace Avir.Magic
                 float f = core != null && LifeWorks.Has(core, WorkGiver_LifeCare.Store) ? LifeWorks.Spend(core, WorkGiver_LifeCare.Store) : 0f;
                 if (f <= 0f)
                 {
-                    // warm stones: a caster of earth (Fix199) - laid along the back, rolled, pressed
+                    // a caster of earth kneads the back with smooth stones in the hands (Fix199-200)
                     Hediff_ArcaneCore ec = MagicWork.Able(pawn, RuneKind.Earth, WorkGiver_LifeCare.StoneArcana);
                     if (ec == null) return;
                     float sq = Mathf.Clamp(0.5f + 0.12f * MageClass.Stage(MageClass.XpIn(ec, RuneKind.Earth)), 0.4f, 1.1f);

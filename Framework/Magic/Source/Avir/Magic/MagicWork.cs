@@ -291,6 +291,7 @@ namespace Avir.Magic
                 // a household spell of mending tends better: +10% for each Amplify (never past 98%)
                 float q = Mathf.Min(0.98f, WorkGiver_MagicTend.Quality(c) * (1f + 0.1f * wc.amplify));
                 for (int i = 0; i < tend.Count; i++) tend[i].Tended(Mathf.Clamp01(q * Rand.Range(0.9f, 1.1f)), 1f, i);
+                Desiccation.Undo(patient, 0.15f * q);   // magic healing of any kind turns the drying back (Fix200)
                 FleckMaker.ThrowMetaIcon(patient.Position, patient.Map, FleckDefOf.HealingCross);
                 MagicWork.Done(c, RuneKind.Water, wc.cost, WorkGiver_MagicTend.Xp * (wc.FromBook ? 1.5f : 1f));
             };
