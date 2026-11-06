@@ -44,6 +44,8 @@ namespace Avir.Magic
                 "Giving from the Store. A spell of Life with no Withering in it takes nothing: it spends what an earlier spell put into the store of life. Cast a Withering first, or carry the store full."),
             T("Untied verb of Life", "Untied Verb of Life",
                 "Untied Verb of Life. Life has two sides: Withering, which takes, and Restoration, which gives. Every verb and every beam of Life is written with one of them - Release + Withering is a burst that drinks, Beam + Restoration a beam that mends. A verb with neither does nothing at all. Whom it reaches is the circle's rule, as everywhere: two Barriers on its outer edge strike only the foes, two Barriers and a Thread only one's own; unshaped, Withering drinks friends too and Restoration mends the foes too."),
+            T("Life meets (.+): (.+)", m => m.Groups[2].Value,
+                "The meetings of Life. A great circle of Life with small circles of an element inside takes that meeting's nature, unless a Closing keeps them apart: fire makes Wild Flame, water Blood, earth the Emerald, air Pestilence. The circles of Life in it - its own runes and its small circles - work as that meeting; the element's own circles work as themselves. Wild Flame feeds on what burns and sears wounds shut; Blood drinks spilled blood, bleeds the foes and gives blood back, and drags a foe by its own blood; the Emerald seals life in stone and makes living ground; Pestilence carries sicknesses as fuel, harmless to its mage, and gives them to the foes."),
             T("A hunch", "A Hunch",
                 "A Hunch. Some things the almanac does not tell; it only marks that something is there. Cast it and see."),
             T("Secret path: (.+)", m => "Secret Path",

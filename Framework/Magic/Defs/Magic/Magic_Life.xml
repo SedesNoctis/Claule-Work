@@ -171,4 +171,28 @@
     <affordances><li>Light</li><li>Medium</li><li>Heavy</li><li>GrowSoil</li><li>Diggable</li></affordances>
     <tags><li>Soil</li></tags>
   </TerrainDef>
+
+  <!-- Emerald (Life + Earth): life sealed in a stone; carried and given. Placeholder graphic: vanilla jade, tinted. -->
+  <ThingDef ParentName="ResourceBase">
+    <defName>Avir_EmeraldOfLife</defName>
+    <label>emerald of life</label>
+    <description>Leaf, then stone, then an emerald full of life. A caster of the Emerald seals what dies near them into such stones; a Restoration of the Emerald draws on the stones near the spot and on the caster first. An empty stone crumbles.</description>
+    <graphicData>
+      <texPath>Things/Item/Resource/Jade</texPath>
+      <graphicClass>Graphic_StackCount</graphicClass>
+      <color>(90,200,120)</color>
+    </graphicData>
+    <stackLimit>1</stackLimit>
+    <statBases>
+      <MaxHitPoints>120</MaxHitPoints>
+      <Mass>0.4</Mass>
+      <MarketValue>40</MarketValue>
+      <Flammability>0</Flammability>
+      <DeteriorationRate>0</DeteriorationRate>
+    </statBases>
+    <thingCategories><li>ResourcesRaw</li></thingCategories>
+    <comps>
+      <li Class="Avir.Magic.CompProperties_StoredLife"><max>200</max></li>
+    </comps>
+  </ThingDef>
 </Defs>

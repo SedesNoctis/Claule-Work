@@ -125,6 +125,8 @@ namespace Avir.Magic
         public float arcana;
         /// <summary>The store of life (LifeMagic): filled by Withering, given by Life's other verbs.</summary>
         public float vita;
+        /// <summary>Sicknesses carried by a mage of Pestilence (their hediffs' load ids).</summary>
+        public List<int> carried = new List<int>();
         public float VitaMax => 0.5f * Capacity * (1f + 0.1f * MageClass.Stage(MageClass.XpIn(this, RuneKind.Life)));
         public bool KnowsLife => vita > 0.01f || MageClass.XpIn(this, RuneKind.Life) > 0f;
         /// <summary>Into the store; what it cannot hold spills over (Overflow).</summary>
@@ -204,6 +206,9 @@ namespace Avir.Magic
             Scribe_Values.Look(ref level, "level", 1);
             Scribe_Values.Look(ref arcana, "arcana");
             Scribe_Values.Look(ref vita, "vita");
+            Scribe_Collections.Look(ref carried, "carried", LookMode.Value);
+            if (carried == null) carried = new List<int>();
+            if (Scribe.mode == LoadSaveMode.PostLoadInit) foreach (int id in carried) Pestilence.Held.Add(id);
             Scribe_Values.Look(ref outsideTicks, "outsideTicks");
             Scribe_Values.Look(ref target, "target", 0.5f);
             Scribe_Values.Look(ref vent, "vent", true);
@@ -241,6 +246,7 @@ namespace Avir.Magic
             dayAcc += hours / 24f;
             if (dayAcc >= 1f) { MageClass.Days(this, dayAcc); dayAcc = 0f; }
             MagicWork.Tick(this, hours);
+            Pestilence.Tick(this);
             if (vita > 0f || pawn.health.hediffSet.HasHediff(DefDatabase<HediffDef>.GetNamedSilentFail("Avir_VitaFlow") ?? MagicDefOf.Avir_ArcaneGreatness)) LifeMagic.Fade(this, hours);
             // the map's stream seeps into a mage a little on its own
             Map m = pawn.MapHeld;

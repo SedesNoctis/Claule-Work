@@ -5,6 +5,7 @@ using RimWorld;
 using UnityEngine;
 using Verse;
 using LudeonTK;
+using HarmonyLib;
 
 namespace Avir.Magic
 {
@@ -43,7 +44,7 @@ namespace Avir.Magic
         /// verb and every beam of Life is tied to one of them - "Release + Withering", "Beam + Restoration"; a verb left
         /// untied does nothing, and Arlie says so. A bare Withering or Restoration acts at the point itself.</summary>
         public static bool Side(RuneKind k) => k == RuneKind.Drain || k == RuneKind.Restore;
-        public static bool Verb(RuneKind k) => k == RuneKind.Release || k == RuneKind.Beam || k == RuneKind.Hold || k == RuneKind.Growth || k == RuneKind.Purge;
+        public static bool Verb(RuneKind k) => k == RuneKind.Release || k == RuneKind.Beam || k == RuneKind.Hold || k == RuneKind.Growth || k == RuneKind.Purge || k == RuneKind.Step;
         public static bool Knows(RuneKind k) => Side(k) || Verb(k);
 
         /// <summary>One act of a Life circle: a verb (or none) tied to its side; `hop` - the energy goes on at once
@@ -107,18 +108,54 @@ namespace Avir.Magic
             if (core != null && f > 0f) core.AddVita(f);
         }
         /// <summary>A circle of Life in its turn in the queue.</summary>
-        public static void CastCircle(Pawn caster, SpellCircle g, IntVec3 at, float power, Map map)
+        public static void CastCircle(Pawn caster, SpellCircle root, SpellCircle g, IntVec3 at, float power, Map map)
         {
             flows.TryGetValue(caster.thingIDNumber, out flow);
+            pair = PairOf(root, g.Great ? g : root?.ParentOf(g));
             try { Cast(caster, g, at, power, map); }
-            finally { flows[caster.thingIDNumber] = flow; flow = 0f; }
+            finally { flows[caster.thingIDNumber] = flow; flow = 0f; pair = None; }
         }
+
+        // ------------------------------------------------------------------ the pairs: Life meeting a small element in its box
+
+        public const RuneKind None = (RuneKind)(-1);
+        /// <summary>The element Life meets in the circle being cast now (None - plain Life).</summary>
+        private static RuneKind pair = None;
+
+        /// <summary>A great circle of Life with small circles of an element inside takes that meeting's nature (the author's
+        /// rule): fire - Wild Flame, water - Blood, earth - Emerald, air - Pestilence. A Closing anywhere in the box keeps
+        /// them apart. Two different elements inside: the first in the queue decides (their own meetings are for later).</summary>
+        public static RuneKind PairOf(SpellCircle root, SpellCircle box)
+        {
+            if (box == null || !box.Great || !Is(box.element)) return None;
+            var inside = box.inner.Where(k => !k.Great).ToList();
+            if (box.OwnRunes.Concat(inside.SelectMany(k => k.OwnRunes)).Any(x => x.kind == RuneKind.Closing)) return None;
+            SpellCircle first = inside.FirstOrDefault(k => k.element != null && (k.element.kind == RuneKind.Fire || k.element.kind == RuneKind.Water || k.element.kind == RuneKind.Earth || k.element.kind == RuneKind.Air));
+            return first?.element.kind ?? None;
+        }
+
+        public static string PairText(RuneKind k)
+        {
+            switch (k)
+            {
+                case RuneKind.Fire: return "Wild Flame: whatever burns near feeds the Withering, and the withered catch fire; the Restoration sears wounds shut and leaves the ground richer.";
+                case RuneKind.Water: return "Blood: spilled blood is drunk into the store, the Withering cuts and bleeds, the mage's own wounds make it stronger; the Restoration gives the blood back. A Step with Withering drags a foe by its own blood.";
+                case RuneKind.Earth: return "Emerald: half of what is withered is sealed in an emerald of life at the spot; the Restoration draws on such stones first and makes living ground.";
+                case RuneKind.Air: return "Pestilence: sicknesses are drawn off one's own onto the mage, who carries them harmless as fuel for the store; a Withering gives one of them to the foes; the Restoration teaches bodies their sicknesses.";
+            }
+            return null;
+        }
+
+        public static string PairName(RuneKind k) => k == RuneKind.Fire ? "Wild Flame" : k == RuneKind.Water ? "Blood" : k == RuneKind.Earth ? "Emerald" : k == RuneKind.Air ? "Pestilence" : null;
+        public static Color PairColor(RuneKind k) => k == RuneKind.Fire ? new Color(0.85f, 0.8f, 0.3f) : k == RuneKind.Water ? new Color(0.7f, 0.08f, 0.1f) : k == RuneKind.Earth ? new Color(0.2f, 0.7f, 0.4f) : k == RuneKind.Air ? new Color(0.75f, 0.78f, 0.3f) : Necrotic;
 
         public static void Cast(Pawn caster, SpellCircle g, IntVec3 at, float power, Map map)
         {
             Hediff_ArcaneCore core = Mages.Core(caster);
             if (core == null || map == null || !at.InBounds(map)) return;
             if (SpellSculpt.Of(g)) power *= SpellSculpt.Keeps;
+            // Blood: the more the mage bleeds, the stronger it is
+            if (pair == RuneKind.Water) power *= 1f + Mathf.Min(0.5f, 0.1f * caster.health.hediffSet.hediffs.Count(h => h is Hediff_Injury && !((Hediff_Injury)h).IsPermanent()));
             float r = Radius(g);
             IntVec3 last = at;
             bool gaveNothing = false;
@@ -193,12 +230,52 @@ namespace Avir.Magic
                         foreach (Hediff h in p.health.hediffSet.hediffs.Where(h => h.def == HediffDefOf.FoodPoisoning || h.def == HediffDefOf.ToxicBuildup).ToList())
                         { float d = Mathf.Min(h.Severity, 0.3f * power); h.Severity -= d; got += 20f * d; if (h.Severity <= 0.01f && p.health.hediffSet.hediffs.Contains(h)) p.health.RemoveHediff(h); }
                     break;
+                case RuneKind.Step:      // Blood only: the foe dragged to the mage by its own blood
+                    if (pair == RuneKind.Water) got += BloodPull(caster, g, at, power, map, false);
+                    break;
                 default:                 // a bare Withering: the point itself, strong and narrow
                     float pr = Mathf.Max(1.5f, r - 1f);
                     got += Wither(caster, Reached(caster, g, Area(at, pr, map)), 8f * power, map) + Plants(at, pr, map, true) + Corpses(at, pr, map);
                     break;
             }
+            float more = PairTake(caster, core, g, act, at, r, power, map, ref got);
+            got += more;
             flow += got;
+        }
+
+        /// <summary>What each meeting adds to a Withering - and, for Emerald, where half of it goes.</summary>
+        private static float PairTake(Pawn caster, Hediff_ArcaneCore core, SpellCircle g, Act act, IntVec3 at, float r, float power, Map map, ref float got)
+        {
+            float more = 0f;
+            switch (pair)
+            {
+                case RuneKind.Fire:
+                    // Wild Flame: whatever burns near feeds it
+                    more += 3f * GenRadial.RadialDistinctThingsAround(at, map, r + 1f, true).Count(t => t.def == ThingDefOf.Fire || (t is Pawn q && q.IsBurning()));
+                    for (int i = 0; i < 3; i++) FleckMaker.ThrowFireGlow(at.ToVector3Shifted() + new Vector3(Rand.Range(-r, r) * 0.5f, 0f, Rand.Range(-r, r) * 0.5f), map, 0.8f);
+                    break;
+                case RuneKind.Water:
+                    // Blood: spilled blood is its stones - drunk up for the store
+                    foreach (Thing t in GenRadial.RadialDistinctThingsAround(at, map, r + 1f, true).Where(t => t is Filth && t.def.defName.Contains("Blood")).ToList()) { more += 3f; t.Destroy(); }
+                    break;
+                case RuneKind.Earth:
+                    // Emerald: what dies here goes into stone - half the taking is sealed in an emerald at the spot
+                    float half = got * 0.5f; got -= half;
+                    if (half > 0.5f) Emerald.Charge(at, map, half);
+                    break;
+                case RuneKind.Air:
+                    // Pestilence: sicknesses drawn out of one's own into the mage (held, harmless, feeding the store);
+                    // a Withering at the foes gives them one of the mage's own
+                    var reached = act.verb == RuneKind.Beam ? Reached(caster, g, Line(caster, at, map, out _)) : Reached(caster, g, Area(at, r, map));
+                    foreach (Pawn p in reached.Where(p => p != caster && Friend(p, caster)).ToList()) Pestilence.Gather(caster, p);
+                    HediffDef carried = Pestilence.Carried(caster);
+                    if (carried != null && act.verb != RuneKind.Growth)
+                        foreach (Pawn p in reached.Where(p => p.HostileTo(caster)).ToList())
+                            if (!p.health.hediffSet.HasHediff(carried)) { Hediff h = HediffMaker.MakeHediff(carried, p); h.Severity = 0.15f * power; p.health.AddHediff(h); }
+                    if (act.verb == RuneKind.Growth) Pestilence.GrowOn(caster);
+                    break;
+            }
+            return more;
         }
 
         private static float Wither(Pawn caster, IEnumerable<Pawn> who, float dmg, Map map)
@@ -207,7 +284,8 @@ namespace Avir.Magic
             foreach (Pawn p in who.ToList())
             {
                 if (!Living(p) || p.Dead) continue;
-                p.TakeDamage(new DamageInfo(WitherDmg, dmg, 2f, -1f, caster));
+                p.TakeDamage(new DamageInfo(pair == RuneKind.Water ? DamageDefOf.Cut : WitherDmg, dmg, 2f, -1f, caster));
+                if (pair == RuneKind.Fire && !p.Dead && Rand.Chance(0.5f)) FireUtility.TryAttachFire(p, 0.3f, caster);
                 got += dmg; Wisp(p.DrawPos, map);
             }
             return got;
@@ -239,16 +317,19 @@ namespace Avir.Magic
             return got;
         }
 
-        private static void Wisp(Vector3 v, Map map) => FleckMaker.ThrowDustPuffThick(v, map, 1f, new Color(Necrotic.r, Necrotic.g, Necrotic.b, 0.55f));
+        private static void Wisp(Vector3 v, Map map) { Color c = PairColor(pair); FleckMaker.ThrowDustPuffThick(v, map, 1f, new Color(c.r, c.g, c.b, 0.55f)); }
 
         // ------------------------------------------------------------------ giving: Restoration, out of the flow, then the store
 
         /// <summary>Takes what is there of `need` - from the energy just taken first, then from the store; the share paid.</summary>
+        private static IntVec3 payAt = IntVec3.Invalid;
         private static float Pay(Hediff_ArcaneCore core, float need)
         {
             if (need <= 0f) return 1f;
             float fromFlow = Mathf.Min(flow, need); flow -= fromFlow;
             float rest = need - fromFlow;
+            // Emerald: the stones near the spot and on the mage give first
+            if (pair == RuneKind.Earth && rest > 0f && payAt.IsValid) { float st = Emerald.Draw(core.pawn, payAt, rest); fromFlow += st; rest -= st; }
             float fromStore = Mathf.Min(core.vita, rest); core.vita -= fromStore;
             return Mathf.Clamp01((fromFlow + fromStore) / need);
         }
@@ -264,14 +345,20 @@ namespace Avir.Magic
                 case RuneKind.Hold: who = Reached(caster, g, Area(at, r, map)); per = 6f; regen = 0.4f; break;     // a cocoon: held still, mended deep
                 case RuneKind.Growth: who = Reached(caster, g, Area(at, r, map)); per = 3f; regen = 0.15f; break;
                 case RuneKind.Purge: who = Reached(caster, g, Area(at, r, map)); per = 0f; regen = 0f; break;
+                case RuneKind.Step:
+                    if (pair != RuneKind.Water) return true;
+                    payAt = at; float pulled = BloodPull(caster, g, at, power, map, true); payAt = IntVec3.Invalid; return pulled >= 0f;
                 default: who = Reached(caster, g, Area(at, Mathf.Max(1.5f, r - 1f), map)); break;
             }
             var plants = act.verb == RuneKind.Growth ? GenRadial.RadialCellsAround(at, r, true).Where(c => c.InBounds(map)).Select(c => c.GetPlant(map)).Where(p => p != null && p.LifeStage == PlantLifeStage.Growing).ToList() : new List<Plant>();
             var bad = act.verb == RuneKind.Purge ? who.SelectMany(p => p.health.hediffSet.hediffs.Where(h => h.def == HediffDefOf.FoodPoisoning || h.def == HediffDefOf.ToxicBuildup || h.def.defName == "Avir_Withered" && !(h is Hediff_Injury)).Select(h => new { p, h })).ToList() : null;
             float need = who.Sum(p => (Hurt(p) ? per * power * 0.6f : 0f) + regen * 4f) + plants.Count * 0.3f + (bad?.Count ?? 0) * 3f;
             if (need <= 0f) return true;
+            payAt = at;
             float f = Pay(core, need);
+            payAt = IntVec3.Invalid;
             if (f <= 0f) return false;
+            PairGive(caster, act, who, at, r, power * f, map);
             foreach (Pawn p in who)
             {
                 if (per > 0f) HealInjuries(p, per * power * f);
@@ -283,6 +370,83 @@ namespace Avir.Magic
             if (bad != null) foreach (var x in bad) { x.h.Severity -= 0.3f * power * f; if (x.h.Severity <= 0.01f && x.p.health.hediffSet.hediffs.Contains(x.h)) x.p.health.RemoveHediff(x.h); }
             if (cells != null) foreach (IntVec3 c in cells) if (Rand.Chance(0.4f)) Wisp(c.ToVector3Shifted(), map);
             return true;
+        }
+
+        /// <summary>What each meeting adds to a Restoration.</summary>
+        private static void PairGive(Pawn caster, Act act, List<Pawn> who, IntVec3 at, float r, float pw, Map map)
+        {
+            var temp = MapComponent_TempTerrain.Of(map);
+            bool ground = act.verb == RuneKind.Release || act.verb == RuneKind.Growth || act.verb == None;
+            switch (pair)
+            {
+                case RuneKind.Fire:
+                    // Wild Flame: the wounds are seared shut, and the ground after it is richer
+                    foreach (Pawn p in who) foreach (Hediff_Injury i in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => i.Bleeding).ToList()) i.Tended(0.7f, 1f);
+                    if (ground) foreach (IntVec3 c in GenRadial.RadialCellsAround(at, r, true).Where(c => c.InBounds(map) && map.terrainGrid.TerrainAt(c).fertility > 0f && !map.terrainGrid.TerrainAt(c).IsWater)) temp?.Set(c, ArcaneWorks.ArcaneSoil, GenDate.TicksPerDay * 10);
+                    FleckMaker.ThrowFireGlow(at.ToVector3Shifted(), map, 1.2f);
+                    break;
+                case RuneKind.Water:
+                    // Blood: the lost blood comes back, the bleeding stops
+                    foreach (Pawn p in who)
+                    {
+                        Hediff bl = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.BloodLoss);
+                        if (bl != null) { bl.Severity -= 0.15f * pw; if (bl.Severity <= 0.01f) p.health.RemoveHediff(bl); }
+                        foreach (Hediff_Injury i in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => i.Bleeding).ToList()) i.Tended(0.5f, 1f);
+                    }
+                    break;
+                case RuneKind.Earth:
+                    // Emerald: the ground becomes living ground for a while
+                    if (ground) foreach (IntVec3 c in GenRadial.RadialCellsAround(at, r, true).Where(c => c.InBounds(map) && map.terrainGrid.TerrainAt(c).fertility > 0f && !map.terrainGrid.TerrainAt(c).IsWater)) temp?.Set(c, ArcaneWorks.ArcaneSoilRich, GenDate.TicksPerDay * 5);
+                    break;
+                case RuneKind.Air:
+                    // Pestilence: the body learns its sicknesses quicker
+                    foreach (Pawn p in who)
+                        foreach (Hediff h in p.health.hediffSet.hediffs.Where(h => h.TryGetComp<HediffComp_Immunizable>() != null).ToList())
+                        {
+                            ImmunityRecord rec = p.health.immunity.GetImmunityRecord(h.def);
+                            if (rec != null) rec.immunity = Mathf.Min(1f, rec.immunity + 0.08f * pw);
+                        }
+                    break;
+            }
+        }
+
+        /// <summary>Blood and Step: drawn to the mage by its own blood (the author). Taken (a foe): every cell of the way
+        /// costs it blood, and the store gets it; too far - it falls on the way, bled nearly white. Given (one's own):
+        /// drawn gently, the mage paying from the store, the drawn mended a little. Returns what was taken, -1 if nothing
+        /// could be paid for.</summary>
+        private static float BloodPull(Pawn caster, SpellCircle g, IntVec3 at, float power, Map map, bool own)
+        {
+            Pawn v = Reached(caster, g, Area(at, 1.9f, map)).Where(p => p != caster && Living(p)).OrderBy(p => p.Position.DistanceToSquared(at)).FirstOrDefault();
+            if (v == null) return 0f;
+            IntVec3 near = CellFinder.StandableCellNear(caster.Position, map, 1.5f, c => c != caster.Position);
+            if (!near.IsValid) return 0f;
+            var path = GenSight.BresenhamCellsBetween(v.Position, near).Where(c => c.InBounds(map) && c.Standable(map)).ToList();
+            if (path.Count == 0) return 0f;
+            Hediff_ArcaneCore core = Mages.Core(caster);
+            IntVec3 end = path[path.Count - 1];
+            float got = 0f;
+            if (own)
+            {
+                float f = Pay(core, path.Count * 1f);
+                if (f <= 0f) return -1f;
+                AddRegen(v, 0.2f * f);
+            }
+            else
+            {
+                // a foe pays every cell in blood: 3% blood loss a cell (less for the strong); past 60% it falls on the way
+                float perCell = 0.03f / Mathf.Max(0.5f, power);
+                Hediff bl = v.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.BloodLoss) ?? v.health.AddHediff(HediffDefOf.BloodLoss);
+                int can = Mathf.FloorToInt(Mathf.Max(0f, 0.6f - bl.Severity) / perCell);
+                if (can < path.Count) { end = path[Mathf.Clamp(can, 0, path.Count - 1)]; bl.Severity = 0.85f; }
+                else bl.Severity += perCell * path.Count;
+                got = 2f * Mathf.Min(can, path.Count);
+                foreach (IntVec3 c in path.Take(Mathf.Min(can + 1, path.Count))) if (Rand.Chance(0.5f)) FilthMaker.TryMakeFilth(c, map, v.RaceProps.BloodDef ?? ThingDefOf.Filth_Blood);
+            }
+            foreach (IntVec3 c in path) if (Rand.Chance(0.4f)) Wisp(c.ToVector3Shifted(), map);
+            v.pather?.StopDead();
+            v.Position = end;
+            v.Notify_Teleported(true, false);
+            return got;
         }
 
         // ------------------------------------------------------------------ before the cast: is there anything to give from?
@@ -598,6 +762,151 @@ namespace Avir.Magic
         }
     }
 
+
+    // ================================================================== Emerald: life sealed in stone
+
+    public class CompProperties_StoredLife : CompProperties
+    {
+        public float max = 200f;
+        public CompProperties_StoredLife() { compClass = typeof(CompStoredLife); }
+    }
+
+    /// <summary>An emerald of life ("Masks": leaf - stone - an emerald full of life): the store of life in a thing. It is
+    /// carried and given: a Restoration of the Emerald draws on the stones near the spot and on the mage first.</summary>
+    public class CompStoredLife : ThingComp
+    {
+        public float life;
+        public CompProperties_StoredLife Props => (CompProperties_StoredLife)props;
+        public override string CompInspectStringExtra() => "Life held: " + life.ToString("0") + " / " + Props.max.ToString("0");
+        public override string TransformLabel(string label) => label + " (" + life.ToString("0") + ")";
+        public override void PostExposeData() { base.PostExposeData(); Scribe_Values.Look(ref life, "life"); }
+    }
+
+    public static class Emerald
+    {
+        public static ThingDef Def => DefDatabase<ThingDef>.GetNamedSilentFail("Avir_EmeraldOfLife");
+
+        /// <summary>Seals life in an emerald at the spot - the one already lying there, if it has room, else a new one.</summary>
+        public static void Charge(IntVec3 at, Map map, float amount)
+        {
+            if (Def == null || map == null) return;
+            while (amount > 0.5f)
+            {
+                CompStoredLife c = GenRadial.RadialDistinctThingsAround(at, map, 2.9f, true).Where(t => t.def == Def).Select(t => t.TryGetComp<CompStoredLife>()).FirstOrDefault(x => x != null && x.life < x.Props.max);
+                if (c == null) { Thing t = ThingMaker.MakeThing(Def); GenPlace.TryPlaceThing(t, at, map, ThingPlaceMode.Near); c = t.TryGetComp<CompStoredLife>(); if (c == null) return; }
+                float put = Mathf.Min(amount, c.Props.max - c.life); c.life += put; amount -= put;
+                FleckMaker.ThrowDustPuffThick(at.ToVector3Shifted(), map, 1f, new Color(0.2f, 0.7f, 0.4f, 0.6f));
+            }
+        }
+
+        /// <summary>Draws life out of the emeralds on the mage and near the spot; a stone emptied crumbles.</summary>
+        public static float Draw(Pawn mage, IntVec3 at, float need)
+        {
+            float got = 0f;
+            var stones = new List<Thing>();
+            if (mage?.inventory?.innerContainer != null) stones.AddRange(mage.inventory.innerContainer.Where(t => t.def == Def));
+            if (mage?.Map != null && at.IsValid) stones.AddRange(GenRadial.RadialDistinctThingsAround(at, mage.Map, 4.9f, true).Where(t => t.def == Def));
+            foreach (Thing t in stones)
+            {
+                if (got >= need) break;
+                CompStoredLife c = t.TryGetComp<CompStoredLife>();
+                if (c == null) continue;
+                float take = Mathf.Min(c.life, need - got); c.life -= take; got += take;
+                if (c.life <= 0.5f && !t.Destroyed) t.Destroy();
+            }
+            return got;
+        }
+    }
+
+    // ================================================================== Pestilence: sickness carried as fuel
+
+    /// <summary>A mage of Pestilence carries sicknesses (the author): real ones - but what they would grow by goes into
+    /// the store of life instead, so they never come to anything; the body learns them at a quarter of the usual pace,
+    /// and they do the mage no harm at all (their stages are not felt).</summary>
+    public static class Pestilence
+    {
+        /// <summary>The carried sicknesses of every pawn (their hediffs' load ids), for the patch below.</summary>
+        public static readonly HashSet<int> Held = new HashSet<int>();
+        private static readonly Dictionary<int, float> lastSev = new Dictionary<int, float>(), lastImm = new Dictionary<int, float>();
+        private static readonly HediffStage Nothing = new HediffStage();
+
+        public static bool Sickness(Hediff h) => h != null && h.TryGetComp<HediffComp_Immunizable>() != null && h.def.isBad && !(h is Hediff_Injury);
+
+        public static void Carry(Hediff_ArcaneCore core, Hediff h)
+        {
+            if (core == null || h == null) return;
+            if (!core.carried.Contains(h.loadID)) core.carried.Add(h.loadID);
+            Held.Add(h.loadID); lastSev[h.loadID] = h.Severity;
+        }
+
+        /// <summary>A sickness taken off one's own onto the mage - the healed is cured of it.</summary>
+        public static void Gather(Pawn mage, Pawn from)
+        {
+            Hediff_ArcaneCore core = Mages.Core(mage);
+            if (core == null) return;
+            foreach (Hediff h in from.health.hediffSet.hediffs.Where(Sickness).ToList())
+            {
+                Hediff mine = mage.health.hediffSet.GetFirstHediffOfDef(h.def);
+                if (mine == null) { mine = HediffMaker.MakeHediff(h.def, mage); mine.Severity = h.Severity; mage.health.AddHediff(mine); }
+                else mine.Severity = Mathf.Max(mine.Severity, h.Severity);
+                Carry(core, mine);
+                from.health.RemoveHediff(h);
+                Messages.Message(mage.LabelShortCap + " took " + h.LabelBase + " from " + from.LabelShort + ".", from, MessageTypeDefOf.PositiveEvent, false);
+            }
+        }
+
+        /// <summary>A sickness grown on the mage on purpose: the flu, if nothing is carried yet.</summary>
+        public static void GrowOn(Pawn mage)
+        {
+            Hediff_ArcaneCore core = Mages.Core(mage);
+            if (core == null || Carried(mage) != null) return;
+            HediffDef flu = DefDatabase<HediffDef>.GetNamedSilentFail("Flu");
+            if (flu == null) return;
+            Hediff h = mage.health.AddHediff(flu);
+            h.Severity = 0.05f;
+            Carry(core, h);
+        }
+
+        public static HediffDef Carried(Pawn mage)
+        {
+            Hediff_ArcaneCore core = Mages.Core(mage);
+            return core == null ? null : mage.health.hediffSet.hediffs.FirstOrDefault(h => core.carried.Contains(h.loadID))?.def;
+        }
+
+        /// <summary>Every few seconds: what a carried sickness grew by goes into the store, and the body learns it at a quarter.</summary>
+        public static void Tick(Hediff_ArcaneCore core)
+        {
+            if (core.carried.Count == 0) return;
+            Pawn p = core.pawn;
+            foreach (int id in core.carried.ToList())
+            {
+                Hediff h = p.health.hediffSet.hediffs.FirstOrDefault(x => x.loadID == id);
+                if (h == null) { core.carried.Remove(id); Held.Remove(id); lastSev.Remove(id); lastImm.Remove(id); continue; }
+                Held.Add(id);
+                if (!lastSev.TryGetValue(id, out float ls)) ls = h.Severity;
+                if (h.Severity > ls) { core.AddVita((h.Severity - ls) * 60f); h.Severity = ls; }
+                lastSev[id] = h.Severity;
+                ImmunityRecord rec = p.health.immunity.GetImmunityRecord(h.def);
+                if (rec != null)
+                {
+                    if (lastImm.TryGetValue(id, out float li) && rec.immunity > li) rec.immunity = li + (rec.immunity - li) * 0.25f;
+                    lastImm[id] = rec.immunity;
+                }
+            }
+        }
+
+        public static HediffStage NoStage => Nothing;
+    }
+
+    [HarmonyPatch(typeof(Hediff), "get_CurStage")]
+    public static class Patch_PestilenceUnfelt
+    {
+        public static void Postfix(Hediff __instance, ref HediffStage __result)
+        {
+            if (Pestilence.Held.Count > 0 && __instance != null && Pestilence.Held.Contains(__instance.loadID)) __result = Pestilence.NoStage;
+        }
+    }
+
     // ================================================================== developer mode
 
     public static class LifeDev
@@ -609,6 +918,12 @@ namespace Avir.Magic
 
         [DebugAction(Cat, "Life: overflow now (+50 past the top)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Over(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c == null) return; c.vita = c.VitaMax; c.AddVita(50f); }
+
+        [DebugAction(Cat, "Life: carry the flu (Pestilence)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void Flu(Pawn p) => Pestilence.GrowOn(p);
+
+        [DebugAction(Cat, "Life: emerald with 100 life here", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void Gem() => Emerald.Charge(Verse.UI.MouseCell(), Find.CurrentMap, 100f);
 
         [DebugAction(Cat, "Life: regrowth saturated (1.2)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Sat(Pawn p) => LifeMagic.AddRegen(p, 1.2f);
@@ -659,6 +974,12 @@ namespace Avir.Magic
                 Spell("TEST Life round fire (mends whom it touches)", "", "Fire:Release"),
                 Spell("TEST Life box: beam drinks the foes, then a burst mends own", "", "None:Beam,Drain|Barrier,Barrier", "None:Release,Restore,Breadth|Barrier,Barrier,Thread"),
                 Spell("TEST Life box: fire inside first, then Life's own runes", "Release,Drain,Breadth|Barrier,Barrier", "Fire:Release"),
+                Spell("TEST Wild Flame: withering burns, mending sears", "Release,Drain,Breadth|Release,Restore", "Fire:Release"),
+                Spell("TEST Blood: drag a foe by its blood", "Step,Drain", "Water:Hold"),
+                Spell("TEST Blood: give back the blood (own only)", "Release,Restore,Breadth|Barrier,Barrier,Thread", "Water:Hold"),
+                Spell("TEST Emerald: wither into stone, then living ground", "Release,Drain,Breadth|Release,Restore", "Earth:Hold"),
+                Spell("TEST Pestilence: grow a sickness on yourself", "Growth,Drain", "Air:Release"),
+                Spell("TEST Pestilence: take sickness from own, give to foes", "Release,Drain,Breadth", "Air:Release"),
             };
             foreach (RitualSchema s in list) core.Book.spells.Add(s);
             Messages.Message(list.Count + " test spells of Life written into " + p.LabelShort + "'s book.", MessageTypeDefOf.NeutralEvent, false);

@@ -79,6 +79,7 @@ namespace Avir.Magic
                     case RuneKind.Hold: t = take ? "vines that drink while they hold" : "a cocoon: held still and mended deep"; break;
                     case RuneKind.Growth: t = take ? "life drawn from the green only" : "growth: the plants quicken, the regrowth deepens"; break;
                     case RuneKind.Purge: t = take ? "poison drawn out into the store" : "poison and withering cleansed"; break;
+                    case RuneKind.Step: t = take ? "a foe dragged to the mage by its own blood (Blood only)" : "one's own drawn gently to the mage (Blood only)"; break;
                     default: t = take ? "Withering at the point" : "mending at the point"; break;
                 }
                 if (a.hop) t += " - leaping on to the nearest wounded";
@@ -108,7 +109,8 @@ namespace Avir.Magic
                 SpellCircle c = order[k];
                 if (LifeMagic.IsLink(root, c))
                 {
-                    parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + (k > 0 ? "then: " : "") + (c.Great ? "" : "a small circle of ") + LifeText(c));
+                    string pn = LifeMagic.PairName(LifeMagic.PairOf(root, c.Great ? c : root.ParentOf(c)));
+                    parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + (k > 0 ? "then: " : "") + (c.Great ? "" : "a small circle of ") + (pn != null ? pn + " - " : "") + LifeText(c));
                     continue;
                 }
                 bool met = pairs.TryGetValue(c, out ComboKind ck);
@@ -140,6 +142,8 @@ namespace Avir.Magic
                 e.extras.Insert(0, new KeyValuePair<string, string>(g.Key.LabelCap + " ×" + g.Count() + ": resonance", "Circles of the same element strengthen each other: +" + (25 * (g.Count() - 1)) + "% to each."));
             foreach (ComboKind ck in pairs.Values.Distinct()) e.extras.Insert(0, new KeyValuePair<string, string>(Combos.Label(ck).CapitalizeFirst() + ": two elements met", ComboText.Short(ck)));
             if (Wraps(root, RuneKind.Life)) e.extras.Insert(0, new KeyValuePair<string, string>("Life wraps", "Friends within the spell's reach are mended as it strikes - out of the store of life."));
+            foreach (RuneKind lk in LifeMagic.Circles(root).Select(g => LifeMagic.PairOf(root, g)).Where(k => k != LifeMagic.None).Distinct())
+                e.extras.Insert(0, new KeyValuePair<string, string>("Life meets " + lk.ToString().ToLower() + ": " + LifeMagic.PairName(lk), LifeMagic.PairText(lk)));
             if (LifeMagic.Circles(root).Any())
             {
                 e.extras.Insert(0, new KeyValuePair<string, string>("Symbiosis", "Life makes nothing; it only moves. Withering fills the store of life, the other verbs give it away - with the store empty they give nothing."));

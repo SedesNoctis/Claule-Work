@@ -154,7 +154,7 @@ namespace Avir.Magic
             // a circle of Life (a great one's own runes, or a small one with no element in it): Life's own grammar
             if (LifeMagic.IsLink(c.root, circle))
             {
-                LifeMagic.CastCircle(caster, circle, c.target.Cell, c.power, caster.Map);
+                LifeMagic.CastCircle(caster, c.root, circle, c.target.Cell, c.power, caster.Map);
                 c.target = new LocalTargetInfo(c.target.Cell);
                 c.waitCaster = false; c.waitFor = null; c.endByMage = false;
                 int t0 = Find.TickManager.TicksGame; c.giveUp = t0 + Patience; c.at = t0 + Gap;
