@@ -37,6 +37,7 @@ namespace Avir.Magic
         public static readonly Dictionary<string, RuneKind[]> Runes = new Dictionary<string, RuneKind[]>
         {
             ["Avir_MagicTend"] = new[] { RuneKind.Restore },
+            ["Avir_ArcaneFirefight"] = new[] { RuneKind.Release },
             ["Avir_MagicClean"] = new[] { RuneKind.Purge },
             ["Avir_MagicHaul"] = new[] { RuneKind.Lift },
             ["Avir_ArcaneGrowth"] = new[] { RuneKind.Growth },

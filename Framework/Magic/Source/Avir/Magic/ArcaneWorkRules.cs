@@ -25,33 +25,58 @@ namespace Avir.Magic
     {
         public class Group
         {
-            public string key, label, desc;
+            public string key, parent, label, desc;
             public string[] givers;
-            public string[] vanilla;   // the ordinary work types it can stand for ("M")
+            public string[] vanilla;   // the ordinary work types it can stand for ("M") - vanilla's and Complex Jobs'
         }
 
-        public static readonly List<Group> Groups = new List<Group>
-        {
-            new Group { key = "Clean", label = "clean", desc = "Washing the floor by water, a room by steam, the home by a rinse.", givers = new[] { "Avir_MagicClean", "Avir_ArcaneSteam", "Avir_2Rinse", "Avir_ArcaneMelt" }, vanilla = new[] { "Cleaning" } },
-            new Group { key = "Haul", label = "haul", desc = "Carrying by the wind.", givers = new[] { "Avir_MagicHaul" }, vanilla = new[] { "Hauling" } },
-            new Group { key = "Tend", label = "tend", desc = "Tending the wounded by water.", givers = new[] { "Avir_MagicTend" }, vanilla = new[] { "Doctor" } },
-            new Group { key = "Build", label = "build", desc = "Raising rock, smoothing by earth, drawing basalt.", givers = new[] { "Avir_MagicSmooth", "Avir_ArcaneRaiseRock", "Avir_2Basalt" }, vanilla = new[] { "Construction" } },
-            new Group { key = "Mine", label = "mine", desc = "Drawing ore up, cutting stone by dust, quarrying, drawing clay.", givers = new[] { "Avir_ArcaneDrill", "Avir_ArcaneCut", "Avir_2Quarry", "Avir_2DigClay" }, vanilla = new[] { "Mining" } },
-            new Group { key = "Grow", label = "grow", desc = "Quickening growth, enriching soil by bog, watering the fields, ashing the ground, clearing land.", givers = new[] { "Avir_ArcaneGrowth", "Avir_ArcaneEnrich", "Avir_2Water", "Avir_2Ash", "Avir_2Clear" }, vanilla = new[] { "Growing", "PlantCutting" } },
-            new Group { key = "Smith", label = "smith", desc = "Smelting slag by magma, smelting things by lava, making obsidian, firing bricks, honing blades.", givers = new[] { "Avir_ArcaneSmelt", "Avir_2SmeltItems", "Avir_2Obsidian", "Avir_2Bricks", "Avir_2Hone" }, vanilla = new[] { "Smithing", "Crafting" } },
-            new Group { key = "Warm", label = "warmth", desc = "Warming rooms by haze, tying heat knots, airing the rooms.", givers = new[] { "Avir_ArcaneWarm", "Avir_2HeatRoom", "Avir_2Vent" }, vanilla = new string[0] },
-            new Group { key = "Power", label = "power", desc = "Charging batteries, driving the wind turbines.", givers = new[] { "Avir_ArcaneCharge", "Avir_2Charge", "Avir_2Wind" }, vanilla = new string[0] },
-            new Group { key = "Stores", label = "stores", desc = "Cremating the dead, purifying food, drying and preserving the stores.", givers = new[] { "Avir_2Cremate", "Avir_2Purify", "Avir_2Dry", "Avir_2Preserve" }, vanilla = new[] { "Cooking" } },
-            new Group { key = "Land", label = "land", desc = "The arcane orders on land and water: stone and water, moats, silt, geysers, lava cores, marsh gas, rainbows.", givers = new[] { "Avir_ArcaneWater", "Avir_ArcaneStone", "Avir_2Moat", "Avir_2SiltWater", "Avir_2SiltLand", "Avir_2SiltDump", "Avir_2RaiseGeyser", "Avir_2SealGeyser", "Avir_2LavaCore", "Avir_2MarshGas", "Avir_2Rainbow" }, vanilla = new string[0] },
-        };
+        private static Group G(string key, string parent, string label, string desc, string[] givers, params string[] vanilla) =>
+            new Group { key = key, parent = parent, label = label, desc = desc, givers = givers, vanilla = vanilla };
 
-        private static Dictionary<string, Group> byGiver;
+        /// <summary>The arcane works in the order of the Work tab (vanilla), each as finely as Complex Jobs splits the work;
+        /// the works of our own after them. With the detail off they merge into their parents (the vanilla work types).</summary>
+        private static readonly List<Group> detailed = new List<Group>
+        {
+            G("Fire", "Fire", "firefight", "Putting out fires by water (or smothering them by the wind), from a few cells off.", new[] { "Avir_ArcaneFirefight" }, "Firefighter"),
+            G("Tend", "Tend", "tend", "Tending the wounded by water: no medicine needed.", new[] { "Avir_MagicTend" }, "Doctor", "FSFNurse"),
+            G("Cook", "Stores", "cook", "Purifying food.", new[] { "Avir_2Purify" }, "Cooking"),
+            G("Build", "Build", "build", "Raising rock where the arcane orders say, drawing basalt.", new[] { "Avir_ArcaneRaiseRock", "Avir_2Basalt" }, "Construction"),
+            G("Smooth", "Build", "smooth", "Smoothing floors and walls by earth.", new[] { "Avir_MagicSmooth" }, "Construction"),
+            G("Grow", "Grow", "grow", "Quickening growth, enriching soil by bog, watering the fields, ashing the ground.", new[] { "Avir_ArcaneGrowth", "Avir_ArcaneEnrich", "Avir_2Water", "Avir_2Ash" }, "Growing", "FSFHarvesting"),
+            G("Clear", "Grow", "clear land", "Clearing land of plants.", new[] { "Avir_2Clear" }, "PlantCutting"),
+            G("Mine", "Mine", "mine", "Drawing ore up, quarrying rock, drawing clay.", new[] { "Avir_ArcaneDrill", "Avir_2Quarry", "Avir_2DigClay" }, "Mining", "FSFDrilling"),
+            G("StoneCut", "Mine", "stone cut", "Cutting stone into blocks by dust.", new[] { "Avir_ArcaneCut" }, "FSFStoneCut", "Crafting"),
+            G("Smelt", "Smith", "smelt", "Smelting slag by magma, smelting things by lava.", new[] { "Avir_ArcaneSmelt", "Avir_2SmeltItems" }, "FSFSmelt", "Smithing"),
+            G("Smith", "Smith", "craft", "Making obsidian, firing bricks, honing blades.", new[] { "Avir_2Obsidian", "Avir_2Bricks", "Avir_2Hone" }, "Smithing", "Crafting"),
+            G("Haul", "Haul", "haul", "Carrying by the wind - a heap at once.", new[] { "Avir_MagicHaul" }, "Hauling", "FSFHauling", "FSFTransport"),
+            G("Mortuary", "Haul", "mortuary", "Cremating the dead.", new[] { "Avir_2Cremate" }, "FSFCremating"),
+            G("Clean", "Clean", "clean", "Washing the floor by water, a room by steam, the home by a rinse; melting snow.", new[] { "Avir_MagicClean", "Avir_ArcaneSteam", "Avir_2Rinse", "Avir_ArcaneMelt" }, "Cleaning"),
+            G("Warm", "Warm", "warmth", "Warming rooms by haze, tying heat knots, airing the rooms (only magic does this).", new[] { "Avir_ArcaneWarm", "Avir_2HeatRoom", "Avir_2Vent" }),
+            G("Power", "Power", "power", "Charging batteries, driving the wind turbines (only magic does this).", new[] { "Avir_ArcaneCharge", "Avir_2Charge", "Avir_2Wind" }),
+            G("Stores", "Stores", "stores", "Drying and preserving the stores (only magic does this).", new[] { "Avir_2Dry", "Avir_2Preserve" }),
+            G("Land", "Land", "land", "The arcane orders on land and water: stone and water, moats, silt, geysers, lava cores, marsh gas, rainbows (only magic does this).", new[] { "Avir_ArcaneWater", "Avir_ArcaneStone", "Avir_2Moat", "Avir_2SiltWater", "Avir_2SiltLand", "Avir_2SiltDump", "Avir_2RaiseGeyser", "Avir_2SealGeyser", "Avir_2LavaCore", "Avir_2MarshGas", "Avir_2Rainbow" }),
+        };
+        private static List<Group> merged;
+        private static List<Group> Merged => merged ?? (merged = detailed.GroupBy(g => g.parent).Select(gr =>
+        {
+            Group head = gr.FirstOrDefault(x => x.key == gr.Key) ?? gr.First();
+            return gr.Count() == 1 ? head : new Group { key = gr.Key, parent = gr.Key, label = head.label == "craft" ? "smith" : head.label,
+                desc = string.Join(" ", gr.Select(x => x.desc)), givers = gr.SelectMany(x => x.givers).ToArray(), vanilla = gr.SelectMany(x => x.vanilla).Distinct().ToArray() };
+        }).ToList());
+
+        /// <summary>Works split as Complex Jobs splits them (the author; on by default) - or merged as the vanilla work types.</summary>
+        public static bool Detail => AvirMod.Settings == null || AvirMod.Settings.magicWorkDetail;
+        public static List<Group> Groups => Detail ? detailed : Merged;
+
+        private static readonly Dictionary<string, Group>[] byGiver = new Dictionary<string, Group>[2];
         public static Group OfGiver(WorkGiverDef d)
         {
-            if (byGiver == null) { byGiver = new Dictionary<string, Group>(); foreach (Group g in Groups) foreach (string n in g.givers) byGiver[n] = g; }
-            return d != null && byGiver.TryGetValue(d.defName, out Group r) ? r : null;
+            int i = Detail ? 1 : 0;
+            if (byGiver[i] == null) { byGiver[i] = new Dictionary<string, Group>(); foreach (Group g in Groups) foreach (string n in g.givers) byGiver[i][n] = g; }
+            return d != null && byGiver[i].TryGetValue(d.defName, out Group r) ? r : null;
         }
-        public static Group OfVanilla(WorkTypeDef w) => w == null ? null : Groups.FirstOrDefault(g => g.vanilla.Contains(w.defName));
+        public static IEnumerable<Group> OfVanillaAll(WorkTypeDef w) => w == null ? Enumerable.Empty<Group>() : Groups.Where(g => g.vanilla.Contains(w.defName));
+        public static Group OfVanilla(WorkTypeDef w) => OfVanillaAll(w).FirstOrDefault();
         public static Group ByKey(string k) => Groups.FirstOrDefault(g => g.key == k);
 
         // ------------------------------------------------------------------ the settings of a caster
@@ -71,7 +96,7 @@ namespace Avir.Magic
                 c.magicOnly.Add(w.defName); c.magicDeclined.Remove(w.defName);
                 // the hands stay ready for when the Arcana runs low (Fix153): the work keeps a priority of its own
                 if (c.pawn.workSettings != null && c.pawn.workSettings.GetPriority(w) == 0 && !c.pawn.WorkTypeIsDisabled(w)) c.pawn.workSettings.SetPriority(w, Find.PlaySettings.useWorkPriorities ? 4 : 3);
-                Group g = OfVanilla(w); if (Prio(c, g) == 0) c.arcanePrio[g.key] = 3; EnsureCharms(c, g);
+                foreach (Group g in OfVanillaAll(w)) { if (Prio(c, g) == 0) c.arcanePrio[g.key] = 3; EnsureCharms(c, g); }
             }
             else { c.magicOnly.Remove(w.defName); c.magicDeclined.Add(w.defName); }
             Dirty(c.pawn);
@@ -97,7 +122,7 @@ namespace Avir.Magic
         {
             if (!MagicOnly(c, w)) return true;
             if (c.HeldByGreatness(w)) return false;
-            return !MagicNow(c, OfVanilla(w)) && Hands(c.pawn, w) >= HandSkill;
+            return !OfVanillaAll(w).Any(g => MagicNow(c, g)) && Hands(c.pawn, w) >= HandSkill;
         }
 
         /// <summary>Hourly: the "M" state follows the Arcana (the work lists are made again when it turns), and - if the
@@ -112,7 +137,7 @@ namespace Avir.Magic
                     {
                         WorkTypeDef w = DefDatabase<WorkTypeDef>.GetNamedSilentFail(wn);
                         if (w == null || c.magicOnly.Contains(wn) || c.magicDeclined.Contains(wn) || p.WorkTypeIsDisabled(w) || p.workSettings.GetPriority(w) == 0) continue;
-                        if (Hands(p, w) < HandSkill && MagicNow(c, g)) SetMagicOnly(c, w, true);
+                        if (Hands(p, w) < HandSkill && MagicNow(c, g) && Prio(c, g) > 0) SetMagicOnly(c, w, true);
                     }
             string state = string.Join(",", DefDatabase<WorkTypeDef>.AllDefsListForReading.Where(w => MagicOnly(c, w)).Select(w => w.defName + (HandsNow(c, w) ? "h" : "m")));
             if (state != c.mState) { c.mState = state; Dirty(p); }
@@ -161,15 +186,80 @@ namespace Avir.Magic
 
         // ------------------------------------------------------------------ the slip of a work
 
+        public static float SlipChance(Hediff_ArcaneCore c, RuneKind[] kinds)
+        {
+            var ks = kinds.Distinct().ToArray();
+            int st = Mathf.Clamp(Stage(c, ks), 0, 5);
+            return (ks.Length == 1 ? 0.03f : 0.07f) * MageClass.SlipAt[st] * (st == 0 && ks.Length > 1 ? 1.5f : 1f);
+        }
+
+        /// <summary>What stands between this caster and a work giver, in words (null - nothing: he can do it).</summary>
+        public static string Why(Hediff_ArcaneCore c, string giver)
+        {
+            RuneKind[] ks = KindsOf(giver);
+            if (ks == null) return "not made for casters yet";
+            var unknown = ks.Distinct().Where(k => !MagicWork.Knows(c, k)).ToList();
+            if (unknown.Count > 0) return "does not know " + string.Join(", ", unknown.Select(k => k.ToString().ToLower()));
+            var d = ks.Distinct().ToArray();
+            bool second = Works2.All.ContainsKey(giver);
+            if (d.Length == 1 && MageClass.Main(c)?.kind != d[0] && MageClass.Stage(MageClass.XpIn(c, d[0])) < 1) return "another element: from Apprentice";
+            string school = second ? "Second" : School(d);
+            int from = From(c, school);
+            if (second && d.Contains(RuneKind.Fire) && d.Contains(RuneKind.Earth)) from = Mathf.Max(from, From(c, "Magma"));
+            if (from >= 6) return "the works of " + SchoolLabel(school) + " are set to never";
+            if (Stage(c, d) < from) return SchoolLabel(school) + " is taken up from " + StageShort[from];
+            return null;
+        }
+        public static string SchoolLabel(string school) => school == "Second" ? "the second order" : school.ToLower();
+        public static bool CanDo(Hediff_ArcaneCore c, string giver) => Why(c, giver) == null;
+
+        // ------------------------------------------------------------------ the priority box (the Work sub-tab and the magic panel)
+
+        private static Texture2D[] bgs;
+        private static Texture2D Bg(int i)
+        {
+            if (bgs == null) bgs = new[] { "Awful", "Bad", "Mid", "Excellent" }.Select(n => ContentFinder<Texture2D>.Get("UI/Widgets/WorkBoxBG_" + n, false)).ToArray();
+            return bgs[Mathf.Clamp(i, 0, 3)];
+        }
+        public static Color ColorOfPriority(int p) => p == 1 ? new Color(0f, 1f, 0f) : p == 2 ? new Color(1f, 0.9f, 0.5f) : p == 3 ? new Color(0.8f, 0.7f, 0.5f) : new Color(0.74f, 0.74f, 0.74f);
+
+        /// <summary>A priority box as the Work tab draws it: the background tells how well the caster does it (by his stage in
+        /// what he can do of it), the number its priority, coloured as vanilla colours them. Click - up, right-click - down.</summary>
+        public static void PrioBox(Rect box, Hediff_ArcaneCore c, Group g)
+        {
+            var can = g.givers.Where(n => CanDo(c, n)).ToList();
+            int best = can.Count == 0 ? -1 : can.Max(n => Stage(c, KindsOf(n)));
+            Texture2D bg = Bg(best < 0 ? 0 : best == 0 ? 1 : best <= 2 ? 2 : 3);
+            if (bg != null) GUI.DrawTexture(box, bg); else Widgets.DrawBoxSolid(box, new Color(0.1f, 0.12f, 0.2f));
+            Widgets.DrawBox(box);
+            int pr = Prio(c, g);
+            if (pr > 0)
+            {
+                Text.Font = GameFont.Small; Text.Anchor = TextAnchor.MiddleCenter;
+                GUI.color = can.Count == 0 ? Color.gray : ColorOfPriority(pr);
+                Widgets.Label(box.ExpandedBy(0f, 2f), pr.ToString());
+                GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft;
+            }
+            TooltipHandler.TipRegion(box, () => g.desc + "\n\n" + (can.Count == 0 ? "Nothing of it is open to this caster yet:\n" + string.Join("\n", g.givers.Select(n => "- " + Label(n) + ": " + Why(c, n)))
+                : "Can do: " + string.Join(", ", can.Select(Label)) + "." + (can.Count < g.givers.Length ? "\nNot yet: " + string.Join("; ", g.givers.Except(can).Select(n => Label(n) + " - " + Why(c, n))) + "." : ""))
+                + "\n\nClick: a higher number (1 is first); right-click: back. Off - not done at all.", c.pawn.thingIDNumber ^ g.key.GetHashCode());
+            if (Event.current.type == EventType.MouseDown && Mouse.IsOver(box))
+            {
+                int v = Event.current.button == 1 ? (pr == 0 ? 4 : pr - 1) : (pr == 4 ? 0 : pr + 1);
+                SetPrio(c, g, v);
+                SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
+                Event.current.Use();
+            }
+        }
+        public static string Label(string giver) => DefDatabase<WorkGiverDef>.GetNamedSilentFail(giver)?.label ?? giver;
+
         /// <summary>A work may slip: a plain element seldom and lightly; a meeting oftener, and at its own price.</summary>
         public static bool Slip(Pawn p, RuneKind[] kinds)
         {
             Hediff_ArcaneCore c = Mages.Core(p);
             if (c == null || p.Map == null) return false;
             var ks = kinds.Distinct().ToArray();
-            int st = Mathf.Clamp(Stage(c, ks), 0, 5);
-            float chance = (ks.Length == 1 ? 0.03f : 0.07f) * MageClass.SlipAt[st] * (st == 0 && ks.Length > 1 ? 1.5f : 1f);
-            if (!Rand.Chance(chance)) return false;
+            if (!Rand.Chance(SlipChance(c, ks))) return false;
             Map map = p.Map;
             string what;
             if (ks.Length == 1)
@@ -203,7 +293,7 @@ namespace Avir.Magic
         {
             switch (giver)
             {
-                case "Avir_MagicClean": case "Avir_MagicTend": return new[] { RuneKind.Water };
+                case "Avir_MagicClean": case "Avir_MagicTend": case "Avir_ArcaneFirefight": return new[] { RuneKind.Water };
                 case "Avir_MagicHaul": return new[] { RuneKind.Air };
                 case "Avir_MagicSmooth": return new[] { RuneKind.Earth };
             }
@@ -377,14 +467,14 @@ namespace Avir.Magic
     public class MainTabWindow_ArcaneWork : MainTabWindow_PawnTable
     {
         protected override PawnTableDef PawnTableDef => DefDatabase<PawnTableDef>.GetNamed("Avir_ArcaneWork");
-        protected override float ExtraTopSpace => 40f;
+        protected override float ExtraTopSpace => 46f;
         protected override IEnumerable<Pawn> Pawns => base.Pawns.Where(p => Mages.Core(p) != null);
 
         public override void DoWindowContents(Rect rect)
         {
             if (Widgets.ButtonText(new Rect(rect.x, rect.y + 4f, 180f, 30f), "Ordinary works")) { MainButtonDef w = DefDatabase<MainButtonDef>.GetNamedSilentFail("Work"); if (w != null) Find.MainTabsRoot.SetCurrentTab(w); }
-            Text.Font = GameFont.Small; GUI.color = new Color(1f, 1f, 1f, 0.6f);
-            Widgets.Label(new Rect(rect.x + 195f, rect.y + 9f, rect.width - 200f, 26f), "Click: higher number (1 first); right-click: back. Each caster uses the best charm he has put together for it.");
+            Text.Font = GameFont.Small; GUI.color = new Color(0.92f, 0.9f, 0.85f);
+            Widgets.Label(new Rect(rect.x + 195f, rect.y + 2f, rect.width - 200f, 40f), "Arcane works by casters. Click a box - a higher priority (1 is first), right-click - back, empty - off. The box shows how well he does it; point at it for what he can and cannot do, and why. More on the Arcane works page of each caster's magic panel.");
             GUI.color = Color.white;
             base.DoWindowContents(rect);
         }
@@ -393,40 +483,29 @@ namespace Avir.Magic
     public class PawnColumnWorker_ArcaneGroup : PawnColumnWorker
     {
         private ArcaneWork.Group G => ArcaneWork.ByKey(def.defName.Substring("Avir_ArcaneCol_".Length));
+        public override bool VisibleCurrently => G != null;
 
         public override void DoCell(Rect rect, Pawn pawn, PawnTable table)
         {
             Hediff_ArcaneCore c = Mages.Core(pawn);
             ArcaneWork.Group g = G;
             if (c == null || g == null) return;
-            Rect box = new Rect(rect.x + (int)((rect.width - 25f) / 2f), rect.y + 2.5f, 25f, 25f);
-            int pr = ArcaneWork.Prio(c, g);
-            var can = g.givers.Where(n => { var ks = ArcaneWork.KindsOf(n); return ks != null && ks.All(k => MagicWork.Knows(c, k)) && ArcaneWork.StageOk(c, ks, Works2.All.ContainsKey(n)); }).ToList();
-            Widgets.DrawBoxSolid(box, can.Count > 0 ? new Color(0.1f, 0.12f, 0.2f) : new Color(0.12f, 0.12f, 0.12f, 0.5f));
-            Widgets.DrawBox(box);
-            if (pr > 0)
-            {
-                Text.Font = GameFont.Small; Text.Anchor = TextAnchor.MiddleCenter;
-                GUI.color = can.Count == 0 ? Color.gray : pr == 1 ? new Color(0.5f, 0.75f, 1f) : pr == 2 ? new Color(0.75f, 0.85f, 1f) : pr == 3 ? new Color(0.85f, 0.85f, 0.85f) : new Color(0.65f, 0.65f, 0.65f);
-                Widgets.Label(box, pr.ToString());
-                GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft;
-            }
-            TooltipHandler.TipRegion(box, () => g.desc + "\n\n" + (can.Count == 0 ? "This caster can do none of it yet (elements not known, stage too low, or below the stage set on the Path page)."
-                : "Can do: " + string.Join(", ", can.Select(n => DefDatabase<WorkGiverDef>.GetNamedSilentFail(n)?.label ?? n)) + "."), pawn.thingIDNumber ^ g.key.GetHashCode());
-            if (Event.current.type == EventType.MouseDown && Mouse.IsOver(box))
-            {
-                int v = Event.current.button == 1 ? (pr == 0 ? 4 : pr - 1 == 0 ? 0 : pr - 1) : (pr == 0 ? 1 : pr == 4 ? 0 : pr + 1);
-                if (Event.current.button == 1 && pr == 1) v = 0;
-                if (Event.current.button == 1 && pr == 0) v = 4;
-                ArcaneWork.SetPrio(c, g, v);
-                SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
-                Event.current.Use();
-            }
+            ArcaneWork.PrioBox(new Rect(rect.x + (int)((rect.width - 25f) / 2f), rect.y + 2.5f, 25f, 25f), c, g);
         }
 
-        public override int GetMinWidth(PawnTable table) => 56;
-        public override int GetOptimalWidth(PawnTable table) => 64;
-        protected override string GetHeaderTip(PawnTable table) => G?.desc;
+        public override void DoHeader(Rect rect, PawnTable table)
+        {
+            ArcaneWork.Group g = G;
+            if (g == null) return;
+            Text.Font = GameFont.Small; Text.Anchor = TextAnchor.LowerCenter; GUI.color = new Color(0.95f, 0.92f, 0.85f);
+            Widgets.Label(new Rect(rect.x - 10f, rect.y, rect.width + 20f, rect.height - 2f), g.label.CapitalizeFirst());
+            GUI.color = Color.white; Text.Anchor = TextAnchor.UpperLeft;
+            TooltipHandler.TipRegion(rect, g.desc + (g.vanilla.Length > 0 ? "\nStands for: " + string.Join(", ", g.vanilla.Select(n => DefDatabase<WorkTypeDef>.GetNamedSilentFail(n)?.labelShort).Where(x => x != null)) + " (\"M\" in the Work tab)." : "\nOnly magic does this."));
+        }
+
+        public override int GetMinWidth(PawnTable table) => 62;
+        public override int GetOptimalWidth(PawnTable table) => 74;
+        public override int GetMinHeaderHeight(PawnTable table) => 34;
         public override int Compare(Pawn a, Pawn b) => ArcaneWork.Prio(Mages.Core(a), G).CompareTo(ArcaneWork.Prio(Mages.Core(b), G));
     }
 

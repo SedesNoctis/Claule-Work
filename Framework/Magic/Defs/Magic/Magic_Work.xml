@@ -12,6 +12,23 @@
   </WorkTypeDef>
 
   <WorkGiverDef>
+    <defName>Avir_ArcaneFirefight</defName>
+    <label>put out fires by magic</label>
+    <giverClass>Avir.Magic.WorkGiver_ArcaneFirefight</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>put out</verb>
+    <gerund>putting out fires by magic</gerund>
+    <priorityInType>100</priorityInType>
+    <emergency>true</emergency>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_ArcaneFirefight</defName>
+    <driverClass>Avir.Magic.JobDriver_ArcaneFirefight</driverClass>
+    <reportString>putting out fire by magic.</reportString>
+  </JobDef>
+
+  <WorkGiverDef>
     <defName>Avir_MagicClean</defName>
     <label>wash the floor by water</label>
     <giverClass>Avir.Magic.WorkGiver_MagicClean</giverClass>

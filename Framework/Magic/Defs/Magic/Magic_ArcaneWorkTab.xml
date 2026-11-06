@@ -11,14 +11,8 @@
     <buttonVisible>false</buttonVisible>
   </MainButtonDef>
   <PawnColumnDef>
-    <defName>Avir_ArcaneCol_Clean</defName>
-    <label>clean</label>
-    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
-    <sortable>true</sortable>
-  </PawnColumnDef>
-  <PawnColumnDef>
-    <defName>Avir_ArcaneCol_Haul</defName>
-    <label>haul</label>
+    <defName>Avir_ArcaneCol_Fire</defName>
+    <label>fire</label>
     <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
     <sortable>true</sortable>
   </PawnColumnDef>
@@ -29,14 +23,20 @@
     <sortable>true</sortable>
   </PawnColumnDef>
   <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Cook</defName>
+    <label>cook</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
     <defName>Avir_ArcaneCol_Build</defName>
     <label>build</label>
     <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
     <sortable>true</sortable>
   </PawnColumnDef>
   <PawnColumnDef>
-    <defName>Avir_ArcaneCol_Mine</defName>
-    <label>mine</label>
+    <defName>Avir_ArcaneCol_Smooth</defName>
+    <label>smooth</label>
     <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
     <sortable>true</sortable>
   </PawnColumnDef>
@@ -47,14 +47,56 @@
     <sortable>true</sortable>
   </PawnColumnDef>
   <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Clear</defName>
+    <label>clear</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Mine</defName>
+    <label>mine</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_StoneCut</defName>
+    <label>stonecut</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Smelt</defName>
+    <label>smelt</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
     <defName>Avir_ArcaneCol_Smith</defName>
     <label>smith</label>
     <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
     <sortable>true</sortable>
   </PawnColumnDef>
   <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Haul</defName>
+    <label>haul</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Mortuary</defName>
+    <label>mortuary</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
+    <defName>Avir_ArcaneCol_Clean</defName>
+    <label>clean</label>
+    <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
+    <sortable>true</sortable>
+  </PawnColumnDef>
+  <PawnColumnDef>
     <defName>Avir_ArcaneCol_Warm</defName>
-    <label>warmth</label>
+    <label>warm</label>
     <workerClass>Avir.Magic.PawnColumnWorker_ArcaneGroup</workerClass>
     <sortable>true</sortable>
   </PawnColumnDef>
@@ -80,13 +122,20 @@
     <defName>Avir_ArcaneWork</defName>
     <columns>
       <li>Label</li>
-      <li>Avir_ArcaneCol_Clean</li>
-      <li>Avir_ArcaneCol_Haul</li>
+      <li>Avir_ArcaneCol_Fire</li>
       <li>Avir_ArcaneCol_Tend</li>
+      <li>Avir_ArcaneCol_Cook</li>
       <li>Avir_ArcaneCol_Build</li>
-      <li>Avir_ArcaneCol_Mine</li>
+      <li>Avir_ArcaneCol_Smooth</li>
       <li>Avir_ArcaneCol_Grow</li>
+      <li>Avir_ArcaneCol_Clear</li>
+      <li>Avir_ArcaneCol_Mine</li>
+      <li>Avir_ArcaneCol_StoneCut</li>
+      <li>Avir_ArcaneCol_Smelt</li>
       <li>Avir_ArcaneCol_Smith</li>
+      <li>Avir_ArcaneCol_Haul</li>
+      <li>Avir_ArcaneCol_Mortuary</li>
+      <li>Avir_ArcaneCol_Clean</li>
       <li>Avir_ArcaneCol_Warm</li>
       <li>Avir_ArcaneCol_Power</li>
       <li>Avir_ArcaneCol_Stores</li>
