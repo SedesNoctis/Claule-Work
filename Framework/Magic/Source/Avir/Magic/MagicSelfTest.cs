@@ -74,29 +74,30 @@ namespace Avir.Magic
                 var got = SecondOrder.Of(w).Values.Distinct().ToList();
                 Check("second " + y + " (" + pr[0] + "+" + pr[1] + " then " + third + ")", got.Count == 1 && got[0] == y, string.Join(",", got));
                 Explains("second " + y, w);
-                // the third before the pair meets it too
-                SpellCircle w2 = Weave(Name(third), Name(pr[0]), Name(pr[1]));
-                var got2 = SecondOrder.Of(w2).Values.Distinct().ToList();
-                bool firstPairs = Combos.Of(third, pr[0]) != ComboKind.None;   // then the third pairs first, by the rule
-                Check("second " + y + " third first", firstPairs || (got2.Count == 1 && got2[0] == y), string.Join(",", got2) + (firstPairs ? "" : ""));
+                // the fourth of an element already in it strengthens it, not a new meeting
+                SpellCircle w2 = Weave(Name(pr[0]), Name(pr[1]), Name(third), Name(pr[0]));
+                var got2 = SecondOrder.Of(w2);
+                Check("second " + y + " + " + pr[0] + " strengthens", got2.Count == 4 && got2.Values.All(x => x == y), got2.Count + " circles in it");
             }
 
-            // 3. the order of reading (the author's cases): pairs first, from the start; a third joins the pair before it
+            // 3. the order of reading (the author, Fix159): in order from the start; the same element again strengthens
+            void Case(string what, string[] circles, ComboKind[] pairsWant, SecondKind[] secWant)
             {
-                SpellCircle w = Weave("Fire", "Earth", "Fire", "Fire", "Water");
-                var pairs = Combos.Pairs(w).Values.Distinct().OrderBy(x => x).ToList();
-                var sec = SecondOrder.Of(w).Values.Distinct().ToList();
-                Check("Fire,Earth,Fire,Fire,Water = magma (lava) + steam", pairs.SequenceEqual(new[] { ComboKind.Steam, ComboKind.Magma }.OrderBy(x => x)) && sec.Count == 1 && sec[0] == SecondKind.Lava,
-                    "pairs " + string.Join(",", pairs) + "; second " + string.Join(",", sec));
-                SpellCircle w2 = Weave("Fire", "Earth", "Fire", "Water", "Fire");
-                var p2 = Combos.Pairs(w2).Values.Distinct().OrderBy(x => x).ToList();
-                var s2 = SecondOrder.Of(w2).Values.Distinct().ToList();
-                Check("Fire,Earth,Fire,Water,Fire = magma + steam (inferno)", p2.SequenceEqual(new[] { ComboKind.Steam, ComboKind.Magma }.OrderBy(x => x)) && s2.Count == 1 && s2[0] == SecondKind.Inferno,
-                    "pairs " + string.Join(",", p2) + "; second " + string.Join(",", s2));
-                SpellCircle w3 = Weave("Fire", "Earth", "Fire:Release|Closing", "Water", "Fire");
-                var s3 = SecondOrder.Of(w3).Values.Distinct().OrderBy(x => x).ToList();
-                Check("Fire,Earth,Fire|Closing,Water,Fire = lava + inferno", s3.SequenceEqual(new[] { SecondKind.Lava, SecondKind.Inferno }.OrderBy(x => x)), string.Join(",", s3));
+                SpellCircle w = Weave(circles);
+                var ms = Combos.Read(w);
+                var p = ms.Where(m => m.pair != ComboKind.None && m.second == SecondKind.None).Select(m => m.pair).OrderBy(x => x).ToList();
+                var y = ms.Where(m => m.second != SecondKind.None).Select(m => m.second).OrderBy(x => x).ToList();
+                Check(what, p.SequenceEqual(pairsWant.OrderBy(x => x)) && y.SequenceEqual(secWant.OrderBy(x => x)),
+                    string.Join(" / ", ms.Select(m => m.second != SecondKind.None ? m.second.ToString() + " x" + m.circles.Count : m.pair != ComboKind.None ? m.pair.ToString() + " x" + m.circles.Count : m.first + " alone x" + m.circles.Count)));
+                Explains(what, w);
             }
+            Case("Fire,Earth,Fire,Fire,Water = lava (strengthened) + lone water", new[] { "Fire", "Earth", "Fire", "Fire", "Water" }, new ComboKind[0], new[] { SecondKind.Lava });
+            Case("Fire,Earth,Fire,[Closing]Fire,Water = lava + steam", new[] { "Fire", "Earth", "Fire", "Fire:Closing,Release", "Water" }, new[] { ComboKind.Steam }, new[] { SecondKind.Lava });
+            Case("Fire,Earth,Fire,Water,Fire = lava + steam", new[] { "Fire", "Earth", "Fire", "Water", "Fire" }, new[] { ComboKind.Steam }, new[] { SecondKind.Lava });
+            Case("Fire,Fire,Earth = magma (strengthened)", new[] { "Fire", "Fire", "Earth" }, new[] { ComboKind.Magma }, new SecondKind[0]);
+            Case("Fire,[Closing]Earth = nothing met", new[] { "Fire", "Earth:Closing,Release" }, new ComboKind[0], new SecondKind[0]);
+            Case("Fire[Closing at the end],Earth = nothing met", new[] { "Fire:Release,Closing", "Earth" }, new ComboKind[0], new SecondKind[0]);
+            Case("Fire,Earth,[Closing]Fire = magma + lone fire", new[] { "Fire", "Earth", "Fire:Closing,Release" }, new[] { ComboKind.Magma }, new SecondKind[0]);
 
             // 4. the meetings of Life: a great circle of Life, an element inside
             foreach (RuneKind k in smalls)

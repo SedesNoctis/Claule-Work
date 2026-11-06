@@ -165,55 +165,11 @@ namespace Avir.Magic
         /// circle also put there with its pair's kind, so it works as the pair).</summary>
         public static Dictionary<SpellCircle, SecondKind> Seconds(SpellCircle root, Dictionary<SpellCircle, ComboKind> pairs)
         {
+            // read in order (Combos.Read, Fix159): the third after the pair, then the circles of its elements strengthen it
             var map = new Dictionary<SpellCircle, SecondKind>();
-            if (root == null || pairs == null) return map;
-            List<SpellCircle> order = MapComponent_SpellChain.Order(root);
-            for (int i = 0; i < order.Count; i++)
-            {
-                SpellCircle c = order[i];
-                if (pairs.ContainsKey(c) || !Small(c.element)) continue;
-                // the pair it meets: the one right before it (formed first), else the one right after
-                foreach (int j in new[] { i - 1, i + 1 })
-                {
-                    if (j < 0 || j >= order.Count) continue;
-                    SpellCircle n = order[j];
-                    if (!pairs.TryGetValue(n, out ComboKind x) || x == ComboKind.None || map.ContainsKey(n)) continue;
-                    if (root.ParentOf(n) != root.ParentOf(c)) continue;
-                    if (j < i ? SpellTransmute.Seals(n, c) : SpellTransmute.Seals(c, n)) continue;
-                    // the pair may take only one third
-                    SpellCircle mate = order.Where(o => o != n && pairs.TryGetValue(o, out ComboKind ox) && ox == x && Math.Abs(order.IndexOf(o) - j) == 1).FirstOrDefault();
-                    if (mate != null && map.ContainsKey(mate)) continue;
-                    SecondKind y = Of(x, c.element.kind);
-                    if (y == SecondKind.None) continue;
-                    map[c] = y; map[n] = y; if (mate != null) map[mate] = y;
-                    break;
-                }
-            }
-            Fourths(root, pairs, map, order);
+            foreach (Combos.Meeting m in Combos.Read(root))
+                if (m.second != SecondKind.None) foreach (SpellCircle c in m.circles) map[c] = m.second;
             return map;
-        }
-
-        private static bool Small(RuneDef e) => e != null && (e.kind == RuneKind.Fire || e.kind == RuneKind.Water || e.kind == RuneKind.Earth || e.kind == RuneKind.Air);
-
-        /// <summary>The fourth (and further) circle of an element already in the meeting, right beside it, strengthens it
-        /// (the rule: "the fourth of the same element strengthens its part") - +25% for each.</summary>
-        private static void Fourths(SpellCircle root, Dictionary<SpellCircle, ComboKind> pairs, Dictionary<SpellCircle, SecondKind> map, List<SpellCircle> order)
-        {
-            for (int pass = 0; pass < 2; pass++)
-                for (int i = 0; i < order.Count; i++)
-                {
-                    SpellCircle c = order[i];
-                    if (map.ContainsKey(c) || pairs.ContainsKey(c) || !Small(c.element)) continue;
-                    foreach (int j in new[] { i - 1, i + 1 })
-                    {
-                        if (j < 0 || j >= order.Count || !map.TryGetValue(order[j], out SecondKind y)) continue;
-                        if (root.ParentOf(order[j]) != root.ParentOf(c)) continue;
-                        if (j < i ? SpellTransmute.Seals(order[j], c) : SpellTransmute.Seals(c, order[j])) continue;
-                        if (!Combos.Parts(PairOf(y)).Contains(c.element.kind) && Third(y) != c.element.kind) continue;
-                        map[c] = y;
-                        break;
-                    }
-                }
         }
 
         /// <summary>How many circles past the three strengthen this meeting in this spell (set by SpellChain.Run).</summary>

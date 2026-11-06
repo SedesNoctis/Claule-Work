@@ -35,10 +35,34 @@ namespace Avir.Magic
             return false;
         }
 
-        /// <summary>Does a Closing stand between these two circles (a before b): in a's outermost section or b's first?</summary>
-        public static bool Seals(SpellCircle a, SpellCircle b) =>
-            (a?.sections != null && a.sections.Count > 0 && SealsIn(a.sections[a.sections.Count - 1]))
-            || (b?.sections != null && b.sections.Count > 0 && SealsIn(b.sections[0]));
+        /// <summary>Does a Closing stand between these two circles (a before b)? The author's rule (Fix159): a Closing in a
+        /// circle's first section, right at its element, parts it from the circle before; one in its outermost section
+        /// parts it from the circle after. A circle of a single section: a Closing written first in it (at the element)
+        /// parts it from the one before only, anywhere else - from the one after only.</summary>
+        public static bool Seals(SpellCircle a, SpellCircle b) => SealsAfter(a) || SealsBefore(b);
+
+        public static bool SealsBefore(SpellCircle c)
+        {
+            if (c?.sections == null || c.sections.Count == 0) return false;
+            if (c.sections.Count > 1) return SealsIn(c.sections[0]);
+            return ClosingAt(c.sections[0]) == 0;
+        }
+
+        public static bool SealsAfter(SpellCircle c)
+        {
+            if (c?.sections == null || c.sections.Count == 0) return false;
+            if (c.sections.Count > 1) return SealsIn(c.sections[c.sections.Count - 1]);
+            return ClosingAt(c.sections[0]) > 0;
+        }
+
+        /// <summary>Where the first sealing Closing stands in a section (-1: none).</summary>
+        private static int ClosingAt(RitualRing r)
+        {
+            if (r?.runes == null) return -1;
+            var seq = r.runes.Where(x => x != null).ToList();
+            for (int i = 0; i < seq.Count; i++) if (seq[i].kind == RuneKind.Closing && !MarkClosing(seq, i)) return i;
+            return -1;
+        }
 
         /// <summary>Set while a circle of a meeting on its secret path is being cast (SpellChain.Run).</summary>
         public static bool OnPath;

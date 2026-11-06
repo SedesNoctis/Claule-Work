@@ -94,24 +94,59 @@ namespace Avir.Magic
         public static Dictionary<SpellCircle, ComboKind> Pairs(SpellCircle root, bool withThirds)
         {
             var map = new Dictionary<SpellCircle, ComboKind>();
-            if (root == null) return map;
-            List<SpellCircle> order = MapComponent_SpellChain.Order(root);
-            for (int i = 0; i + 1 < order.Count; i++)
+            foreach (Meeting m in Read(root))
             {
-                SpellCircle a = order[i], b = order[i + 1];
-                if (map.ContainsKey(a) || map.ContainsKey(b) || !Small(a.element) || !Small(b.element)) continue;
-                // a Closing between them keeps the elements apart: in the outermost section of the first, or the first
-                // section of the second (the author's rule); a Closing right after a Transmutation is no seal
-                if (SpellTransmute.Seals(a, b)) continue;
-                if (root.ParentOf(a) != root.ParentOf(b)) continue;
-                ComboKind k = Of(a.element.kind, b.element.kind);
-                if (k == ComboKind.None) continue;
-                map[a] = k; map[b] = k;
+                if (m.pair == ComboKind.None) continue;
+                foreach (SpellCircle c in withThirds ? m.circles : m.circles.Take(m.pairEnd)) map[c] = m.pair;
             }
-            if (withThirds)
-                foreach (var kv in SecondOrder.Seconds(root, map).ToList())
-                    if (!map.ContainsKey(kv.Key)) map[kv.Key] = SecondOrder.PairOf(kv.Value);
             return map;
+        }
+
+        /// <summary>One meeting read from the chain: its circles in order, the pair they made (and how many of the circles
+        /// made it, the identical ones before included), the third's meeting.</summary>
+        public class Meeting
+        {
+            public List<SpellCircle> circles = new List<SpellCircle>();
+            public RuneKind first;
+            public ComboKind pair = ComboKind.None; public int pairEnd;
+            public SecondKind second = SecondKind.None;
+        }
+
+        /// <summary>The circles read as the author reads them (Fix159), one after another from the start of the chain:
+        /// a circle meets the one before it while they stand side by side in the same ring with no Closing between.
+        /// The same element again before a pair - strengthens it (Fire, Fire, Earth is a stronger magma); two different -
+        /// a pair; the next after a pair - its third (second order); after the third, a circle of an element already in
+        /// the meeting strengthens it, any other begins a new meeting. Fire, Earth, Fire, Fire, Water: lava, strengthened,
+        /// and a lone water; with a Closing in the first section of the fourth circle - lava and steam.</summary>
+        public static List<Meeting> Read(SpellCircle root)
+        {
+            var all = new List<Meeting>();
+            if (root == null) return all;
+            Meeting cur = null; SpellCircle prev = null;
+            foreach (SpellCircle c in MapComponent_SpellChain.Order(root))
+            {
+                if (!Small(c.element)) { cur = null; prev = null; continue; }
+                RuneKind e = c.element.kind;
+                bool joined = cur != null && prev != null && root.ParentOf(prev) == root.ParentOf(c) && !SpellTransmute.Seals(prev, c);
+                prev = c;
+                if (joined)
+                {
+                    if (cur.pair == ComboKind.None)
+                    {
+                        if (e == cur.first) { cur.circles.Add(c); continue; }
+                        ComboKind k = Of(cur.first, e);
+                        if (k != ComboKind.None) { cur.pair = k; cur.circles.Add(c); cur.pairEnd = cur.circles.Count; continue; }
+                    }
+                    else if (cur.second == SecondKind.None)
+                    {
+                        SecondKind y = SecondOrder.Of(cur.pair, e);
+                        if (y != SecondKind.None) { cur.second = y; cur.circles.Add(c); continue; }
+                    }
+                    else if (Parts(cur.pair).Contains(e) || SecondOrder.Third(cur.second) == e) { cur.circles.Add(c); continue; }
+                }
+                cur = new Meeting { first = e }; cur.circles.Add(c); all.Add(cur);
+            }
+            return all;
         }
 
         /// <summary>A circle with the closing rune in it: its energy kept in, its element stays itself, whatever stands beside it.</summary>
