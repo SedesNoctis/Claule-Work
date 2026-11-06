@@ -92,11 +92,11 @@ namespace Avir.Magic
                 case LifeMix.Fever:
                     MagicFx.Give(p, HD(hold ? "Avir_LifeFeverBoil" : "Avir_LifeFever"), ticks);
                     if (hold) { Hediff hs = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Heatstroke) ?? p.health.AddHediff(HediffDefOf.Heatstroke); hs.Severity += 0.06f * dmg / 6f; }
-                    if (beam) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, dmg * 0.5f, 2f, -1f, caster));
+                    if (beam) p.TakeDamage(new DamageInfo(DefDatabase<DamageDef>.GetNamedSilentFail("Avir_InnerBoil") ?? DamageDefOf.Burn, dmg * 0.5f, 2f, -1f, caster));   // steam from the pores - its own wound (Fix199)
                     break;
                 case LifeMix.Forge:
                     MagicFx.Give(p, HD(hold ? "Avir_LifeFused" : "Avir_LifeBaked"), ticks);
-                    if (beam && !mixBeamHit) { mixBeamHit = true; p.TakeDamage(new DamageInfo(DamageDefOf.Burn, dmg, 2f, -1f, caster)); }   // the first on the line
+                    if (beam && !mixBeamHit) { mixBeamHit = true; p.TakeDamage(new DamageInfo(DefDatabase<DamageDef>.GetNamedSilentFail("Avir_BoneHeat") ?? DamageDefOf.Burn, dmg, 2f, -1f, caster)); }   // the first on the line - the bone glows (Fix199)
                     break;
                 case LifeMix.Ardour:
                     if (hold && p.RaceProps.IsFlesh) { Hediff an = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Anesthetic) ?? p.health.AddHediff(HediffDefOf.Anesthetic); an.Severity = Mathf.Max(an.Severity, 0.5f); break; }

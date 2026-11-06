@@ -190,7 +190,32 @@ namespace Avir.Magic
         }
     }
 
-    // ================================================================== the couch: a caster of Life works over one who lies
+    // ================================================================== Pestilence sees the sick (Fix199)
+
+    /// <summary>A caster of Pestilence, selected, sees the sick round them in a sickly yellow - the unseen too (useful when
+    /// they leave a gas that spreads sickness). Not themselves, and not other casters of Pestilence.</summary>
+    public class MapComponent_PestSight : MapComponent
+    {
+        private static Material mat;
+        private static readonly MaterialPropertyBlock block = new MaterialPropertyBlock();
+        public MapComponent_PestSight(Map map) : base(map) { }
+        private static bool PestMage(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); return c != null && c.pestMage; }
+        public override void MapComponentUpdate()
+        {
+            if (Find.CurrentMap != map || !(Find.Selector.SingleSelectedThing is Pawn mage) || mage.Map != map || !PestMage(mage)) return;
+            if (mat == null) mat = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Life/PoisonFog", ShaderDatabase.MoteGlow, Color.white);
+            float t = Time.realtimeSinceStartup;
+            foreach (Pawn p in map.mapPawns.AllPawnsSpawned)
+            {
+                if (p == mage || p.Dead || PestMage(p) || p.health?.hediffSet == null || !p.health.hediffSet.hediffs.Any(Pestilence.Sickness)) continue;
+                Vector3 at = p.DrawPos; at.y = AltitudeLayer.MetaOverlays.AltitudeFor();
+                block.SetColor(ShaderPropertyIDs.Color, new Color(0.85f, 0.85f, 0.25f, 0.45f + 0.15f * Mathf.Sin(t * 2.5f + p.thingIDNumber)));
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(at, Quaternion.AngleAxis((t * 20f + p.thingIDNumber * 31f) % 360f, Vector3.up), new Vector3(1.6f, 1f, 1.6f)), mat, 0, null, 0, block);
+            }
+        }
+    }
+
+    // ================================================================== the couch: a caster works over one who lies
 
     /// <summary>A couch of Life care (the author, Fix198): a colonist lies down on it for recreation and waits; a caster of
     /// Life comes and works over them - kneading, warmth, the slow hands. Stronger than a passing soothing.</summary>
@@ -215,7 +240,7 @@ namespace Avir.Magic
         {
             if (pawn.Map == null || !pawn.RaceProps.Humanlike) return null;
             // only where a caster of Life is about to come
-            if (!pawn.Map.mapPawns.FreeColonistsSpawned.Any(m => m != pawn && LifeWorks.Able(m, WorkGiver_LifeCare.Store) != null && !m.Downed && m.workSettings != null && m.workSettings.WorkIsActive(DefDatabase<WorkTypeDef>.GetNamedSilentFail("Avir_MagicWork")))) return null;
+            if (!pawn.Map.mapPawns.FreeColonistsSpawned.Any(m => m != pawn && WorkGiver_LifeCare.Able(m) && !m.Downed && m.workSettings != null && m.workSettings.WorkIsActive(DefDatabase<WorkTypeDef>.GetNamedSilentFail("Avir_MagicWork")))) return null;
             Building_LifeCouch couch = pawn.Map.listerThings.AllThings.OfType<Building_LifeCouch>().Where(c => c.lying == null && !c.IsForbidden(pawn) && pawn.CanReserveAndReach(c, PathEndMode.OnCell, Danger.Some)).OrderBy(c => c.Position.DistanceToSquared(pawn.Position)).FirstOrDefault();
             return couch != null ? JobMaker.MakeJob(def.jobDef, couch) : null;
         }
@@ -245,12 +270,15 @@ namespace Avir.Magic
 
     public class WorkGiver_LifeCare : WorkGiver_Scanner
     {
-        public const float Store = 2f;
+        public const float Store = 2f, StoneArcana = 3f;
+        /// <summary>Who can work over the one on the couch (the author, Fix199: not Life's alone): a caster of Life, out of
+        /// its store; a caster of earth with warm stones, for Arcana.</summary>
+        public static bool Able(Pawn p) => LifeWorks.Able(p, Store) != null || MagicWork.Able(p, RuneKind.Earth, StoneArcana) != null;
         public override PathEndMode PathEndMode => PathEndMode.Touch;
         public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial);
-        public override bool ShouldSkip(Pawn pawn, bool forced = false) => LifeWorks.Able(pawn, Store) == null;
+        public override bool ShouldSkip(Pawn pawn, bool forced = false) => !Able(pawn);
         public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false) =>
-            t is Building_LifeCouch c && c.Waiting && c.lying != pawn && !c.IsForbidden(pawn) && pawn.CanReach(c, PathEndMode.Touch, Danger.Some) && LifeWorks.Able(pawn, Store) != null;
+            t is Building_LifeCouch c && c.Waiting && c.lying != pawn && !c.IsForbidden(pawn) && pawn.CanReach(c, PathEndMode.Touch, Danger.Some) && Able(pawn);
         public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false) => JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("Avir_LifeCare"), t);
     }
 
@@ -268,8 +296,23 @@ namespace Avir.Magic
                 if (!(TargetA.Thing is Building_LifeCouch c) || c.lying == null) return;
                 Pawn p = c.lying;
                 Hediff_ArcaneCore core = MagicWork.Able(pawn, RuneKind.Life, LifeWorks.Arcana);
-                float f = core != null ? LifeWorks.Spend(core, WorkGiver_LifeCare.Store) : 0f;
-                if (f <= 0f) return;
+                float f = core != null && LifeWorks.Has(core, WorkGiver_LifeCare.Store) ? LifeWorks.Spend(core, WorkGiver_LifeCare.Store) : 0f;
+                if (f <= 0f)
+                {
+                    // warm stones: a caster of earth (Fix199) - laid along the back, rolled, pressed
+                    Hediff_ArcaneCore ec = MagicWork.Able(pawn, RuneKind.Earth, WorkGiver_LifeCare.StoneArcana);
+                    if (ec == null) return;
+                    float sq = Mathf.Clamp(0.5f + 0.12f * MageClass.Stage(MageClass.XpIn(ec, RuneKind.Earth)), 0.4f, 1.1f);
+                    p.needs?.joy?.GainJoy(0.4f * sq, DefDatabase<JoyKindDef>.GetNamedSilentFail("Avir_Care") ?? JoyKindDefOf.Meditative);
+                    if (p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Min(1f, p.needs.rest.CurLevel + 0.1f * sq);
+                    MagicFx.Give(p, DefDatabase<HediffDef>.GetNamedSilentFail("Avir_StoneMassaged"), Mathf.RoundToInt(GenDate.TicksPerDay * 0.75f));
+                    ThoughtDef th0 = DefDatabase<ThoughtDef>.GetNamedSilentFail("Avir_LifeCaredFor");
+                    if (th0 != null) p.needs?.mood?.thoughts?.memories?.TryGainMemory(th0, pawn);
+                    FleckMaker.ThrowDustPuffThick(p.DrawPos, p.Map, 1f, MagicFx.EarthDust);
+                    c.cared = true;
+                    MagicWork.Done(ec, RuneKind.Earth, WorkGiver_LifeCare.StoneArcana, LifeWorks.Xp);
+                    return;
+                }
                 float q = LifeWorks.Quality(core) * f;
                 p.needs?.joy?.GainJoy(0.45f * q, DefDatabase<JoyKindDef>.GetNamedSilentFail("Avir_Care") ?? JoyKindDefOf.Meditative);
                 if (p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Min(1f, p.needs.rest.CurLevel + 0.15f * q);

@@ -60,6 +60,7 @@ namespace Avir.Magic
             if (s.whole) return "listens to the wind over the whole land - the unseen in the open will be shown";
             if (!s.follow) return "keeps watch on a place - the unseen there will be shown";
             if (s.combo == ComboKind.Steam) return "feels everyone round about, the machines too";
+            if (s.el == RuneKind.Life) return "feels every living thing round about - the animals feel back";
             return s.el == RuneKind.Water ? "feels the blood of the living round about" : "feels the warmth round about, the machines too";
         }
 

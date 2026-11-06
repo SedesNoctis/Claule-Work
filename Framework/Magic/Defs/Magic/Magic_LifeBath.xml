@@ -68,8 +68,8 @@
 
   <ThingDef ParentName="FurnitureBase">
     <defName>Avir_LifeCouch</defName>
-    <label>couch of Life care</label>
-    <description>A low couch for the care of a caster of Life. A colonist lies down on it and waits; a caster comes and works over them - kneading, warmth, slow hands. Recreation and rest, better than a passing soothing.</description>
+    <label>massage couch</label>
+    <description>A low couch. A colonist lies down on it and waits; a caster comes and works over them - a caster of Life with slow hands, a caster of earth with warm stones. Recreation and rest, better than a passing soothing.</description>
     <thingClass>Avir.Magic.Building_LifeCouch</thingClass>
     <graphicData>
       <texPath>Things/Building/Furniture/Bed/Bed</texPath>
@@ -114,7 +114,7 @@
   </JoyGiverDef>
   <WorkGiverDef>
     <defName>Avir_LifeCare</defName>
-    <label>care on the couch by Life</label>
+    <label>massage on the couch</label>
     <giverClass>Avir.Magic.WorkGiver_LifeCare</giverClass>
     <workType>Avir_MagicWork</workType>
     <verb>care for</verb>
@@ -125,7 +125,7 @@
   <JobDef>
     <defName>Avir_LifeCare</defName>
     <driverClass>Avir.Magic.JobDriver_LifeCare</driverClass>
-    <reportString>caring for the one on TargetA.</reportString>
+    <reportString>working over the one on TargetA.</reportString>
   </JobDef>
 
   <HediffDef>
@@ -155,4 +155,68 @@
     <stackLimit>1</stackLimit>
     <stages><li><label>cared for on the couch</label><description>A caster of Life worked the knots out of me. I feel new.</description><baseMoodEffect>8</baseMoodEffect></li></stages>
   </ThoughtDef>
+  <HediffDef>
+    <defName>Avir_StoneMassaged</defName>
+    <label>warmed by stones</label>
+    <description>Warm stones laid along the back by a caster of earth: the body heavy and easy, the aches gone deep and quiet.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>45000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><painFactor>0.85</painFactor><statOffsets><ComfyTemperatureMin>-4</ComfyTemperatureMin></statOffsets><capMods><li><capacity>Moving</capacity><offset>0.04</offset></li></capMods></li></stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_LifeKinship</defName>
+    <label>felt by Life</label>
+    <description>A caster of Life reached for this animal, and it felt them back: less wild for a day - easier to tame, easier to teach.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <isBad>false</isBad>
+    <defaultLabelColor>(0.55,0.85,0.55)</defaultLabelColor>
+    <comps><li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>60000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li></comps>
+    <stages><li><statOffsets><Wildness>-0.25</Wildness></statOffsets></li></stages>
+  </HediffDef>
+  <!-- Life's own wounds (Fix199): the Fever's beam boils from inside, the Forge's beam heats the bone. -->
+  <DamageDef>
+    <defName>Avir_InnerBoil</defName>
+    <label>inner boil</label>
+    <workerClass>DamageWorker_AddInjury</workerClass>
+    <externalViolence>true</externalViolence>
+    <deathMessage>{0} has boiled from inside.</deathMessage>
+    <hediff>Avir_InnerBoilWound</hediff>
+    <harmsHealth>true</harmsHealth>
+    <defaultDamage>4</defaultDamage>
+  </DamageDef>
+  <HediffDef ParentName="InjuryBase">
+    <defName>Avir_InnerBoilWound</defName>
+    <label>boiled from within</label>
+    <labelNoun>a scald from within</labelNoun>
+    <description>Blistered from inside: the sweat itself boiled in the pores.</description>
+    <comps>
+      <li Class="HediffCompProperties_TendDuration"><labelTendedWell>dressed</labelTendedWell><labelTendedWellInner>tended</labelTendedWellInner><labelSolidTendedWell>dressed</labelSolidTendedWell></li>
+      <li Class="HediffCompProperties_Infecter"><infectionChance>0.2</infectionChance></li>
+      <li Class="HediffCompProperties_GetsPermanent"><permanentLabel>blister scar</permanentLabel></li>
+    </comps>
+    <injuryProps><painPerSeverity>0.0175</painPerSeverity><averagePainPerSeverityPermanent>0.00625</averagePainPerSeverityPermanent><canMerge>true</canMerge><destroyedLabel>boiled away</destroyedLabel></injuryProps>
+  </HediffDef>
+  <DamageDef>
+    <defName>Avir_BoneHeat</defName>
+    <label>bone heat</label>
+    <workerClass>DamageWorker_AddInjury</workerClass>
+    <externalViolence>true</externalViolence>
+    <deathMessage>{0}'s bones have burned from within.</deathMessage>
+    <hediff>Avir_BoneHeatWound</hediff>
+    <harmsHealth>true</harmsHealth>
+    <defaultDamage>6</defaultDamage>
+  </DamageDef>
+  <HediffDef ParentName="InjuryBase">
+    <defName>Avir_BoneHeatWound</defName>
+    <label>seared bone</label>
+    <labelNoun>a bone seared from within</labelNoun>
+    <description>The bone itself glowed red: the flesh round it is cooked from the inside out.</description>
+    <comps>
+      <li Class="HediffCompProperties_TendDuration"><labelTendedWell>set</labelTendedWell><labelTendedWellInner>tended</labelTendedWellInner><labelSolidTendedWell>set</labelSolidTendedWell></li>
+      <li Class="HediffCompProperties_GetsPermanent"><permanentLabel>old seared bone</permanentLabel></li>
+    </comps>
+    <injuryProps><painPerSeverity>0.02</painPerSeverity><averagePainPerSeverityPermanent>0.0075</averagePainPerSeverityPermanent><canMerge>true</canMerge><destroyedLabel>burned through</destroyedLabel></injuryProps>
+  </HediffDef>
 </Defs>

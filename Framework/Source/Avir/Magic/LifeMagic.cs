@@ -177,6 +177,7 @@ namespace Avir.Magic
             // an Aura with an Anchor in a circle of Life: a living aura - its acts pulse round the mage (the general rule of auras)
             if (!pulsing) RaiseAura(caster, g, power, map);
             if (!pulsing) LifeBarrier(caster, g, at, power, map);
+            if (!pulsing && g.OwnRunes.Any(x => x.kind == RuneKind.Sense)) LifeSense(caster, g, at, power, map);
             if (pair == RuneKind.Water) core.bloodMage = true;
             float r = pulsing ? pulseRadius : Radius(g);
             IntVec3 last = at;
@@ -238,6 +239,22 @@ namespace Avir.Magic
                 bool aura = runes.Any(x => x.kind == RuneKind.Aura);
                 var d = MapComponent_WardsDrawn.RaiseWard(map, aura ? caster.Position : at, Mathf.Max(1.4f, Radius(g) - 0.5f), life, ComboKind.None, caster, ticks, power, amp);
                 if (d != null) { d.feeds = caster; if (ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Life_BranchDome", false) != null) d.tex = "Life_BranchDome"; if (aura) d.follow = caster; }
+            }
+        }
+
+        /// <summary>The sense of Life (the author, Fix199: taming built on the sense, in plain life): the caster feels every
+        /// living thing round them for a while, the unseen too; and the animals in reach feel the caster back - they grow
+        /// less wild for a day (easier to tame and to train).</summary>
+        private static void LifeSense(Pawn caster, SpellCircle g, IntVec3 at, float power, Map map)
+        {
+            int anchor = g.OwnRunes.Count(x => x.kind == RuneKind.Anchor), reach = g.OwnRunes.Count(x => x.kind == RuneKind.Reach);
+            float radius = 20f + 8f * reach;
+            SpellSense.Begin(caster, map, caster.Position, radius, power, RuneKind.Life, ComboKind.None, anchor);
+            HediffDef kin = H("Avir_LifeKinship");
+            foreach (Pawn a in map.mapPawns.AllPawnsSpawned.Where(a => a.RaceProps.Animal && !a.Dead && a.Position.InHorDistOf(at, Mathf.Max(6f, Radius(g) + 4f))).ToList())
+            {
+                if (kin != null) MagicFx.Give(a, kin, Mathf.RoundToInt(GenDate.TicksPerDay * power));
+                MapComponent_SpellSprites.PutTinted(map, "Life/Heart", Necrotic, a.DrawPos, 0.9f, 60);
             }
         }
 
