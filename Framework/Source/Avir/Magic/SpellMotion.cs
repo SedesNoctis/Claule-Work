@@ -346,6 +346,7 @@ namespace Avir.Magic
         }
 
         private static Material waveMat, wakeMat;
+        private int lastFoam;
 
         public override void DynamicDrawPhaseAt(DrawPhase phase, Vector3 drawLoc, bool flip = false)
         {
@@ -364,6 +365,14 @@ namespace Avir.Magic
                     if (wakeMat == null) wakeMat = ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Wake_Water", false) != null ? MaterialPool.MatFrom("Things/Mote/Avir/Magic/Wake_Water", ShaderDatabase.Transparent) : BaseContent.ClearMat;
                     Vector3 back = drawLoc - dir.normalized * 1.3f; back.y = AltitudeLayer.MoteOverhead.AltitudeFor() - 0.01f;
                     Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(back, Quaternion.AngleAxis(ang, Vector3.up), new Vector3(1.8f, 1f, 2.6f)), wakeMat, 0);
+                    // a trail of foam and rings on the ground behind the wave (drawn by code, Fix180)
+                    int tk = Find.TickManager.TicksGame;
+                    if (tk != lastFoam && tk % 6 == 0 && Map != null)
+                    {
+                        lastFoam = tk;
+                        MapComponent_SpellSprites.Put(Map, "Wave/Foam", back, 2.2f, 70, ang, 0f, 3f);
+                        if (Rand.Chance(0.4f)) MapComponent_SpellSprites.PutGrowing(Map, "Wave/Ripple", back, 1f, 60, 1.4f);
+                    }
                 }
             }
             base.DynamicDrawPhaseAt(phase, drawLoc, flip);

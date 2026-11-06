@@ -94,8 +94,8 @@ namespace Avir.Magic
                 // a whirl shows itself: a spinning spiral of wind (drawn by code, Fix178)
                 if (g.shape == Shape.Round && now % 20 == 0)
                 {
-                    if (g.tint.a > 0f) MapComponent_SpellSprites.PutTinted(map, "Wind/Swirl", g.tint, g.at, g.radius * 2.4f, 30, -1f, g.strength > 60f ? -900f : -600f);
-                    else MapComponent_SpellSprites.Put(map, "Wind/Swirl", g.at, g.radius * 2.4f, 30, -1f, g.strength > 60f ? -900f : -600f);
+                    if (g.tint.a > 0f) MapComponent_SpellSprites.PutTinted(map, "Wind/Swirl", g.tint, g.at, g.radius * 2.4f, 30, -1f, g.strength > 60f ? -9f : -6f);
+                    else MapComponent_SpellSprites.Put(map, "Wind/Swirl", g.at, g.radius * 2.4f, 30, -1f, g.strength > 60f ? -9f : -6f);
                 }
                 foreach (IntVec3 c in GenRadial.RadialCellsAround(mid, g.radius, true))
                 {
@@ -104,15 +104,27 @@ namespace Avir.Magic
                     if (s < 12f || w.sqrMagnitude < 0.01f) continue;
                     // the weather's wind is out of doors; and any wind but a whirl's is broken by a wall upwind - what is behind a
                     // solid wall (or a mountain) is in its lee (Fix179)
+                    // a hurricane's wind (or a storm's, 45+) tears off a built roof at its edge (Fix180)
+                    if (s >= 45f && (g.charged || g.weather) && c.Roofed(map)) Roof(c, s, g);
                     if (g.weather && c.Roofed(map)) continue;
                     if (g.shape != Shape.Round)
                     {
-                        IntVec3 up = (c.ToVector3Shifted() - w * 1.2f).ToIntVec3();
-                        if (up.InBounds(map) && up.GetEdifice(map) is Building wb && wb.def.Fillage == FillCategory.Full) s *= 0.35f;
+                        // the lee (Fix180): looking up to three cells upwind - a solid wall breaks the wind (a third gets
+                        // through), a tree or a half-wall takes a part (seven tenths), and they add up: a belt of trees shelters
+                        for (int k = 1; k <= 3 && s >= 12f; k++)
+                        {
+                            IntVec3 up = (c.ToVector3Shifted() - w * (k + 0.2f)).ToIntVec3();
+                            if (!up.InBounds(map)) break;
+                            Building wb = up.GetEdifice(map);
+                            if (wb != null && wb.def.Fillage == FillCategory.Full) { s *= k == 1 ? 0.35f : 0.55f; break; }
+                            Plant tp = up.GetPlant(map);
+                            if (tp != null && tp.def.plant.IsTree && tp.Growth > 0.5f || wb != null && wb.def.Fillage == FillCategory.Partial) s *= 0.7f;
+                        }
                         if (s < 12f) continue;
                     }
                     if (Rand.Chance(g.weather ? 0.04f : 0.12f)) Streak(c, w, s, g.tint);
                     Carry(g, c, w, s, now);
+                    if (s >= 15f) Drift(c, w);
                     Act(g, c, w, s, now);
                 }
             }
@@ -141,6 +153,20 @@ namespace Avir.Magic
                 return true;
             }
             return false;
+        }
+
+        /// <summary>A built roof torn off at its edge (Fix180): only a roof over a cell next to an open sky, never a
+        /// mountain's; a third of a chance a pulse at 45 m/s, more the harder it blows. Whoever is under it is struck.</summary>
+        private void Roof(IntVec3 c, float s, Gust g)
+        {
+            RoofDef r = map.roofGrid.RoofAt(c);
+            if (r == null || r.isNatural || r.isThickRoof) return;
+            if (!GenAdj.CellsAdjacent8Way(new TargetInfo(c, map)).Any(n => n.InBounds(map) && !n.Roofed(map))) return;
+            if (!Rand.Chance(Mathf.Clamp01((s - 40f) / 90f))) return;
+            map.roofGrid.SetRoof(c, null);
+            FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.8f, new Color(0.65f, 0.6f, 0.55f, 0.8f));
+            foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList()) p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Rand.Range(3f, 8f), 0f, -1f, g.owner));
+            if (Prefs.DevMode) Log.Message("[Avir wind] roof torn off at " + c + " (" + s.ToString("0") + " m/s)");
         }
 
         private static bool AvirBodyIs(Pawn p) { try { return Avir.AvirBody.IsAvir(p); } catch { return false; } }
@@ -198,7 +224,10 @@ namespace Avir.Magic
                 {
                     float mass = Mathf.Max(0.05f, t.GetStatValue(StatDefOf.Mass)) * Mathf.Sqrt(Mathf.Max(1, t.stackCount));
                     float need = 16f + 6f * Mathf.Sqrt(mass);
-                    if (s < need || t.IsInAnyStorage() && s < need * 1.5f) continue;
+                    if (s < need) continue;
+                    // things on shelves (a storage building) are held by it; those lying in a stockpile are packed - harder to lift
+                    if (c.GetEdifice(map) is Building_Storage) continue;
+                    if (t.IsInAnyStorage() && s < need * 1.5f) continue;
                     WindBorne.Launch(t, w, Mathf.Clamp((s - need) / 4f + 1f, 1f, 9f), s, g.owner, g.charged && t.def.IsMetal);
                     continue;
                 }
@@ -206,7 +235,8 @@ namespace Avir.Magic
                 {
                     // the green bends; the weak snap, trees take the load
                     if (!pl.def.plant.IsTree && pl.def.plant.harvestYield <= 0f && Rand.Chance(0.25f)) pl.Destroy(DestroyMode.KillFinalize);
-                    else if (pl.def.plant.IsTree && s >= 38f) pl.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (s - 36f) * 0.6f, 0f, -1f, g.owner));
+                    // a tree holds by its size: a sapling snaps at ~40 m/s, a grown tree only in a hurricane's wind (~60+)
+                    else if (pl.def.plant.IsTree && s >= 38f + 25f * pl.Growth) pl.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (s - 36f - 25f * pl.Growth) * 0.6f, 0f, -1f, g.owner));
                     continue;
                 }
                 if (t is Building b && b.def.useHitPoints && s >= 30f)
@@ -320,6 +350,21 @@ namespace Avir.Magic
             string arrow = dir.sqrMagnitude < 0.01f ? "" : " " + "→↗↑↖←↙↓↘"[Mathf.RoundToInt(((Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg) + 360f) % 360f / 45f) % 8];
             string what = What(s);
             return "Magic wind " + s.ToString("0") + " m/s" + arrow + " (" + what + ")";
+        }
+
+        /// <summary>A ball lightning in the wind is carried by it (Fix180): its field moves a cell along it, now and then.</summary>
+        private void Drift(IntVec3 c, Vector3 w)
+        {
+            var sf = map.GetComponent<SecondFields>();
+            if (sf == null) return;
+            foreach (SecondFields.Fld f in sf.fields.Where(f => f.y == SecondKind.BallLightning && f.cells.Contains(c)).ToList())
+            {
+                if (!Rand.Chance(0.08f)) continue;
+                IntVec3 d = new IntVec3(Mathf.RoundToInt(w.x), 0, Mathf.RoundToInt(w.z));
+                if (d == IntVec3.Zero) continue;
+                f.cells = new HashSet<IntVec3>(f.cells.Select(x => x + d).Where(x => x.InBounds(map)));
+                f.center += d.ToVector3(); f.rad = 0f;
+            }
         }
 
         /// <summary>A streak of dust along the wind: what the eye sees of it.</summary>

@@ -51,7 +51,7 @@ namespace Avir.Magic
     /// them turning. One drawer for all of them.</summary>
     public class MapComponent_SpellSprites : Verse.MapComponent
     {
-        private class Sprite { public UnityEngine.Material mat; public UnityEngine.Vector3 at; public float w, h, angle, spin; public int born, life; }
+        private class Sprite { public UnityEngine.Material mat; public UnityEngine.Vector3 at; public float w, h, angle, spin, grow; public int born, life; }
         private readonly System.Collections.Generic.List<Sprite> sprites = new System.Collections.Generic.List<Sprite>();
         private static readonly System.Collections.Generic.Dictionary<string, UnityEngine.Material> mats = new System.Collections.Generic.Dictionary<string, UnityEngine.Material>();
         private static readonly UnityEngine.MaterialPropertyBlock block = new UnityEngine.MaterialPropertyBlock();
@@ -95,6 +95,15 @@ namespace Avir.Magic
             c.sprites.Add(new Sprite { mat = m, at = at, w = size, h = size / aspect, angle = angle < 0f ? Verse.Rand.Range(0f, 360f) : angle, spin = spin, born = Verse.Find.TickManager.TicksGame, life = life });
         }
 
+        /// <summary>A sprite that spreads as it fades (Fix180): a ripple on water.</summary>
+        public static void PutGrowing(Verse.Map map, string path, UnityEngine.Vector3 at, float size, int life, float grow)
+        {
+            var c = map?.GetComponent<MapComponent_SpellSprites>();
+            UnityEngine.Material m = Mat(path);
+            if (c == null || m == null) return;
+            c.sprites.Add(new Sprite { mat = m, at = at, w = size, h = size, angle = Verse.Rand.Range(0f, 360f), spin = 0f, grow = grow, born = Verse.Find.TickManager.TicksGame, life = life });
+        }
+
         /// <summary>A bolt stretched from one point to another.</summary>
         public static void Bolt(Verse.Map map, UnityEngine.Vector3 from, UnityEngine.Vector3 to, int life = 18)
         {
@@ -136,7 +145,8 @@ namespace Avir.Magic
                 block.SetColor(Verse.ShaderPropertyIDs.Color, new UnityEngine.Color(1f, 1f, 1f, alpha));
                 UnityEngine.Vector3 at = new UnityEngine.Vector3(s.at.x, y, s.at.z);
                 var q = UnityEngine.Quaternion.AngleAxis(s.angle + s.spin * (now - s.born), UnityEngine.Vector3.up);
-                UnityEngine.Graphics.DrawMesh(Verse.MeshPool.plane10, UnityEngine.Matrix4x4.TRS(at, q, new UnityEngine.Vector3(s.w, 1f, s.h)), s.mat, 0, null, 0, block);
+                float k = 1f + s.grow * t;   // a ripple spreads as it fades
+                UnityEngine.Graphics.DrawMesh(Verse.MeshPool.plane10, UnityEngine.Matrix4x4.TRS(at, q, new UnityEngine.Vector3(s.w * k, 1f, s.h * k)), s.mat, 0, null, 0, block);
             }
         }
     }

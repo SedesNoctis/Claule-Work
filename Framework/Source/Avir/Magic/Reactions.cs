@@ -72,6 +72,12 @@ namespace Avir.Magic
             foreach (IntVec3 c in cells.Where(x => x.InBounds(map)).Distinct().ToList())
             {
                 AtmosphereBridge.Touch(map, c, hot, water, power);   // Atmosphere Overhaul's air, if it is there (Fix167)
+                // water on water: rings spread and spray rises (drawn by code, Fix180)
+                if (water && Wet(c, map) && Rand.Chance(0.25f))
+                {
+                    MapComponent_SpellSprites.PutGrowing(map, "Wave/Ripple", c.ToVector3Shifted() + new Vector3(Rand.Range(-0.3f, 0.3f), 0f, Rand.Range(-0.3f, 0.3f)), Rand.Range(0.8f, 1.3f), Rand.Range(50, 80), 1.6f);
+                    if (Rand.Chance(0.4f)) FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 1.1f);
+                }
                 var things = c.GetThingList(map);
                 if (hot)
                 {
