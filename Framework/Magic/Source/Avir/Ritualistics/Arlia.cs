@@ -107,7 +107,15 @@ namespace Avir.Ritualistics
             { "secondObsidian", new[] { "Some believe this and a bit of fire sends you right to the hells. Weird, right?" } },
             { "secondAsh", new[] { "Breathe it in! Wait, no, don't." } },
             { "secondDeluge", new[] { "Dance around and call a rain; or kill your sheep, or your.. What, did someone truly think that would call a rain?" } },
-            { "secondHurricane", new[] { "You spin their spines right round, right round. Dizzy yet? They are." } },
+            { "secondHurricane", new[] { "You spin their spines now, see it, right round, you can hear it breaking loud, loud, loud, loud." } },
+            { "secondMudflow", new[] { "Behold! The swine-magic!" } },
+            { "secondSwelter", new[] { "Come and sit, breathe in, breathe out. Don't you want water now? Oh, you do? Too bad." } },
+            { "secondRainbow", new[] { "Do you expect me to respect you after this show?" } },
+            { "secondDryWind", new[] { "So much dirt on your mind.." } },
+            { "secondQuag", new[] { "Ever dreamt of being reborn as a crocodile?" } },
+            { "secondSilt", new[] { "Why do you like mud so much? Are you a swine?" } },
+            { "secondMarshGas", new[] { "Just add some water, they said. No - add a spark instead." } },
+            { "secondMarshHaze", new[] { "This smell! Must you spread it?!", "What a terrible night to breathe." } },
             { "secondBallLightning", new[] { "Ride the lightning! Or maybe - don't?" } },
             { "fresh", new[] { "A clean sheet. Don't waste it.", "Fresh chalk, fresh mistakes. Try not to make too many." } },
             { "pin", new[] { "Oh, do you actually have an idea?", "Yes, initiative is good for studies." } },
@@ -127,7 +135,7 @@ namespace Avir.Ritualistics
         /// <summary>She says her piece about this - sharper each time she is made to repeat it. A passing remark can be
         /// given a shorter time on the page.</summary>
         /// <summary>Her line for this key, if she has one (the spell editor shows it under the circles).</summary>
-        public static string LineFor(string key) => key != null && lines.TryGetValue(key, out string[] l) && l.Length > 0 ? l[0] : null;
+        public static string LineFor(string key, int seed = 0) => key != null && lines.TryGetValue(key, out string[] l) && l.Length > 0 ? l[(int)((uint)seed % (uint)l.Length)] : null;
 
         public static void Say(string key, float seconds = 0f)
         {

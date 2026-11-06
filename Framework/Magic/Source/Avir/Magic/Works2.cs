@@ -142,8 +142,8 @@ namespace Avir.Magic
                     {
                         Unmark(m, x, "Avir_2Ash");
                         TerrainDef tr = m.terrainGrid.TerrainAt(x);
-                        if (tr.fertility <= 0f || tr.IsWater || x.GetEdifice(m) != null) continue;
-                        temp?.Set(x, ArcaneWorks.ArcaneSoil, GenDate.TicksPerDay * 15); n++;
+                        if (tr.fertility <= 0f || tr.IsWater) continue;
+                        MapComponent_LifeFertility.Of(m)?.Add(x, SecondOrder.AshBonus, SecondOrder.AshDays); n++;
                         if (Rand.Chance(0.3f)) FleckMaker.ThrowSmoke(x.ToVector3Shifted(), m, 0.8f);
                     }
                     return n > 0;
@@ -471,7 +471,7 @@ namespace Avir.Magic
     public class Designator_2LavaCore : Designator_Arcane2 { protected override string Key => "Avir_2LavaCore"; protected override string Label2 => "Seal a lava core (lava)"; protected override string Desc2 => "A caster of lava seals a core of lava in basalt here: a long fuel for any wood-fed forge, smelter or stove (three units of wood each)."; }
     public class Designator_2Basalt : Designator_Arcane2 { protected override string Key => "Avir_2Basalt"; protected override string Label2 => "Draw basalt (volcano)"; protected override string Desc2 => "A caster of the volcano (fire, earth; an adept of earth) draws two chunks of basalt up here."; }
     public class Designator_2Obsidian : Designator_Arcane2 { protected override string Key => "Avir_2Obsidian"; protected override string Label2 => "Make obsidian (obsidian)"; protected override string Desc2 => "A caster of fire, earth and water quenches magma here into obsidian - sharp black glass for blades."; }
-    public class Designator_2Ash : Designator_Arcane2 { protected override string Key => "Avir_2Ash"; protected override string Label2 => "Ash the ground (ash)"; protected override string Desc2 => "A caster of fire, earth and air lets ash fall here: the ground is rich arcane soil for fifteen days."; protected override AcceptanceReport Ok(IntVec3 c) => Map.terrainGrid.TerrainAt(c).fertility > 0f; }
+    public class Designator_2Ash : Designator_Arcane2 { protected override string Key => "Avir_2Ash"; protected override string Label2 => "Ash the ground (ash)"; protected override string Desc2 => "A caster of fire, earth and air lets ash fall here: a plain fertiliser, +20% fertility for ten days."; protected override AcceptanceReport Ok(IntVec3 c) => Map.terrainGrid.TerrainAt(c).fertility > 0f; }
     public class Designator_2Clear : Designator_Arcane2 { protected override string Key => "Avir_2Clear"; protected override string Label2 => "Clear land (mudflow)"; protected override string Desc2 => "A caster of water, air and earth tears up the trees and bushes here; the wood is piled up."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetPlant(Map) != null; }
     public class Designator_2Moat : Designator_Arcane2 { protected override string Key => "Avir_2Moat"; protected override string Label2 => "Moat (quagmire)"; protected override string Desc2 => "A caster of the quagmire (water, earth; an adept of water) floods these cells into shallow water for 30 days - a moat."; }
     public class Designator_2SiltWater : Designator_Arcane2 { protected override string Key => "Avir_2SiltWater"; protected override string Label2 => "Ground to water (silt)"; protected override string Desc2 => "A caster of silt (water, earth; an adept of earth) turns this ground into shallow water for 30 days."; }

@@ -1236,7 +1236,7 @@ namespace Avir.Magic
                 if (ll != null) return ll;
             }
             // a meeting of the second order: her line for it, where the author has written one
-            if (seconds.TryGetValue(sel, out SecondKind sy2) && Avir.Ritualistics.Arlia.LineFor("second" + sy2) is string l2) return l2;
+            if (seconds.TryGetValue(sel, out SecondKind sy2) && Avir.Ritualistics.Arlia.LineFor("second" + sy2, root.All().Sum(c => c.OwnRunes.Count() * 7 + (c.element?.shortHash ?? 0))) is string l2) return l2;
             if (all.Count >= 10) return "So many circles. Whoever holds this - I'd like to meet them. Briefly.";
             if (met.TryGetValue(sel, out ComboKind mk) && sel.OwnRunes.Any())
                 switch (mk)

@@ -47,6 +47,10 @@ namespace Avir.Magic
             return SecondKind.None;
         }
 
+        /// <summary>Ash on the ground: +20% fertility for 10 days (weaker than arcane soil, which it is not).</summary>
+        public const float AshBonus = 0.2f;
+        public const int AshDays = 10;
+
         public static ComboKind PairOf(SecondKind y)
         {
             switch (y)
@@ -101,7 +105,7 @@ namespace Avir.Magic
                 case SecondKind.Lava: return "Lava: it runs further and burns harder than magma, and before it is gone it cools into magma, which then goes its own way.";
                 case SecondKind.Volcano: return "Fire inside stone: the ground cracks, and a heartbeat later stones and magma burst up from below - where armour is thinnest. With Lift a basalt pillar rises under the foe and holds them up there until it falls.";
                 case SecondKind.Obsidian: return "Magma quenched: a burst of steam and black glass, sharp and brittle.";
-                case SecondKind.Ash: return "A scorching cloud: it blinds and chokes the unsealed, and the ash it lets fall makes the ground rich for fifteen days.";
+                case SecondKind.Ash: return "A scorching cloud: it blinds and chokes the unsealed, and the ash it lets fall feeds the ground a little (+20% fertility for ten days).";
                 case SecondKind.Deluge: return "Weather on the spot: rain over the place for a while - everything wet, fires out, lightning through the pools.";
                 case SecondKind.Hurricane: return "Wind: it throws everyone, breaks what is light, and knocks shots out of the air - an aura of it shields one's own.";
                 case SecondKind.BallLightning: return "Slow globes that seek the foes and burst in a discharge - metal on the body takes half again as much. Along a beam, one globe rolls and strikes every foe it passes.";
@@ -309,8 +313,9 @@ namespace Avir.Magic
                 case SecondKind.Ash:
                     foreach (Pawn p in c.foes) if (!Sealed(p)) { MagicFx.Give(p, H("Avir_Ashen"), Ticks(0.5f, c.power)); HealthUtility.AdjustSeverity(p, HediffDefOf.ToxicBuildup, 0.03f * c.power); }
                     {
-                        var temp = MapComponent_TempTerrain.Of(c.map);
-                        foreach (IntVec3 x in c.cells) { TerrainDef t = c.map.terrainGrid.TerrainAt(x); if (t.fertility > 0f && !t.IsWater && x.GetEdifice(c.map) == null) temp?.Set(x, ArcaneWorks.ArcaneSoil, GenDate.TicksPerDay * 15); }
+                        // ash is a plain fertiliser, not arcane soil: a small bonus to the ground's own fertility (the author)
+                        var fert = MapComponent_LifeFertility.Of(c.map);
+                        foreach (IntVec3 x in c.cells) { TerrainDef t = c.map.terrainGrid.TerrainAt(x); if (t.fertility > 0f && !t.IsWater) fert?.Add(x, AshBonus, AshDays); }
                     }
                     Field(c, y, Ticks(0.5f, c.power));
                     break;
