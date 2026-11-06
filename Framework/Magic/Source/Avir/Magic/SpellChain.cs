@@ -326,6 +326,10 @@ namespace Avir.Magic
             // a step that has nowhere to land is not begun at all: no Arcana is spent on it
             string why = StepBlocked(mage, spell, target);
             if (why != null) { Messages.Message("Cannot cast " + spell.name + ": " + why, mage, MessageTypeDefOf.RejectInput, false); return; }
+            // Life weighed before the cast, not after it (the author, Fix151): a spell that must give with its store empty
+            // and nothing here to wither would only waste the caster's time - it is not begun at all
+            string lifeless = LifeMagic.Blocked(mage, spell, target);
+            if (lifeless != null) { Messages.Message("Cannot cast " + spell.name + ": " + lifeless, mage, MessageTypeDefOf.RejectInput, false); return; }
             if (OfAir(spell))
             {
                 Hediff_ArcaneCore core = Mages.Core(mage);

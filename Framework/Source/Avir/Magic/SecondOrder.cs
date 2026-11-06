@@ -254,6 +254,10 @@ namespace Avir.Magic
             else ctx.cells = FireMagic.Point(ctx.at, map, ctx.radius);
             ctx.cells = ctx.cells.Where(c => c.InBounds(map)).ToList();
             List<Pawn> all = ctx.cells.SelectMany(c => c.GetThingList(map).OfType<Pawn>()).Distinct().Where(p => !p.Dead).ToList();
+            // and those the spell has already thrown or lifted over these cells: what the meeting does to them waits till they land
+            var cellSet = new HashSet<IntVec3>(ctx.cells);
+            foreach (SpellHurl f in SpellHurl.Flying.ToList())
+                if (f.Spawned && f.Map == map && f.FlyingPawn != null && !all.Contains(f.FlyingPawn) && (cellSet.Contains(f.DestinationPos.ToIntVec3()) || cellSet.Contains(f.Position))) all.Add(f.FlyingPawn);
             ctx.foes = all.Where(p => MagicFx.Foe(p, caster)).ToList();
             ctx.own = all.Where(p => p == caster || !p.HostileTo(caster)).ToList();
             SpellLore.Learn("Second:" + y);
@@ -362,8 +366,9 @@ namespace Avir.Magic
                     Field(c, y, Ticks(c.hold ? 4f : 2f, c.power));
                     break;
                 case SecondKind.Hurricane:
-                    // with Lift the bodies are already up in it (the lift itself is stronger under a hurricane): no throw on top
-                    if (!c.lift) foreach (Pawn p in c.foes) SpellHurl.Throw(p, c.aura ? by.Position : c.at, Mathf.RoundToInt(4f * c.power), c.map, by, c.power);
+                    // a lift alone: the bodies are up in it already (the lift itself is stronger under a hurricane); with Release
+                    // too the wind flings them as well - the throw waits till they come down
+                    if (!c.lift || c.release) foreach (Pawn p in c.foes) SpellHurl.Throw(p, c.aura ? by.Position : c.at, Mathf.RoundToInt(4f * c.power), c.map, by, c.power);
                     foreach (Building b in c.cells.Select(x => x.GetEdifice(c.map)).Where(b => b != null && b.def.useHitPoints && b.MaxHitPoints <= 300).Distinct().ToList())
                         b.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 15f * c.power, 0f, -1f, by));
                     Field(c, y, c.hold || c.aura || c.shape ? Ticks(0.5f, c.power) : 600);

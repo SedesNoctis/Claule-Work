@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <!-- With Better Architect Menu: the arcane orders are all orders, so BAM lays them out in the big grid like the
+       vanilla Orders tab (SpecialCategoryExtension), not in its narrow side column next to an empty build grid. -->
+  <Operation Class="PatchOperationFindMod">
+    <mods><li>Better Architect Menu</li></mods>
+    <match Class="PatchOperationAddModExtension">
+      <xpath>Defs/DesignationCategoryDef[defName="Avir_ArcaneOrders"]</xpath>
+      <value>
+        <li Class="BetterArchitect.SpecialCategoryExtension" />
+      </value>
+    </match>
+  </Operation>
+</Patch>

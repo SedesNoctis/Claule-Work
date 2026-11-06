@@ -29,6 +29,17 @@ namespace Avir.Magic
         public bool slam;
         public int lie;
 
+        /// <summary>What befalls a body already in the air waits till it comes down (the author's question, Fix151: in a
+        /// circle written Release, Lift - or a meeting acting after its runes - one deed must not swallow the next).</summary>
+        public readonly List<System.Action> then = new List<System.Action>();
+        public static readonly HashSet<SpellHurl> Flying = new HashSet<SpellHurl>();
+        private static bool Later(Pawn p, System.Action a)
+        {
+            if (p == null || p.Dead || p.Spawned || !(p.ParentHolder is SpellHurl f)) return false;
+            if (f.then.Count < 4) f.then.Add(a);
+            return true;
+        }
+
         private static bool Unmoved(Pawn p) => p == null || p.Dead || !p.Spawned || MagicFx.Rooted(p) || SpellWards.Stops(p, false);
 
         /// <summary>Thrown back from a point (a negative distance pulls toward it); lie &gt; 0 - and left lying.</summary>
@@ -43,6 +54,7 @@ namespace Avir.Magic
 
         public static void Throw(Pawn p, IntVec3 from, int dist, Map map, Pawn by = null, float power = 1f, int lie = 0)
         {
+            if (Later(p, () => Throw(p, from, dist, map, by, power, lie))) return;
             if (SpellHeal.Spares(p)) return;
             if (Unmoved(p) || map == null) return;
             if (dist > 0 && Inward && SpellWards.AtWork)
@@ -89,6 +101,8 @@ namespace Avir.Magic
         /// <summary>Thrown up into the air; they come down where they were and the fall hurts.</summary>
         public static void Lift(Pawn p, Pawn by, float power)
         {
+            if (SecondOrder.Now == SecondKind.Hurricane && Later(p, () => Lift(p, by, power * HurricaneLift))) return;
+            if (Later(p, () => Lift(p, by, power))) return;
             if (SpellHeal.Spares(p)) { SpellHeal.Mend(p, 5f * power); return; }
             if (Unmoved(p)) return;
             // a hurricane under it: the updraft is a storm wind - higher, longer, a harder fall (the author, Fix150)
@@ -223,6 +237,7 @@ namespace Avir.Magic
         public override void SpawnSetup(Map map, bool respawningAfterLoad)
         {
             base.SpawnSetup(map, respawningAfterLoad);
+            Flying.Add(this);
             if (!respawningAfterLoad && kind == HurlKind.Lifted) ticksFlightTime = Mathf.RoundToInt(ticksFlightTime * Mathf.Sqrt(Rise));
         }
 
@@ -244,7 +259,16 @@ namespace Avir.Magic
             if (Spawned && kind == HurlKind.Lifted && this.IsHashIntervalTick(6, delta)) FleckMaker.ThrowDustPuffThick(DrawPos, Map, 0.8f, MagicFx.AirDust);
         }
 
+        public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish) { Flying.Remove(this); base.DeSpawn(mode); }
+
         protected override void RespawnPawn()
+        {
+            var waiting = then.ToList(); then.Clear();
+            try { RespawnPawnInner(); }
+            finally { foreach (var a in waiting) a(); }
+        }
+
+        private void RespawnPawnInner()
         {
             Map map = Map; IntVec3 at = DestinationPos.ToIntVec3();
             Pawn p = FlyingPawn;
