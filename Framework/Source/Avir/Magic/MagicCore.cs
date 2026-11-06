@@ -499,12 +499,14 @@ namespace Avir.Magic
             float X(float frac) => PlaqueArt.MapX(r, art, cuts, Stretch, frac * art.width);
             Rect slot = sorc ? new Rect(X(0.094f), r.y + r.height * 0.46f, X(0.906f) - X(0.094f), r.height * 0.245f)
                              : new Rect(X(0.097f), r.y + r.height * 0.447f, X(0.902f) - X(0.097f), r.height * 0.24f);
-            Widgets.FillableBar(slot, Mathf.Clamp01(core.Fill), sorc ? SorcFill : MageFill, Empty, false);
+            // the glass bar sits a little inside the window, so the frame's own rim shows round it
+            Rect glass = slot.ContractedBy(2f);
+            GlassBar.Draw(glass, core.Fill, sorc ? new Color(0.95f, 0.66f, 0.12f) : new Color(0.22f, 0.42f, 1f), 0.85f);
             core.Band(out float lo, out float hi);
-            Texture2D mark = sorc ? Black : Gold;
-            GUI.DrawTexture(new Rect(slot.x + slot.width * lo - 1f, slot.y, 2f, slot.height), mark);
-            GUI.DrawTexture(new Rect(slot.x + slot.width * hi - 1f, slot.y, 2f, slot.height), mark);
-            if (core.vent) GUI.DrawTexture(new Rect(slot.x + slot.width * core.target - 1f, slot.y - 2f, 2f, slot.height + 4f), White);
+            Color mk = sorc ? new Color(0.1f, 0.06f, 0.02f, 0.8f) : new Color(1f, 0.85f, 0.4f, 0.85f);
+            Widgets.DrawBoxSolid(new Rect(glass.x + glass.width * lo - 1f, glass.y + 2f, 2f, glass.height - 4f), mk);
+            Widgets.DrawBoxSolid(new Rect(glass.x + glass.width * hi - 1f, glass.y + 2f, 2f, glass.height - 4f), mk);
+            if (core.vent) Widgets.DrawBoxSolid(new Rect(glass.x + glass.width * core.target - 1f, glass.y, 2f, glass.height), new Color(1f, 1f, 1f, 0.85f));
             PlaqueArt.Draw(r, art, cuts, Stretch);
             Text.Font = slot.height >= 21f ? GameFont.Small : GameFont.Tiny; Text.Anchor = TextAnchor.MiddleCenter; GUI.color = new Color(0.95f, 0.92f, 0.86f);
             Widgets.Label(new Rect(slot.x, slot.y - 2f, slot.width, slot.height + 4f), "Arcana " + Mathf.FloorToInt(core.arcana) + " / " + Mathf.FloorToInt(core.Capacity));

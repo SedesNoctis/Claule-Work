@@ -102,12 +102,10 @@ namespace Avir.Magic
                 PlaqueArt.Draw(r, frame, cuts, SlimStretch);
                 Vector2 bd = Band.TryGetValue(sc.key, out Vector2 b0) ? b0 : new Vector2(0.25f, 0.65f);
                 float x0 = PlaqueArt.MapX(r, frame, cuts, SlimStretch, 0.12f * frame.width), x1 = PlaqueArt.MapX(r, frame, cuts, SlimStretch, 0.88f * frame.width);
-                float y0 = r.y + r.height * bd.x, y1 = r.y + r.height * bd.y, pad = (y1 - y0) * 0.12f;
-                bar = new Rect(x0, y0 + pad, x1 - x0, y1 - y0 - 2f * pad);
-                GUI.color = new Color(0f, 0f, 0f, 0.35f); GUI.DrawTexture(bar, BaseContent.WhiteTex);
-                GUI.color = new Color(sc.fill.r, sc.fill.g, sc.fill.b, 0.72f);
-                GUI.DrawTexture(new Rect(bar.x, bar.y, bar.width * Mathf.Clamp01(sc.value / sc.max), bar.height), BaseContent.WhiteTex);
-                GUI.color = Color.white;
+                float y0 = r.y + r.height * bd.x, y1 = r.y + r.height * bd.y, pad = (y1 - y0) * 0.16f;
+                bar = new Rect(x0 + 2f, y0 + pad, x1 - x0 - 4f, y1 - y0 - 2f * pad);
+                // a glass capsule over the band: the empty part only shades it, so its pattern stays to be seen
+                GlassBar.Draw(bar, sc.value / sc.max, sc.fill, 0.4f, 0.78f);
             }
             else
             {
@@ -115,7 +113,7 @@ namespace Avir.Magic
                 Widgets.DrawBoxSolid(new Rect(r.x, r.y, r.width, 1f), new Color(0.75f, 0.6f, 0.3f, 0.8f));
                 Widgets.DrawBoxSolid(new Rect(r.x, r.yMax - 1f, r.width, 1f), new Color(0.75f, 0.6f, 0.3f, 0.8f));
                 bar = new Rect(r.x + 4f, r.y + 4f, r.width - 8f, r.height - 8f);
-                Widgets.FillableBar(bar, Mathf.Clamp01(sc.value / sc.max), fill, empty, false);
+                GlassBar.Draw(bar, sc.value / sc.max, sc.fill);
             }
             Text.Font = GameFont.Tiny; Text.Anchor = TextAnchor.MiddleCenter; GUI.color = new Color(0.95f, 0.97f, 0.9f);
             Widgets.Label(bar, sc.label + "  " + Mathf.FloorToInt(sc.value) + " / " + Mathf.FloorToInt(sc.max));
