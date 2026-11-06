@@ -255,7 +255,7 @@ namespace Avir.Magic
             if (k == ComboKind.Bog) r.breadth++;   // bog is unwieldy as earth, and wide for it as by one Breadth (magma is unwieldy but not wider; dust is neither)
             IntVec3 at = target.Cell;
             // magma, bog and dust take up their own ground at hand, as earth takes up stone
-            if (EarthStone.Heavy(k) && !storming) power *= EarthStone.Gather(map, at, k);
+            if (EarthStone.Heavy(k) && !storming && r.verbs.Any(v => v.role == RuneRole.Verb || v.role == RuneRole.Form)) power *= EarthStone.Gather(map, at, k);
             // steam and storm take water's rule: the wet ground round the target feeds them (+4% a wet cell, up to +40%);
             // steam drinks the pools there and they boil off as scalding clouds
             if (k == ComboKind.Steam || k == ComboKind.Storm) power *= 1f + Reactions.WaterAround(at, map);
@@ -906,6 +906,8 @@ namespace Avir.Magic
         public static void Pour(IntVec3 c, Map map, Pawn owner, float power, int life, bool setsHard, int stoneLife = 2500, bool lava = false)
         {
             if (!c.InBounds(map) || c.Impassable(map) || ComboDefOf.Avir_Magma == null) return;
+            // never at the mage's own feet nor right beside them (Fix185: a wide beam or a near blast poured it under them)
+            if (owner != null && owner.Spawned && owner.Map == map && c.InHorDistOf(owner.Position, 1.5f)) return;
             if (Reactions.Pools(c, map).Any(t => !(t is MirePatch)))
             {
                 // poured onto water: it sets at once into black glass, in a burst of steam
@@ -1005,6 +1007,7 @@ namespace Avir.Magic
     public class MirePatch : ThingWithComps
     {
         public Pawn owner; public float power = 1f; public int left = 5000;
+        public int born;   // not saved: an old one counts as old
 
         /// <summary>The painted mire (Fix158), when the setting asks for it and the pictures are there; else the old one,
         /// kept on purpose (the author: the stand-in looked unexpectedly good).</summary>
@@ -1026,7 +1029,7 @@ namespace Avir.Magic
             MirePatch old = c.GetThingList(map).OfType<MirePatch>().FirstOrDefault();
             if (old != null) { old.left = Mathf.Max(old.left, life); return; }
             var m = (MirePatch)ThingMaker.MakeThing(ComboDefOf.Avir_Mire);
-            m.owner = owner; m.power = power; m.left = life;
+            m.owner = owner; m.power = power; m.left = life; m.born = Find.TickManager.TicksGame;
             GenSpawn.Spawn(m, c, map);
             FireMagic.Extinguish(c, map);
         }
@@ -1049,7 +1052,7 @@ namespace Avir.Magic
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
             {
                 // a mire with no master (a lost hold) takes anyone
-                if (p.Dead || (owner != null && !MagicFx.Foe(p, owner)) || MagicFx.Rooted(p) || SpellWards.Stops(p, true)) continue;
+                if (p.Dead || p == owner || (owner != null && !MagicFx.Foe(p, owner)) || MagicFx.Rooted(p) || SpellWards.Stops(p, true)) continue;
                 MagicFx.Give(p, ComboDefOf.Avir_Mired, 150);
                 // the longer they stay, the deeper they sink; the fallen go under fast
                 // a machine does not drown: the mire only swallows it to the joints and holds it fast, helpless, for as long

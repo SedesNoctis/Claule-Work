@@ -29,7 +29,20 @@ namespace Avir.Magic
 
         /// <summary>Is a pawn struck by a shaped blow: a foe for Selective Protection, one of the caster's own (the caster
         /// too) for Selective Aid.</summary>
-        public static bool Struck(Pawn p, Pawn caster) => Allies ? (p == caster || !p.HostileTo(caster)) : (p != caster && p.HostileTo(caster));
+        public static bool Struck(Pawn p, Pawn caster) => Allies ? Own(p, caster) : !Own(p, caster);
+
+        /// <summary>The caster's own (Fix185): the caster, their faction and those at peace with it, their prisoners and
+        /// slaves. A wild beast is no one's: Selective Protection strikes it (before, only the hostile were struck, and a
+        /// rat walked through the blow untouched).</summary>
+        public static bool Own(Pawn p, Pawn caster)
+        {
+            if (p == null || caster == null) return false;
+            if (p == caster) return true;
+            if (p.HostileTo(caster)) return false;
+            if (p.Faction != null && caster.Faction != null) return p.Faction == caster.Faction || !p.Faction.HostileTo(caster.Faction);
+            if (caster.Faction != null && (p.HostFaction == caster.Faction)) return true;   // prisoners and guests held by them
+            return false;
+        }
 
         private static bool Marked(RitualRing outer) => outer?.runes != null && outer.runes.Count(x => x != null && x.kind == RuneKind.Barrier) >= 2;
 

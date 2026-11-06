@@ -45,6 +45,18 @@ namespace Avir.Magic
 
         public static Texture2D For(SpellCircle root, SpellCircle c, bool asInk) => Get(NameOf(root, c), asInk);
 
+        private static readonly Dictionary<RitualSchema, KeyValuePair<int, Texture2D>> cache = new Dictionary<RitualSchema, KeyValuePair<int, Texture2D>>();
+        /// <summary>The same, looked up again at most once a second (a gizmo is drawn every frame).</summary>
+        public static Texture2D ForSpellCached(RitualSchema s)
+        {
+            if (s == null) return null;
+            int now = Time.frameCount;
+            if (cache.TryGetValue(s, out var kv) && now - kv.Key < 60) return kv.Value;
+            Texture2D t = ForSpell(s, false);
+            cache[s] = new KeyValuePair<int, Texture2D>(now, t);
+            return t;
+        }
+
         /// <summary>A spell's own meeting glyph, for its sign when the player made none: the strongest meeting in it.</summary>
         public static Texture2D ForSpell(RitualSchema s, bool asInk)
         {

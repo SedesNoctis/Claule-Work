@@ -28,8 +28,8 @@ namespace Avir.Magic
             if (t.def.category == ThingCategory.Item && t.IsInAnyStorage()) return false;
             switch (k)
             {
-                case ComboKind.Magma: return t is MagmaPool;
-                case ComboKind.Bog: return t is MirePatch || t.def.defName == "Avir_SpellPuddle" || t.def == ThingDefOf.Filth_Water;
+                case ComboKind.Magma: return t is MagmaPool mp && mp.life - mp.left > 300;
+                case ComboKind.Bog: return t is MirePatch mire && Find.TickManager.TicksGame - mire.born > 300 || t.def.defName == "Avir_SpellPuddle" || t.def == ThingDefOf.Filth_Water;
                 default:
                     if (t.def == Rubble || t.def == ThingDefOf.Filth_RubbleRock || t.def.defName == "Filth_RubbleBuilding") return true;
                     if (t.def.thingCategories != null && t.def.thingCategories.Contains(ThingCategoryDefOf.StoneChunks)) return true;

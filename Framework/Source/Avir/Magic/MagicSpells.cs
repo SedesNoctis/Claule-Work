@@ -514,7 +514,7 @@ namespace Avir.Magic
         /// <summary>A sign the player made is drawn as itself; without one, the element's glyph as before.</summary>
         public override void DrawIcon(Rect rect, Material buttonMat, GizmoRenderParms parms)
         {
-            if (spell?.icon == null) { base.DrawIcon(rect, buttonMat, parms); return; }
+            if (spell?.icon == null && MeetingGlyphs.ForSpellCached(spell) == null) { base.DrawIcon(rect, buttonMat, parms); return; }
             Color keep = GUI.color;
             SpellIconArt.Draw(rect.ContractedBy(rect.width * 0.08f), spell);
             if (disabled && !parms.lowLight) { GUI.color = new Color(0f, 0f, 0f, 0.45f); GUI.DrawTexture(rect, BaseContent.WhiteTex); }

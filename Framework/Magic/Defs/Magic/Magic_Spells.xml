@@ -457,11 +457,11 @@
     <selectable>false</selectable>
     <drawerType>RealtimeOnly</drawerType>
     <graphicData>
-      <texPath>Things/Projectile/Magic/Ball_Water</texPath>
-      <graphicClass>Graphic_Single</graphicClass>
+      <texPath>Things/Avir/Magic/HeldWater</texPath>
+      <graphicClass>Graphic_Random</graphicClass>
       <shaderType>Transparent</shaderType>
-      <color>(1, 1, 1, 0.45)</color>
-      <drawSize>(1.1, 1.1)</drawSize>
+      <color>(1, 1, 1, 0.75)</color>
+      <drawSize>(1.9, 1.9)</drawSize>
     </graphicData>
   </ThingDef>
   <ThingDef>
@@ -1522,6 +1522,10 @@
     </comps>
     <stages>
       <li>
+        <label>to the ankles</label>
+      </li>
+      <li>
+        <minSeverity>0.1</minSeverity>
         <label>to the knees</label>
         <capMods><li><capacity>Moving</capacity><offset>-0.2</offset></li></capMods>
       </li>
@@ -1565,6 +1569,10 @@
     </comps>
     <stages>
       <li>
+        <label>to the ankles</label>
+      </li>
+      <li>
+        <minSeverity>0.1</minSeverity>
         <label>to the knees</label>
         <capMods><li><capacity>Moving</capacity><offset>-0.2</offset></li></capMods>
       </li>
@@ -1801,4 +1809,16 @@
       </li>
     </comps>
   </HediffDef>
+  <ThingDef>
+    <defName>Avir_WindBorne</defName>
+    <label>borne by the wind</label>
+    <thingClass>Avir.Magic.WindBorne</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <altitudeLayer>Skyfaller</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>false</selectable>
+    <drawerType>RealtimeOnly</drawerType>
+    <drawOffscreen>true</drawOffscreen>
+  </ThingDef>
 </Defs>

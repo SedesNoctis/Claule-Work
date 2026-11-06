@@ -304,6 +304,15 @@ namespace Avir.Magic
                             F(c.map)?.Later(60 + 25 * i0++, () => Burst(c.map, at, pw, by));
                         }
                         foreach (Pawn p in c.own) if (c.aura) MagicFx.Give(p, EarthAirDefOf.Avir_Rooted, 300);
+                        // the ground stays torn (Fix185): a rift at the heart pours magma a while, and some bursts leave their own
+                        if (c.release && !c.beam)
+                        {
+                            IntVec3 heart = c.at; float pw0 = c.power;
+                            F(c.map)?.Later(90, () => Rift(c.map, heart, pw0, by, Mathf.Clamp(Mathf.RoundToInt(10f * pw0), 5, 30), 1.6f));
+                        }
+                        int r0 = 0;
+                        foreach (IntVec3 s in spots)
+                            if (s != c.at && Rand.Chance(0.3f) && r0++ < 2) { IntVec3 at = s; float pw = c.power; F(c.map)?.Later(150 + 25 * r0, () => Rift(c.map, at, pw, by, Mathf.Clamp(Mathf.RoundToInt(5f * pw), 3, 15), 1f)); }
                         break;
                     }
                 case SecondKind.Obsidian:
@@ -474,6 +483,21 @@ namespace Avir.Magic
                 Burn(p, 4f * power * (Sealed(p) ? 0.7f : SpellBody.Of(p).metalArmour ? 1f : 1.4f), by);
                 MagicFx.Fell(p, at, 1, map, by, power, 90);
             }
+        }
+
+        /// <summary>A rift (Fix185): once a second it wells up - magma on it and beside it, a glow, sparks - for some seconds.</summary>
+        private static void Rift(Map map, IntVec3 at, float power, Pawn by, int seconds, float size)
+        {
+            if (map == null || !at.InBounds(map) || seconds <= 0 || Find.Maps.IndexOf(map) < 0) return;
+            MapComponent_SpellSprites.Put(map, "Magma/Fissure", at.ToVector3Shifted(), 1.6f * size, 75, -1f, 0f, 2.5f);
+            FleckMaker.ThrowFireGlow(at.ToVector3Shifted(), map, 1.2f * size);
+            if (Rand.Chance(0.5f)) FleckMaker.ThrowMicroSparks(at.ToVector3Shifted(), map);
+            MagmaPool.Pour(at, map, by, power, 1500, true);
+            IntVec3 side = at + GenAdj.AdjacentCells.RandomElement();
+            if (Rand.Chance(0.6f) && side.InBounds(map)) MagmaPool.Pour(side, map, by, power, 1200, true);
+            foreach (Pawn p in at.GetThingList(map).OfType<Pawn>().ToList())
+                if (by == null || MagicFx.Foe(p, by)) p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 3f * power, 0f, -1f, by));
+            F(map)?.Later(60, () => Rift(map, at, power, by, seconds - 1, size));
         }
 
         private static void Burst(Map map, IntVec3 at, float power, Pawn by)
@@ -650,6 +674,8 @@ namespace Avir.Magic
             foreach (Fld f in fields)
             {
                 if (f.cells == null || f.cells.Count == 0) continue;
+                // a hurricane shows where it rages (Fix185): its edge, as long as it lasts
+                if (f.y == SecondKind.Hurricane && f.speed <= 0f) GenDraw.DrawFieldEdges(f.cells.ToList(), new Color(0.55f, 0.75f, 1f, 0.6f));
                 Material m = FieldMat(f.y) ?? (f.speed > 0f && f.y == SecondKind.Hurricane ? AuraMat(f.y) : null);
                 if (m == null) continue;
                 if (f.rad <= 0f || f.speed > 0f)
