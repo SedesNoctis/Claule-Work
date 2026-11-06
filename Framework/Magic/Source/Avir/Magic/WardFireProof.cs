@@ -3,15 +3,16 @@ using HarmonyLib;
 using RimWorld;
 using Verse;
 using Verse.AI;
+using Avir.Ritualistics;
 
 namespace Avir.Magic
 {
-    /// <summary>A fiery ward (fire, magma, steam, haze - any ward with fire in it) keeps its wearer out of fire's reach
-    /// (the author, Fix149): they do not catch fire, the lava of the Odyssey and the caster's own magma do not burn them,
+    /// <summary>A ward of magma (the ward a spell of magma or of lava gives) keeps its wearer out of fire's reach - the
+    /// author, Fix150: only magma and lava, no other ward walks on lava. They do not catch fire, the lava of the Odyssey and the caster's own magma do not burn them,
     /// they do not flee a large fire nor stop to beat out the flames on their way - they walk through. A lava ward.</summary>
     public static class FireProof
     {
-        public static bool Of(Pawn p) => p != null && AvirMagic.On && SpellWards.Layers(p).Any(w => w.Energy > 0f && w.Fiery);
+        public static bool Of(Pawn p) => p != null && AvirMagic.On && SpellWards.Layers(p).Any(w => w.Energy > 0f && w.Parts.Length == 2 && w.Parts.Contains(RuneKind.Fire) && w.Parts.Contains(RuneKind.Earth));
 
         /// <summary>Fire from the world, not a blow aimed by someone: a burning cell, lava ground, a pool of magma.</summary>
         public static bool Ambient(Pawn p, DamageInfo d)

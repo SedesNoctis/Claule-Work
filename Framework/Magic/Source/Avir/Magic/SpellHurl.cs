@@ -38,6 +38,9 @@ namespace Avir.Magic
         private static bool inward;
         private static int inwardAt = -1;
 
+        /// <summary>How much stronger a hurricane makes a Lift.</summary>
+        public const float HurricaneLift = 1.6f;
+
         public static void Throw(Pawn p, IntVec3 from, int dist, Map map, Pawn by = null, float power = 1f, int lie = 0)
         {
             if (SpellHeal.Spares(p)) return;
@@ -49,6 +52,7 @@ namespace Avir.Magic
                 dist = -Mathf.Min(dist, toHeart);
             }
             float size = Mathf.Max(1f, p.BodySize);
+            if (SecondOrder.Now == SecondKind.Hurricane) { dist = Mathf.RoundToInt(dist * 1.5f); power *= 1.3f; }   // a hurricane flings further and harder
             int d = Mathf.RoundToInt(Mathf.Abs(dist) / Mathf.Sqrt(size));
             Vector3 dir = (p.Position - from).ToVector3();
             if (dir.sqrMagnitude < 0.01f) dir = Rand.InsideUnitCircleVec3;
@@ -87,6 +91,8 @@ namespace Avir.Magic
         {
             if (SpellHeal.Spares(p)) { SpellHeal.Mend(p, 5f * power); return; }
             if (Unmoved(p)) return;
+            // a hurricane under it: the updraft is a storm wind - higher, longer, a harder fall (the author, Fix150)
+            if (SecondOrder.Now == SecondKind.Hurricane) power *= HurricaneLift;
             // the updraft is the spell's strength: the heavier the body with all it wears, the lower it goes up - and the
             // fall is that weight on the ground from that height, through any plate (Магия-правила.md, "Тело и стихии")
             // no size is beyond a strong enough updraft: the weight itself (body and gear, not clamped) decides the height

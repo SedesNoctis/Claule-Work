@@ -107,7 +107,7 @@ namespace Avir.Magic
                 case SecondKind.Obsidian: return "Magma quenched: a burst of steam and black glass, sharp and brittle.";
                 case SecondKind.Ash: return "A scorching cloud: it blinds and chokes the unsealed, and the ash it lets fall feeds the ground a little (+20% fertility for ten days).";
                 case SecondKind.Deluge: return "Weather on the spot: rain over the place for a while - everything wet, fires out, lightning through the pools.";
-                case SecondKind.Hurricane: return "Wind: it throws everyone, breaks what is light, and knocks shots out of the air - an aura of it shields one's own.";
+                case SecondKind.Hurricane: return "Wind: it throws everyone, breaks what is light, and knocks shots out of the air - an aura of it shields one's own. Every throw in the spell flies half again as far and strikes harder; every Lift goes 1.6 times higher, and the fall is as much harder.";
                 case SecondKind.BallLightning: return "Slow globes that seek the foes and burst in a discharge - metal on the body takes half again as much. Along a beam, one globe rolls and strikes every foe it passes.";
                 case SecondKind.Mudflow: return "A wave of mud: it carries foes away and buries the fallen.";
                 case SecondKind.Swelter: return "Exhausting heat: foes tire fast and suffer the heat; one's own beside the caster do not.";
@@ -362,7 +362,8 @@ namespace Avir.Magic
                     Field(c, y, Ticks(c.hold ? 4f : 2f, c.power));
                     break;
                 case SecondKind.Hurricane:
-                    foreach (Pawn p in c.foes) SpellHurl.Throw(p, c.aura ? by.Position : c.at, Mathf.RoundToInt(4f * c.power), c.map, by, c.power);
+                    // with Lift the bodies are already up in it (the lift itself is stronger under a hurricane): no throw on top
+                    if (!c.lift) foreach (Pawn p in c.foes) SpellHurl.Throw(p, c.aura ? by.Position : c.at, Mathf.RoundToInt(4f * c.power), c.map, by, c.power);
                     foreach (Building b in c.cells.Select(x => x.GetEdifice(c.map)).Where(b => b != null && b.def.useHitPoints && b.MaxHitPoints <= 300).Distinct().ToList())
                         b.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 15f * c.power, 0f, -1f, by));
                     Field(c, y, c.hold || c.aura || c.shape ? Ticks(0.5f, c.power) : 600);
