@@ -931,7 +931,8 @@ namespace Avir.Magic
             Destroy();
             if (Rand.Chance(0.4f)) ComboMagic.Ash(m, c.ToVector3Shifted(), 1.4f);
             FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), m, 1.5f, new Color(0.3f, 0.3f, 0.3f, 0.7f));
-            if (setsHard) SetIntoBasalt(c, m, stoneLife, power, owner?.Faction);
+            // the author (Fix164: "enough of the stone spam"): only three cells in ten set into basalt, the rest crumble
+            if (setsHard && Rand.Chance(0.3f)) SetIntoBasalt(c, m, stoneLife, power, owner?.Faction);
             else
             {
                 MagicFx.Rubble(c, m);

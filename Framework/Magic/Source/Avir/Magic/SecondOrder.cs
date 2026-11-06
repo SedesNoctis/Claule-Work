@@ -409,7 +409,7 @@ namespace Avir.Magic
                     {
                         ThingDef chunk = Find.World.NaturalRockTypesIn(c.map.Tile).Select(rk => rk.building.mineableThing).FirstOrDefault(x => x != null);
                         foreach (Pawn p in c.foes) { Blunt(p, 8f * c.power, by); MagicFx.Fell(p, p.Position, 0, c.map, by, c.power, 120); }
-                        foreach (IntVec3 x in c.cells.InRandomOrder().Take(c.beam ? c.cells.Count / 2 : 3)) if (chunk != null && ArcaneWorks.Clear(c.map, x)) GenSpawn.Spawn(chunk, x, c.map);
+                        foreach (IntVec3 x in c.cells.InRandomOrder().Take(c.beam ? Mathf.Max(1, Mathf.RoundToInt(c.cells.Count * 0.15f)) : 1))   // cut down (the author, Fix164) if (chunk != null && ArcaneWorks.Clear(c.map, x)) GenSpawn.Spawn(chunk, x, c.map);
                         Puff(c, MagicFx.EarthDust);
                         break;
                     }
