@@ -86,6 +86,22 @@ namespace Avir.Magic
 
         // ================================================================== Pestilence: Withering drinks sickness
 
+        /// <summary>The mage of Pestilence does not suffer poison at all (the author): every sickness, toxin, poison and
+        /// rot that would grow in them is drunk into their store instead - warded or not. The rot stink too.</summary>
+        public static bool PoisonLike(Hediff h) => h != null && !(h is Hediff_Injury) && h.def.isBad && (Pestilence.Sickness(h) || h.def == HediffDefOf.ToxicBuildup
+            || h.def == HediffDefOf.FoodPoisoning || h.def.defName == "Avir_FertilePoison" || h.def.defName.Contains("Rot") || h.def.defName.Contains("Toxic") || h.def.defName.Contains("Poison"));
+
+        public static void PestImmune(Hediff_ArcaneCore core)
+        {
+            Pawn p = core.pawn;
+            foreach (Hediff h in p.health.hediffSet.hediffs.Where(PoisonLike).ToList())
+            {
+                if (core.carried.Contains(h.loadID)) continue;   // a sickness carried on purpose (the druids' way) stays
+                core.AddVita(h.Severity * 60f);
+                p.health.RemoveHediff(h);
+            }
+        }
+
         public static float Drink(Pawn p, float power)
         {
             float got = 0f;

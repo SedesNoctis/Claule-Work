@@ -154,8 +154,11 @@ namespace Avir.Magic
             Hediff_ArcaneCore core = Mages.Core(caster);
             if (core == null || map == null || !at.InBounds(map)) return;
             if (SpellSculpt.Of(g)) power *= SpellSculpt.Keeps;
+            if (pair == RuneKind.Air) core.pestMage = true;
+            // an Aura with an Anchor in a circle of Life: a living aura - its acts pulse round the mage (the general rule of auras)
+            if (!pulsing) RaiseAura(caster, g, power, map);
             if (pair == RuneKind.Water) core.bloodMage = true;
-            float r = Radius(g);
+            float r = pulsing ? pulseRadius : Radius(g);
             IntVec3 last = at;
             bool gaveNothing = false;
             foreach (Act act in Read(g, out _))
@@ -173,6 +176,48 @@ namespace Avir.Magic
                 last = where;
             }
             if (gaveNothing) MoteMaker.ThrowText(at.ToVector3Shifted(), map, "No life to give", Necrotic, 3f);
+        }
+
+        // ------------------------------------------------------------------ the living aura of Life
+
+        private static bool pulsing; private static float pulseRadius;
+
+        private static void RaiseAura(Pawn caster, SpellCircle g, float power, Map map)
+        {
+            int anchor = g.OwnRunes.Count(x => x.kind == RuneKind.Anchor), breadth = g.OwnRunes.Count(x => x.kind == RuneKind.Breadth);
+            if (anchor <= 0 || !g.OwnRunes.Any(x => x.kind == RuneKind.Aura)) return;
+            var c = map.GetComponent<MapComponent_Auras>();
+            if (c == null) return;
+            c.all.RemoveAll(a => a.caster == caster && a.life != null);
+            var au = new MapComponent_Auras.Aura
+            {
+                caster = caster, el = g.element ?? DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Life"), combo = ComboKind.None, breadth = breadth,
+                left = SpellAura.Strikes(anchor), power = power, interval = SpellAura.Interval(breadth), radius = SpellAura.Radius(breadth),
+                life = g, lifePair = pair
+            };
+            au.next = Find.TickManager.TicksGame + au.interval;
+            c.all.Add(au);
+            Hediff_LivingAura.Show(caster);
+        }
+
+        /// <summary>One pulse of a living aura of Life: the circle's acts round the mage, with the aura's reach; its own
+        /// energy for the pulse - what it takes, it may give in the same pulse, the rest into the store.</summary>
+        public static void Pulse(Pawn caster, SpellCircle g, RuneKind withPair, float power, float radius)
+        {
+            if (caster?.Map == null) return;
+            bool keepP = pulsing; float keepR = pulseRadius; RuneKind keepPair = pair; float keepFlow = flow;
+            pulsing = true; pulseRadius = radius; pair = withPair; flow = 0f;
+            try
+            {
+                Hediff_ArcaneCore core = Mages.Core(caster);
+                foreach (Act act in Read(g, out _).Where(x => x.verb != RuneKind.Beam && x.verb != RuneKind.Step).ToList())
+                {
+                    if (act.side == RuneKind.Drain) Take(caster, core, g, act, caster.Position, radius, power, caster.Map);
+                    else Give(caster, core, g, act, caster.Position, radius, power, caster.Map);
+                }
+                if (core != null && flow > 0f) core.AddVita(flow);
+            }
+            finally { pulsing = keepP; pulseRadius = keepR; pair = keepPair; flow = keepFlow; }
         }
 
         private static void Leap(Map map, IntVec3 a, IntVec3 b)
@@ -935,6 +980,9 @@ namespace Avir.Magic
                 Spell("TEST Pestilence: drink the sicknesses", "Release,Drain,Breadth", "Air:Release"),
                 Spell("TEST Pestilence: fertile poison fog", "Release,Restore,Breadth", "Air:Release"),
                 Spell("TEST Pestilence: lingering fog", "Hold,Restore", "Air:Release"),
+                Spell("TEST Life aura: withering round the mage, foes only", "Aura,Anchor,Breadth|Release,Drain|Barrier,Barrier"),
+                Spell("TEST Life aura: mending round the mage, own only", "Aura,Anchor|Release,Restore|Barrier,Barrier,Thread"),
+                Spell("TEST Emerald aura: stone circle", "Aura,Anchor|Release,Drain|Barrier,Barrier", "Earth:Hold"),
             };
             foreach (RitualSchema s in list) core.Book.spells.Add(s);
             Messages.Message(list.Count + " test spells of Life written into " + p.LabelShort + "'s book.", MessageTypeDefOf.NeutralEvent, false);

@@ -87,6 +87,8 @@ namespace Avir.Magic
                 bits.Add(t + (take ? " (into the store)" : " (from the store)"));
             }
             string own = bits.Count > 0 ? string.Join(", then ", bits) : null;
+            if (own != null && g.OwnRunes.Any(x => x.kind == RuneKind.Aura) && g.OwnRunes.Any(x => x.kind == RuneKind.Anchor))
+                own += " - and as a living aura round the mage, pulse after pulse (beams and steps excepted)";
             if (g.inner.Count > 0) return "and Life round it: " + (own != null ? own + "; and " : "") + "every friend the spell touches is mended from the store";
             return "Life: " + (own ?? "nothing tied yet - write Withering or Restoration");
         }
