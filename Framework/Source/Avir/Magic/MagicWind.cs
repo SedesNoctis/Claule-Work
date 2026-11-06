@@ -207,23 +207,25 @@ namespace Avir.Magic
                 }
         }
 
-        /// <summary>The wind under the mouse (Fix173): its strength in m/s and which way, while a magic wind blows.</summary>
-        public override void MapComponentOnGUI()
+        /// <summary>The wind at a cell now, the strongest of the gusts there (Fix175: shown in the game's own readout).</summary>
+        public float At(IntVec3 c, out Vector3 dir)
         {
-            if (gusts.Count == 0 || Find.CurrentMap != map) return;
-            IntVec3 c = Verse.UI.MouseCell();
-            if (!c.InBounds(map)) return;
+            dir = Vector3.zero; float best = 0f;
+            if (gusts.Count == 0 || !c.InBounds(map)) return 0f;
             int now = Find.TickManager.TicksGame;
-            float best = 0f; Vector3 dir = Vector3.zero;
             foreach (Gust g in gusts) { Vector3 w = WindAt(g, c, now, out float s); if (s > best) { best = s; dir = w; } }
-            if (best < 1f) return;
+            return best;
+        }
+
+        public static string Readout(Map map, IntVec3 c)
+        {
+            var comp = Of(map);
+            if (comp == null) return null;
+            float s = comp.At(c, out Vector3 dir);
+            if (s < 1f) return null;
             string arrow = dir.sqrMagnitude < 0.01f ? "" : " " + "→↗↑↖←↙↓↘"[Mathf.RoundToInt(((Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg) + 360f) % 360f / 45f) % 8];
-            string what = best >= 40f ? "throws" : best >= 28f ? "fells" : best >= 20f ? "staggers" : best >= 16f ? "lifts light things" : "a breeze";
-            Vector2 m = Event.current.mousePosition;
-            var r = new Rect(m.x + 18f, m.y + 14f, 220f, 22f);
-            Widgets.DrawBoxSolid(r, new Color(0f, 0f, 0f, 0.55f));
-            Text.Font = GameFont.Small;
-            Widgets.Label(new Rect(r.x + 6f, r.y + 1f, r.width - 6f, r.height), "Wind " + best.ToString("0") + " m/s" + arrow + " - " + what);
+            string what = s >= 40f ? "throws" : s >= 28f ? "fells" : s >= 20f ? "staggers" : s >= 16f ? "lifts light things" : "a breeze";
+            return "Magic wind " + s.ToString("0") + " m/s" + arrow + " (" + what + ")";
         }
 
         /// <summary>A streak of dust along the wind: what the eye sees of it.</summary>
@@ -357,5 +359,34 @@ namespace Avir.Magic
 
         [LudeonTK.DebugAction("Avir magic", "Wind: front east (32 m/s, 3 s)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void Front() => MapComponent_MagicWind.Blow(Find.CurrentMap, MapComponent_MagicWind.Shape.Front, Verse.UI.MouseCell().ToVector3Shifted(), 7f, 32f, 180, null, UnityEngine.Vector3.right);
+    }
+}
+
+namespace Avir.Magic
+{
+    /// <summary>The magic wind in the game's own readout at the bottom left (the author's choice, Fix175): our line goes
+    /// at the bottom of it, the game's lines move up by one.</summary>
+    [HarmonyLib.HarmonyPatch(typeof(MouseoverReadout), nameof(MouseoverReadout.MouseoverReadoutOnGUI))]
+    public static class Patch_WindReadout
+    {
+        private static readonly System.Reflection.FieldInfo botLeft = HarmonyLib.AccessTools.Field(typeof(MouseoverReadout), "BotLeft");
+        private static Vector2 saved; private static bool moved;
+
+        public static void Prefix()
+        {
+            moved = false;
+            if (botLeft == null || Event.current.type != EventType.Repaint || Find.CurrentMap == null || Find.MainTabsRoot.OpenTab != null) return;
+            string line = MapComponent_MagicWind.Readout(Find.CurrentMap, Verse.UI.MouseCell());
+            if (line == null) return;
+            saved = (Vector2)botLeft.GetValue(null);
+            Text.Font = GameFont.Small;
+            GUI.color = new Color(0.75f, 0.88f, 1f);
+            Widgets.Label(new Rect(saved.x, Verse.UI.screenHeight - saved.y, 999f, 999f), line);
+            GUI.color = Color.white;
+            botLeft.SetValue(null, new Vector2(saved.x, saved.y + 19f));
+            moved = true;
+        }
+
+        public static void Postfix() { if (moved && botLeft != null) botLeft.SetValue(null, saved); moved = false; }
     }
 }
