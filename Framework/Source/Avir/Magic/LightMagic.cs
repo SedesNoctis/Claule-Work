@@ -24,6 +24,9 @@ namespace Avir.Magic
     public static class LightMagic
     {
         public static readonly Color Gold = new Color(1f, 0.93f, 0.68f);
+        /// <summary>By night Light turns silver-blue (the author, Fix210).</summary>
+        public static readonly ColorInt NightGlow = new ColorInt(175, 205, 255, 0), DayGlow = new ColorInt(255, 238, 190, 0);
+        public static bool Night(Map m) => m != null && m.skyManager.CurSkyGlow < 0.4f;
         private static HediffDef H(string n) => DefDatabase<HediffDef>.GetNamedSilentFail(n);
         public static HediffDef Dazzle => H("Avir_LightDazzle");
         public static HediffDef DarkZone => H("Avir_LightBlindZone");
@@ -85,6 +88,26 @@ namespace Avir.Magic
         }
 
         public static HediffDef Ward => H("Avir_LightWard");
+
+        /// <summary>While the point is chosen: a line from every reflector in reach into it (a ray, if the spell has a Beam)
+        /// - the player sees each echo that will come and can cross them (the author, Fix210).</summary>
+        public static void PreviewEchoes(Pawn mage, SpellCircle root, IntVec3 at, Map map)
+        {
+            if (map == null || root == null || !at.InBounds(map) || !Any(root)) return;
+            float range = Range(root);
+            var links = Links(root);
+            bool beam = links.Any(g => g.OwnRunes.Any(x => x.kind == RuneKind.Beam));
+            var cells = new List<IntVec3>();
+            int n = 0;
+            foreach (Building_LightReflector r in Building_LightReflector.Node(mage, map))
+            {
+                if (r.Position.DistanceTo(at) > range) continue;
+                n++;
+                GenDraw.DrawLineBetween(r.TrueCenter(), at.ToVector3Shifted(), SimpleColor.Yellow, 0.2f);
+                if (beam) cells.AddRange(GenSight.BresenhamCellsBetween(r.Position, at).Where(c => c.InBounds(map) && c != r.Position));
+            }
+            if (cells.Count > 0) GenDraw.DrawFieldEdges(cells.Distinct().ToList(), new Color(1f, 0.9f, 0.55f));
+        }
 
         // ------------------------------------------------------------------ the Barrier reflects (Fix207, the author)
 
@@ -185,7 +208,12 @@ namespace Avir.Magic
             foreach (IntVec3 c in cells)
             {
                 foreach (Pawn p in c.GetThingList(map).OfType<Pawn>().ToList())
-                    if (hit.Add(p) && Reached(p, caster, shaped, aid)) DazzlePawn(p, sev);
+                    if (hit.Add(p) && Reached(p, caster, shaped, aid))
+                    {
+                        DazzlePawn(p, sev);
+                        // the ray burns whoever stands in it, not only at its end (the author, Fix210)
+                        if (c != to) p.TakeDamage(new DamageInfo(Sear, 3f + 7f * sev, 0f, -1f, caster));
+                    }
                 if (c.Impassable(map) && c != to) { to = c; break; }   // a wall takes the ray
             }
             // where it ends, it sears
@@ -200,7 +228,8 @@ namespace Avir.Magic
         public static void Glint(Map map, Vector3 at, float size, bool bright)
         {
             if (map == null) return;
-            MapComponent_SpellSprites.PutTintedGrowing(map, "Aura_Light", bright ? Color.white : Gold, at, size * (bright ? 1.3f : 1f), bright ? 40 : 28, 0.5f);
+            bool night = Night(map);
+            MapComponent_SpellSprites.PutTintedGrowing(map, night ? "Light/Flare_Night" : "Aura_Light", bright || night ? Color.white : Gold, at, size * (bright ? 1.3f : 1f), bright ? 40 : 28, 0.5f);
             FleckMaker.ThrowLightningGlow(at, map, bright ? 2.2f : 1.3f);
             if (bright) FleckMaker.ThrowLightningGlow(at, map, 1.6f);
             LightGlow.At(map, at.ToIntVec3(), size >= 4f || bright, bright ? 150 : 100);
@@ -213,7 +242,8 @@ namespace Avir.Magic
             float len = d.magnitude;
             if (map == null || len < 0.3f) return;
             float w = bright ? 0.9f : 0.55f;
-            MapComponent_SpellSprites.PutAbs(map, "Things/Projectile/Magic/Beam_Light", bright ? Color.white : Gold, (from + to) / 2f, w, len, life, d.AngleFlat());
+            bool night = Night(map);
+            MapComponent_SpellSprites.PutAbs(map, night ? "Things/Mote/Avir/Magic/Light/Beam_Night" : "Things/Projectile/Magic/Beam_Light", bright || night ? Color.white : Gold, (from + to) / 2f, w, len, life, d.AngleFlat());
             // a ray lights the ground along it while it shines
             int n = Mathf.Max(1, Mathf.RoundToInt(len / 5f));
             for (int i = 0; i <= n; i++) LightGlow.At(map, Vector3.Lerp(from, to, i / (float)n).ToIntVec3(), bright, life + 60);
@@ -325,7 +355,8 @@ namespace Avir.Magic
                 float a = Rand.Range(0f, 360f);
                 Vector3 v = at.ToVector3Shifted() + Quaternion.AngleAxis(a, Vector3.up) * Vector3.forward * dist * Rand.Range(0.85f, 1.15f);
                 IntVec3 c = v.ToIntVec3();
-                if (!Free(c, map)) continue;
+                // never behind a wall: the reflector stands where the point can see it (the author, Fix210)
+                if (!Free(c, map) || !GenSight.LineOfSight(at, c, map, true)) continue;
                 var r = (Building_LightReflector)ThingMaker.MakeThing(def);
                 r.caster = caster;
                 r.dies = Find.TickManager.TicksGame + Life;
@@ -346,7 +377,7 @@ namespace Avir.Magic
             {
                 if (r.Map == null) continue;
                 if (flash) LightMagic.Flash(caster, r.Position, 2f, 0.2f, false, false, false, r.Map);
-                MapComponent_SpellSprites.PutTinted(r.Map, "Light/Shatter", Color.white, r.DrawPos, 2.2f, 35);
+                MapComponent_SpellSprites.PutTinted(r.Map, LightMagic.Night(r.Map) ? "Light/Shatter_Night" : "Light/Shatter", Color.white, r.DrawPos, 2.2f, 35);
                 r.Destroy(DestroyMode.KillFinalize);
             }
         }
@@ -356,7 +387,21 @@ namespace Avir.Magic
             base.TickInterval(delta);
             if (!this.IsHashIntervalTick(250, delta)) return;
             if (dies > 0 && Find.TickManager.TicksGame >= dies) { LightMagic.Glint(Map, DrawPos, 1f, false); Destroy(DestroyMode.Vanish); return; }
-            if (caster == null || caster.Dead || caster.Destroyed) { Destroy(DestroyMode.Vanish); }
+            if (caster == null || caster.Dead || caster.Destroyed) { Destroy(DestroyMode.Vanish); return; }
+            bool night = LightMagic.Night(Map);
+            if (night != wasNight) { wasNight = night; CompGlower gl = GetComp<CompGlower>(); if (gl != null) gl.GlowColor = night ? LightMagic.NightGlow : LightMagic.DayGlow; }
+        }
+
+        private bool wasNight;
+        private static Material nightMat;
+
+        /// <summary>By night the shard is silver.</summary>
+        protected override void DrawAt(Vector3 drawLoc, bool flip = false)
+        {
+            if (!LightMagic.Night(Map)) { base.DrawAt(drawLoc, flip); return; }
+            if (nightMat == null) nightMat = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Light/Reflector_Night", ShaderDatabase.Transparent);
+            float s = def.graphicData.drawSize.x;
+            Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(drawLoc, Quaternion.identity, new Vector3(s, 1f, s)), nightMat, 0);
         }
 
         public override string GetInspectString()
@@ -391,6 +436,7 @@ namespace Avir.Magic
             var g = (LightGlow)ThingMaker.MakeThing(def);
             g.dies = Find.TickManager.TicksGame + ticks;
             GenSpawn.Spawn(g, c, map, WipeMode.Vanish);
+            if (LightMagic.Night(map)) { CompGlower gl = g.GetComp<CompGlower>(); if (gl != null) gl.GlowColor = LightMagic.NightGlow; }
             return g;
         }
 

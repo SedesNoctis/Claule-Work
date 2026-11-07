@@ -571,6 +571,7 @@ namespace Avir.Magic
                 widest = Mathf.Max(widest, 2f + 1.5f * s.weave.All().Sum(c => c.OwnRunes.Count(x => x.kind == RuneKind.Breadth)) + 1f);
             if (cells.Count > 0) GenDraw.DrawFieldEdges(cells.ToList(), new Color(col.r, col.g, col.b, 1f));
             if (widest > 0f && widest < GenRadial.MaxRadialPatternRadius) GenDraw.DrawRadiusRing(at, widest, col);
+            if (s.weave != null) LightMagic.PreviewEchoes(mage, s.weave, at, map);
         }
 
         /// <summary>The cells one circle strikes, from where it strikes and where the mage then stands.</summary>

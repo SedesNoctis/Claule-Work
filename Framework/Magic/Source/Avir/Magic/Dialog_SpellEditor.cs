@@ -629,6 +629,7 @@ namespace Avir.Magic
                 if (c.element == null) return lc;
                 if (bp != LifeMagic.None && c.element.kind == bp) return Color.Lerp(c.element.color, lc, 0.5f);
             }
+            if (c.element == null && !c.Great && rootNow?.ParentOf(c) is SpellCircle gb && gb.Great && gb.element != null) return gb.element.color;
             return c.element?.color ?? new Color(0.85f, 0.78f, 0.62f);
         }
         private static readonly Dictionary<SpellCircle, SecondKind> seconds = new Dictionary<SpellCircle, SecondKind>();
@@ -1210,7 +1211,8 @@ namespace Avir.Magic
             if (all.Count == 0) return "no circle - add one round the heart";
             if (all.All(c => c.element == null)) return "no element";
             if (all.Any(c => c.Great && c.element == null)) return "a great circle has no seal";
-            if (all.Any(c => c.element == null && !(!c.Great && s.weave.ParentOf(c) is SpellCircle box && box.Great && LifeMagic.Is(box.element)))) return "a circle has no element";
+            // a small circle with no element inside any great circle is a small circle of that great element (the author, Fix210)
+            if (all.Any(c => c.element == null && !(!c.Great && s.weave.ParentOf(c) is SpellCircle box && box.Great && box.element != null))) return "a circle has no element";
             if (all.Where(c => !c.Great).All(c => !c.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form || x.kind == RuneKind.Barrier))
                 && !all.Any(c => c.Great && c.OwnRunes.Any()))
                 return "nothing to do - add a verb or a form";
