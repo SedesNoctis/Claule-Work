@@ -235,7 +235,9 @@ namespace Avir.Magic
             // sealed gear sheds the water; open gear drinks it and weighs the more the heavier it is
             var sb = SpellBody.Of(p);
             float soak = sb.sealed_ ? 0.4f : SpellBody.Heavy(p);
-            if (d != null) d.ticksToDisappear = Mathf.Max(d.ticksToDisappear, Mathf.RoundToInt(2500f * power * soak));
+            // Fix225: never less than the hour it is first given (sealed gear: less) - before, a weak or sealed soaking (under that hour) left the
+            // count running down under the rain as if it did not soak again, and the author saw it soak only once
+            if (d != null) d.ticksToDisappear = Mathf.Max(d.ticksToDisappear, Mathf.Max(sb.sealed_ ? 1000 : GenDate.TicksPerHour, Mathf.RoundToInt(2500f * power * soak)));
             p.GetAttachment(ThingDefOf.Fire)?.Destroy();
         }
 

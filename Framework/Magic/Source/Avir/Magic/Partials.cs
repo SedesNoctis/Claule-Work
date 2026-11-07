@@ -104,6 +104,21 @@ namespace Avir.Magic
             for (int i = 0; i < 3; i++) MapComponent_SpellSprites.PutTintedGrowing(map, "Wave/Ripple", ThunderColor, mid, radius * (0.6f + 0.25f * i), 30 + 12 * i, 1.8f);
             FleckMaker.Static(at, map, FleckDefOf.PsycastAreaEffect, radius * 1.4f);
             FleckMaker.ThrowLightningGlow(mid, map, radius);
+            // Fix225: it was not seen nor heard. Now - the clap itself, the ground shaken (a ring of dust thrown up at the
+            // edge of the blast and one halfway), a white flash in the middle, and the screen shudders if it is near
+            MagicSounds.Play("Thunder", at, map, Mathf.Clamp(0.7f + 0.15f * radius, 0.7f, 1.3f), 0);
+            FleckMaker.Static(at, map, FleckDefOf.ExplosionFlash, radius * 1.2f);
+            foreach (float ring in new[] { radius * 0.5f, radius })
+            {
+                int n = Mathf.Clamp(Mathf.RoundToInt(ring * 5f), 8, 40);
+                for (int i = 0; i < n; i++)
+                {
+                    float a = i * 6.2831853f / n + Rand.Range(-0.1f, 0.1f);
+                    Vector3 v = mid + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * ring;
+                    if (v.ToIntVec3().InBounds(map)) FleckMaker.ThrowDustPuffThick(v, map, Rand.Range(0.9f, 1.4f), new Color(0.78f, 0.74f, 0.82f, 0.55f));
+                }
+            }
+            if (Find.CurrentMap == map && Find.CameraDriver.CurrentViewRect.ExpandedBy(10).Contains(at)) Find.CameraDriver.shaker.DoShake(Mathf.Clamp(0.35f * radius * power, 1f, 3f));
             if (echo > 1.2f) MoteMaker.ThrowText(mid, map, "echo x" + echo.ToString("0.0"), ThunderColor, 2.5f);
             HediffDef deaf = DefDatabase<HediffDef>.GetNamedSilentFail("Avir_Deafened");
             DamageDef sonic = DefDatabase<DamageDef>.GetNamedSilentFail("Avir_Sonic");
@@ -122,8 +137,19 @@ namespace Avir.Magic
                         {
                             MagicFx.Stun(p, Mathf.RoundToInt(90f * q), caster);
                             if (deaf != null) MagicFx.Give(p, deaf, Mathf.RoundToInt(15000f * q));
-                            BodyPartRecord ear = p.health.hediffSet.GetNotMissingParts().Where(b => b.def.tags.Contains(BodyPartTagDefOf.HearingSource)).RandomElementWithFallback();
-                            if (sonic != null) p.TakeDamage(new DamageInfo(sonic, 4f * q, 0f, -1f, caster, ear));
+                            // what sound can tear (Fix225): the eardrums first - both ears, harder than before; close to the
+                            // middle the blast bruises the lungs too (air-filled, they take a pressure wave worst). Never a
+                            // leg or an arm: with no ears left the blow went to a random part, and the rupture showed on legs
+                            if (sonic != null)
+                            {
+                                foreach (BodyPartRecord ear in p.health.hediffSet.GetNotMissingParts().Where(b => b.def.tags.Contains(BodyPartTagDefOf.HearingSource)).ToList())
+                                    if (!p.Dead) p.TakeDamage(new DamageInfo(sonic, 6f * q, 0f, -1f, caster, ear));
+                                if (near > 0.75f && q > 1f && !p.Dead)
+                                {
+                                    BodyPartRecord lung = p.health.hediffSet.GetNotMissingParts().Where(b => b.def.tags.Contains(BodyPartTagDefOf.BreathingSource)).RandomElementWithFallback();
+                                    if (lung != null) p.TakeDamage(new DamageInfo(sonic, 2f * q, 99f, -1f, caster, lung));
+                                }
+                            }
                         }
                         else MagicFx.Stun(p, Mathf.RoundToInt(40f * q), caster);   // a machine only shudders
                         // animals flee from it

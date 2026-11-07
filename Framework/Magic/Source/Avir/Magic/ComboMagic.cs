@@ -252,6 +252,7 @@ namespace Avir.Magic
             if (SecondOrder.Now != SecondKind.None && SecondOrder.PairOf(SecondOrder.Now) == k) GameComponent_Combos.MadeSecond(SecondOrder.Now, k, caster);
             else GameComponent_Combos.Made(k, caster);
             r = SpellMods.Begin(s, r);
+            if (!storming && (SecondOrder.Now == SecondKind.None || SecondOrder.PairOf(SecondOrder.Now) != k)) MagicSounds.Play("Combo:" + k, target.Cell, map);   // Fix225
             if (k == ComboKind.Bog) r.breadth++;   // bog is unwieldy as earth, and wide for it as by one Breadth (magma is unwieldy but not wider; dust is neither)
             IntVec3 at = target.Cell;
             // magma, bog and dust take up their own ground at hand, as earth takes up stone
@@ -417,6 +418,8 @@ namespace Avir.Magic
                     foreach (Pawn p in foes) { WaterMagic.Soak(p, power); if (!p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, caster)); }
                     FleckMaker.Static(Center(cells).ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 4f);
                     MapComponent_SpellSprites.Put(map, "Storm/Bolt_Fork", Center(cells).ToVector3Shifted(), 3.5f, 22);
+                    MapComponent_SpellSprites.Put(map, "Storm/Strike", Center(cells).ToVector3Shifted(), 2.6f, 24);
+                    MagicSounds.Play("Bolt", Center(cells), map);   // Fix225: the storm had no voice and was taken for doing nothing
                     break;
                 case ComboKind.Magma:
                 {

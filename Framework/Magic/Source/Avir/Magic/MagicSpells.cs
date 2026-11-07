@@ -206,6 +206,8 @@ namespace Avir.Magic
             RuneDef el = r.elements.FirstOrDefault();
             if (s.weave != null) { WeaveSpell.Resolve(caster, s, target, power); return; }
             // the element at work, for the wards it meets
+            // the element's own sound where it lands (Fix225); a meeting sounds its own way - ComboMagic and SecondOrder
+            if (el != null && r.elements.Count == 1) MagicSounds.Play("El:" + el.kind, target.Cell, map);
             using (SpellWards.Of(el?.kind, ComboKind.None, true))
             {
                 if (FireMagic.Is(el)) { FireMagic.Cast(caster, s, r, target, power); return; }

@@ -108,6 +108,9 @@ namespace Avir.Magic
                     open.Enqueue(n);
                 }
             }
+            // the charge running on crackles (Fix225) - once where it starts, and once more on a long run
+            if (level.Count > 1) MagicSounds.Play("Arc", from, map, 1f, 4);
+            if (level.Count > 30) MagicSounds.Play("Arc", level.Keys.RandomElement(), map, 0.7f, 0);
             var batteries = new HashSet<Building>();
             foreach (var kv in level)
             {

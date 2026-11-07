@@ -217,6 +217,7 @@ namespace Avir.Magic
             bool acts = ctx.release || ctx.beam || ctx.hold || ctx.growth || ctx.lift || ctx.drain || ctx.purge || ctx.aura || ctx.shape || ctx.enchant;
             if (!acts && (!ctx.restore || (y != SecondKind.Boil && y != SecondKind.Geyser && y != SecondKind.Mudflow))) return;
             ctx.breadth = r.breadth;
+            MagicSounds.Play("Second:" + y, ctx.at, map);   // Fix225
             ctx.radius = FireMagic.PointRadius(r) * (ctx.growth ? 1.5f : 1f);
             if (ctx.aura) ctx.cells = FireMagic.Point(caster.Position, map, SpellAura.Pulsing ? SpellAura.PulseRadius : ctx.radius + 1.5f).ToList();   // the mage's own cell too (Own Blast; Fix190)
             else if (ctx.beam) ctx.cells = FireMagic.Beam(SpellOrigin.Of(caster), ctx.at, map, r.breadth).Where(c => c != SpellOrigin.Of(caster)).ToList();
@@ -377,20 +378,32 @@ namespace Avir.Magic
                     break;
                 case SecondKind.BallLightning:
                     {
-                        int n = c.beam ? 1 : 2 + (c.growth ? 2 : 0);
+                        // Fix225 (the author: they did not move, hit weakly, were gone in a blink with no sound): the globes are
+                        // things of their own now - they float, seek, strike and burst (SecondFields.Globe)
+                        SecondFields f = F(c.map);
+                        if (f == null) break;
                         if (c.beam)
                         {
-                            // the conductor: one globe rolls along the line and strikes each foe it passes, each a little weaker
-                            int i0 = 0;
-                            foreach (Pawn p in c.foes.OrderBy(p => p.Position.DistanceTo(by.Position)))
-                            { Pawn q = p; float pw = c.power * Mathf.Pow(0.85f, i0); F(c.map)?.Later(20 + 20 * i0++, () => Zap(q, pw, by)); }
+                            // the conductor: one globe rolls along the line and strikes each foe on it in turn, each a little weaker
+                            List<Pawn> line = c.foes.OrderBy(p => p.Position.DistanceTo(by.Position)).ToList();
+                            if (line.Count > 0) f.AddGlobe(SpellOrigin.Of(by).ToVector3Shifted(), by, c.power, 1500, null, line);
                         }
-                        else if (c.hold || c.aura || c.shape) Field(c, y, Ticks(0.3f, c.power));
+                        else if (c.hold || c.aura || c.shape)
+                        {
+                            // a field of them: they drift about inside it and strike whoever (of the foes) comes in; after a
+                            // strike a globe dims and gathers its charge again; when the field ends they burst where they are
+                            int life = Ticks(c.hold ? 0.8f : 0.5f, c.power);
+                            Field(c, y, life);
+                            var zone = new HashSet<IntVec3>(c.cells);
+                            int n = Mathf.Clamp(2 + c.cells.Count / 15 + (c.growth ? 2 : 0), 2, 7);
+                            for (int i = 0; i < n && zone.Count > 0; i++) f.AddGlobe(zone.RandomElement().ToVector3Shifted(), by, c.power, life, zone);
+                        }
                         else
                         {
-                            List<Pawn> targets = c.map.mapPawns.AllPawnsSpawned.Where(p => MagicFx.Foe(p, by) && p.Position.DistanceTo(c.at) < 10f).OrderBy(p => p.Position.DistanceTo(c.at)).Take(n).ToList();
-                            int i0 = 0;
-                            foreach (Pawn p in targets) { Pawn q = p; float pw = c.power; F(c.map)?.Later(60 + 45 * i0++, () => Zap(q, pw, by)); }
+                            // loose: they float out from where they were made and go for the nearest foes (up to 12 cells),
+                            // slowly; a globe that finds no one bursts where it is when its time is up
+                            int n = 2 + (c.growth ? 2 : 0);
+                            for (int i = 0; i < n; i++) f.AddGlobe(c.at.ToVector3Shifted() + new Vector3(Rand.Range(-0.6f, 0.6f), 0f, Rand.Range(-0.6f, 0.6f)), by, c.power, 1200, null);
                         }
                         break;
                     }
@@ -546,17 +559,22 @@ namespace Avir.Magic
             }
         }
 
-        private static void Zap(Pawn p, float power, Pawn by)
+        /// <summary>A globe's discharge into a body (from - where the globe was).</summary>
+        internal static void Zap(Pawn p, float power, Pawn by, Vector3 from)
         {
             if (p == null || p.Dead || !p.Spawned) return;
             var b = SpellBody.Of(p);
-            if (by != null && by.Spawned) MapComponent_SpellSprites.Bolt(p.Map, by.DrawPos, p.DrawPos, 14);
-            FleckMaker.ThrowLightningGlow(p.DrawPos, p.Map, 1.5f);
-            if (p.RaceProps.IsMechanoid) { p.TakeDamage(new DamageInfo(DamageDefOf.EMP, 12f * power, 0f, -1f, by)); return; }
+            MapComponent_SpellSprites.Bolt(p.Map, from, p.DrawPos, 14);
+            MapComponent_SpellSprites.Put(p.Map, "Storm/Strike", p.DrawPos, 1.5f, 16);
+            FleckMaker.ThrowLightningGlow(p.DrawPos, p.Map, 1.8f);
+            FleckMaker.ThrowMicroSparks(p.DrawPos, p.Map);
+            MagicSounds.Play("Discharge", p.Position, p.Map, 1f, 4);
+            if (p.RaceProps.IsMechanoid) { p.TakeDamage(new DamageInfo(DamageDefOf.EMP, 16f * power, 0f, -1f, by)); return; }
             float metal = b.metalArmour ? 1.5f : 1f, bio = b.bionicLimb ? 1.25f : 1f;
-            Burn(p, 6f * power * metal * bio, by);
+            // Fix225: it hit too weakly (6) - a globe is a whole bolt kept round, and strikes like one
+            Burn(p, 11f * power * metal * bio, by);
             if (p.Spawned) Reactions.Conduct(p.Position, p.Map, by, power * 0.6f);   // the globe's charge runs on (Fix182)
-            MagicFx.Stun(p, 60, by);
+            MagicFx.Stun(p, 90, by);
             if (b.bionicLimb && Rand.Chance(0.5f)) MagicFx.Give(p, H("Avir_Glitched"), 300);
         }
     }
@@ -642,6 +660,122 @@ namespace Avir.Magic
 
         public void Later(int ticks, Action a) => later.Add(new KeyValuePair<int, Action>(Find.TickManager.TicksGame + ticks, a));
 
+        // ---- ball lightning (Fix225): globes that float, seek, strike and burst ----
+        /// <summary>A globe. zone - the field it keeps to (null: loose); line - the foes it rolls along in turn (a beam).</summary>
+        public class Globe { public Vector3 pos, dir; public Pawn owner, target; public float power; public int until, rest; public HashSet<IntVec3> zone; public List<Pawn> line; public float phase;
+            // whom it strikes is the spell's shaping at the cast, kept (0 - unshaped: anyone alive, its mage too; 1 - Selective
+            // Protection: all but the mage's own; 2 - Selective Aid: only them)
+            public int sculpt;
+            public bool Hits(Pawn p) => p != null && !p.Dead && (sculpt == 0 || owner == null || (sculpt == 2) == SpellSculpt.Own(p, owner));
+        }
+        public readonly List<Globe> globes = new List<Globe>();
+        private const float GlobeSeek = 12f, GlobeSpeed = 0.045f, GlobeRoll = 0.11f, GlobeReach = 0.75f;
+
+        public void AddGlobe(Vector3 at, Pawn owner, float power, int ticks, HashSet<IntVec3> zone, List<Pawn> line = null)
+        {
+            at.y = 0f;
+            globes.Add(new Globe { pos = at, dir = Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * Vector3.forward, owner = owner, power = power, until = Find.TickManager.TicksGame + ticks, zone = zone, line = line, phase = Rand.Range(0f, 6.28f), sculpt = !SpellSculpt.Active ? 0 : SpellSculpt.Allies ? 2 : 1 });
+            FleckMaker.ThrowLightningGlow(at, map, 1.2f);
+            MagicSounds.Play("Second:BallLightning", at.ToIntVec3(), map, 0.8f, 6);
+        }
+
+        private Pawn Seek(Globe g)
+        {
+            if (g.line != null) { g.line.RemoveAll(p => p == null || p.Dead || !p.Spawned || p.Map != map); return g.line.FirstOrDefault(); }
+            IntVec3 here = g.pos.ToIntVec3();
+            Pawn best = null; float bd = float.MaxValue;
+            foreach (Pawn p in map.mapPawns.AllPawnsSpawned)
+            {
+                if (!g.Hits(p)) continue;
+                if (g.zone != null ? !g.zone.Contains(p.Position) : p.Position.DistanceTo(here) > GlobeSeek) continue;
+                float d = (p.DrawPos - g.pos).MagnitudeHorizontalSquared();
+                if (d < bd) { bd = d; best = p; }
+            }
+            return best;
+        }
+
+        private void TickGlobes(int now)
+        {
+            for (int i = globes.Count - 1; i >= 0; i--)
+            {
+                Globe g = globes[i];
+                if (now >= g.until || g.line != null && g.line.Count == 0) { Burst(g); globes.RemoveAt(i); continue; }
+                if (g.rest > 0) g.rest--;
+                if (g.target == null || g.target.Dead || !g.target.Spawned || now % 30 == 0) g.target = Seek(g);
+                // the way: straight to the foe, or a lazy wander (kept inside its field)
+                Vector3 want = g.dir;
+                if (g.target != null) { Vector3 to = g.target.DrawPos - g.pos; to.y = 0f; if (to.sqrMagnitude > 0.001f) want = to.normalized; }
+                else if (now % 20 == 0) g.dir = Quaternion.AngleAxis(Rand.Range(-40f, 40f), Vector3.up) * g.dir;
+                g.dir = Vector3.Slerp(g.dir, want, 0.12f).normalized;
+                Vector3 next = g.pos + g.dir * (g.line != null ? GlobeRoll : GlobeSpeed) * (g.rest > 0 ? 0.5f : 1f);
+                IntVec3 nc = next.ToIntVec3();
+                bool keep = nc.InBounds(map) && !nc.Impassable(map) && (g.zone == null || g.zone.Contains(nc));
+                if (keep) g.pos = next; else g.dir = Quaternion.AngleAxis(Rand.Range(120f, 240f), Vector3.up) * g.dir;
+                // it crackles as it goes
+                if (Rand.Chance(0.04f))
+                {
+                    Vector3 to = g.pos + new Vector3(Rand.Range(-1.3f, 1.3f), 0f, Rand.Range(-1.3f, 1.3f));
+                    MapComponent_SpellSprites.Bolt(map, g.pos, to, 8);
+                    MagicSounds.Play("Arc", g.pos.ToIntVec3(), map, 0.45f, 25);
+                }
+                if (now % 25 == 0) FleckMaker.ThrowLightningGlow(g.pos, map, 0.9f);
+                // the strike
+                if (g.target != null && g.rest == 0 && (g.target.DrawPos - g.pos).MagnitudeHorizontal() < GlobeReach)
+                {
+                    SecondOrder.Zap(g.target, g.power, g.owner, g.pos);
+                    if (g.line != null) { g.line.Remove(g.target); g.power *= 0.85f; g.target = null; }
+                    else if (g.zone == null) { globes.RemoveAt(i); continue; }   // a loose globe is spent in its strike
+                    else { g.rest = 150; g.target = null; }                         // a globe of a field gathers its charge again
+                }
+            }
+        }
+
+        /// <summary>A globe's end where it is: a burst - a flash, the sound, and a lesser strike on the foes beside it.</summary>
+        private void Burst(Globe g)
+        {
+            IntVec3 c = g.pos.ToIntVec3();
+            if (!c.InBounds(map)) return;
+            FleckMaker.Static(g.pos, map, FleckDefOf.ExplosionFlash, 2.2f);
+            FleckMaker.ThrowLightningGlow(g.pos, map, 2.2f);
+            for (int k = 0; k < 4; k++) MapComponent_SpellSprites.Bolt(map, g.pos, g.pos + Quaternion.AngleAxis(k * 90f + Rand.Range(-30f, 30f), Vector3.up) * Vector3.forward * Rand.Range(1f, 1.8f), 10);
+            MagicSounds.Play("Discharge", c, map, 1f, 4);
+            foreach (Pawn p in GenRadial.RadialDistinctThingsAround(c, map, 1.9f, true).OfType<Pawn>().ToList())
+                if (g.Hits(p)) SecondOrder.Zap(p, g.power * 0.6f, g.owner, g.pos);
+        }
+
+        private static Material globeMat;
+        private void DrawGlobes(float t)
+        {
+            if (globeMat == null) globeMat = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Second/BallLightning", ShaderDatabase.MoteGlow, Color.white);
+            var block = new MaterialPropertyBlock();
+            foreach (Globe g in globes)
+            {
+                float pulse = 0.85f + 0.12f * Mathf.Sin(t * 9f + g.phase) + 0.05f * Mathf.Sin(t * 23f + g.phase * 2f);
+                Vector3 p = g.pos + new Vector3(0f, 0f, 0.35f + 0.08f * Mathf.Sin(t * 2.2f + g.phase));   // it floats a little above the ground
+                p.y = AltitudeLayer.MoteOverhead.AltitudeFor();
+                block.SetColor(ShaderPropertyIDs.Color, new Color(1f, 1f, 1f, g.rest > 0 ? 0.45f : 1f));
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(p, Quaternion.AngleAxis((t * 160f + g.phase * 57f) % 360f, Vector3.up), new Vector3(pulse, 1f, pulse)), globeMat, 0, null, 0, block);
+            }
+        }
+
+        // ---- the hurricane's own wind over its ground (Fix225: the zone showed only its edge) ----
+        private void HurricaneWind(Fld f)
+        {
+            if (f.cells.Count == 0) return;
+            Vector3 mid = f.mid != Vector3.zero ? f.mid : f.cells.First().ToVector3Shifted();
+            foreach (IntVec3 x in f.cells.InRandomOrder().Take(Mathf.Max(2, f.cells.Count / 8)))
+            {
+                Vector3 o = x.ToVector3Shifted() - mid; o.y = 0f;
+                if (o.sqrMagnitude < 0.3f) continue;
+                Vector3 w = new Vector3(-o.z, 0f, o.x).normalized * 0.85f + o.normalized * 0.35f;   // round, and out: the hurricane tears outwards
+                Vector3 at = x.ToVector3Shifted() + new Vector3(Rand.Range(-0.4f, 0.4f), 0f, Rand.Range(-0.4f, 0.4f));
+                MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", new Color(0.85f, 0.92f, 1f, 0.75f), at, Rand.Range(1.8f, 3f), 22, w.AngleFlat() - 90f, 0f, 5.3f);
+                if (Rand.Chance(0.2f)) FleckMaker.ThrowDustPuffThick(at, map, 0.9f, new Color(0.82f, 0.86f, 0.9f, 0.4f));
+            }
+        }
+
+        private Vector3 SoundAt(Fld f) => f.speed > 0f ? f.center : f.mid != Vector3.zero ? f.mid : f.cells.FirstOrDefault().ToVector3Shifted();
+
         public static Fld At(Map m, IntVec3 c, SecondKind y) => m?.GetComponent<SecondFields>()?.fields.FirstOrDefault(f => f.y == y && f.cells.Contains(c));
 
         public override void MapComponentTick()
@@ -653,8 +787,18 @@ namespace Avir.Magic
                     later.Remove(kv);
                     try { kv.Value(); } catch (Exception e) { Log.ErrorOnce("[Avir] second-order later: " + e, 0x5EC1); }
                 }
-            if (fields.Count == 0 && boiling.Count == 0) return;
+            if (globes.Count > 0) TickGlobes(now);
+            if (fields.Count == 0 && boiling.Count == 0) { MagicSounds.Sweep(o => !(o is Fld)); return; }
             fields.RemoveAll(f => f.until <= now);
+            // the long sounds of the fields (Fix225): rain over a deluge, the roar of a hurricane, a typhoon, an inferno
+            MagicSounds.Sweep(o => !(o is Fld) || fields.Contains((Fld)o));
+            foreach (Fld f in fields)
+            {
+                if (f.cells == null || f.cells.Count == 0 || f.y == SecondKind.Hurricane && f.speed > 0f) continue;   // a whirl is heard in its hurricane
+                string key = "Hold:" + f.y;
+                if (MagicSounds.Table.ContainsKey(key)) MagicSounds.Keep(f, key, SoundAt(f).ToIntVec3(), map);
+            }
+            if (now % 10 == 0) foreach (Fld f in fields) if (f.y == SecondKind.Hurricane && f.speed <= 0f) HurricaneWind(f);
             // the whirls blow real wind round themselves in Atmosphere Overhaul's air, four times a second, so it builds up
             if (now % 15 == 0 && AtmosphereBridge.Throws)
                 foreach (Fld w in fields.Where(x => x.y == SecondKind.Hurricane && x.speed > 0f))
@@ -711,11 +855,11 @@ namespace Avir.Magic
                             case SecondKind.Boil: if (foe && (p.health.hediffSet.HasHediff(WaterDefOf.Avir_Soaked) || Reactions.Wet(c, map))) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 1.5f * f.power * (SecondOrder.Sealed(p) ? 0.4f : 1.4f), 0f, -1f, f.owner)); break;
                             case SecondKind.Typhoon: if (foe) SecondOrder.BoilingRain(p, f.power, f.owner, map, f.center.ToIntVec3()); break;
                             case SecondKind.Ash: if (foe && !SecondOrder.Sealed(p)) MagicFx.Give(p, SecondOrder.H("Avir_Ashen"), 300); break;
-                            case SecondKind.Deluge: WaterMagic.Soak(p, f.power); break;
+                            case SecondKind.Deluge: WaterMagic.Soak(p, f.power); if (Rand.Chance(0.35f)) FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 1f); break;   // soaked again and again while under it (Fix225)
                             case SecondKind.Swelter: if (foe && p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Max(0f, p.needs.rest.CurLevel - 0.01f * f.power); else if (!foe) MagicFx.Give(p, SecondOrder.H("Avir_Updraft"), 120); break;
                             case SecondKind.MarshHaze: if (foe && !SecondOrder.Masked(p)) HealthUtility.AdjustSeverity(p, HediffDefOf.ToxicBuildup, 0.006f * f.power); break;
                             case SecondKind.Emery: if (foe) foreach (Apparel a in p.apparel?.WornApparel.ToList() ?? new List<Apparel>()) a.HitPoints = Mathf.Max(1, a.HitPoints - 1); else MagicFx.Give(p, SecondOrder.H("Avir_Honed"), 300); break;
-                            case SecondKind.BallLightning: if (foe && Rand.Chance(0.15f)) { p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 4f * f.power * (SpellBody.Of(p).metalArmour ? 1.5f : 1f), 0f, -1f, f.owner)); FleckMaker.ThrowLightningGlow(p.DrawPos, map, 1f); } break;
+                            case SecondKind.BallLightning: break;   // its globes strike (Fix225)
                         }
                     }
                     if (f.y == SecondKind.Deluge) foreach (Thing t in here.Where(t => t is Fire).ToList()) if (!t.Destroyed) t.Destroy();
@@ -769,8 +913,10 @@ namespace Avir.Magic
 
         public override void MapComponentUpdate()
         {
-            if (fields.Count == 0 || Find.CurrentMap != map) return;
+            if (Find.CurrentMap != map) return;
             float t = Time.realtimeSinceStartup;
+            if (globes.Count > 0) DrawGlobes(t);
+            if (fields.Count == 0) return;
             int now = Find.TickManager.TicksGame;
             foreach (Fld f in fields)
             {
@@ -829,14 +975,15 @@ namespace Avir.Magic
                 case SecondKind.Deluge:
                     FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 0.7f);
                     // rings only where the rain falls into water (Fix224: on dry ground they read as strange bubbles)
-                    if (Reactions.Wet(c, map) || c.GetTerrain(map).IsWater) MapComponent_SpellSprites.PutTintedGrowing(map, "Wave/Ripple", new Color(0.6f, 0.8f, 1f), v, 0.5f, 40, 1.2f); break;
+                    // Fix225: thin rings of single drops (Wave/Drop), small - not the thick double ring of a wave
+                    if (Reactions.Wet(c, map) || c.GetTerrain(map).IsWater) MapComponent_SpellSprites.PutTintedGrowing(map, "Wave/Drop", new Color(0.7f, 0.85f, 1f, 0.8f), v, 0.2f, 32, 2.4f); break;
                 case SecondKind.Hurricane:
                     MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", new Color(0.8f, 0.9f, 1f, 0.75f), v, 1.6f, 25, Rand.Range(0f, 360f), 0f, 4f); break;
                 case SecondKind.Mudflow:
                     MapComponent_SpellSprites.PutTinted(map, "Bog/Splash", new Color(0.45f, 0.32f, 0.2f, 0.9f), v, 1.1f, 50);
                     MapComponent_SpellSprites.PutTintedGrowing(map, "Wave/Ripple", new Color(0.55f, 0.4f, 0.25f), v, 0.8f, 50, 1.5f); break;
                 case SecondKind.BallLightning:
-                    FleckMaker.ThrowLightningGlow(v, map, 0.8f); if (Rand.Chance(0.25f)) MapComponent_SpellSprites.Put(map, "Second/BallLightning", v, 1.4f, 40, -1f, 4f); break;
+                    if (Rand.Chance(0.3f)) FleckMaker.ThrowLightningGlow(v, map, 0.6f); break;   // the globes themselves are drawn (Globe)
                 // haze's: the swelter shimmers orange, the thermal lifts pale gold wisps, the dry wind drives ochre grit
                 case SecondKind.Swelter:
                     MapComponent_SpellSprites.PutTinted(map, "Haze/Shimmer", new Color(1f, 0.7f, 0.35f, 0.7f), v, 1.8f, 90, -1f, 0.8f);

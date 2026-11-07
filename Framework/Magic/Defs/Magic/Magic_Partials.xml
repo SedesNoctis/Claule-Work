@@ -18,7 +18,7 @@
     <defName>Avir_SonicRupture</defName>
     <label>ruptured by sound</label>
     <labelNoun>a rupture from a thunderclap</labelNoun>
-    <description>Torn from inside by a blast of sound: the ear bleeds and rings.</description>
+    <description>A wound from a thunderclap. The pressure wave hits what holds air: the eardrum bursts, and the ear bleeds and rings. Close to the middle of the blast, the lungs are bruised too.</description>
     <comps>
       <li Class="HediffCompProperties_TendDuration">
         <labelTendedWell>bandaged</labelTendedWell>
@@ -26,7 +26,7 @@
         <labelSolidTendedWell>set</labelSolidTendedWell>
       </li>
       <li Class="HediffCompProperties_GetsPermanent">
-        <permanentLabel>deafening scar</permanentLabel>
+        <permanentLabel>old sonic scar</permanentLabel>
       </li>
     </comps>
     <injuryProps>

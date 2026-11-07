@@ -119,6 +119,7 @@ namespace Avir.Magic
             if (caster == null || g == null || map == null || !at.InBounds(map)) return;
             bool crystal = InCrystal(root, g);
             // the element at work, for the wards it meets: Light's own passes a ward of Light, the others' put it out
+            MagicSounds.Play("El:Light", at, map);   // Fix225
             using (SpellWards.Of(RuneKind.Light, ComboKind.None, true)) CastOwn(caster, g, from, at, power, map, crystal);
             if (crystal && !Echoing) Grow(caster, g, from, at, power, map);
         }

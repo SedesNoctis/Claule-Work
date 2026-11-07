@@ -298,6 +298,8 @@ namespace Avir.Magic
                     // the discharge: burns and a jolt; machines are struck harder, the soaked take more
                     MapComponent_SpellSprites.Bolt(map, prev, at);
                     MapComponent_SpellSprites.Put(map, "Storm/Strike", at, 1.8f, 20);
+                    // the first strike thunders, the leaps after it crack (Fix225)
+                    if (i == 0) MagicSounds.Play("Bolt", from, map); else MagicSounds.Play("Arc", from, map, 1f, 3);
                     FleckMaker.ThrowLightningGlow(at, map, 1.4f);
                     float wet = cur.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Soaked) != null ? 1.5f : 1f;
                     cur.TakeDamage(new DamageInfo(DamageDefOf.Burn, 8f * power * wet, 0.3f, -1f, caster));

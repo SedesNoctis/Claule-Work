@@ -174,6 +174,7 @@ namespace Avir.Magic
         {
             Hediff_ArcaneCore core = Mages.Core(caster);
             if (core == null || map == null || !at.InBounds(map)) return;
+            MagicSounds.Play("El:Life", at, map);   // Fix225
             if (SpellSculpt.Of(g)) power *= SpellSculpt.Keeps;
             if (pair == RuneKind.Air) core.pestMage = true;
             // an Aura with an Anchor in a circle of Life: a living aura - its acts pulse round the mage (the general rule of auras)
