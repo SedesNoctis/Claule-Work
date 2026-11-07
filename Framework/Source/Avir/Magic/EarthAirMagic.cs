@@ -286,7 +286,7 @@ namespace Avir.Magic
         internal static void Chain(Pawn caster, List<IntVec3> line, Map map, int jumps, float power, bool storm, bool fromSky = false)
         {
             Pawn first = MagicFx.PawnsIn(line, map).Where(p => p != caster && MagicFx.Foe(p, caster)).OrderBy(p => p.Position.DistanceToSquared(SpellOrigin.Of(caster))).FirstOrDefault();
-            Vector3 prev = fromSky && first != null ? first.DrawPos : caster.DrawPos;
+            Vector3 prev = fromSky && first != null ? first.DrawPos : SpellOrigin.From.IsValid ? SpellOrigin.From.ToVector3Shifted() : caster.DrawPos;
             IntVec3 prevCell = SpellOrigin.Of(caster);
             var hit = new HashSet<Pawn>();
             Pawn cur = first;

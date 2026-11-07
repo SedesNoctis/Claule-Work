@@ -29,13 +29,14 @@ namespace Avir.Magic
 
         /// <summary>Beam, Anchor, Thread written one after another - and the Thread not turned to mending (no Restoration
         /// right after it: Beam + Anchor + Thread + Restore stays the stream of healing).</summary>
-        public static bool IsRoute(List<RuneDef> runes)
-        {
-            for (int i = 0; i + 2 < runes.Count; i++)
-                if (runes[i].kind == RuneKind.Beam && runes[i + 1].kind == RuneKind.Anchor && runes[i + 2].kind == RuneKind.Thread
-                    && (i + 3 >= runes.Count || runes[i + 3].kind != RuneKind.Restore)) return true;
-            return false;
-        }
+        public static bool IsRoute(List<RuneDef> runes) =>
+            // Fix237: not by the order the runes are stored in (a circle of the editor keeps them by sections and places -
+            // the strict "one after another" missed the author's spell, and its Steps flew the caster about)
+            runes.Any(x => x.kind == RuneKind.Beam) && runes.Any(x => x.kind == RuneKind.Anchor) && runes.Any(x => x.kind == RuneKind.Thread)
+            && !runes.Any(x => x.kind == RuneKind.Restore);   // Beam + Anchor + Thread + Restore stays the stream of healing
+
+        /// <summary>Where each caster's route ended (its last mark) - the next circle of the spell strikes there.</summary>
+        public static readonly Dictionary<int, IntVec3> EndOf = new Dictionary<int, IntVec3>();
 
         /// <summary>How many marks the spell asks for (0 - not a route), and whether it chains.</summary>
         public static int Marks(RitualSchema s, out bool chain)

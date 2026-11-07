@@ -37,6 +37,8 @@ namespace Avir.Magic
             /// <summary>When the spell was let go: what it grew itself (crystals) answers only the next cast (Fix223).</summary>
             public int born = -1;
             public bool waitCaster;
+            /// <summary>A beam on a route is being walked (Fix237): the next circle waits for its end and strikes at the last mark.</summary>
+            public bool waitStream;
             public List<Pawn> waitFor;
             public int giveUp;
             public bool endByMage;
@@ -151,7 +153,8 @@ namespace Avir.Magic
             else Finish(c);
         }
 
-        private static bool Waiting(Chain c) => c.waitCaster || c.waitFor != null;
+        private static bool Waiting(Chain c) => c.waitCaster || c.waitFor != null || c.waitStream;
+        private static bool Streaming(Pawn p) => p?.MapHeld?.GetComponent<MapComponent_Auras>()?.all.Any(a => a.route != null && a.caster == p) == true;
 
         private static void Run(Chain c)
         {
@@ -269,6 +272,7 @@ namespace Avir.Magic
             c.giveUp = now + Patience;
             c.at = now + Gap;
             SpellDash.LastPulled = null;
+            if (Streaming(caster)) { c.waitStream = true; c.giveUp = now + 60 * 180; }
         }
 
         /// <summary>An echo of Light carrying a small circle of an element sealed in it (the author, Fix213): cast from the
@@ -384,8 +388,17 @@ namespace Avir.Magic
                 {
                     bool done = now >= c.giveUp
                                 || (c.waitCaster && c.caster.Spawned)
-                                || (c.waitFor != null && c.waitFor.All(p => p.Dead || p.Spawned));
+                                || (c.waitFor != null && c.waitFor.All(p => p.Dead || p.Spawned))
+                                || (c.waitStream && !Streaming(c.caster));
                     if (!done) continue;
+                    if (c.waitStream)
+                    {
+                        // the route walked: what is written after it strikes where it ended - the last mark
+                        c.waitStream = false;
+                        if (SpellRoute.EndOf.TryGetValue(c.caster.thingIDNumber, out IntVec3 end)) c.target = new LocalTargetInfo(end);
+                        c.at = now + Gap;
+                        continue;
+                    }
                     if (c.waitCaster) c.target = new LocalTargetInfo(c.caster.Position);
                     else if (c.endByMage) c.target = new LocalTargetInfo(c.caster.Position);
                     c.waitCaster = false; c.waitFor = null;

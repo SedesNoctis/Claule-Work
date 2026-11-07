@@ -178,6 +178,20 @@ namespace Avir.Magic
         /// <summary>The living aura round this pawn, if any.</summary>
         public static MapComponent_Auras.Aura Of(Pawn p) => p?.MapHeld?.GetComponent<MapComponent_Auras>()?.all.FirstOrDefault(a => a.caster == p && !a.beam);
 
+        /// <summary>The beam seen while a stream holds (Fix237, the author: the beam had no look at all): a streak of the
+        /// spell's colour from where it starts to where it strikes; a storm's - a crackling bolt.</summary>
+        public static void BeamSight(Map map, MapComponent_Auras.Aura a, Vector3 from, Vector3 to)
+        {
+            Vector3 d = to - from; d.y = 0f;
+            float len = d.magnitude;
+            if (len < 0.5f) return;
+            bool storm = a.combo == ComboKind.Storm;
+            if (storm) { MapComponent_SpellSprites.Bolt(map, from, to, 12); return; }
+            Color col = ColorOf(a); col.a = 0.85f;
+            MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", col, (from + to) / 2f, len, 14, d.AngleFlat() - 90f, 0f, len / 0.45f);
+            FleckMaker.ThrowLightningGlow(to, map, 0.8f);
+        }
+
         public static Color ColorOf(MapComponent_Auras.Aura a) =>
             a == null ? Color.white : a.combo != ComboKind.None ? Combos.ColorOf(a.combo) : a.el != null ? a.el.color : Color.white;
     }
@@ -322,12 +336,14 @@ namespace Avir.Magic
             {
                 Aura a = all[i];
                 if (now % 30 == 0 && !a.beam) Glow(a, 3);
+                if (a.beam && a.route == null && now % 10 == 0) SpellAura.BeamSight(map, a, a.caster.DrawPos, a.target.Cell.ToVector3Shifted());
                 if (a.route != null)
                 {
                     // the marks where they are now: one set on someone goes with them; the fallen leave theirs where they fell
                     for (int m = 0; m < a.route.Count; m++)
                         if (a.route[m].HasThing && (!a.route[m].Thing.Spawned || a.route[m].Thing is Pawn mp && mp.Dead)) a.route[m] = new LocalTargetInfo(a.route[m].Thing.PositionHeld);
                     var cells = a.route.Select(SpellRoute.Pos).ToList();
+                    SpellRoute.EndOf[a.caster.thingIDNumber] = cells[cells.Count - 1];
                     // a link stretched past its reach breaks the stream (Fix235)
                     if (now % 15 == 0)
                         for (int m = 0; m < cells.Count; m++)
@@ -345,7 +361,7 @@ namespace Avir.Magic
                         Color col = SpellAura.ColorOf(a); col.a = 0.6f;
                         FleckMaker.ThrowDustPuffThick(pt, map, 0.8f, col);
                         Vector3 from = a.chain ? cells[a.leg].ToVector3Shifted() : a.caster.DrawPos;
-                        if (now % 12 == 0) MapComponent_SpellSprites.Bolt(map, from, pt, 10);
+                        if (now % 10 == 0) SpellAura.BeamSight(map, a, from, pt);
                     }
                 }
                 if (now < a.next) continue;
