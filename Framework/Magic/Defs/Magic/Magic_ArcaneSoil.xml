@@ -2,14 +2,13 @@
 <Defs>
   <!-- ARCANE SOIL: what the bog (water + earth) makes of the ground (Source/Avir/Magic/ArcaneOrders.cs, Enrich), and later the
        ground of the Twilight Marshes and the Jungles. Placeholder textures: vanilla soil, tinted damp and green, until the art comes
-       (Промпты-Арканная-почва.md); then point texturePath at Terrain/Surfaces/Avir_ArcaneSoil... and drop the color. -->
+       (Промпты-Арканная-почва.md); done in Fix230 (the author's art). -->
   <TerrainDef ParentName="NaturalTerrainBase">
     <defName>Avir_ArcaneSoil</defName>
     <label>arcane soil</label>
     <description>Soil steeped in arcane water and earth: dark, soft and damp, smelling of bog. Plants take to it better than to plain soil. It is the ground of the twilight marshes and jungles.</description>
-    <texturePath>Terrain/Surfaces/Soil</texturePath>
+    <texturePath>Terrain/Surfaces/Avir_ArcaneSoil</texturePath>
     <pollutedTexturePath>Terrain/Surfaces/SoilPolluted</pollutedTexturePath>
-    <color>(0.72, 0.82, 0.74)</color>
     <edgeType>FadeRough</edgeType>
     <categoryType>Soil</categoryType>
     <renderPrecedence>343</renderPrecedence>
@@ -29,9 +28,8 @@
     <defName>Avir_ArcaneSoil_B</defName>
     <label>arcane soil</label>
     <description>Soil steeped in arcane water and earth: dark, soft and damp, smelling of bog. Plants take to it better than to plain soil. It is the ground of the twilight marshes and jungles.</description>
-    <texturePath>Terrain/Surfaces/Soil</texturePath>
+    <texturePath>Terrain/Surfaces/Avir_ArcaneSoil_B</texturePath>
     <pollutedTexturePath>Terrain/Surfaces/SoilPolluted</pollutedTexturePath>
-    <color>(0.66, 0.78, 0.72)</color>
     <edgeType>FadeRough</edgeType>
     <categoryType>Soil</categoryType>
     <renderPrecedence>344</renderPrecedence>
@@ -51,9 +49,8 @@
     <defName>Avir_ArcaneSoilRich</defName>
     <label>rich arcane soil</label>
     <description>Arcane soil at its richest: black, wet and heavy with life, threaded with tiny roots and moss. Plants grow in it better than in rich soil.</description>
-    <texturePath>Terrain/Surfaces/SoilRich</texturePath>
+    <texturePath>Terrain/Surfaces/Avir_ArcaneSoilRich</texturePath>
     <pollutedTexturePath>Terrain/Surfaces/SoilPolluted</pollutedTexturePath>
-    <color>(0.68, 0.8, 0.7)</color>
     <edgeType>FadeRough</edgeType>
     <categoryType>Soil</categoryType>
     <renderPrecedence>345</renderPrecedence>
@@ -73,9 +70,8 @@
     <defName>Avir_ArcaneSoilRich_B</defName>
     <label>rich arcane soil</label>
     <description>Arcane soil at its richest: black, wet and heavy with life, threaded with tiny roots and moss. Plants grow in it better than in rich soil.</description>
-    <texturePath>Terrain/Surfaces/SoilRich</texturePath>
+    <texturePath>Terrain/Surfaces/Avir_ArcaneSoilRich_B</texturePath>
     <pollutedTexturePath>Terrain/Surfaces/SoilPolluted</pollutedTexturePath>
-    <color>(0.62, 0.76, 0.7)</color>
     <edgeType>FadeRough</edgeType>
     <categoryType>Soil</categoryType>
     <renderPrecedence>346</renderPrecedence>
