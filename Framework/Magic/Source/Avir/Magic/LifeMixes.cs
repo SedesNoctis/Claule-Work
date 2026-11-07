@@ -29,7 +29,7 @@ namespace Avir.Magic
         {
             if (box == null || !box.Great || !Is(box.element)) return LifeMix.None;
             var inside = box.inner.Where(k => !k.Great).ToList();
-            if (box.OwnRunes.Concat(inside.SelectMany(k => k.OwnRunes)).Any(x => x.kind == RuneKind.Closing)) return LifeMix.None;
+            if (WeaveSpell.SealedGreat(box)) return LifeMix.None;
             var els = inside.Where(Elemental).Select(k => k.element.kind).ToList();
             var kinds = els.Distinct().ToList();
             if (kinds.Count != 2 || els.Count != 2) return LifeMix.None;

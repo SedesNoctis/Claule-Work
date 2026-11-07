@@ -53,8 +53,7 @@ namespace Avir.Magic
         /// <summary>A Closing in the first (innermost) section of a great circle of Light keeps the great element pure (the
         /// author, Fix213): the small circles of elements inside it do not meet Light - they work as they are (fire and earth
         /// make magma), and the reflectors echo them too.</summary>
-        public static bool Sealed(SpellCircle box) => box != null && box.Great && Is(box.element) && box.sections.Count > 0
-                                                       && (box.sections[0].runes ?? new List<RuneDef>()).Any(x => x != null && x.kind == RuneKind.Closing);
+        public static bool Sealed(SpellCircle box) => box != null && Is(box.element) && WeaveSpell.SealedGreat(box);
 
         /// <summary>The great circle of Light a circle stands in (the nearest great circle round it), or null.</summary>
         public static SpellCircle BoxOf(SpellCircle root, SpellCircle c)

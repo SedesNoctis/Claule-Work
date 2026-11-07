@@ -172,7 +172,8 @@ namespace Avir.Magic
                 int t0 = Find.TickManager.TicksGame; c.giveUp = t0 + Patience; c.at = t0 + Gap;
                 return;
             }
-            float p = c.power * WeaveSpell.ResonanceFactor(WeaveSpell.Resonance(c.root, circle.element)) * Combos.FocusBoost(circle, caster.Map);
+            float p = c.power * WeaveSpell.ResonanceFactor(WeaveSpell.Resonance(c.root, circle.element)) * Combos.FocusBoost(circle, caster.Map)
+                      * WeaveSpell.SealedPower(caster, c.root, circle, c.combos != null && c.combos.TryGetValue(circle, out ComboKind sm) ? sm : ComboKind.None);
             RitualSchema one = circle.AsSchema();
             // two Barriers in the outermost section: the blow is shaped round the caster's own people (weaker for it)
             bool shaped = SpellSculpt.Take(one, out bool aid);   // with a Thread: Selective Aid - to the caster's own only
@@ -269,7 +270,7 @@ namespace Avir.Magic
             if (circle.OwnRunes.Any(x => x.kind == RuneKind.Step || x.kind == RuneKind.Aura)) return;
             var combos = Combos.Pairs(root);
             ComboKind met = combos.TryGetValue(circle, out ComboKind mk) ? mk : ComboKind.None;
-            float p = power * WeaveSpell.ResonanceFactor(WeaveSpell.Resonance(root, circle.element)) * Combos.FocusBoost(circle, map);
+            float p = power * WeaveSpell.ResonanceFactor(WeaveSpell.Resonance(root, circle.element)) * Combos.FocusBoost(circle, map) * WeaveSpell.SealedPower(caster, root, circle, met);
             // on its way from the reflector: a ward in the line may stop it
             RuneKind[] inc = met != ComboKind.None ? Combos.Parts(met) : new[] { circle.element.kind };
             foreach (IntVec3 c in GenSight.BresenhamCellsBetween(from, to))

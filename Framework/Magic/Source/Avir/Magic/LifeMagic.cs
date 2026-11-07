@@ -143,7 +143,7 @@ namespace Avir.Magic
         {
             if (box == null || !box.Great || !Is(box.element)) return None;
             var inside = box.inner.Where(k => !k.Great).ToList();
-            if (box.OwnRunes.Concat(inside.SelectMany(k => k.OwnRunes)).Any(x => x.kind == RuneKind.Closing)) return None;
+            if (WeaveSpell.SealedGreat(box)) return None;   // a Closing in its first section keeps it apart (Fix214)
             SpellCircle first = inside.FirstOrDefault(k => k.element != null && (k.element.kind == RuneKind.Fire || k.element.kind == RuneKind.Water || k.element.kind == RuneKind.Earth || k.element.kind == RuneKind.Air));
             // the deep meeting needs two circles of the element (the author's ladder, Fix165); one is the wide meeting (AspectOf)
             if (first == null || inside.Count(k => k.element == first.element) < 2) return None;

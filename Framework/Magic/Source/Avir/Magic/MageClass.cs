@@ -132,6 +132,14 @@ namespace Avir.Magic
         }
 
         public static float PowerFactor(Hediff_ArcaneCore c, RitualSchema s) => Over(c, s, PowerAt, -0.05f, 0.4f, 2.2f);
+        /// <summary>The same for given elements alone (a small circle sealed from its great circle, Fix214).</summary>
+        public static float PowerFactorOf(Hediff_ArcaneCore c, IEnumerable<RuneKind> kinds)
+        {
+            if (c == null) return 1f;
+            float f = 1f;
+            foreach (RuneKind k in kinds.Distinct()) { float xp = XpIn(c, k); f += PowerAt[Stage(xp)] - 1f + (xp <= 0f ? -0.05f : 0f); }
+            return Mathf.Clamp(f, 0.4f, 2.2f);
+        }
         public static float SlipFactor(Hediff_ArcaneCore c, RitualSchema s) => Over(c, s, SlipAt, 0.15f, 0.4f, 3f);
         public static float CastFactor(Hediff_ArcaneCore c, RitualSchema s) => Over(c, s, CastAt, 0.1f, 0.5f, 2.5f);
 

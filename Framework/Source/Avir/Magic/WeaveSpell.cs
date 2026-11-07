@@ -97,6 +97,32 @@ namespace Avir.Magic
         private static string TransTake(RuneKind p) => p == RuneKind.Water ? "water turned to stone, for good" : p == RuneKind.Earth ? "plants turned to emerald sculptures of themselves" : p == RuneKind.Fire ? "ash taken into the store" : p == RuneKind.Air ? "rot taken into the store, the ground richer for it" : "the dead turned to fertile earth";
         private static string TransGive(RuneKind p) => p == RuneKind.Water ? "stone turned to water, for good" : p == RuneKind.Earth ? "emerald sculptures let go - plants again" : "the ground quickened - more fertile for ten days";
 
+        /// <summary>A Closing in the first (innermost) section of a great circle parts it from the small circles inside it (the
+        /// author, Fix213-214): they work as their own elements, and their meetings are their own. A Closing inside the small
+        /// circles parts only them from one another; one in the great circle's outermost section parts great from great.</summary>
+        public static bool SealedGreat(SpellCircle box) => box != null && box.Great && box.element != null && box.sections.Count > 0
+                                                           && (box.sections[0].runes ?? new List<RuneDef>()).Any(x => x != null && x.kind == RuneKind.Closing);
+
+        /// <summary>The great circle a small one stands in, if that one is sealed from it.</summary>
+        public static SpellCircle SealedBox(SpellCircle root, SpellCircle c)
+        {
+            if (c == null || c.Great || c.element == null) return null;
+            for (SpellCircle b = root?.ParentOf(c); b != null && !b.binding; b = root.ParentOf(b)) if (b.Great) return SealedGreat(b) ? b : null;
+            return null;
+        }
+
+        /// <summary>A small circle sealed from its great circle is cast by its own elements (the author, Fix214): the mage's skill in
+        /// the great element does not lift it - the strength is the small elements' own; the great one only adds its shade.</summary>
+        public static float SealedPower(Pawn caster, SpellCircle root, SpellCircle c, ComboKind met)
+        {
+            if (SealedBox(root, c) == null) return 1f;
+            Hediff_ArcaneCore core = Mages.Core(caster);
+            if (core == null) return 1f;
+            float whole = MageClass.PowerFactor(core, new RitualSchema { weave = root });
+            float own = MageClass.PowerFactorOf(core, met != ComboKind.None ? Combos.Parts(met) : new[] { c.element.kind });
+            return whole > 0.01f ? own / whole : 1f;
+        }
+
         public static bool Wraps(SpellCircle root, RuneKind k) => Greats(root).Any(c => c.element?.kind == k && c.inner.Count > 0);
 
         // ------------------------------------------------------------------------------ the effect, in words
@@ -170,6 +196,8 @@ namespace Avir.Magic
                 if (LightMagic.Circles(root).Any(LightMagic.Sealed))
                     e.extras.Insert(0, new KeyValuePair<string, string>("Sealed in Light", "A Closing in the first section of a great circle of Light keeps the great element pure: the circles of elements inside it work as themselves - fire and earth make magma - and every reflector echoes them too, from where it stands: their lines and walls start at the reflector, a ward on the way may stop them. A Step or an Aura belongs to the mage's own body and does not echo; a Barrier echoes as a dome only."));
             }
+            if (Greats(root).Any(g => SealedGreat(g) && g.inner.Any(k => !k.Great && k.element != null)))
+                e.extras.Insert(0, new KeyValuePair<string, string>("Sealed Great Circle", "A Closing in a great circle's first section parts it from the small circles inside: they work as their own elements, their meetings are their own, and their strength is the mage's skill in those elements alone - the great element only adds its shade (Life mends whom they touch, Light echoes them)."));
             if (Wraps(root, RuneKind.Life)) e.extras.Insert(0, new KeyValuePair<string, string>("Life Wraps", "Friends within the spell's reach are mended as it strikes - out of the store of life."));
             foreach (RuneKind lk in LifeMagic.Circles(root).Select(g => LifeMagic.PairOf(root, g)).Where(k => k != LifeMagic.None).Distinct())
                 e.extras.Insert(0, new KeyValuePair<string, string>(LifeMagic.PairName(lk), LifeMagic.PairText(lk)));
