@@ -185,11 +185,15 @@ namespace Avir.Magic
             Vector3 d = to - from; d.y = 0f;
             float len = d.magnitude;
             if (len < 0.5f) return;
-            bool storm = a.combo == ComboKind.Storm;
-            if (storm) { MapComponent_SpellSprites.Bolt(map, from, to, 12); return; }
-            Color col = ColorOf(a); col.a = 0.85f;
-            MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", col, (from + to) / 2f, len, 14, d.AngleFlat() - 90f, 0f, len / 0.45f);
-            FleckMaker.ThrowLightningGlow(to, map, 0.8f);
+            string key = a.combo != ComboKind.None ? a.combo.ToString() : a.el?.kind.ToString() ?? "Fire";
+            Color col = ColorOf(a); col.a = 0.9f;
+            // the author's art when it is there (Лист 34): a seamless strip, laid along the beam; until then a streak of its colour
+            if (ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Beam/Beam_" + key, false) != null)
+                MapComponent_SpellSprites.Put(map, "Beam/Beam_" + key, (from + to) / 2f, len, 12, d.AngleFlat() - 90f, 0f, len / 0.6f);
+            else MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", col, (from + to) / 2f, len, 12, d.AngleFlat() - 90f, 0f, len / 0.45f);
+            // a storm's beam is a beam - with lightning crackling along it now and then (the author: it looked like no beam)
+            if (a.combo == ComboKind.Storm && Rand.Chance(0.35f)) MapComponent_SpellSprites.Bolt(map, from, to, 8);
+            if (Rand.Chance(0.5f)) FleckMaker.ThrowLightningGlow(to, map, 0.7f);
         }
 
         public static Color ColorOf(MapComponent_Auras.Aura a) =>
@@ -268,6 +272,20 @@ namespace Avir.Magic
             public IntVec3 stand;   // a stream is held standing: the caster stepping off it lets it go
             // a beam on a route (Fix234): its marks, chained or swept from the caster, how far along it is, how fast it goes
             public List<LocalTargetInfo> route; public List<float> reach; public bool chain; public float along, speed, hold = 1f; public int leg;
+            public Vector3 point;   // where the walking strike is now
+            /// <summary>The beams of a route now (Fix238, the author): a sweep - one, from the caster to the walking point; a
+            /// chain - every leg already reached stays and strikes on (caster to the first mark, each mark to the next), and
+            /// the leg still growing from the last mark reached to the walking point: nine marks, nine beams at once.</summary>
+            public List<KeyValuePair<IntVec3, IntVec3>> Legs(List<IntVec3> cells)
+            {
+                var l = new List<KeyValuePair<IntVec3, IntVec3>>();
+                IntVec3 pt = point.ToIntVec3();
+                if (!chain) { l.Add(new KeyValuePair<IntVec3, IntVec3>(caster.Position, pt)); return l; }
+                l.Add(new KeyValuePair<IntVec3, IntVec3>(caster.Position, cells[0]));
+                for (int k = 1; k <= leg && k < cells.Count; k++) l.Add(new KeyValuePair<IntVec3, IntVec3>(cells[k - 1], cells[k]));
+                if (leg < cells.Count - 1 || along < 0.01f) l.Add(new KeyValuePair<IntVec3, IntVec3>(cells[Mathf.Min(leg, cells.Count - 1)], pt));
+                return l;
+            }
             public float flash;   // when it last struck (real time), for the flare of the ring
             public float seed = Rand.Range(0f, 360f);
         }
@@ -336,7 +354,7 @@ namespace Avir.Magic
             {
                 Aura a = all[i];
                 if (now % 30 == 0 && !a.beam) Glow(a, 3);
-                if (a.beam && a.route == null && now % 10 == 0) SpellAura.BeamSight(map, a, a.caster.DrawPos, a.target.Cell.ToVector3Shifted());
+                if (a.beam && a.route == null && now % 8 == 0) SpellAura.BeamSight(map, a, a.caster.DrawPos, a.target.Cell.ToVector3Shifted());
                 if (a.route != null)
                 {
                     // the marks where they are now: one set on someone goes with them; the fallen leave theirs where they fell
@@ -355,14 +373,11 @@ namespace Avir.Magic
                     a.along += a.speed / 60f;
                     if (a.along >= SpellRoute.Length(cells) + a.speed) a.left = 0;   // walked to its end
                     Vector3 pt = SpellRoute.PointAt(cells, a.along, out a.leg);
+                    a.point = pt;
                     a.target = new LocalTargetInfo(pt.ToIntVec3());
-                    if (now % 6 == 0)
-                    {
-                        Color col = SpellAura.ColorOf(a); col.a = 0.6f;
-                        FleckMaker.ThrowDustPuffThick(pt, map, 0.8f, col);
-                        Vector3 from = a.chain ? cells[a.leg].ToVector3Shifted() : a.caster.DrawPos;
-                        if (now % 10 == 0) SpellAura.BeamSight(map, a, from, pt);
-                    }
+                    // the beams are always seen (the author): every leg, redrawn before the last fades
+                    if (now % 8 == 0)
+                        foreach (var lg in a.Legs(cells)) SpellAura.BeamSight(map, a, lg.Key == a.caster.Position ? a.caster.DrawPos : lg.Key.ToVector3Shifted(), lg.Value == pt.ToIntVec3() ? pt : lg.Value.ToVector3Shifted());
                 }
                 if (now < a.next) continue;
                 a.next = now + a.interval;
@@ -407,8 +422,17 @@ namespace Avir.Magic
                     {
                         // a chained route strikes from the mark it last passed, not from the caster (Fix234)
                         IntVec3 keepFrom = SpellOrigin.From;
-                        if (a.route != null && a.chain && a.leg > 0) SpellOrigin.From = SpellRoute.Pos(a.route[a.leg]);
-                        try { SpellDash.CastPart(a.caster, part.Copy(), a.combo, a.el, a.beam ? a.target : new LocalTargetInfo(a.caster.Position), a.power * SpellAura.PulseShare); }
+                        try
+                        {
+                            if (a.route != null && a.chain)
+                                foreach (var lg in a.Legs(a.route.Select(SpellRoute.Pos).ToList()))
+                                {
+                                    if (a.caster.Dead || !a.caster.Spawned) break;
+                                    SpellOrigin.From = lg.Key == a.caster.Position ? IntVec3.Invalid : lg.Key;
+                                    SpellDash.CastPart(a.caster, part.Copy(), a.combo, a.el, new LocalTargetInfo(lg.Value), a.power * SpellAura.PulseShare);
+                                }
+                            else SpellDash.CastPart(a.caster, part.Copy(), a.combo, a.el, a.beam ? a.target : new LocalTargetInfo(a.caster.Position), a.power * SpellAura.PulseShare);
+                        }
                         finally { SpellOrigin.From = keepFrom; }
                     }
                     }
