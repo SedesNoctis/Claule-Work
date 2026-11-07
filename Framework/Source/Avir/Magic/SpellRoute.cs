@@ -55,6 +55,34 @@ namespace Avir.Magic
         /// <summary>How far mark i (0 - the first, the spell's target) may be from the one before it.</summary>
         public static float ReachOf(float range, int i, bool chain) => chain ? range * Mathf.Max(0.1f, 1f - 0.1f * i) : range;
 
+        // ---- the empty beam (Fix244, the author): a Beam with no verb written before it carries nothing along its way -
+        // it only goes; the verbs of its circle strike where it has got to (the point it hits; a stream's point of strike;
+        // a route's last mark, once). With a verb before it, a Beam carries all the verbs along its way, as every form does.
+        public static bool EmptyBeam(RitualSchema s)
+        {
+            if (s?.rings == null) return false;
+            var seq = s.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
+            int b = seq.FindIndex(x => x.kind == RuneKind.Beam);
+            return b >= 0 && !seq.Take(b).Any(x => x.role == RuneRole.Verb) && seq.Skip(b + 1).Any(x => x.role == RuneRole.Verb);
+        }
+
+        /// <summary>The circle as it strikes at the end of an empty beam: the Beam, its Anchor and the route's Thread and
+        /// Steps taken out - what is left is its verbs at a point.</summary>
+        public static RitualSchema StripBeam(RitualSchema s)
+        {
+            RitualSchema c = s.Copy();
+            bool route = IsRoute(c.rings.SelectMany(g => g.runes).Where(x => x != null).ToList());
+            foreach (RitualRing g in c.rings)
+                for (int i = g.runes.Count - 1; i >= 0; i--)
+                {
+                    RuneDef x = g.runes[i];
+                    if (x == null) continue;
+                    bool shaping = x.kind == RuneKind.Thread && i > 0 && g.runes[i - 1] != null && g.runes[i - 1].kind == RuneKind.Barrier;
+                    if (x.kind == RuneKind.Beam || x.kind == RuneKind.Anchor || route && (x.kind == RuneKind.Step || x.kind == RuneKind.Thread && !shaping)) g.runes.RemoveAt(i);
+                }
+            return c;
+        }
+
         /// <summary>A route part's Steps are its marks, not flights: they are taken out before the circle is read.</summary>
         public static void StripSteps(RitualSchema s)
         {

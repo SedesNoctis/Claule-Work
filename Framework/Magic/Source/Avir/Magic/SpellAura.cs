@@ -167,6 +167,7 @@ namespace Avir.Magic
             // itself and was taken back by the author, Fix241)
             SpellMods.Own(part, RuneKind.Beam, out _, out int bw, out _, out _);
             b.breadth = bw;
+            if (SpellRoute.EmptyBeam(part)) { b.endPart = SpellRoute.StripBeam(part); b.breadth = 0; }   // an empty beam is a thread of light, no wider
             b.parts.Add(stroke);
             b.next = Find.TickManager.TicksGame + b.interval;
             c.all.Add(b);
@@ -290,6 +291,9 @@ namespace Avir.Magic
             public SpellCircle life; public RuneKind lifePair = (RuneKind)(-1), lifeAspect = (RuneKind)(-1); public LifeMix lifeMix;   // the box's meeting, all of it (Fix196)
             /// <summary>A streaming beam: it holds on its target instead of standing round the caster.</summary>
             public bool beam;
+            /// <summary>An empty beam (Fix244): what strikes at its end - each stroke at the point (a plain stream), or once at
+            /// the last mark when the route is walked.</summary>
+            public RitualSchema endPart; public bool finishing;
             public LocalTargetInfo target;
             public IntVec3 stand;   // a stream is held standing: the caster stepping off it lets it go
             // a beam on a route (Fix234): its marks, chained or swept from the caster, how far along it is, how fast it goes
@@ -395,7 +399,12 @@ namespace Avir.Magic
                         }
                     if (a.left <= 0) continue;
                     a.along += a.speed / 60f;
-                    if (a.along >= SpellRoute.Length(cells) + a.speed) a.left = 0;   // walked to its end
+                    if (a.along >= SpellRoute.Length(cells) + a.speed)
+                    {
+                        // walked to its end: an empty beam's verbs go off now, once, at the last mark (Fix244)
+                        if (a.endPart != null && !a.finishing) { a.finishing = true; a.left = 1; a.next = now; a.target = new LocalTargetInfo(cells[cells.Count - 1]); }
+                        else if (a.endPart == null) a.left = 0;
+                    }
                     Vector3 pt = SpellRoute.PointAt(cells, a.along, out a.leg);
                     a.point = pt;
                     a.target = new LocalTargetInfo(pt.ToIntVec3());
@@ -440,8 +449,18 @@ namespace Avir.Magic
                 if (a.life != null) LifeMagic.Pulse(a.caster, a.life, a.lifePair, a.power * SpellAura.PulseShare, a.radius, a.lifeAspect, a.lifeMix);
                 else
                 using (a.shaped ? SpellSculpt.Spare(a.aid) : null)
-                    foreach (RitualSchema part in a.parts)
+                    foreach (RitualSchema part0 in a.parts)
                     {
+                        // an empty beam strikes only where it has got to: a plain stream at its point every stroke; a route
+                        // nothing on the way, and once at its last mark at the whole strength of the cast (Fix244)
+                        RitualSchema part = part0;
+                        if (a.endPart != null)
+                        {
+                            if (a.route != null && !a.finishing) continue;
+                            if (a.caster.Dead || !a.caster.Spawned) break;
+                            SpellDash.CastPart(a.caster, a.endPart.Copy(), a.combo, a.el, new LocalTargetInfo(SpellAura.Where(a.target)), a.route != null ? a.power : a.power * SpellAura.PulseShare);
+                            continue;
+                        }
                         if (a.caster.Dead || !a.caster.Spawned) break;
                     {
                         // a chained route strikes from the mark it last passed, not from the caster (Fix234)

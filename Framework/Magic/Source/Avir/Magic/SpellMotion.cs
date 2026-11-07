@@ -137,6 +137,13 @@ namespace Avir.Magic
             // an Aura with an Anchor lives on round the caster and strikes again (Магия-правила.md, "Аура")
             SpellAura.Note(caster, part, k, el, power);
             SpellAura.NoteBeam(caster, part, k, el, power, target);
+            // an empty beam (no verb before it, Fix244): it went; its verbs strike at the point it reached. A route's go off
+            // once, at its last mark, when it has been walked (SpellAura) - nothing now
+            if (!SpellAura.Pulsing && SpellRoute.EmptyBeam(part))
+            {
+                if (SpellRoute.IsRoute(part.rings.SelectMany(g => g.runes).Where(x => x != null).ToList()) && caster.MapHeld?.GetComponent<MapComponent_Auras>()?.all.Any(a => a.route != null && a.caster == caster) == true) return;
+                part = SpellRoute.StripBeam(part);
+            }
             RitualReading r = RitualEvaluator.Read(part);
             int keepAmp = SpellDepth.Amplify; IntVec3 keepHeart = SpellDepth.Heart; float keepReach = SpellDepth.Reach, keepStone = SpellDepth.Stone;
             SpellDepth.Amplify = SpellMods.Strict ? SpellMods.WideAmplify(part) : r.amplify;

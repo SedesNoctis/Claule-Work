@@ -26,17 +26,20 @@ namespace Avir.Magic
         /// <summary>What width and length cost over a plain rune (Fix243, the author). Any Breadth covers more ground, so it
         /// costs 1 Arcana more (2 in all). A Breadth or a Reach bound to a Beam - written outward of the Beam, before the next
         /// verb or form - costs 2 more (3 in all): the beam strikes, or heals, along all its length and width. A Reach bound
-        /// to anything else only carries the cast further and costs as a plain rune.</summary>
+        /// to anything else only carries the cast further and costs as a plain rune. An empty beam (no verb before it) pays
+        /// for its Reach, not for its Breadth (Fix244).</summary>
         public const float BreadthPrice = 1f, BeamRunePrice = 2f;
         public static float BeamPrice(List<RuneDef> runes)
         {
             float extra = 0f;
-            bool onBeam = false;
+            bool onBeam = false, verbSeen = false, empty = false;
             foreach (RuneDef x in runes)
             {
                 if (x == null) continue;
-                if (x.role == RuneRole.Verb || x.role == RuneRole.Form) { onBeam = x.kind == RuneKind.Beam; continue; }
-                if (x.kind == RuneKind.Breadth) extra += onBeam ? BeamRunePrice : BreadthPrice;
+                if (x.role == RuneRole.Verb) verbSeen = true;
+                if (x.role == RuneRole.Verb || x.role == RuneRole.Form) { onBeam = x.kind == RuneKind.Beam; if (onBeam) empty = !verbSeen; continue; }
+                // an empty beam (no verb before it) lets nothing out on its way: its Breadth is not paid for (Fix244)
+                if (x.kind == RuneKind.Breadth) extra += onBeam ? (empty ? 0f : BeamRunePrice) : BreadthPrice;
                 else if (x.kind == RuneKind.Reach && onBeam) extra += BeamRunePrice;
             }
             return extra;
