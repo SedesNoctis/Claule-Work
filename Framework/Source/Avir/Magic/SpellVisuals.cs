@@ -87,6 +87,21 @@ namespace Avir.Magic
             c.sprites.Add(new Sprite { mat = m, at = at, w = size, h = size / aspect, angle = angle < 0f ? Verse.Rand.Range(0f, 360f) : angle, spin = spin, born = Verse.Find.TickManager.TicksGame, life = life });
         }
 
+        /// <summary>A glowing sprite from any texture path (Fix204: Light's ray uses the painted beam of sheet 13),
+        /// `w` across and `h` along its angle.</summary>
+        public static void PutAbs(Verse.Map map, string fullPath, UnityEngine.Color tint, UnityEngine.Vector3 at, float w, float h, int life, float angle)
+        {
+            var c = map?.GetComponent<MapComponent_SpellSprites>();
+            string key = "abs:" + fullPath + "#" + UnityEngine.ColorUtility.ToHtmlStringRGBA(tint);
+            if (!mats.TryGetValue(key, out var m))
+            {
+                m = Verse.ContentFinder<UnityEngine.Texture2D>.Get(fullPath, false) != null ? Verse.MaterialPool.MatFrom(fullPath, Verse.ShaderDatabase.MoteGlow, tint) : null;
+                mats[key] = m;
+            }
+            if (c == null || m == null) return;
+            c.sprites.Add(new Sprite { mat = m, at = at, w = w, h = h, angle = angle, spin = 0f, born = Verse.Find.TickManager.TicksGame, life = life });
+        }
+
         public static void Put(Verse.Map map, string path, UnityEngine.Vector3 at, float size, int life, float angle = -1f, float spin = 0f, float aspect = 1f)
         {
             var c = map?.GetComponent<MapComponent_SpellSprites>();

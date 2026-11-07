@@ -128,9 +128,10 @@ namespace Avir.Magic
         public static void Glint(Map map, Vector3 at, float size, bool bright)
         {
             if (map == null) return;
-            MapComponent_SpellSprites.PutTintedGrowing(map, "Light/Flare", bright ? Color.white : Gold, at, size * (bright ? 1.3f : 1f), bright ? 40 : 28, 0.5f);
+            MapComponent_SpellSprites.PutTintedGrowing(map, "Aura_Light", bright ? Color.white : Gold, at, size * (bright ? 1.3f : 1f), bright ? 40 : 28, 0.5f);
             FleckMaker.ThrowLightningGlow(at, map, bright ? 2.2f : 1.3f);
             if (bright) FleckMaker.ThrowLightningGlow(at, map, 1.6f);
+            LightGlow.At(map, at.ToIntVec3(), size >= 4f || bright, bright ? 150 : 100);
         }
 
         /// <summary>A ray of light from one point to another; brighter and wider under a Lift.</summary>
@@ -139,8 +140,11 @@ namespace Avir.Magic
             Vector3 d = to - from; d.y = 0f;
             float len = d.magnitude;
             if (map == null || len < 0.3f) return;
-            float w = bright ? 0.75f : 0.45f;
-            MapComponent_SpellSprites.PutTinted(map, "Light/Ray", bright ? Color.white : Gold, (from + to) / 2f, len, life, d.AngleFlat() - 90f, 0f, len / w);
+            float w = bright ? 0.9f : 0.55f;
+            MapComponent_SpellSprites.PutAbs(map, "Things/Projectile/Magic/Beam_Light", bright ? Color.white : Gold, (from + to) / 2f, w, len, life, d.AngleFlat());
+            // a ray lights the ground along it while it shines
+            int n = Mathf.Max(1, Mathf.RoundToInt(len / 5f));
+            for (int i = 0; i <= n; i++) LightGlow.At(map, Vector3.Lerp(from, to, i / (float)n).ToIntVec3(), bright, life + 60);
         }
 
         // ------------------------------------------------------------------ reflection
@@ -166,10 +170,11 @@ namespace Avir.Magic
             int stage = core != null ? Arcane.Stage(core, RuneKind.Light) : 0;
             int n = links.Count + (Rand.Chance(0.12f * stage) ? 1 : 0);
             float dist = Mathf.Max(3f, casterAt.IsValid ? casterAt.DistanceTo(aim) : 6f);
-            for (int i = 0; i < n; i++) Building_LightReflector.Raise(caster, map, aim, dist);
-            // every reflector in reach sends its circle: in a random order (the author)
+            // the node already standing - the caster's and their fellow Light mages' - sends its circles back, in a random
+            // order (the author); the reflectors this cast raises answer only the next cast (the author: balance)
             float range = Range(root);
-            var refl = Building_LightReflector.Of(caster, map).Where(x => x.Position.DistanceTo(aim) <= range).InRandomOrder().ToList();
+            var refl = Building_LightReflector.Node(caster, map).Where(x => x.Position.DistanceTo(aim) <= range).InRandomOrder().ToList();
+            for (int i = 0; i < n; i++) Building_LightReflector.Raise(caster, map, aim, dist);
             if (refl.Count == 0) return;
             MapComponent_LightEchoes.Queue(caster, root, links, refl, aim, power, map);
         }
@@ -189,7 +194,7 @@ namespace Avir.Magic
         public static void Slip(Pawn caster, SpellCircle root)
         {
             if (caster?.Map == null || !Any(root)) return;
-            Building_LightReflector.BreakAll(caster, caster.Map, true);
+            Building_LightReflector.BreakAll(Building_LightReflector.Node(caster, caster.Map), caster, true);
             DazzlePawn(caster, 0.4f);
         }
 
@@ -227,8 +232,16 @@ namespace Avir.Magic
         public float TargetPriorityFactor => 0.6f;
         public bool ThreatDisabled(IAttackTargetSearcher disabledFor) => !Spawned;
 
-        public static IEnumerable<Building_LightReflector> Of(Pawn caster, Map map) =>
-            map == null ? Enumerable.Empty<Building_LightReflector>() : map.listerThings.AllThings.OfType<Building_LightReflector>().Where(r => r.Spawned && r.caster == caster && !r.Destroyed);
+        /// <summary>When it is free to send the next shot: the casts of a node go one after another (the author).</summary>
+        public int busyUntil;
+
+        public static IEnumerable<Building_LightReflector> All(Map map) =>
+            map == null ? Enumerable.Empty<Building_LightReflector>() : map.listerThings.AllThings.OfType<Building_LightReflector>().Where(r => r.Spawned && !r.Destroyed);
+
+        /// <summary>The node a caster casts into: their own reflectors and those of every Light mage not hostile to them
+        /// (the author: reflectors are a game of mirrors - one node for all).</summary>
+        public static IEnumerable<Building_LightReflector> Node(Pawn caster, Map map) =>
+            All(map).Where(r => r.caster == caster || (r.caster != null && caster != null && !r.caster.HostileTo(caster)));
 
         /// <summary>A new reflector `dist` from the point, on any side.</summary>
         public static Building_LightReflector Raise(Pawn caster, Map map, IntVec3 at, float dist)
@@ -255,11 +268,13 @@ namespace Avir.Magic
         private static bool Free(IntVec3 c, Map map) => c.InBounds(map) && c.Walkable(map) && c.GetEdifice(map) == null
             && !c.GetThingList(map).Any(t => t is Building || t.def.category == ThingCategory.Item);
 
-        public static void BreakAll(Pawn caster, Map map, bool flash)
+        public static void BreakAll(IEnumerable<Building_LightReflector> which, Pawn caster, bool flash)
         {
-            foreach (Building_LightReflector r in Of(caster, map).ToList())
+            foreach (Building_LightReflector r in which.ToList())
             {
-                if (flash) LightMagic.Flash(caster, r.Position, 2f, 0.2f, false, false, false, map);
+                if (r.Map == null) continue;
+                if (flash) LightMagic.Flash(caster, r.Position, 2f, 0.2f, false, false, false, r.Map);
+                MapComponent_SpellSprites.PutTintedGrowing(r.Map, "Light/Shatter", LightMagic.Gold, r.DrawPos, 1.8f, 30, 0.6f);
                 r.Destroy(DestroyMode.KillFinalize);
             }
         }
@@ -287,11 +302,77 @@ namespace Avir.Magic
         }
     }
 
+    // ====================================================================== light on the ground
+
+    /// <summary>Light lights the map (the author): a flash, a ray, a reflector, the Light mage himself. A small unseen
+    /// glower that fades by itself; the Light mage's follows him.</summary>
+    public class LightGlow : ThingWithComps
+    {
+        public int dies;
+        public Pawn follows;
+
+        public static LightGlow At(Map map, IntVec3 c, bool big, int ticks)
+        {
+            if (map == null || !c.InBounds(map)) return null;
+            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(big ? "Avir_LightGlowBig" : "Avir_LightGlowSmall");
+            if (def == null) return null;
+            var g = (LightGlow)ThingMaker.MakeThing(def);
+            g.dies = Find.TickManager.TicksGame + ticks;
+            GenSpawn.Spawn(g, c, map, WipeMode.Vanish);
+            return g;
+        }
+
+        /// <summary>A mage whose path is Light, or who has grown to the Apprentice in it.</summary>
+        public static bool LightMage(Pawn p)
+        {
+            Hediff_ArcaneCore c = p != null ? Mages.Core(p) : null;
+            return c != null && (c.path?.kind == RuneKind.Light || Arcane.Stage(c, RuneKind.Light) >= 1);
+        }
+
+        protected override void TickInterval(int delta)
+        {
+            base.TickInterval(delta);
+            if (!this.IsHashIntervalTick(30, delta)) return;
+            if (Find.TickManager.TicksGame >= dies) { Destroy(DestroyMode.Vanish); return; }
+            if (follows != null && (!follows.Spawned || follows.Map != Map || follows.Position != Position)) Destroy(DestroyMode.Vanish);
+        }
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Values.Look(ref dies, "dies");
+            Scribe_References.Look(ref follows, "follows");
+        }
+    }
+
+    /// <summary>A Light mage carries light round him steadily: each second it is put where he stands.</summary>
+    public class MapComponent_LightMages : MapComponent
+    {
+        private readonly Dictionary<Pawn, LightGlow> glows = new Dictionary<Pawn, LightGlow>();
+        public MapComponent_LightMages(Map map) : base(map) { }
+
+        public override void MapComponentTick()
+        {
+            if (Find.TickManager.TicksGame % 60 != 17) return;
+            foreach (Pawn p in map.mapPawns.AllPawnsSpawned)
+            {
+                if (p.Dead || !LightGlow.LightMage(p)) continue;
+                if (glows.TryGetValue(p, out LightGlow g) && g != null && g.Spawned && g.Position == p.Position) { g.dies = Find.TickManager.TicksGame + 200; continue; }
+                if (g != null && g.Spawned) g.Destroy(DestroyMode.Vanish);
+                LightGlow ng = LightGlow.At(map, p.Position, false, 200);
+                if (ng != null) ng.follows = p;
+                glows[p] = ng;
+            }
+            if (glows.Count > 0 && Find.TickManager.TicksGame % 2500 == 17)
+                foreach (Pawn k in glows.Keys.Where(k => k == null || !k.Spawned || k.Map != map).ToList()) glows.Remove(k);
+        }
+    }
+
     // ====================================================================== the echoes, shot by shot
 
     public class MapComponent_LightEchoes : MapComponent
     {
-        private class Shot { public Pawn caster; public SpellCircle root, circle; public Building_LightReflector from; public IntVec3 aim; public float power; public int at, echo, held; }
+        private class Shot { public Pawn caster; public SpellCircle root, circle; public Building_LightReflector from; public IntVec3 aim; public float power; public int at, echo, held; public List<Building_LightReflector> node; }
         private readonly List<Shot> shots = new List<Shot>();
         public MapComponent_LightEchoes(Map map) : base(map) { }
 
@@ -303,7 +384,10 @@ namespace Avir.Magic
             for (int i = 0; i < refl.Count; i++)
             {
                 int echo = i / n + 1;   // 1 - the first echo, at half the cast
-                me.shots.Add(new Shot { caster = caster, root = root, circle = links[i % n], from = refl[i], aim = aim, power = power * Mathf.Pow(0.5f, echo), at = now + 18 + 9 * i, echo = echo, held = refl.Count });
+                // a reflector busy with another mage's cast answers this one after it
+                int at = Mathf.Max(now + 18 + 9 * i, refl[i].busyUntil + 12);
+                refl[i].busyUntil = at;
+                me.shots.Add(new Shot { caster = caster, root = root, circle = links[i % n], from = refl[i], aim = aim, power = power * Mathf.Pow(0.5f, echo), at = at, echo = echo, held = refl.Count, node = refl });
             }
         }
 
@@ -332,9 +416,10 @@ namespace Avir.Magic
                 if (lost)
                 {
                     if (s.caster.Faction == Faction.OfPlayer)
-                        Messages.Message(s.caster.LabelShortCap + " lost the focus of the light: the echo went astray, and every reflector broke.", new TargetInfo(land, map), MessageTypeDefOf.NegativeEvent, false);
-                    Building_LightReflector.BreakAll(s.caster, map, false);
-                    shots.RemoveAll(x => x.caster == s.caster);
+                        Messages.Message(s.caster.LabelShortCap + " lost the focus of the light: the echo went astray, and the whole node of reflectors broke.", new TargetInfo(land, map), MessageTypeDefOf.NegativeEvent, false);
+                    var broken = new HashSet<Building_LightReflector>(s.node);
+                    Building_LightReflector.BreakAll(broken, s.caster, false);
+                    shots.RemoveAll(x => x.from == null || broken.Contains(x.from) || !x.from.Spawned);
                     return;
                 }
             }
@@ -443,8 +528,11 @@ namespace Avir.Magic
         [LudeonTK.DebugAction("Magic", "Light: reflector for pawn here", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void ReflectorFor(Pawn p) => Building_LightReflector.Raise(p, p.Map, p.Position, 5f);
 
+        [LudeonTK.DebugAction("Magic", "Light: is pawn a Light mage?", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void GlowCheck(Pawn p) => Messages.Message(p.LabelShortCap + (LightGlow.LightMage(p) ? " is a Light mage: light round them." : " is not a Light mage (path Light, or Light from the Apprentice stage)."), MessageTypeDefOf.NeutralEvent, false);
+
         [LudeonTK.DebugAction("Magic", "Light: break pawn's reflectors", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
-        private static void BreakFor(Pawn p) => Building_LightReflector.BreakAll(p, p.Map, true);
+        private static void BreakFor(Pawn p) => Building_LightReflector.BreakAll(Building_LightReflector.Node(p, p.Map), p, true);
 
         [LudeonTK.DebugAction("Magic", "Light: clear blind patches", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void ClearZones() { var z = MapComponent_LightZones.Of(Find.CurrentMap); if (z != null) { z.Clear(); } }

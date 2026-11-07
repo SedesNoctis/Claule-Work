@@ -124,4 +124,41 @@
     </comps>
     <injuryProps><painPerSeverity>0.0175</painPerSeverity><averagePainPerSeverityPermanent>0.00625</averagePainPerSeverityPermanent><canMerge>true</canMerge><destroyedLabel>burned away</destroyedLabel></injuryProps>
   </HediffDef>
+
+  <ThingDef>
+    <defName>Avir_LightGlowSmall</defName>
+    <label>light</label>
+    <thingClass>Avir.Magic.LightGlow</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <drawerType>None</drawerType>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>false</selectable>
+    <rotatable>false</rotatable>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>5</glowRadius>
+        <glowColor>(255,238,190,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
+  <ThingDef>
+    <defName>Avir_LightGlowBig</defName>
+    <label>light</label>
+    <thingClass>Avir.Magic.LightGlow</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <drawerType>None</drawerType>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>false</selectable>
+    <rotatable>false</rotatable>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>9</glowRadius>
+        <glowColor>(255,238,190,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
 </Defs>
