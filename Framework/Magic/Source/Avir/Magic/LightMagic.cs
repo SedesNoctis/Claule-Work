@@ -319,7 +319,7 @@ namespace Avir.Magic
         }
 
         public const string ReflectionText = "Every cast of Light raises reflectors round the point - one per circle of Light, one more now and then for the skilled - as far from the point as the caster stands, on any side, behind the caster too. They burn for a few hours and light the ground. Each living reflector of the caster within range sends one circle back into the point: a full set is an echo at half the strength of the cast before it; a reflector over a full set casts the first circle of the next echo. A reflector can be broken; the foes' mages' reflectors are foes too.";
-        public const string DefocusText = "The more reflectors held at once, the harder the light is to keep in focus. A shot that loses it slides along its reflector's line - beyond the reflector at times, into whoever stands behind it - and then every reflector of the caster breaks.";
+        public const string DefocusText = "The more reflectors held at once, the harder the light is to keep in focus. A shot that loses it slides along its reflector's line - beyond the reflector at times, into whoever stands behind it - and then every reflector of the node goes wild: each strikes once more, its own circle at full echo strength, in a random direction, and shatters. The more were gathered, the worse it is.";
     }
 
     // ====================================================================== the reflectors
@@ -485,7 +485,7 @@ namespace Avir.Magic
 
     public class MapComponent_LightEchoes : MapComponent
     {
-        private class Shot { public Pawn caster; public SpellCircle root, circle; public Building_LightReflector from; public IntVec3 aim; public float power; public int at, echo, held; public List<Building_LightReflector> node; }
+        private class Shot { public Pawn caster; public SpellCircle root, circle; public Building_LightReflector from; public IntVec3 aim; public float power; public int at, echo, held; public List<Building_LightReflector> node; public bool wild; }
         private readonly List<Shot> shots = new List<Shot>();
         public MapComponent_LightEchoes(Map map) : base(map) { }
 
@@ -504,6 +504,34 @@ namespace Avir.Magic
             }
         }
 
+        /// <summary>Defocus (the author, Fix211): before they break, every reflector of the node fires once - each its own
+        /// circle (or the one that went astray), in a random direction, at full echo strength. The more were gathered,
+        /// the worse it is on a great spell.</summary>
+        private void Scatter(Shot s, int now)
+        {
+            var node = Building_LightReflector.Node(s.caster, map).ToList();
+            var pending = shots.Where(x => !x.wild && x.from != null).GroupBy(x => x.from).ToDictionary(g => g.Key, g => g.First());
+            shots.RemoveAll(x => !x.wild && x.from != null && node.Contains(x.from));
+            int i = 0;
+            foreach (Building_LightReflector r in node.InRandomOrder())
+            {
+                if (!r.Spawned) continue;
+                Shot own = pending.TryGetValue(r, out Shot p) ? p : s;
+                float dist = Mathf.Max(5f, r.Position.DistanceTo(s.aim));
+                Vector3 dir = Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * Vector3.forward;
+                IntVec3 land = r.Position;
+                // the stray ray goes until a wall takes it
+                for (float k = 1f; k <= dist; k += 1f)
+                {
+                    IntVec3 c = (r.TrueCenter() + dir * k).ToIntVec3();
+                    if (!c.InBounds(map)) break;
+                    land = c;
+                    if (c.Impassable(map)) break;
+                }
+                shots.Add(new Shot { caster = own.caster ?? s.caster, root = own.root ?? s.root, circle = own.circle ?? s.circle, from = r, aim = land, power = Mathf.Max(own.power, s.power), at = now + 4 + 5 * i++, wild = true, node = s.node });
+            }
+        }
+
         public override void MapComponentTick()
         {
             if (shots.Count == 0) return;
@@ -514,6 +542,14 @@ namespace Avir.Magic
                 if (now < s.at) continue;
                 shots.RemoveAt(i--);
                 if (s.caster == null || s.caster.Dead || s.from == null || !s.from.Spawned || s.from.Map != map) continue;
+                if (s.wild)
+                {
+                    // a reflector gone wild: it strikes once, anywhere, and shatters
+                    LightMagic.RayLine(map, s.from.DrawPos, s.aim.ToVector3Shifted(), true);
+                    LightMagic.CastCircle(s.caster, s.circle, s.from.Position, s.aim, s.power, map);
+                    Building_LightReflector.BreakAll(new[] { s.from }, s.caster, false);
+                    continue;
+                }
                 IntVec3 src = s.from.Position, land = s.aim;
                 bool lost = Rand.Chance(LightMagic.DefocusChance(s.caster, s.root, s.held));
                 if (lost)
@@ -529,10 +565,8 @@ namespace Avir.Magic
                 if (lost)
                 {
                     if (s.caster.Faction == Faction.OfPlayer)
-                        Messages.Message(s.caster.LabelShortCap + " lost the focus of the light: the echo went astray, and the whole node of reflectors broke.", new TargetInfo(land, map), MessageTypeDefOf.NegativeEvent, false);
-                    var broken = new HashSet<Building_LightReflector>(s.node);
-                    Building_LightReflector.BreakAll(broken, s.caster, false);
-                    shots.RemoveAll(x => x.from == null || broken.Contains(x.from) || !x.from.Spawned);
+                        Messages.Message(s.caster.LabelShortCap + " lost the focus of the light: every reflector of the node strikes wild, every way, and shatters.", new TargetInfo(land, map), MessageTypeDefOf.ThreatSmall, false);
+                    Scatter(s, now);
                     return;
                 }
             }
