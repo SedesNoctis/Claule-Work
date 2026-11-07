@@ -256,6 +256,9 @@ namespace Avir.Ritualistics
         {
             var r = new RitualReading { schema = s };
             if (s == null) return r;
+            // the Steps of a beam on a route are its marks, not flights: they unsettle the spell little (Fix247, the author;
+            // a plain Step keeps its weight)
+            bool route = Avir.Magic.SpellRoute.IsRoute(s.AllRunes.ToList());
             // the chain: rings from the centre outward
             foreach (RitualRing ring in s.rings)
                 foreach (RuneDef rune in ring.runes)
@@ -263,7 +266,8 @@ namespace Avir.Ritualistics
                     if (rune == null) continue;
                     r.cost += rune.cost;
                     // Reach: the setting's instability (Fix246 - the author's hotfix, 1% to 10%)
-                    r.instability += rune.kind == RuneKind.Reach && AvirMod.Settings != null ? AvirMod.Settings.reachRisk : rune.instability;
+                    r.instability += rune.kind == RuneKind.Reach && AvirMod.Settings != null ? AvirMod.Settings.reachRisk
+                                   : rune.kind == RuneKind.Step && route ? 0.03f : rune.instability;
                     r.actWeight += rune.actWeight;
                     switch (rune.kind)
                     {

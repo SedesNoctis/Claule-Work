@@ -1249,6 +1249,15 @@ namespace Avir.Magic
                 return sel.OwnRunes.Any() ? "A small circle of Light. Loud, bright and everywhere at once - like a cousin you didn't invite."
                                           : "Inside Light it is Light. Give it something to do - Release, Lift, Beam, or Withering, if you'd rather put it out.";
             if (sel.element == null) return "A circle with no heart is a nest with no egg. Put an element in the middle.";
+            // a beam that ends in nothing (Fix247, the author's lines): no verb in its circle and none after it - not even a
+            // carrier, it only shines (a stream as well)
+            if (sel.OwnRunes.Any(x => x.kind == RuneKind.Beam) && !sel.OwnRunes.Any(x => x.role == RuneRole.Verb))
+            {
+                var order = MapComponent_SpellChain.Order(root);
+                int at = order.IndexOf(sel);
+                bool after = at >= 0 && order.Skip(at + 1).Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb));
+                if (!after) return (root.GetHashCode() & 1) == 0 ? "Great fireworks there! Care to actually add an explosion?" : "\"Whoa, shiny!\" Is this what you expect your lackeys to say?";
+            }
             // Light (Fix215): Arlie is a night creature - she has no love for Light, only for what it breaks
             if (sel.Great && LightMagic.Is(sel.element))
             {

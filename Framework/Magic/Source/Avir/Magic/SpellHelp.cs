@@ -150,7 +150,9 @@ namespace Avir.Magic
                     }
                 string thread = SpellTerms.ThreadHere(s);
                 if (thread != null) e0.Add("The Thread", thread);
-                if (nShaped == 0 && nAid == 0 && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb || x.role == RuneRole.Form)))
+                // Fix247 (the author: a beam with no verb was shown as an open blow - there is no blow): only a circle that
+                // strikes - a verb, or a wall of its own (a bare Shape still stands and works)
+                if (nShaped == 0 && nAid == 0 && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb || x.kind == RuneKind.Shape)))
                     e0.Add("Strikes everyone", "Without two Barriers in the outermost section of a circle, its blow strikes whoever stands in it - friend or foe; only a ward keeps them.");
                 e0.details = Details(s);
                 if (SpellCasting.OfAir(s)) e0.Add("Momentum", "A spell of the air: cast on the move. Cast another of the air within " + AvirMod.Settings.airMomentumSeconds.ToString("0") + " seconds and it comes "
