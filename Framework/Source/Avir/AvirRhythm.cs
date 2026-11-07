@@ -160,6 +160,10 @@ namespace Avir
                 if (parent != null) return parent.def == AvirRhythmDefOf.Avir_RhythmDiurnal;
             }
 
+            // a Linarian is born to the night wherever she first appears - but, unlike the A'Shacsaign, not locked: she may
+            // take to the day later, and her daughters keep her hours (the parent rule above) (the author, Fix216)
+            if (pawn.genes?.Xenotype != null && pawn.genes.Xenotype.defName == "Avir_Linarian") return false;
+
             if (AvirDefOf.Avir_AShialis != null
                 && pawn.Faction != null
                 && pawn.Faction.def == AvirDefOf.Avir_AShialis) return true;
@@ -186,8 +190,6 @@ namespace Avir
             // The A'Shacsaign are night-born and nothing changes that - not a parent, a faction or a
             // schedule. Same lock as Night Owl, so every path that honours one honours the other.
             if (pawn != null && Patch_AvirAShacsaignSpawn.IsSubrace(pawn)) return true;
-            // Linarians are night-born too, wherever they live (the author, Fix215)
-            if (pawn?.genes?.Xenotype != null && pawn.genes.Xenotype.defName == "Avir_Linarian") return true;
             if (pawn?.story?.traits == null) return false;
 
             List<Trait> traits = pawn.story.traits.allTraits;
