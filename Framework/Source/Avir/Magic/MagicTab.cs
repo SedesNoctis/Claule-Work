@@ -284,11 +284,12 @@ namespace Avir.Magic
             foreach (RuneDef e in els)
             {
                 y += Scale(new Rect(0f, y, w, 0f), core, e, e == main);
-                string closed = MageClass.XpIn(core, e.kind) <= 0f ? MagePath.CannotWalk(pawn, e) : null;
+                // Life (the author, Fix233): its experience is open to anyone - only the path ritual cannot make it the main element
+                string closed = LifeMagic.Is(e) && MageClass.Main(core)?.kind != RuneKind.Life ? "Life grows by casting it, but no path ritual makes it the main element - only druids walk it" : null;
                 if (closed != null)
                 {
                     GUI.color = InkSoft; Text.Font = GameFont.Tiny;
-                    Widgets.Label(new Rect(58f, y - 6f, w - 58f, 18f), "Closed: " + closed + ".");
+                    Widgets.Label(new Rect(58f, y - 6f, w - 58f, 18f), closed + ".");
                     y += 14f; Text.Font = GameFont.Small;
                 }
             }
@@ -597,8 +598,10 @@ namespace Avir.Magic
             // for testing until the mage's path gives spells: every ready spell of fire at once (dev mode only)
             if (RitualUI.Button(new Rect(r.xMax - 340f, top - 4f, 182f, 32f), "Kept spells..."))
                 Find.WindowStack.Add(new Dialog_SpellLibrary(pawn));
-            if (Prefs.DevMode && RitualUI.Button(new Rect(r.xMax - 524f, top - 4f, 176f, 32f), "Dev: all spells"))
-                foreach (RitualSchema ex in SpellExamples.Fire().Concat(SpellExamples.Water()).Concat(SpellExamples.Earth()).Concat(SpellExamples.Air()).Concat(SpellExamples.Meetings())) if (!b.spells.Any(x => x.name == ex.name)) b.spells.Add(ex);
+            // dev mode (Fix233, the author: "all at once" filled the book with hundreds and they were hard to sort): a window
+            // to pick the ready spells by group, one by one, with a search - and to take them out again
+            if (Prefs.DevMode && RitualUI.Button(new Rect(r.xMax - 524f, top - 4f, 176f, 32f), "Dev: ready spells..."))
+                Find.WindowStack.Add(new Dialog_DevSpells(b));
             if (RitualUI.Button(new Rect(r.xMax - 150f, top - 4f, 150f, 32f), "New spell..."))
                 Find.WindowStack.Add(new Dialog_SpellEditor(new RitualSchema { name = "New spell", author = pawn.LabelShort }, pawn, sp => { if (sp.author.NullOrEmpty()) sp.author = pawn.LabelShort; b.spells.Add(sp); }));
             // the book in sections: by what the spells do, by their element, or by who wrote them; and a search

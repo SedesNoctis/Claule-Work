@@ -119,11 +119,12 @@ namespace Avir.Magic
         public static List<RuneDef> Made => DefDatabase<RuneDef>.AllDefsListForReading.Where(r => r.role == RuneRole.Element && r.magic && Examples(r).Count > 0).ToList();
 
         /// <summary>Which element's path a mage may take (Fix232, the author): the four small ones and Light - both a sorcerer
-        /// and a wizard; Life - no one, for now; the other great elements (Time, Space, Darkness) are not made yet.</summary>
+        /// and a wizard; Life - not as the main element (the druids only, to come), though anyone may grow in it by casting; the other great elements (Time, Space, Darkness) are not made yet.</summary>
         public static string CannotWalk(Pawn who, RuneDef el)
         {
             if (el == null) return "no element";
-            if (el.kind == RuneKind.Life) return "the path of Life is closed - no one can take it yet";
+            // Life as experience is open to all; as the main element only to the druids (to come - with the oaths)
+            if (el.kind == RuneKind.Life) return "Life cannot be taken as the main element by the path ritual - only druids walk it";
             if (el.kind == RuneKind.Fire || el.kind == RuneKind.Water || el.kind == RuneKind.Earth || el.kind == RuneKind.Air || el.kind == RuneKind.Light) return null;
             return "the path of " + el.label + " is not made yet";
         }
@@ -254,6 +255,81 @@ namespace Avir.Magic
                 }
                 y += h + 6f;
             }
+            Widgets.EndScrollView();
+            GUI.color = Color.white;
+            FlowStyle.End();
+        }
+    }
+
+    /// <summary>Dev mode: the ready spells by group (Fix233). Tick a spell - it goes into the book; untick - it leaves.
+    /// A group's header adds or takes out the whole group. "Out: every ready spell" clears what the old button poured in.</summary>
+    public class Dialog_DevSpells : Window
+    {
+        private readonly MageBook book;
+        private Vector2 scroll; private string search = ""; private float viewH = 600f;
+        private readonly HashSet<string> open = new HashSet<string>();
+        private static List<KeyValuePair<string, List<RitualSchema>>> groups;
+
+        public Dialog_DevSpells(MageBook book) { this.book = book; doWindowBackground = false; doCloseX = true; absorbInputAroundWindow = true; forcePause = true; }
+        protected override float Margin => 0f;
+        public override Vector2 InitialSize => new Vector2(Mathf.Min(760f, Verse.UI.screenWidth - 60f), Mathf.Min(820f, Verse.UI.screenHeight - 60f));
+
+        private static List<KeyValuePair<string, List<RitualSchema>>> Groups()
+        {
+            if (groups != null) return groups;
+            groups = new List<KeyValuePair<string, List<RitualSchema>>>
+            {
+                new KeyValuePair<string, List<RitualSchema>>("Fire", SpellExamples.Fire()),
+                new KeyValuePair<string, List<RitualSchema>>("Water", SpellExamples.Water()),
+                new KeyValuePair<string, List<RitualSchema>>("Earth", SpellExamples.Earth()),
+                new KeyValuePair<string, List<RitualSchema>>("Air", SpellExamples.Air()),
+                new KeyValuePair<string, List<RitualSchema>>("Meetings of two", SpellExamples.Meetings()),
+            };
+            return groups;
+        }
+
+        private bool Has(RitualSchema s) => book.spells.Any(x => x.name == s.name);
+        private void Put(RitualSchema s, bool on) { if (on && !Has(s)) book.spells.Add(s.Copy()); else if (!on) book.spells.RemoveAll(x => x.name == s.name); }
+
+        public override void DoWindowContents(Rect box)
+        {
+            FlowStyle.Begin(null);
+            Rect inner = ParchmentFrame.Draw(box).ContractedBy(14f);
+            GUI.color = FlowStyle.Ink; Text.Font = GameFont.Medium;
+            ArtInk.Label(new Rect(inner.x, inner.y, inner.width, 34f), "Dev: ready spells");
+            Text.Font = GameFont.Small;
+            search = Widgets.TextField(new Rect(inner.x, inner.y + 40f, inner.width - 260f, 30f), search ?? "");
+            if (RitualUI.Button(new Rect(inner.xMax - 250f, inner.y + 38f, 250f, 34f), "Out: every ready spell"))
+                foreach (var g in Groups()) foreach (RitualSchema s in g.Value) Put(s, false);
+            Rect area = new Rect(inner.x, inner.y + 82f, inner.width, inner.height - 82f);
+            Rect view = new Rect(0f, 0f, area.width - 16f, viewH);
+            RitualScroll.Begin(area, ref scroll, view);
+            float y = 0f; string q = (search ?? "").Trim().ToLowerInvariant();
+            foreach (var g in Groups())
+            {
+                var list = g.Value.Where(s => q.Length == 0 || s.name.ToLowerInvariant().Contains(q)).ToList();
+                if (list.Count == 0) continue;
+                int inBook = list.Count(Has);
+                bool shown = open.Contains(g.Key) || q.Length > 0;
+                Rect head = new Rect(0f, y, view.width, 30f);
+                Widgets.DrawBoxSolid(head, new Color(0.3f, 0.22f, 0.12f, 0.18f));
+                GUI.color = FlowStyle.Ink;
+                ArtInk.Label(new Rect(8f, y + 4f, view.width - 300f, 24f), (shown ? "▾ " : "▸ ") + g.Key + "  (" + inBook + " of " + list.Count + " in the book)");
+                if (Widgets.ButtonInvisible(new Rect(0f, y, view.width - 290f, 30f))) { if (!open.Remove(g.Key)) open.Add(g.Key); }
+                if (RitualUI.Button(new Rect(view.width - 280f, y, 135f, 30f), "All in")) foreach (RitualSchema s in list) Put(s, true);
+                if (RitualUI.Button(new Rect(view.width - 140f, y, 135f, 30f), "All out")) foreach (RitualSchema s in list) Put(s, false);
+                y += 34f;
+                if (!shown) continue;
+                foreach (RitualSchema s in list)
+                {
+                    bool has = Has(s), was = has;
+                    Widgets.CheckboxLabeled(new Rect(16f, y, view.width - 24f, 26f), s.name, ref has);
+                    if (has != was) Put(s, has);
+                    y += 26f;
+                }
+                y += 6f;
+            }
+            viewH = y + 10f;
             Widgets.EndScrollView();
             GUI.color = Color.white;
             FlowStyle.End();
