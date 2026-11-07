@@ -51,7 +51,7 @@ namespace Avir.Magic
             RitualReading r = RitualEvaluator.Read(s);
             int n = s.AllRunes.Count();
             float size = s.size == RitualCircleSize.Large ? 2f : s.size == RitualCircleSize.Medium ? 1.5f : 1f;
-            return (2f + n) * size + 3f * Mathf.Max(0, r.elements.Count - 1);
+            return (2f + n + WeaveSpell.BeamPrice(s.AllRunes.ToList())) * size + 3f * Mathf.Max(0, r.elements.Count - 1);
         }
 
         /// <summary>What a spell costs this caster: an Avir spends the most (x1.4).</summary>

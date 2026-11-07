@@ -157,19 +157,14 @@ namespace Avir.Magic
                 // ends with the stream itself)
                 hold.expiryInterval = Mathf.RoundToInt((SpellRoute.Length(b.route.Select(SpellRoute.Pos).ToList()) / b.speed + 2f) * 60f * 1.5f);
             }
-            // what each stroke casts (Fix240, the author: the streams struck no one): a stream with no verb is a Release - a
-            // beam is a blow thrown, as a bare wall of fire still burns (Fix185); a route's own Thread is its mark, not a
-            // thread of the blow - it is taken out of the strokes (a Thread after two Barriers, the shaping, stays)
+            // what each stroke casts: a route's own Thread is its mark, not a thread of the blow - it is taken out of the
+            // strokes (a Thread after two Barriers, the shaping, stays)
             RitualSchema stroke = part.Copy();
             foreach (RitualRing g in stroke.rings)
                 for (int i = g.runes.Count - 1; i >= 0; i--)
                     if (route != null && g.runes[i] != null && g.runes[i].kind == RuneKind.Thread && !(i > 0 && g.runes[i - 1] != null && g.runes[i - 1].kind == RuneKind.Barrier)) { g.runes.RemoveAt(i); break; }
-            if (!RitualEvaluator.Read(stroke).verbs.Any(v => v.role == RuneRole.Verb))
-            {
-                RuneDef release = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Release");
-                RitualRing home = stroke.rings.FirstOrDefault(g => g.runes.Any(x => x != null && x.kind == RuneKind.Beam)) ?? stroke.rings.LastOrDefault();
-                if (release != null && home != null) home.runes.Add(release);
-            }
+            // (a stream with no verb does nothing - the beam is a form and only carries a verb; Fix240 tried a Release by
+            // itself and was taken back by the author, Fix241)
             SpellMods.Own(part, RuneKind.Beam, out _, out int bw, out _, out _);
             b.breadth = bw;
             b.parts.Add(stroke);

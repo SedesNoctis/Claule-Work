@@ -23,10 +23,16 @@ namespace Avir.Magic
         /// <summary>The Reach that lengthens the cast: a Reach paired with a Thread leaps instead.</summary>
         public static int Reach(SpellCircle root) => root.Working.Sum(c => SpellHops.CastReach(c));
 
+        /// <summary>A beam's width and length are paid for (Fix241, the author): in a circle with a Beam every Breadth and
+        /// every Reach costs 2 Arcana more than a rune does (3 in all) - a wide or a long beam is a heavy one.</summary>
+        public const float BeamRunePrice = 2f;
+        public static float BeamPrice(List<RuneDef> runes) =>
+            runes.Any(x => x != null && x.kind == RuneKind.Beam) ? BeamRunePrice * runes.Count(x => x != null && (x.kind == RuneKind.Breadth || x.kind == RuneKind.Reach)) : 0f;
+
         public static float Cost(SpellCircle root)
         {
             float cost = 0f;
-            foreach (SpellCircle c in root.Working) cost += (2f + c.OwnRunes.Count() + (c.element != null ? 1 : 0)) * (c.Great ? 1.5f : 1f);
+            foreach (SpellCircle c in root.Working) cost += (2f + c.OwnRunes.Count() + (c.element != null ? 1 : 0) + BeamPrice(c.OwnRunes.ToList())) * (c.Great ? 1.5f : 1f);
             int els = root.Working.Where(c => c.element != null).Select(c => c.element).Distinct().Count();
             return cost + 3f * Mathf.Max(0, els - 1);
         }
