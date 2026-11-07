@@ -161,4 +161,21 @@
       </li>
     </comps>
   </ThingDef>
+
+  <HediffDef>
+    <defName>Avir_LightWard</defName>
+    <label>ward of light</label>
+    <description>A shell of light over the body; whoever wears it carries light round them. Magic of other elements is put out at the cost of its charge; Light's own passes it, stronger, and the ward falls.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
+    <defaultLabelColor>(1, 0.93, 0.68)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>12000~12000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_LightGlow" />
+    </comps>
+  </HediffDef>
 </Defs>

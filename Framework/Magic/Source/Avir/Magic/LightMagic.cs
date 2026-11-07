@@ -60,6 +60,13 @@ namespace Avir.Magic
         public static void CastCircle(Pawn caster, SpellCircle g, IntVec3 from, IntVec3 at, float power, Map map)
         {
             if (caster == null || g == null || map == null || !at.InBounds(map)) return;
+            // the element at work, for the wards it meets: Light's own passes a ward of Light, the others' put it out
+            using (SpellWards.Of(RuneKind.Light, ComboKind.None, true)) CastOwn(caster, g, from, at, power, map);
+        }
+
+        private static void CastOwn(Pawn caster, SpellCircle g, IntVec3 from, IntVec3 at, float power, Map map)
+        {
+            LightBarrier(caster, g, at, power, map);
             power *= 1f + 0.3f * g.OwnRunes.Count(x => x.kind == RuneKind.Amplify);
             float r = Radius(g);
             bool shaped = SpellSculpt.Of(g), aid = SpellSculpt.AidOf(g);
@@ -74,7 +81,34 @@ namespace Avir.Magic
                     case RuneKind.Drain: MapComponent_LightZones.Darken(map, at, r + 0.5f, Mathf.RoundToInt(GenDate.TicksPerHour * Mathf.Clamp(power, 0.3f, 3f))); any = true; break;
                 }
             }
-            if (!any) Glint(map, at.ToVector3Shifted(), 1.4f, false);
+            if (!any && !g.OwnRunes.Any(x => x.kind == RuneKind.Barrier)) Glint(map, at.ToVector3Shifted(), 1.4f, false);
+        }
+
+        public static HediffDef Ward => H("Avir_LightWard");
+
+        /// <summary>The Barrier of Light (Fix206), as everywhere: the last rune of the circle - a ward on the caster, who
+        /// then carries light round him (the only way a Light mage glows himself); anywhere else - a dome of light where
+        /// the spell strikes (round the caster, with an Aura), lighting the ground under it.</summary>
+        private static void LightBarrier(Pawn caster, SpellCircle g, IntVec3 at, float power, Map map)
+        {
+            bool shaped = SpellSculpt.Of(g);
+            var runes = g.sections.Select((sec, i) => new { sec, i }).SelectMany(x => (x.sec.runes ?? new List<RuneDef>()).Where(r => r != null).Select(r => new { r, outer = x.i == g.sections.Count - 1 }))
+                .Where(x => !(shaped && x.outer && (x.r.kind == RuneKind.Barrier || x.r.kind == RuneKind.Thread))).Select(x => x.r).ToList();
+            if (!runes.Any(x => x.kind == RuneKind.Barrier)) return;
+            int amp = runes.Count(x => x.kind == RuneKind.Amplify);
+            int ticks = Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power);
+            if (runes.Last().kind == RuneKind.Barrier)
+            {
+                SpellWards.Lay(caster, Ward, power, amp, ticks);
+                Glint(map, caster.DrawPos, 2f, false);
+                return;
+            }
+            bool aura = runes.Any(x => x.kind == RuneKind.Aura);
+            float r = Mathf.Max(1.4f, Radius(g) - 0.5f);
+            var d = MapComponent_WardsDrawn.RaiseWard(map, aura ? caster.Position : at, r, g.element ?? DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Light"), ComboKind.None, caster, ticks, power, amp);
+            if (d != null && aura) d.follow = caster;
+            LightGlow g2 = LightGlow.At(map, aura ? caster.Position : at, r >= 3f, ticks);
+            if (g2 != null && aura) g2.follows = caster;
         }
 
         /// <summary>Whom the light reaches: by the outer edge, as everywhere - two Barriers spare one's own, two Barriers
@@ -209,6 +243,7 @@ namespace Avir.Magic
                     case RuneKind.Release: bits.Add("a flash - sears and dazzles all who see it"); break;
                     case RuneKind.Lift: bits.Add("a fierce flash - nothing is thrown up, the light can blind outright"); break;
                     case RuneKind.Beam: bits.Add("a ray of light - dazzles along its line, sears where it ends"); break;
+                    case RuneKind.Barrier: if (!SpellSculpt.Of(g) || g.sections.Count == 0 || !g.sections[g.sections.Count - 1].runes.Contains(r)) bits.Add("a ward of light - on the caster as the circle's last rune (they carry light round them), a glowing dome anywhere else"); break;
                     case RuneKind.Drain: bits.Add("the light taken away - a blind patch; those who cannot see in the dark shoot almost blind in it"); break;
                     default: if (r.role == RuneRole.Verb && !LifeMagic.Side(r.kind) && r.kind != RuneKind.Amplify && r.kind != RuneKind.Breadth) bits.Add(r.label + " - not made for Light yet"); break;
                 }
@@ -238,10 +273,9 @@ namespace Avir.Magic
         public static IEnumerable<Building_LightReflector> All(Map map) =>
             map == null ? Enumerable.Empty<Building_LightReflector>() : map.listerThings.AllThings.OfType<Building_LightReflector>().Where(r => r.Spawned && !r.Destroyed);
 
-        /// <summary>The node a caster casts into: their own reflectors and those of every Light mage not hostile to them
+        /// <summary>The node a caster casts into: every reflector on the map - their own, their fellows', the foes' too
         /// (the author: reflectors are a game of mirrors - one node for all).</summary>
-        public static IEnumerable<Building_LightReflector> Node(Pawn caster, Map map) =>
-            All(map).Where(r => r.caster == caster || (r.caster != null && caster != null && !r.caster.HostileTo(caster)));
+        public static IEnumerable<Building_LightReflector> Node(Pawn caster, Map map) => All(map);
 
         /// <summary>A new reflector `dist` from the point, on any side.</summary>
         public static Building_LightReflector Raise(Pawn caster, Map map, IntVec3 at, float dist)
@@ -327,7 +361,15 @@ namespace Avir.Magic
             base.TickInterval(delta);
             if (!this.IsHashIntervalTick(30, delta)) return;
             if (Find.TickManager.TicksGame >= dies) { Destroy(DestroyMode.Vanish); return; }
-            if (follows != null && (!follows.Spawned || follows.Map != Map || follows.Position != Position)) Destroy(DestroyMode.Vanish);
+            if (follows != null && (!follows.Spawned || follows.Map != Map || follows.Dead)) { Destroy(DestroyMode.Vanish); return; }
+            if (follows != null && follows.Position != Position)
+            {
+                // the light goes with the one it follows
+                Map m = Map; IntVec3 to = follows.Position; bool big = def.defName.EndsWith("Big"); int left = dies - Find.TickManager.TicksGame; Pawn who = follows;
+                Destroy(DestroyMode.Vanish);
+                LightGlow n = At(m, to, big, left);
+                if (n != null) n.follows = who;
+            }
         }
 
         public override void ExposeData()
@@ -336,6 +378,23 @@ namespace Avir.Magic
             Scribe_Values.Look(ref dies, "dies");
             Scribe_References.Look(ref follows, "follows");
         }
+    }
+
+    /// <summary>A ward of Light keeps light round its wearer (Fix206).</summary>
+    public class HediffCompProperties_LightGlow : HediffCompProperties { public HediffCompProperties_LightGlow() { compClass = typeof(HediffComp_LightGlow); } }
+
+    public class HediffComp_LightGlow : HediffComp
+    {
+        private LightGlow glow;
+        public override void CompPostTick(ref float severityAdjustment)
+        {
+            Pawn p = parent.pawn;
+            if (p == null || !p.Spawned || !p.IsHashIntervalTick(30)) return;
+            if (glow != null && glow.Spawned && glow.Map == p.Map && glow.Position == p.Position) { glow.dies = Find.TickManager.TicksGame + 200; return; }
+            if (glow != null && glow.Spawned) glow.Destroy(DestroyMode.Vanish);
+            glow = LightGlow.At(p.Map, p.Position, false, 200);
+        }
+        public override void CompPostPostRemoved() { if (glow != null && glow.Spawned) glow.Destroy(DestroyMode.Vanish); }
     }
 
     // ====================================================================== the echoes, shot by shot

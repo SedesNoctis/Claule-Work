@@ -65,6 +65,7 @@ namespace Avir.Magic
                 if (def == EarthAirDefOf.Avir_EarthWard) return new[] { RuneKind.Earth };
                 if (def == EarthAirDefOf.Avir_AirWard) return new[] { RuneKind.Air };
                 if (def.defName == "Avir_LifeWard") return new[] { RuneKind.Life };
+                if (def.defName == "Avir_LightWard") return new[] { RuneKind.Light };
                 foreach (ComboKind k in new[] { ComboKind.Steam, ComboKind.Storm, ComboKind.Magma, ComboKind.Haze, ComboKind.Bog, ComboKind.Dust })
                     if (def == ComboDefOf.Ward(k)) return Combos.Parts(k);
                 RuneDef el = WardElement.Get(pawn);
