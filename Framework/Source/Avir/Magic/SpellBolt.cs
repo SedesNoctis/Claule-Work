@@ -59,19 +59,25 @@ namespace Avir.Magic
         /// <summary>True - the spell is put out here. A ward too weak breaks, and the spell flies on weaker by what it held.</summary>
         public static bool Quench(IntVec3 c, Map map, Pawn caster, RitualSchema spell, ref float power)
         {
+            bool q = Quench(c, map, caster, Elements(spell), ref power);
+            if (q && SpellWards.Mirrored) { SpellWards.Mirrored = false; LightMagic.BounceBolt(map, c, caster, spell, power); }
+            return q;
+        }
+
+        /// <summary>The same, for what is carried along a line by its elements alone (an echo of Light, Fix213). True - stopped
+        /// here; SpellWards.Mirrored - and a ward of Light sends it back.</summary>
+        public static bool Quench(IntVec3 c, Map map, Pawn caster, RuneKind[] inc, ref float power)
+        {
+            SpellWards.Mirrored = false;
             if (map == null || !c.InBounds(map)) return false;
-            if (map.GetComponent<MapComponent_WardsDrawn>()?.Quench(c, caster, Elements(spell), ref power) == true)
-            {
-                if (SpellWards.Mirrored) LightMagic.BounceBolt(map, c, caster, spell, power);
-                return true;
-            }
+            if (map.GetComponent<MapComponent_WardsDrawn>()?.Quench(c, caster, inc, ref power) == true) return true;
             foreach (Pawn p in c.GetThingList(map).OfType<Pawn>())
             {
                 // the caster's own side is flown over, as any shot is; a foe's ward stands in the way
                 if (p == caster || p.Dead || (caster != null && !p.HostileTo(caster))) continue;
                 Hediff_SpellWard w = SpellWards.On(p);
                 if (w == null) continue;
-                RuneKind[] inc = Elements(spell), mine = w.Parts;
+                RuneKind[] mine = w.Parts;
                 if (mine.Length > 0 && inc.Length > 0 && inc.All(k => mine.Contains(k)))
                 {
                     if (!(w.Fiery && inc.Contains(RuneKind.Fire))) return false;   // its own element: through, stronger on landing
@@ -83,8 +89,8 @@ namespace Avir.Magic
                 {
                     w.Spend(need);
                     // a ward of Light sends it back the way it came (Fix207)
-                    if (mine.Contains(RuneKind.Light)) { Spark(p, map, "Reflected"); LightMagic.BounceBolt(map, c, caster, spell, power); }
-                    else Spark(p, map, "Spell put out");
+                    SpellWards.Mirrored = mine.Contains(RuneKind.Light);
+                    Spark(p, map, SpellWards.Mirrored ? "Reflected" : "Spell put out");
                     return true;
                 }
                 power *= Mathf.Clamp01(1f - w.energy / Mathf.Max(0.01f, need));

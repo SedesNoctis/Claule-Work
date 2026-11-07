@@ -57,9 +57,9 @@ namespace Avir.Magic
                         MapComponent_Tides.Raise(caster, fradius + 1.5f, power, verbs);
                         break;
                     case RuneKind.Beam:
-                        var line = FireMagic.Beam(caster.Position, at, map, rf.breadth);
+                        var line = FireMagic.Beam(SpellOrigin.Of(caster), at, map, rf.breadth);
                         SpellHeal.Beam(caster, s, line, map, power, rf);
-                        Apply(caster, map, verbs, line, caster.Position, power, rf);
+                        Apply(caster, map, verbs, line, SpellOrigin.Of(caster), power, rf);
                         break;
                     case RuneKind.Shape:
                         // the ground itself turns to shallow water for a while: a moat that slows everyone and takes no fire
@@ -71,8 +71,8 @@ namespace Avir.Magic
                     case RuneKind.Step:
                         if (rf.thread > 0) { SpellDash.Pull(caster, target, RuneKind.Water, power, fradius); break; }
                         // a wave rolls ahead of the mage, as wide as its breadth: whoever stands in it is struck and carried on
-                        var path = FireMagic.Beam(caster.Position, at, map, rf.breadth).Where(c => c != caster.Position).ToList();
-                        IntVec3 back = caster.Position;
+                        var path = FireMagic.Beam(SpellOrigin.Of(caster), at, map, rf.breadth).Where(c => c != SpellOrigin.Of(caster)).ToList();
+                        IntVec3 back = SpellOrigin.Of(caster);
                         foreach (Pawn p in PawnsIn(path, map))
                         {
                             if (!MagicFx.Foe(p, caster)) continue;

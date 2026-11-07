@@ -52,11 +52,11 @@ namespace Avir.Magic
                         break;
                     case RuneKind.Beam:
                         // a fissure runs along the line: the ground cracks under whoever stands on it
-                        var line = FireMagic.Beam(caster.Position, at, map, rf.breadth);
+                        var line = FireMagic.Beam(SpellOrigin.Of(caster), at, map, rf.breadth);
                         SpellHeal.Beam(caster, s, line, map, power, rf);
                         foreach (IntVec3 c in line) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.4f, MagicFx.EarthDust);
                         foreach (Pawn p in MagicFx.PawnsIn(line, map)) if (MagicFx.Foe(p, caster)) MagicFx.Fell(p, p.Position, 0, map, caster, power, Mathf.RoundToInt(80f * power));
-                        Apply(caster, map, verbs, line, caster.Position, power, rf);
+                        Apply(caster, map, verbs, line, SpellOrigin.Of(caster), power, rf);
                         break;
                     case RuneKind.Shape:
                         // turned round by the Thread: the stone does not stand - a ring rises round the target and closes on it
@@ -241,10 +241,10 @@ namespace Avir.Magic
                     case RuneKind.Beam:
                         // a chained strike: it hits the first foe on the line and leaps on to the next, and the next -
                         // the wind's blow; in a storm (water with it) a bolt of lightning
-                        var line = FireMagic.Beam(caster.Position, at, map, rf.breadth);
+                        var line = FireMagic.Beam(SpellOrigin.Of(caster), at, map, rf.breadth);
                         SpellHeal.Beam(caster, s, line, map, power, rf);
                         Chain(caster, line, map, 1 + rf.breadth + rf.amplify, power, Storm);
-                        Apply(caster, map, verbs, line, caster.Position, power, rf);
+                        Apply(caster, map, verbs, line, SpellOrigin.Of(caster), power, rf);
                         break;
                     case RuneKind.Shape:
                         // a wall of wind between the two chosen points: foes who try to cross are thrown back
@@ -283,9 +283,9 @@ namespace Avir.Magic
 
         internal static void Chain(Pawn caster, List<IntVec3> line, Map map, int jumps, float power, bool storm)
         {
-            Pawn first = MagicFx.PawnsIn(line, map).Where(p => p != caster && MagicFx.Foe(p, caster)).OrderBy(p => p.Position.DistanceToSquared(caster.Position)).FirstOrDefault();
+            Pawn first = MagicFx.PawnsIn(line, map).Where(p => p != caster && MagicFx.Foe(p, caster)).OrderBy(p => p.Position.DistanceToSquared(SpellOrigin.Of(caster))).FirstOrDefault();
             Vector3 prev = caster.DrawPos;
-            IntVec3 prevCell = caster.Position;
+            IntVec3 prevCell = SpellOrigin.Of(caster);
             var hit = new HashSet<Pawn>();
             Pawn cur = first;
             for (int i = 0; cur != null && i <= jumps; i++)

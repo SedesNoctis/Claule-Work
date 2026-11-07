@@ -57,7 +57,7 @@ namespace Avir.Magic
                             Apply(caster, map, verbs, Point(caster.Position, map, ar), caster.Position, power, rf, true);
                         break;
                     case RuneKind.Beam:
-                        { var fl = Beam(caster.Position, at, map, rf.breadth); SpellHeal.Beam(caster, s, fl, map, power, rf); Apply(caster, map, verbs, fl, at, power, rf, false); }
+                        { var fl = Beam(SpellOrigin.Of(caster), at, map, rf.breadth); SpellHeal.Beam(caster, s, fl, map, power, rf); Apply(caster, map, verbs, fl, at, power, rf, false); }
                         break;
                     case RuneKind.Shape:
                         // a wall of fire stands even with no verb: the flame held along it (as the Step's trail; Fix185 -
@@ -65,7 +65,7 @@ namespace Avir.Magic
                         Apply(caster, map, verbs.Count > 0 ? verbs : new List<RuneDef> { RuneDefOfFire.Hold }, ShapeCells(caster, at, map, rf, forms), at, power, rf, false);
                         break;
                     case RuneKind.Step:
-                        var path = Beam(caster.Position, at, map, rf.breadth).Where(c => c.InBounds(map) && c != caster.Position).ToList();   // as wide as its Breadth
+                        var path = Beam(SpellOrigin.Of(caster), at, map, rf.breadth).Where(c => c.InBounds(map) && c != SpellOrigin.Of(caster)).ToList();   // as wide as its Breadth
                         // the flame carries the mage there - seen all the way
                         if (rf.thread > 0) { SpellDash.Pull(caster, target, RuneKind.Fire, power, fradius); break; }
                         SpellDash.Carry(caster, at, RuneKind.Fire);
@@ -165,7 +165,7 @@ namespace Avir.Magic
         {
             bool round = forms.Any(f => f.kind == RuneKind.Aura) || (caster != null && caster.Spawned && at == caster.Position);
             if (round) return Ring(caster.Position, map, 3f + rf.breadth);
-            return WallTo.IsValid ? WallLine(at, WallTo, map, WallMax(rf)) : Wall(caster.Position, at, map, 5 + 2 * rf.breadth);
+            return WallTo.IsValid ? WallLine(at, WallTo, map, WallMax(rf)) : Wall(SpellOrigin.Of(caster), at, map, 5 + 2 * rf.breadth);
         }
 
         /// <summary>The cells of a ring round a point: one cell thick, unbroken.</summary>

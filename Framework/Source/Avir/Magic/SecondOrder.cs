@@ -219,8 +219,8 @@ namespace Avir.Magic
             ctx.breadth = r.breadth;
             ctx.radius = FireMagic.PointRadius(r) * (ctx.growth ? 1.5f : 1f);
             if (ctx.aura) ctx.cells = FireMagic.Point(caster.Position, map, SpellAura.Pulsing ? SpellAura.PulseRadius : ctx.radius + 1.5f).ToList();   // the mage's own cell too (Own Blast; Fix190)
-            else if (ctx.beam) ctx.cells = FireMagic.Beam(caster.Position, ctx.at, map, r.breadth).Where(c => c != caster.Position).ToList();
-            else if (ctx.shape) ctx.cells = FireMagic.Wall(caster.Position, ctx.at, map, 5 + 2 * r.breadth);
+            else if (ctx.beam) ctx.cells = FireMagic.Beam(SpellOrigin.Of(caster), ctx.at, map, r.breadth).Where(c => c != SpellOrigin.Of(caster)).ToList();
+            else if (ctx.shape) ctx.cells = FireMagic.Wall(SpellOrigin.Of(caster), ctx.at, map, 5 + 2 * r.breadth);
             else ctx.cells = FireMagic.Point(ctx.at, map, ctx.radius);
             ctx.cells = ctx.cells.Where(c => c.InBounds(map)).ToList();
             List<Pawn> all = ctx.cells.SelectMany(c => c.GetThingList(map).OfType<Pawn>()).Distinct().Where(p => !p.Dead).ToList();

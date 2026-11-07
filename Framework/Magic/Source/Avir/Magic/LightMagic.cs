@@ -49,6 +49,32 @@ namespace Avir.Magic
 
         /// <summary>The Light circles of a spell in the order they act.</summary>
         public static List<SpellCircle> Links(SpellCircle root) => root == null ? new List<SpellCircle>() : MapComponent_SpellChain.Order(root).Where(c => IsLink(root, c)).ToList();
+
+        /// <summary>A Closing in the first (innermost) section of a great circle of Light keeps the great element pure (the
+        /// author, Fix213): the small circles of elements inside it do not meet Light - they work as they are (fire and earth
+        /// make magma), and the reflectors echo them too.</summary>
+        public static bool Sealed(SpellCircle box) => box != null && box.Great && Is(box.element) && box.sections.Count > 0
+                                                       && (box.sections[0].runes ?? new List<RuneDef>()).Any(x => x != null && x.kind == RuneKind.Closing);
+
+        /// <summary>The great circle of Light a circle stands in (the nearest great circle round it), or null.</summary>
+        public static SpellCircle BoxOf(SpellCircle root, SpellCircle c)
+        {
+            for (SpellCircle b = root?.ParentOf(c); b != null && !b.binding; b = root.ParentOf(b)) if (b.Great) return Is(b.element) ? b : null;
+            return null;
+        }
+
+        /// <summary>A small circle of an element sealed in Light: it echoes.</summary>
+        public static bool SealedIn(SpellCircle root, SpellCircle c) => c != null && !c.Great && c.element != null && !Is(c.element) && Sealed(BoxOf(root, c));
+
+        /// <summary>Everything the reflectors send back, in the order it acts: the circles of Light and the elements sealed in it.</summary>
+        public static List<SpellCircle> EchoCircles(SpellCircle root) => root == null ? new List<SpellCircle>() : MapComponent_SpellChain.Order(root).Where(c => IsLink(root, c) || SealedIn(root, c)).ToList();
+
+        /// <summary>One shot of an echo: a circle of Light, or an element sealed in Light (cast from the reflector).</summary>
+        public static void EchoShot(Pawn caster, SpellCircle root, SpellCircle c, IntVec3 from, IntVec3 to, float power, Map map)
+        {
+            if (IsLink(root, c)) CastCircle(caster, c, from, to, power, map);
+            else MapComponent_SpellChain.CastEcho(caster, root, c, from, to, power);
+        }
         public static bool Any(SpellCircle root) => root != null && root.Working.Any(c => Is(c.element));
 
         public static bool Verb(RuneKind k) => k == RuneKind.Release || k == RuneKind.Lift || k == RuneKind.Beam || k == RuneKind.Drain;
@@ -95,7 +121,7 @@ namespace Avir.Magic
         {
             if (map == null || root == null || !at.InBounds(map) || !Any(root)) return;
             float range = Range(root);
-            var links = Links(root);
+            var links = EchoCircles(root);
             bool beam = links.Any(g => g.OwnRunes.Any(x => x.kind == RuneKind.Beam));
             var cells = new List<IntVec3>();
             int n = 0;
@@ -265,7 +291,7 @@ namespace Avir.Magic
         {
             Map map = caster?.Map;
             if (map == null || !aim.InBounds(map)) return;
-            var links = Links(root);
+            var links = EchoCircles(root);
             if (links.Count == 0) return;
             Hediff_ArcaneCore core = Mages.Core(caster);
             // the new ones: one per circle, and one more by chance as the mage grows in Light
@@ -320,6 +346,13 @@ namespace Avir.Magic
 
         public const string ReflectionText = "Every cast of Light raises reflectors round the point - one per circle of Light, one more now and then for the skilled - as far from the point as the caster stands, on any side, behind the caster too. They burn for a few hours and light the ground. Each living reflector of the caster within range sends one circle back into the point: a full set is an echo at half the strength of the cast before it; a reflector over a full set casts the first circle of the next echo. A reflector can be broken; the foes' mages' reflectors are foes too.";
         public const string DefocusText = "The more reflectors held at once, the harder the light is to keep in focus. A shot that loses it slides along its reflector's line - beyond the reflector at times, into whoever stands behind it - and then the node breaks like a prism: each reflector strikes once more, its own circle at full echo strength, toward the point but split and thrown aside - past it at times, into the caster - and shatters. The more were gathered, the worse it is.";
+    }
+
+    /// <summary>Where a spell's lines start: the mage, or - for an echo of Light - its reflector (Fix213).</summary>
+    public static class SpellOrigin
+    {
+        public static IntVec3 From = IntVec3.Invalid;
+        public static IntVec3 Of(Pawn caster) => From.IsValid ? From : caster?.Position ?? IntVec3.Invalid;
     }
 
     // ====================================================================== the reflectors
@@ -552,7 +585,7 @@ namespace Avir.Magic
                 {
                     // a reflector gone wild: it strikes once, anywhere, and shatters
                     LightMagic.RayLine(map, s.from.DrawPos, s.aim.ToVector3Shifted(), true);
-                    LightMagic.CastCircle(s.caster, s.circle, s.from.Position, s.aim, s.power, map);
+                    LightMagic.EchoShot(s.caster, s.root, s.circle, s.from.Position, s.aim, s.power, map);
                     Building_LightReflector.BreakAll(new[] { s.from }, s.caster, false);
                     continue;
                 }
@@ -567,7 +600,7 @@ namespace Avir.Magic
                     if (c.InBounds(map)) land = c;
                 }
                 LightMagic.RayLine(map, src.ToVector3Shifted(), land.ToVector3Shifted(), LightMagic.Bright(s.circle));
-                LightMagic.CastCircle(s.caster, s.circle, src, land, s.power, map);
+                LightMagic.EchoShot(s.caster, s.root, s.circle, src, land, s.power, map);
                 if (lost)
                 {
                     if (s.caster.Faction == Faction.OfPlayer)
@@ -680,6 +713,9 @@ namespace Avir.Magic
 
         [LudeonTK.DebugAction("Magic", "Light: reflector for pawn here", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void ReflectorFor(Pawn p) => Building_LightReflector.Raise(p, p.Map, p.Position, 5f);
+
+        [LudeonTK.DebugAction("Magic", "Light: six reflectors round pawn (to test echoes)", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void SixFor(Pawn p) { for (int i = 0; i < 6; i++) Building_LightReflector.Raise(p, p.Map, p.Position, 7f); }
 
         [LudeonTK.DebugAction("Magic", "Light: break pawn's reflectors", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void BreakFor(Pawn p) => Building_LightReflector.BreakAll(Building_LightReflector.Node(p, p.Map), p, true);

@@ -257,6 +257,71 @@ namespace Avir.Magic
             SpellDash.LastPulled = null;
         }
 
+        /// <summary>An echo of Light carrying a small circle of an element sealed in it (the author, Fix213): cast from the
+        /// reflector, not the mage - its lines and walls start there, a ward on the way may stop it (a ward of Light sends it
+        /// back to the mage); its meeting (magma...) stays a meeting. A Step or an Aura is the mage's own body and does not
+        /// echo; a Barrier in an echo raises only a dome.</summary>
+        public static void CastEcho(Pawn caster, SpellCircle root, SpellCircle circle, IntVec3 from, IntVec3 to, float power)
+        {
+            Map map = caster?.Map;
+            if (map == null || circle?.element == null || !to.InBounds(map)) return;
+            RitualSchema one = circle.AsSchema();
+            if (circle.OwnRunes.Any(x => x.kind == RuneKind.Step || x.kind == RuneKind.Aura)) return;
+            var combos = Combos.Pairs(root);
+            ComboKind met = combos.TryGetValue(circle, out ComboKind mk) ? mk : ComboKind.None;
+            float p = power * WeaveSpell.ResonanceFactor(WeaveSpell.Resonance(root, circle.element)) * Combos.FocusBoost(circle, map);
+            // on its way from the reflector: a ward in the line may stop it
+            RuneKind[] inc = met != ComboKind.None ? Combos.Parts(met) : new[] { circle.element.kind };
+            foreach (IntVec3 c in GenSight.BresenhamCellsBetween(from, to))
+            {
+                if (c == from || !c.InBounds(map)) continue;
+                if (Ward.Quench(c, map, caster, inc, ref p))
+                {
+                    if (!SpellWards.Mirrored || !caster.Spawned) return;
+                    SpellWards.Mirrored = false;
+                    LightMagic.RayLine(map, c.ToVector3Shifted(), caster.DrawPos, true);
+                    from = c; to = caster.Position;   // sent back: it strikes the mage
+                    break;
+                }
+            }
+            bool shaped = SpellSculpt.Take(one, out bool aid);
+            SpellHops.Cut(ref one);          // no leaps in an echo
+            SpellDash.Split(ref one);        // nothing after a step (there is none)
+            float pHere = shaped ? p * SpellSculpt.Keeps : p;
+            var target = new LocalTargetInfo(to);
+            object keepSpell = SpellAura.Spell; SpellAura.Spell = root;
+            bool keepPath = SpellTransmute.OnPath; SpellTransmute.OnPath = SpellTransmute.IsPath(root, circle, met);
+            SecondKind keepSecond = SecondOrder.Now; var seconds = SecondOrder.Of(root);
+            SecondOrder.Now = seconds.TryGetValue(circle, out SecondKind sk) ? sk : SecondKind.None;
+            int keepExtra = SecondOrder.Extra;
+            SecondOrder.Extra = SecondOrder.Now == SecondKind.None ? 0 : Mathf.Max(0, seconds.Count(kv => kv.Value == SecondOrder.Now) - 3);
+            IntVec3 keepFrom = SpellOrigin.From; SpellOrigin.From = from;
+            bool keepDome = SpellWards.ForceDome; SpellWards.ForceDome = true;
+            SpellDash.Last = null; SpellDash.LastPulled = null;
+            using (SpellWards.Of(circle.element.kind, met, true))
+            using (shaped ? SpellSculpt.Spare(aid) : null)
+            try
+            {
+                if (SpellWards.Strikes(one) && SpellWards.DomeTakes(map, to, circle.element, met, ref pHere))
+                {
+                    if (SpellWards.Mirrored && caster.Spawned)
+                    {
+                        SpellWards.Mirrored = false;
+                        var back = new LocalTargetInfo(caster.Position);
+                        LightMagic.RayLine(map, to.ToVector3Shifted(), caster.DrawPos, true);
+                        float pb = pHere;
+                        SpellWards.InOrder(caster, one, met, circle.element, back, pb, part => SpellDash.CastPart(caster, part, met, circle.element, back, pb));
+                    }
+                }
+                else SpellWards.InOrder(caster, one, met, circle.element, target, pHere, part => SpellDash.CastPart(caster, part, met, circle.element, target, pHere));
+            }
+            finally
+            {
+                SpellAura.Spell = keepSpell; SpellTransmute.OnPath = keepPath; SecondOrder.Now = keepSecond; SecondOrder.Extra = keepExtra;
+                SpellOrigin.From = keepFrom; SpellWards.ForceDome = keepDome; SpellDash.LastPulled = null;
+            }
+        }
+
         /// <summary>The spell leaping on from one place to the next: a trail of light along the way.</summary>
         private static void Leap(Map map, IntVec3 from, IntVec3 to, Color col)
         {

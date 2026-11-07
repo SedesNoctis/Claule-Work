@@ -256,6 +256,9 @@ namespace Avir.Magic
         /// acts, then the ward is laid, then what comes after. The Barrier as the very last rune, after something that acts,
         /// lays the ward on the caster; anywhere else - a dome over the ground where the spell strikes (round the caster,
         /// with an aura). Amplify runes right after a Barrier strengthen its ward.</summary>
+        /// <summary>An echo of Light (Fix213): a Barrier in it raises only a dome - never a ward on the caster.</summary>
+        public static bool ForceDome;
+
         public static void InOrder(Pawn caster, RitualSchema s, ComboKind k, RuneDef el, LocalTargetInfo target, float power, Action<RitualSchema> cast)
         {
             List<RuneDef> seq = s.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
@@ -278,7 +281,7 @@ namespace Avir.Magic
                     if (seg.Any(Acts)) { cast(Part(s, elements, wide, seg, segRing)); acted = true; }
                     int amp = 0;
                     while (i + 1 < seq.Count && seq[i + 1].kind == RuneKind.Amplify) { amp++; i++; }
-                    bool onCaster = i == seq.Count - 1 && acted;
+                    bool onCaster = !ForceDome && i == seq.Count - 1 && acted;
                     LayBarrier(caster, el, k, onCaster, target, s, power, amp);
                     seg = new List<RuneDef>(); segRing = new List<int>();
                     continue;

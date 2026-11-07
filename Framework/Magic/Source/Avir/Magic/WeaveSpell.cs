@@ -151,7 +151,11 @@ namespace Avir.Magic
             {
                 if (g.element == null) { parts.Add("a great circle with no element yet"); continue; }
                 if (g.element.kind == RuneKind.Life) { if (g.inner.Count > 0) parts.Add("Life round its circles: every friend they touch is mended from the store as each strikes"); }
-                else if (g.element.kind == RuneKind.Light) { if (g.inner.Any(x => x.element != null)) parts.Add("Light round other elements (not made yet - only pure Light for now)"); }
+                else if (g.element.kind == RuneKind.Light)
+                {
+                    if (g.inner.Any(x => x.element != null))
+                        parts.Add(LightMagic.Sealed(g) ? "Light sealed round its elements: they work as themselves, and every reflector echoes them" : "Light meeting the elements round it (not made yet) - a Closing in Light's first section keeps them apart, and then they echo");
+                }
                 else parts.Add(g.element.LabelCap + (g.inner.Count > 0 ? " round it" : "") + " (not made yet)");
             }
             e.main = string.Join(order.Count > 1 ? "\n" : "; ", parts) + ".";
@@ -163,6 +167,8 @@ namespace Avir.Magic
             {
                 e.extras.Insert(0, new KeyValuePair<string, string>("Price of Light: Defocus", LightMagic.DefocusText));
                 e.extras.Insert(0, new KeyValuePair<string, string>("Reflection", LightMagic.ReflectionText));
+                if (LightMagic.Circles(root).Any(LightMagic.Sealed))
+                    e.extras.Insert(0, new KeyValuePair<string, string>("Sealed in Light", "A Closing in the first section of a great circle of Light keeps the great element pure: the circles of elements inside it work as themselves - fire and earth make magma - and every reflector echoes them too, from where it stands: their lines and walls start at the reflector, a ward on the way may stop them. A Step or an Aura belongs to the mage's own body and does not echo; a Barrier echoes as a dome only."));
             }
             if (Wraps(root, RuneKind.Life)) e.extras.Insert(0, new KeyValuePair<string, string>("Life Wraps", "Friends within the spell's reach are mended as it strikes - out of the store of life."));
             foreach (RuneKind lk in LifeMagic.Circles(root).Select(g => LifeMagic.PairOf(root, g)).Where(k => k != LifeMagic.None).Distinct())

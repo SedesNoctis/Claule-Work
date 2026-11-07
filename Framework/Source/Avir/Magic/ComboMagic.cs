@@ -308,10 +308,10 @@ namespace Avir.Magic
                         MapComponent_ComboFields.Raise(map, k, caster, caster.Position, fr + 1.5f, power, Mathf.RoundToInt(2500f * power), true);
                         break;
                     case RuneKind.Beam:
-                        var line = FireMagic.Beam(caster.Position, at, map, rf.breadth);
+                        var line = FireMagic.Beam(SpellOrigin.Of(caster), at, map, rf.breadth);
                         SpellHeal.Beam(caster, s, line, map, power, rf);
                         Beam(k, caster, map, line, power, rf);
-                        Apply(k, caster, map, verbs, line, caster.Position, power, rf);
+                        Apply(k, caster, map, verbs, line, SpellOrigin.Of(caster), power, rf);
                         break;
                     case RuneKind.Shape:
                         // magma turned round by the Thread: a ring of hot stone closing on the target
