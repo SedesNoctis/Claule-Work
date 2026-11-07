@@ -116,7 +116,8 @@ namespace Avir.Magic
                     if ((LifeMagic.Is(c.element) || LightMagic.Is(c.element)) && c.OwnRunes.Any()) list.Add(c);
                     continue;
                 }
-                if (c.element != null) list.Add(c);
+                // the Earth that went into a Crystal is the Crystal now - not a circle of its own (Fix217)
+                if (c.element != null && !(box != null && LightMagic.Absorbed(box) == c)) list.Add(c);
                 else if (box != null && (LifeMagic.Is(box.element) || LightMagic.Is(box.element)) && c.OwnRunes.Any()) list.Add(c);
             }
         }
@@ -157,7 +158,7 @@ namespace Avir.Magic
             // a circle of Light: from the caster into the point (its echoes come once the spell is over)
             if (LightMagic.IsLink(c.root, circle))
             {
-                LightMagic.CastCircle(caster, circle, caster.Position, c.target.Cell, c.power, caster.Map);
+                LightMagic.CastCircle(caster, circle, caster.Position, c.target.Cell, c.power, caster.Map, c.root);
                 c.target = new LocalTargetInfo(c.target.Cell);
                 c.waitCaster = false; c.waitFor = null; c.endByMage = false;
                 int t1 = Find.TickManager.TicksGame; c.giveUp = t1 + Patience; c.at = t1 + Gap;
@@ -226,6 +227,8 @@ namespace Avir.Magic
                 else SpellWards.InOrder(caster, one, met, circle.element, c.target, pHere, part => SpellDash.CastPart(caster, part, met, circle.element, c.target, pHere));
             }
             finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; SpellAura.Spell = keepSpell; SpellTransmute.OnPath = keepPath; SecondOrder.Now = keepSecond; SecondOrder.Extra = keepExtra; }
+            // in a Crystal the forms grow crystals (the mage's own cast only, Fix217)
+            if (LightMagic.InCrystal(c.root, circle) && caster.Spawned) LightMagic.Grow(caster, circle, c.origin.IsValid ? c.origin : caster.Position, c.target.Cell, c.power, caster.Map);
             SpellDash.Hang(after, met, caster, c.target, p);
             if (leaps != null)
                 foreach (RitualSchema leap in leaps)

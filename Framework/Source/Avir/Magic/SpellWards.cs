@@ -66,6 +66,7 @@ namespace Avir.Magic
                 if (def == EarthAirDefOf.Avir_AirWard) return new[] { RuneKind.Air };
                 if (def.defName == "Avir_LifeWard") return new[] { RuneKind.Life };
                 if (def.defName == "Avir_LightWard") return new[] { RuneKind.Light };
+                if (def.defName == "Avir_CrystalWard") return new[] { RuneKind.Light, RuneKind.Earth };
                 foreach (ComboKind k in new[] { ComboKind.Steam, ComboKind.Storm, ComboKind.Magma, ComboKind.Haze, ComboKind.Bog, ComboKind.Dust })
                     if (def == ComboDefOf.Ward(k)) return Combos.Parts(k);
                 RuneDef el = WardElement.Get(pawn);
@@ -474,6 +475,21 @@ namespace Avir.Magic
                 // flames on a ward of fire, magma or steam: nothing burns, nothing is spent (the ground of its own fire)
                 if (w.Fiery && (dinfo.Def == DamageDefOf.Flame || dinfo.Def == DamageDefOf.Burn)) return true;
                 if (!dinfo.Def.ExternalViolenceFor(p)) return false;
+                // a crystal's shards (Fix217): a ward of Crystal stops them outright; plain wards of Light or of Earth take them
+                // in and pay double for it
+                if (dinfo.Def.defName == "Avir_CrystalShard")
+                {
+                    RuneKind[] wp = w.Parts;
+                    bool li = wp.Contains(RuneKind.Light), ea = wp.Contains(RuneKind.Earth);
+                    if (li && ea) { w.Spend(Mathf.Min(w.Energy, amount * 0.5f)); return true; }
+                    if (li || ea)
+                    {
+                        float hs = Mathf.Min(amount * w.Ranged, w.Energy / 2f);
+                        w.Spend(hs * 2f);
+                        dinfo.SetAmount(amount - hs);
+                        return amount - hs <= 0.01f;
+                    }
+                }
                 bool far = dinfo.Def.isRanged || dinfo.Def.isExplosive;
                 float held = amount * (far ? w.Ranged : w.Melee);
                 if (held <= 0f) return false;

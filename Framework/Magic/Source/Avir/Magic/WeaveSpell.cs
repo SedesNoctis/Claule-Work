@@ -180,7 +180,9 @@ namespace Avir.Magic
                 else if (g.element.kind == RuneKind.Light)
                 {
                     if (g.inner.Any(x => x.element != null))
-                        parts.Add(LightMagic.Sealed(g) ? "Light sealed round its elements: they work as themselves, and every reflector echoes them" : "Light meeting the elements round it (not made yet) - a Closing in Light's first section keeps them apart, and then they echo");
+                        parts.Add(LightMagic.Sealed(g) ? "Light sealed round its elements: they work as themselves, and every reflector echoes them"
+                                  : LightMagic.Crystal(g) ? "Crystal - Light meeting Earth: the reflectors are crystals, the forms grow crystals, the other circles inside work as themselves and echo"
+                                  : "Light meeting the elements round it (not made yet) - a Closing in Light's first section keeps them apart, and then they echo");
                 }
                 else parts.Add(g.element.LabelCap + (g.inner.Count > 0 ? " round it" : "") + " (not made yet)");
             }
@@ -193,6 +195,8 @@ namespace Avir.Magic
             {
                 e.extras.Insert(0, new KeyValuePair<string, string>("Price of Light: Defocus", LightMagic.DefocusText));
                 e.extras.Insert(0, new KeyValuePair<string, string>("Reflection", LightMagic.ReflectionText));
+                if (LightMagic.AnyCrystal(root))
+                    e.extras.Insert(0, new KeyValuePair<string, string>("Crystal", "Light meeting Earth. The first circle of Earth inside goes into the Light and makes it Crystal; the other circles stay themselves (Earth, Fire - magma...) and echo. The reflectors are crystals: sturdier, not burning, standing against blasts; each echo keeps three quarters of the cast before, and a crystal's facets may send its circle twice. Fewer of them rise with a cast, but the forms grow them: a wall - a wall of crystals, a cell between; a beam or a release - unstable crystals that answer once and burst into shards; a hold - a cage of crystals round whom it holds. Earth's longer reach stays, its stone underfoot does not help. When crystals break, their shards cut whoever stands close. A crystal that loses focus breaks alone - the rest hold. A Barrier lays a ward of Crystal: it sends spells back and stops shards."));
                 if (LightMagic.Circles(root).Any(LightMagic.Sealed))
                     e.extras.Insert(0, new KeyValuePair<string, string>("Sealed in Light", "A Closing in the first section of a great circle of Light keeps the great element pure: the circles of elements inside it work as themselves - fire and earth make magma - and every reflector echoes them too, from where it stands: their lines and walls start at the reflector, a ward on the way may stop them. A Step or an Aura belongs to the mage's own body and does not echo; a Barrier echoes as a dome only."));
             }

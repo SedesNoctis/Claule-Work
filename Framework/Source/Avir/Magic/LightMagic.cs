@@ -62,8 +62,26 @@ namespace Avir.Magic
             return null;
         }
 
-        /// <summary>A small circle of an element sealed in Light: it echoes.</summary>
-        public static bool SealedIn(SpellCircle root, SpellCircle c) => c != null && !c.Great && c.element != null && !Is(c.element) && Sealed(BoxOf(root, c));
+        /// <summary>Light meeting Earth - the Crystal (the author, Fix217): a great circle of Light, not sealed, with a small circle
+        /// of Earth inside. The first such Earth goes into the Light and makes it Crystal; the other circles stay themselves
+        /// (Light + Earth + Earth + Fire = Crystal + magma) and echo.</summary>
+        public static bool Crystal(SpellCircle box) => box != null && box.Great && Is(box.element) && !Sealed(box)
+                                                       && box.inner.Any(k => !k.Great && k.element != null && k.element.kind == RuneKind.Earth);
+        public static SpellCircle Absorbed(SpellCircle box) => Crystal(box) ? box.inner.First(k => !k.Great && k.element != null && k.element.kind == RuneKind.Earth) : null;
+        public static bool AnyCrystal(SpellCircle root) => Circles(root).Any(Crystal);
+        /// <summary>Does this circle act within a Crystal (its own great circle of Light, or the one round it)?</summary>
+        public static bool InCrystal(SpellCircle root, SpellCircle c) => c != null && Crystal(c.Great ? c : BoxOf(root, c));
+
+        /// <summary>A small circle of an element that echoes: sealed in Light, or standing in a Crystal (not its own Earth).</summary>
+        public static bool SealedIn(SpellCircle root, SpellCircle c)
+        {
+            if (c == null || c.Great || c.element == null || Is(c.element)) return false;
+            SpellCircle box = BoxOf(root, c);
+            return Sealed(box) || (Crystal(box) && Absorbed(box) != c);
+        }
+
+        /// <summary>The echo is being cast now (no crystals grow from echoes - the author: the field must not be spammed).</summary>
+        public static bool Echoing;
 
         /// <summary>Everything the reflectors send back, in the order it acts: the circles of Light and the elements sealed in it.</summary>
         public static List<SpellCircle> EchoCircles(SpellCircle root) => root == null ? new List<SpellCircle>() : MapComponent_SpellChain.Order(root).Where(c => IsLink(root, c) || SealedIn(root, c)).ToList();
@@ -71,8 +89,13 @@ namespace Avir.Magic
         /// <summary>One shot of an echo: a circle of Light, or an element sealed in Light (cast from the reflector).</summary>
         public static void EchoShot(Pawn caster, SpellCircle root, SpellCircle c, IntVec3 from, IntVec3 to, float power, Map map)
         {
-            if (IsLink(root, c)) CastCircle(caster, c, from, to, power, map);
-            else MapComponent_SpellChain.CastEcho(caster, root, c, from, to, power);
+            bool keep = Echoing; Echoing = true;
+            try
+            {
+                if (IsLink(root, c)) CastCircle(caster, c, from, to, power, map, root);
+                else MapComponent_SpellChain.CastEcho(caster, root, c, from, to, power);
+            }
+            finally { Echoing = keep; }
         }
         public static bool Any(SpellCircle root) => root != null && root.Working.Any(c => Is(c.element));
 
@@ -80,21 +103,25 @@ namespace Avir.Magic
 
         public static float Radius(SpellCircle g) => 2f + 1.5f * g.OwnRunes.Count(x => x.kind == RuneKind.Breadth);
         public static bool Bright(SpellCircle g) => g.OwnRunes.Any(x => x.kind == RuneKind.Lift);
-        public static float Range(SpellCircle root) => 16f + 10f * WeaveSpell.Reach(root);
+        public static float Range(SpellCircle root) => 16f + 10f * WeaveSpell.Reach(root) + (AnyCrystal(root) ? CrystalReach : 0f);
+        /// <summary>The Crystal keeps Earth's longer reach (the author, Fix217) - not its stone underfoot.</summary>
+        public const float CrystalReach = 8f;
 
         // ------------------------------------------------------------------ one circle of Light
 
         /// <summary>A circle of Light strikes `at`; its light comes from `from` (the caster, or a reflector).</summary>
-        public static void CastCircle(Pawn caster, SpellCircle g, IntVec3 from, IntVec3 at, float power, Map map)
+        public static void CastCircle(Pawn caster, SpellCircle g, IntVec3 from, IntVec3 at, float power, Map map, SpellCircle root = null)
         {
             if (caster == null || g == null || map == null || !at.InBounds(map)) return;
+            bool crystal = InCrystal(root, g);
             // the element at work, for the wards it meets: Light's own passes a ward of Light, the others' put it out
-            using (SpellWards.Of(RuneKind.Light, ComboKind.None, true)) CastOwn(caster, g, from, at, power, map);
+            using (SpellWards.Of(RuneKind.Light, ComboKind.None, true)) CastOwn(caster, g, from, at, power, map, crystal);
+            if (crystal && !Echoing) Grow(caster, g, from, at, power, map);
         }
 
-        private static void CastOwn(Pawn caster, SpellCircle g, IntVec3 from, IntVec3 at, float power, Map map)
+        private static void CastOwn(Pawn caster, SpellCircle g, IntVec3 from, IntVec3 at, float power, Map map, bool crystal)
         {
-            LightBarrier(caster, g, at, power, map);
+            LightBarrier(caster, g, at, power, map, crystal);
             power *= 1f + 0.3f * g.OwnRunes.Count(x => x.kind == RuneKind.Amplify);
             float r = Radius(g);
             bool shaped = SpellSculpt.Of(g), aid = SpellSculpt.AidOf(g);
@@ -107,12 +134,86 @@ namespace Avir.Magic
                     case RuneKind.Lift: Flash(caster, at, r, 0.75f * power, true, shaped, aid, map); any = true; break;
                     case RuneKind.Beam: Ray(caster, from, at, 0.45f * power, Bright(g), shaped, aid, map); any = true; break;
                     case RuneKind.Drain: MapComponent_LightZones.Darken(map, at, r + 0.5f, Mathf.RoundToInt(GenDate.TicksPerHour * Mathf.Clamp(power, 0.3f, 3f))); any = true; break;
+                    case RuneKind.Growth: Mend(caster, at, r, power, shaped, aid, map); any = true; break;
                 }
             }
             if (!any && !g.OwnRunes.Any(x => x.kind == RuneKind.Barrier)) Glint(map, at.ToVector3Shifted(), 1.4f, false);
         }
 
         public static HediffDef Ward => H("Avir_LightWard");
+        public static HediffDef CrystalWard => H("Avir_CrystalWard");
+        public static HediffDef Vigor => H("Avir_LightVigor");
+        public static DamageDef Shard => DefDatabase<DamageDef>.GetNamedSilentFail("Avir_CrystalShard") ?? DamageDefOf.Cut;
+
+        /// <summary>Light + Growth (the author, Fix217): healing, as fantasy has it - the wounds of whom it reaches close, and the
+        /// light gives strength back (rest, a lighter step for a while). Whom - by the outer edge, as everywhere.</summary>
+        public static void Mend(Pawn caster, IntVec3 at, float r, float power, bool shaped, bool aid, Map map)
+        {
+            foreach (Pawn p in GenRadial.RadialDistinctThingsAround(at, map, r, true).OfType<Pawn>().ToList())
+            {
+                if (!Reached(p, caster, shaped, aid) || !GenSight.LineOfSight(at, p.Position, map, true)) continue;
+                LifeMagic.HealInjuries(p, 8f * power);
+                if (p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Min(1f, p.needs.rest.CurLevel + 0.12f * power);
+                MagicFx.Give(p, Vigor, Mathf.RoundToInt(GenDate.TicksPerHour * 3f * Mathf.Clamp(power, 0.3f, 2f)));
+            }
+            MapComponent_SpellSprites.PutTintedGrowing(map, Night(map) ? "Light/Flare_Night" : "Aura_Light", new Color(0.85f, 1f, 0.8f), at.ToVector3Shifted(), r * 2f, 50, 0.3f);
+            LightGlow.At(map, at, true, 120);
+        }
+
+        // ------------------------------------------------------------------ the Crystal grows from the forms (Fix217)
+
+        /// <summary>The forms of a circle in a Crystal grow crystals (the author): a wall - a wall of crystals, a cell between
+        /// them; a beam or a release - unstable crystals that answer once and burst into shards; a hold - a cage of crystals
+        /// round whom it holds. Only the mage's own cast grows them - never an echo.</summary>
+        public static void Grow(Pawn caster, SpellCircle c, IntVec3 from, IntVec3 at, float power, Map map)
+        {
+            if (map == null || c == null) return;
+            var runes = c.OwnRunes.ToList();
+            int breadth = runes.Count(x => x.kind == RuneKind.Breadth);
+            ThingDef crys = Def("Avir_LightCrystal"), wild = Def("Avir_LightCrystalUnstable"), cage = Def("Avir_LightCrystalCage");
+            if (runes.Any(x => x.kind == RuneKind.Shape) && crys != null)
+            {
+                var wall = FireMagic.Wall(from.IsValid ? from : caster.Position, at, map, 5 + 2 * breadth);
+                for (int i = 0; i < wall.Count; i += 2) Building_LightReflector.RaiseAt(caster, map, wall[i], crys);
+            }
+            if (runes.Any(x => x.kind == RuneKind.Beam) && wild != null)
+            {
+                var line = GenSight.BresenhamCellsBetween(from.IsValid ? from : caster.Position, at).Where(x => x.InBounds(map)).ToList();
+                for (int i = 3; i < line.Count; i += 3) Building_LightReflector.RaiseAt(caster, map, line[i], wild);
+            }
+            if (runes.Any(x => x.kind == RuneKind.Release) && wild != null)
+                for (int i = 0, n = Rand.RangeInclusive(2, 3); i < n; i++)
+                {
+                    IntVec3 cell = at + GenRadial.RadialPattern[Rand.RangeInclusive(1, 20)];
+                    if (cell.InBounds(map) && GenSight.LineOfSight(at, cell, map, true)) Building_LightReflector.RaiseAt(caster, map, cell, wild);
+                }
+            if (runes.Any(x => x.kind == RuneKind.Hold) && cage != null)
+            {
+                int held = 0;
+                foreach (Pawn p in GenRadial.RadialDistinctThingsAround(at, map, Radius(c), true).OfType<Pawn>().ToList())
+                {
+                    if (held++ >= 3) break;
+                    foreach (IntVec3 n in GenAdj.CellsAdjacent8Way(p)) Building_LightReflector.RaiseAt(caster, map, n, cage, Mathf.RoundToInt(GenDate.TicksPerHour * Mathf.Clamp(power, 0.4f, 2f)));
+                }
+            }
+        }
+
+        private static ThingDef Def(string n) => DefDatabase<ThingDef>.GetNamedSilentFail(n);
+
+        /// <summary>A crystal bursting: real shards, not magic - they cut whoever stands close and can see the crystal (wards meet
+        /// them as plain blows; a ward of Crystal stops them, plain wards of Light or Earth pay double).</summary>
+        public static void Shards(Building_LightReflector r, Pawn by)
+        {
+            Map map = r?.Map;
+            if (map == null) return;
+            foreach (Pawn p in GenRadial.RadialDistinctThingsAround(r.Position, map, 2.9f, true).OfType<Pawn>().ToList())
+            {
+                if (p.Dead || !GenSight.LineOfSight(r.Position, p.Position, map, true)) continue;
+                for (int i = 0; i < 2; i++) p.TakeDamage(new DamageInfo(Shard, Rand.Range(3f, 6f), 0.2f, -1f, by));
+            }
+            MapComponent_SpellSprites.PutTinted(map, "Light/CrystalShatter", Color.white, r.DrawPos, 2.6f, 30);
+            for (int i = 0; i < 4; i++) FleckMaker.ThrowMicroSparks(r.DrawPos + Rand.InsideUnitCircleVec3 * 0.6f, map);
+        }
 
         /// <summary>While the point is chosen: a line from every reflector in reach into it (a ray, if the spell has a Beam)
         /// - the player sees each echo that will come and can cross them (the author, Fix210).</summary>
@@ -175,7 +276,7 @@ namespace Avir.Magic
         /// <summary>The Barrier of Light (Fix206), as everywhere: the last rune of the circle - a ward on the caster, who
         /// then carries light round him (the only way a Light mage glows himself); anywhere else - a dome of light where
         /// the spell strikes (round the caster, with an Aura), lighting the ground under it.</summary>
-        private static void LightBarrier(Pawn caster, SpellCircle g, IntVec3 at, float power, Map map)
+        private static void LightBarrier(Pawn caster, SpellCircle g, IntVec3 at, float power, Map map, bool crystal = false)
         {
             bool shaped = SpellSculpt.Of(g);
             var runes = g.sections.Select((sec, i) => new { sec, i }).SelectMany(x => (x.sec.runes ?? new List<RuneDef>()).Where(r => r != null).Select(r => new { r, outer = x.i == g.sections.Count - 1 }))
@@ -185,7 +286,7 @@ namespace Avir.Magic
             int ticks = Mathf.RoundToInt(GenDate.TicksPerHour * 4f * power);
             if (runes.Last().kind == RuneKind.Barrier)
             {
-                SpellWards.Lay(caster, Ward, power, amp, ticks);
+                SpellWards.Lay(caster, crystal ? CrystalWard ?? Ward : Ward, power, amp, ticks);
                 Glint(map, caster.DrawPos, 2f, false);
                 return;
             }
@@ -193,6 +294,7 @@ namespace Avir.Magic
             float r = Mathf.Max(1.4f, Radius(g) - 0.5f);
             var d = MapComponent_WardsDrawn.RaiseWard(map, aura ? caster.Position : at, r, g.element ?? DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Light"), ComboKind.None, caster, ticks, power, amp);
             if (d != null && aura) d.follow = caster;
+            if (d != null && crystal && ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Dome_Crystal", false) != null) d.tex = "Dome_Crystal";
             LightGlow g2 = LightGlow.At(map, aura ? caster.Position : at, r >= 3f, ticks);
             if (g2 != null && aura) g2.follows = caster;
         }
@@ -300,13 +402,17 @@ namespace Avir.Magic
             Hediff_ArcaneCore core = Mages.Core(caster);
             // the new ones: one per circle, and one more by chance as the mage grows in Light
             int stage = core != null ? Arcane.Stage(core, RuneKind.Light) : 0;
-            int n = links.Count + (Rand.Chance(0.12f * stage) ? 1 : 0);
+            bool crystal = AnyCrystal(root);
+            // a Crystal raises fewer, sturdier shards, and rarely one more (the author)
+            int n = crystal ? Mathf.Max(1, (links.Count + 1) / 2) + (Rand.Chance(0.04f * stage) ? 1 : 0) : links.Count + (Rand.Chance(0.12f * stage) ? 1 : 0);
             float dist = Mathf.Max(3f, casterAt.IsValid ? casterAt.DistanceTo(aim) : 6f);
             // the node already standing - the caster's and their fellow Light mages' - sends its circles back, in a random
             // order (the author); the reflectors this cast raises answer only the next cast (the author: balance)
             float range = Range(root);
-            var refl = Building_LightReflector.Node(caster, map).Where(x => x.Position.DistanceTo(aim) <= range).InRandomOrder().ToList();
-            for (int i = 0; i < n; i++) Building_LightReflector.Raise(caster, map, aim, dist);
+            // a reflector that cannot see the point through a wall reflects nothing (the author, Fix217)
+            var refl = Building_LightReflector.Node(caster, map).Where(x => x.Position.DistanceTo(aim) <= range && GenSight.LineOfSight(x.Position, aim, map, true)).InRandomOrder().ToList();
+            ThingDef kind = DefDatabase<ThingDef>.GetNamedSilentFail(crystal ? "Avir_LightCrystal" : "Avir_LightReflector");
+            for (int i = 0; i < n; i++) Building_LightReflector.Raise(caster, map, aim, dist, kind);
             if (refl.Count == 0) return;
             MapComponent_LightEchoes.Queue(caster, root, links, refl, aim, power, map);
         }
@@ -322,12 +428,18 @@ namespace Avir.Magic
             return Mathf.Clamp(0.012f * held * slip, 0f, 0.8f);
         }
 
-        /// <summary>A lost hold on Light: the focus goes at once - every reflector of the caster breaks in a flash.</summary>
+        /// <summary>The node weighs on the hold (the author, Fix217): every reflector standing (the works' crystals aside) makes a
+        /// spell of Light harder to hold.</summary>
+        public static float NodeUnrest(Pawn p, RitualSchema s) => p?.Map != null && s?.weave != null && Any(s.weave) ? 0.012f * Building_LightReflector.Held(p.Map) : 0f;
+
+        /// <summary>A lost hold on Light: the focus goes at once - every reflector of the node breaks in a flash; the more there
+        /// were, the worse for the mage.</summary>
         public static void Slip(Pawn caster, SpellCircle root)
         {
             if (caster?.Map == null || !Any(root)) return;
-            Building_LightReflector.BreakAll(Building_LightReflector.Node(caster, caster.Map), caster, true);
-            DazzlePawn(caster, 0.4f);
+            int n = Building_LightReflector.Held(caster.Map);
+            Building_LightReflector.BreakAll(Building_LightReflector.Node(caster, caster.Map).Where(r => !r.Work), caster, true);
+            DazzlePawn(caster, 0.35f + 0.03f * n);
         }
 
         // ------------------------------------------------------------------ in words
@@ -342,6 +454,7 @@ namespace Avir.Magic
                     case RuneKind.Lift: bits.Add("a fierce flash - nothing is thrown up, the light can blind outright"); break;
                     case RuneKind.Beam: bits.Add("a ray of light - dazzles along its line, sears where it ends"); break;
                     case RuneKind.Barrier: if (!SpellSculpt.Of(g) || g.sections.Count == 0 || !g.sections[g.sections.Count - 1].runes.Contains(r)) bits.Add("a ward of light - on the caster as the circle's last rune (they carry light round them), a glowing dome anywhere else; what it stops goes back the way it came"); break;
+                    case RuneKind.Growth: bits.Add("healing - the wounds of whom it reaches close, and the light gives strength back"); break;
                     case RuneKind.Drain: bits.Add("the light taken away - a blind patch; those who cannot see in the dark shoot almost blind in it"); break;
                     default: if (r.role == RuneRole.Verb && !LifeMagic.Side(r.kind) && r.kind != RuneKind.Amplify && r.kind != RuneKind.Breadth) bits.Add(r.label + " - not made for Light yet"); break;
                 }
@@ -375,6 +488,19 @@ namespace Avir.Magic
         /// <summary>When it is free to send the next shot: the casts of a node go one after another (the author).</summary>
         public int busyUntil;
 
+        // its kind, by its def (Fix217)
+        public bool IsCrystal => def.defName.StartsWith("Avir_LightCrystal");
+        public bool Unstable => def.defName == "Avir_LightCrystalUnstable";
+        public bool Work => def.defName == "Avir_LightCrystalStore" || def.defName == "Avir_LightCrystalSun";
+        public bool Sun => def.defName == "Avir_LightCrystalSun";
+        /// <summary>How much weaker each echo is: a plain reflector halves it, a crystal keeps three quarters (the author).</summary>
+        public float Decay => IsCrystal ? 0.75f : 0.5f;
+        /// <summary>Faceted: a crystal may send its circle twice (the author: not every time, not all).</summary>
+        public bool Faceted => IsCrystal && !Work && !Unstable;
+
+        /// <summary>The reflectors that weigh on the hold - all but the works' crystals.</summary>
+        public static int Held(Map map) => All(map).Count(r => !r.Work);
+
         public static IEnumerable<Building_LightReflector> All(Map map) =>
             map == null ? Enumerable.Empty<Building_LightReflector>() : map.listerThings.AllThings.OfType<Building_LightReflector>().Where(r => r.Spawned && !r.Destroyed);
 
@@ -383,9 +509,9 @@ namespace Avir.Magic
         public static IEnumerable<Building_LightReflector> Node(Pawn caster, Map map) => All(map);
 
         /// <summary>A new reflector `dist` from the point, on any side.</summary>
-        public static Building_LightReflector Raise(Pawn caster, Map map, IntVec3 at, float dist)
+        public static Building_LightReflector Raise(Pawn caster, Map map, IntVec3 at, float dist, ThingDef def = null)
         {
-            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_LightReflector");
+            def = def ?? DefDatabase<ThingDef>.GetNamedSilentFail("Avir_LightReflector");
             if (def == null) return null;
             for (int tries = 0; tries < 16; tries++)
             {
@@ -405,6 +531,34 @@ namespace Avir.Magic
             return null;
         }
 
+        /// <summary>A crystal grown on a given cell (a form of the Crystal, a work of the mage).</summary>
+        public static Building_LightReflector RaiseAt(Pawn caster, Map map, IntVec3 c, ThingDef def, int life = -1)
+        {
+            if (def == null || map == null || !Free(c, map) || c.GetFirstPawn(map) != null) return null;
+            var r = (Building_LightReflector)ThingMaker.MakeThing(def);
+            r.caster = caster;
+            r.dies = Find.TickManager.TicksGame + (life > 0 ? life : r.Unstable ? GenDate.TicksPerHour : r.Work ? GenDate.TicksPerDay * 5 : Life);
+            GenSpawn.Spawn(r, c, map, WipeMode.VanishOrMoveAside);
+            if (caster?.Faction != null) r.SetFaction(caster.Faction);
+            FleckMaker.ThrowLightningGlow(r.DrawPos, map, 0.8f);
+            return r;
+        }
+
+        /// <summary>Crystals stand against blasts; nothing of them burns.</summary>
+        public override void PreApplyDamage(ref DamageInfo dinfo, out bool absorbed)
+        {
+            if (IsCrystal && dinfo.Def != null && (dinfo.Def.isExplosive || dinfo.Def == DamageDefOf.Bomb)) dinfo.SetAmount(dinfo.Amount * 0.3f);
+            base.PreApplyDamage(ref dinfo, out absorbed);
+        }
+
+        /// <summary>An unstable crystal after its one answer: it bursts into shards.</summary>
+        public void Burst(Pawn by)
+        {
+            if (!Spawned) return;
+            LightMagic.Shards(this, by ?? caster);
+            Destroy(DestroyMode.Vanish);
+        }
+
         private static bool Free(IntVec3 c, Map map) => c.InBounds(map) && c.Walkable(map) && c.GetEdifice(map) == null
             && !c.GetThingList(map).Any(t => t is Building || t.def.category == ThingCategory.Item);
 
@@ -414,6 +568,7 @@ namespace Avir.Magic
             {
                 if (r.Map == null) continue;
                 if (flash) LightMagic.Flash(caster, r.Position, 2f, 0.2f, false, false, false, r.Map);
+                if (r.IsCrystal) { LightMagic.Shards(r, caster); r.Destroy(DestroyMode.Vanish); continue; }
                 MapComponent_SpellSprites.PutTinted(r.Map, LightMagic.Night(r.Map) ? "Light/Shatter_Night" : "Light/Shatter", Color.white, r.DrawPos, 2.2f, 35);
                 r.Destroy(DestroyMode.KillFinalize);
             }
@@ -424,18 +579,32 @@ namespace Avir.Magic
             base.TickInterval(delta);
             if (!this.IsHashIntervalTick(250, delta)) return;
             if (dies > 0 && Find.TickManager.TicksGame >= dies) { LightMagic.Glint(Map, DrawPos, 1f, false); Destroy(DestroyMode.Vanish); return; }
+            if (Work) { WorkTick(); return; }
             if (caster == null || caster.Dead || caster.Destroyed) { Destroy(DestroyMode.Vanish); return; }
             bool night = LightMagic.Night(Map);
             if (night != wasNight) { wasNight = night; CompGlower gl = GetComp<CompGlower>(); if (gl != null) gl.GlowColor = night ? LightMagic.NightGlow : LightMagic.DayGlow; }
         }
 
-        private bool wasNight;
+        private bool wasNight, lit = true;
         private static Material nightMat;
+
+        /// <summary>The works' crystals (Fix217): a light crystal shines at all hours (Light feeds on itself); a sun crystal burns
+        /// by day like a sun lamp - plants grow under it - and goes out at night.</summary>
+        private void WorkTick()
+        {
+            if (!Sun) return;
+            CompGlower gl = GetComp<CompGlower>();
+            if (gl == null) return;
+            bool day = Map.skyManager.CurSkyGlow > 0.4f;
+            if (day == lit) return;
+            lit = day;
+            if (day) Map.glowGrid.RegisterGlower(gl); else Map.glowGrid.DeRegisterGlower(gl);
+        }
 
         /// <summary>By night the shard is silver.</summary>
         protected override void DrawAt(Vector3 drawLoc, bool flip = false)
         {
-            if (!LightMagic.Night(Map)) { base.DrawAt(drawLoc, flip); return; }
+            if (IsCrystal || !LightMagic.Night(Map)) { base.DrawAt(drawLoc, flip); return; }
             if (nightMat == null) nightMat = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Light/Reflector_Night", ShaderDatabase.Transparent);
             float s = def.graphicData.drawSize.x;
             Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(drawLoc, Quaternion.identity, new Vector3(s, 1f, s)), nightMat, 0);
@@ -444,7 +613,9 @@ namespace Avir.Magic
         public override string GetInspectString()
         {
             string s = base.GetInspectString();
-            string mine = "Reflector of " + (caster?.LabelShort ?? "no one") + (dies > 0 ? ", fades in " + (dies - Find.TickManager.TicksGame).ToStringTicksToPeriod() : "");
+            string mine = (Work ? "Raised by " : "Reflector of ") + (caster?.LabelShort ?? "no one") + (dies > 0 ? ", fades in " + (dies - Find.TickManager.TicksGame).ToStringTicksToPeriod() : "")
+                          + (Work ? "\nA reflector too: it answers every spell of Light at a steady share of its strength, and never loses focus." : IsCrystal ? "\nCrystal: echoes at three quarters, may echo twice." : "")
+                          + (Unstable ? "\nUnstable: answers once and bursts into shards." : "") + (Sun ? (lit ? "\nBurning with the day." : "\nDark until morning.") : "");
             return s.NullOrEmpty() ? mine : s + "\n" + mine;
         }
 
@@ -530,23 +701,29 @@ namespace Avir.Magic
         {
             var me = map.GetComponent<MapComponent_LightEchoes>();
             if (me == null) return;
-            int n = links.Count, now = Find.TickManager.TicksGame;
+            int n = links.Count, now = Find.TickManager.TicksGame, works = 0;
+            int held = refl.Count(r => !r.Work);
             for (int i = 0; i < refl.Count; i++)
             {
-                int echo = i / n + 1;   // 1 - the first echo, at half the cast
+                int echo = i / n + 1;   // 1 - the first echo, at half the cast (three quarters from a crystal)
                 // a reflector busy with another mage's cast answers this one after it
                 int at = Mathf.Max(now + 18 + 9 * i, refl[i].busyUntil + 12);
                 refl[i].busyUntil = at;
-                me.shots.Add(new Shot { caster = caster, root = root, circle = links[i % n], from = refl[i], aim = aim, power = power * Mathf.Pow(0.5f, echo), at = at, echo = echo, held = refl.Count, node = refl });
+                // the works' crystals answer at a steady 15% of the circle, less for each more of them (the author, Fix217)
+                float p = refl[i].Work ? power * 0.15f * Mathf.Pow(0.85f, works++) : power * Mathf.Pow(refl[i].Decay, echo);
+                me.shots.Add(new Shot { caster = caster, root = root, circle = links[i % n], from = refl[i], aim = aim, power = p, at = at, echo = echo, held = held, node = refl });
+                // a faceted crystal may send its circle twice
+                if (refl[i].Faceted && Rand.Chance(0.2f))
+                    me.shots.Add(new Shot { caster = caster, root = root, circle = links[i % n], from = refl[i], aim = aim, power = p, at = at + 8, echo = echo, held = held, node = refl });
             }
         }
 
         /// <summary>Defocus (the author, Fix211): before they break, every reflector of the node fires once - each its own
         /// circle (or the one that went astray), in a random direction, at full echo strength. The more were gathered,
         /// the worse it is on a great spell.</summary>
-        private void Scatter(Shot s, int now)
+        private void Scatter(Shot s, int now, List<Building_LightReflector> only = null)
         {
-            var node = Building_LightReflector.Node(s.caster, map).ToList();
+            var node = only ?? Building_LightReflector.Node(s.caster, map).Where(r => !r.Work && !r.IsCrystal).ToList();
             var pending = shots.Where(x => !x.wild && x.from != null).GroupBy(x => x.from).ToDictionary(g => g.Key, g => g.First());
             shots.RemoveAll(x => !x.wild && x.from != null && node.Contains(x.from));
             int i = 0;
@@ -594,7 +771,9 @@ namespace Avir.Magic
                     continue;
                 }
                 IntVec3 src = s.from.Position, land = s.aim;
-                bool lost = Rand.Chance(LightMagic.DefocusChance(s.caster, s.root, s.held));
+                // a wall raised between since: no reflection
+                if (!GenSight.LineOfSight(src, s.aim, map, true)) continue;
+                bool lost = !s.from.Work && Rand.Chance(LightMagic.DefocusChance(s.caster, s.root, s.held));
                 if (lost)
                 {
                     // the shot slides along its reflector's line - beyond the reflector at times (the mirror)
@@ -605,6 +784,15 @@ namespace Avir.Magic
                 }
                 LightMagic.RayLine(map, src.ToVector3Shifted(), land.ToVector3Shifted(), LightMagic.Bright(s.circle));
                 LightMagic.EchoShot(s.caster, s.root, s.circle, src, land, s.power, map);
+                if (s.from.Unstable && s.from.Spawned && !shots.Any(x => x.from == s.from)) { s.from.Burst(s.caster); continue; }
+                if (lost && s.from.IsCrystal && s.from.Spawned)
+                {
+                    // a crystal loses its own focus alone (the author, Fix217): only it goes wild and breaks, the rest hold
+                    if (s.caster.Faction == Faction.OfPlayer)
+                        Messages.Message("A crystal lost the focus of " + s.caster.LabelShort + "'s light: it strikes wild and shatters.", new TargetInfo(land, map), MessageTypeDefOf.NegativeEvent, false);
+                    Scatter(s, now, new List<Building_LightReflector> { s.from });
+                    continue;
+                }
                 if (lost)
                 {
                     if (s.caster.Faction == Faction.OfPlayer)
@@ -720,6 +908,22 @@ namespace Avir.Magic
 
         [LudeonTK.DebugAction("Magic", "Light: six reflectors round pawn (to test echoes)", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void SixFor(Pawn p) { for (int i = 0; i < 6; i++) Building_LightReflector.Raise(p, p.Map, p.Position, 7f); }
+
+        [LudeonTK.DebugAction("Magic", "Light: four crystals round pawn", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void CrystalsFor(Pawn p) { for (int i = 0; i < 4; i++) Building_LightReflector.Raise(p, p.Map, p.Position, 7f, DefDatabase<ThingDef>.GetNamedSilentFail("Avir_LightCrystal")); }
+
+        [LudeonTK.DebugAction("Magic", "Light: unstable crystal here (bursts)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void BurstHere()
+        {
+            var r = Building_LightReflector.RaiseAt(null, Find.CurrentMap, Verse.UI.MouseCell(), DefDatabase<ThingDef>.GetNamedSilentFail("Avir_LightCrystalUnstable"));
+            r?.Burst(null);
+        }
+
+        [LudeonTK.DebugAction("Magic", "Light: light crystal here (work)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void StoreHere() => Building_LightReflector.RaiseAt(null, Find.CurrentMap, Verse.UI.MouseCell(), DefDatabase<ThingDef>.GetNamedSilentFail("Avir_LightCrystalStore"));
+
+        [LudeonTK.DebugAction("Magic", "Light: sun crystal here (work)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void SunHere() => Building_LightReflector.RaiseAt(null, Find.CurrentMap, Verse.UI.MouseCell(), DefDatabase<ThingDef>.GetNamedSilentFail("Avir_LightCrystalSun"));
 
         [LudeonTK.DebugAction("Magic", "Light: break pawn's reflectors", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void BreakFor(Pawn p) => Building_LightReflector.BreakAll(Building_LightReflector.Node(p, p.Map), p, true);

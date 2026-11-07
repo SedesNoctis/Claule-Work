@@ -97,14 +97,15 @@ namespace Avir.Magic
         public static float HoldChance(Pawn p, RitualSchema s)
         {
             if (DevHold != 0) return DevHold > 0 ? 1f : 0f;
-            float risk = (s.weave != null ? WeaveSpell.Risk(s.weave) : RitualEvaluator.Read(s).Risk(1f, 1f, 0f)) + FlowUnrest(p.MapHeld);
+            float risk = (s.weave != null ? WeaveSpell.Risk(s.weave) : RitualEvaluator.Read(s).Risk(1f, 1f, 0f)) + FlowUnrest(p.MapHeld) + LightMagic.NodeUnrest(p, s);
             float comp = GameComponent_AvirComposure.For(p, s, null);
             if (Mages.Core(p)?.Sorcerer == true && Mages.Core(p)?.Avir != true) comp *= 1.3f;
             return risk > comp ? Mathf.Clamp01(1f - (risk - comp) * 0.4f * MageClass.SlipFactor(Mages.Core(p), s)) : 1f;
         }
         /// <summary>No rest between casts (the author, Nov 2026): what limits a mage is Arcana, the hold and the cast time.</summary>
         public static int Cooldown(RitualSchema s) => 0;
-        public static float Range(RitualSchema s) => s.weave != null && WeaveSpell.Burrows(s.weave) ? 30f + 10f * WeaveSpell.Reach(s.weave) : 16f + 10f * (s.weave != null ? WeaveSpell.Reach(s.weave) : RitualEvaluator.Read(s).reach);
+        public static float Range(RitualSchema s) => (s.weave != null && WeaveSpell.Burrows(s.weave) ? 30f + 10f * WeaveSpell.Reach(s.weave) : 16f + 10f * (s.weave != null ? WeaveSpell.Reach(s.weave) : RitualEvaluator.Read(s).reach))
+                                                     + (s.weave != null && LightMagic.AnyCrystal(s.weave) ? LightMagic.CrystalReach : 0f);
         public static float Power(RitualSchema s) => RitualCircles.PowerFactor(s.size) * (1f + 0.3f * RitualEvaluator.Read(s).amplify);
         public static RuneDef Element(RitualSchema s) => s.weave != null ? (s.weave.element ?? s.weave.All().Select(c => c.element).FirstOrDefault(e => e != null)) : RitualEvaluator.Read(s).elements.FirstOrDefault();
 
@@ -152,7 +153,7 @@ namespace Avir.Magic
             if (core.arcana < cost) { Messages.Message(caster.LabelShortCap + " has not enough Arcana for " + s.name + ".", caster, MessageTypeDefOf.RejectInput, false); return; }
             core.Add(-cost);
             // the hold: composure against the spell's instability
-            float risk = (s.weave != null ? WeaveSpell.Risk(s.weave) : r.Risk(1f, 1f, 0f)) + FlowUnrest(map);
+            float risk = (s.weave != null ? WeaveSpell.Risk(s.weave) : r.Risk(1f, 1f, 0f)) + FlowUnrest(map) + LightMagic.NodeUnrest(caster, s);
             float comp = GameComponent_AvirComposure.For(caster, s, null);
             if (core.Sorcerer && !core.Avir) comp *= 1.3f;   // an Avir holds by composure alone   // a sorcerer's composure goes into the hold of a spell
             bool lost = DevHold == 1 ? false : DevHold == -1 ? true : risk > comp && Rand.Chance((risk - comp) * 0.4f * MageClass.SlipFactor(core, s));

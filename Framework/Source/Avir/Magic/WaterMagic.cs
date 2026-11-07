@@ -602,7 +602,15 @@ namespace Avir.Magic
                     Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(wat, Quaternion.AngleAxis((Time.realtimeSinceStartup * -20f + p.thingIDNumber * 37f) % 360f, Vector3.up), new Vector3(wp, 1f, wp)), Mat(null, Combos.ColorOf(sw.Combo), "Dome_" + sw.Combo), 0);
                     continue;
                 }
-                if (sw != null && sw.Parts.Length == 1 && (sw.Parts[0] == RuneKind.Earth || sw.Parts[0] == RuneKind.Air || sw.Parts[0] == RuneKind.Life)) { el = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + sw.Parts[0]); any = true; }
+                if (sw != null && sw.def.defName == "Avir_CrystalWard")
+                {
+                    // a ward of Crystal: its own ring of light and crystal round the wearer (Fix217)
+                    Vector3 wat = p.DrawPos; wat.y = AltitudeLayer.ItemImportant.AltitudeFor();
+                    float wp = 1.6f + 0.06f * Mathf.Sin(Time.realtimeSinceStartup * 2.5f + p.thingIDNumber);
+                    Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(wat, Quaternion.AngleAxis((Time.realtimeSinceStartup * -15f + p.thingIDNumber * 37f) % 360f, Vector3.up), new Vector3(wp, 1f, wp)), Mat(null, Color.white, "Aura_Crystal"), 0);
+                    continue;
+                }
+                if (sw != null && sw.Parts.Length == 1 && (sw.Parts[0] == RuneKind.Earth || sw.Parts[0] == RuneKind.Air || sw.Parts[0] == RuneKind.Life || sw.Parts[0] == RuneKind.Light)) { el = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_" + sw.Parts[0]); any = true; }
                 foreach (Hediff h in p.health.hediffSet.hediffs)
                 {
                     if (any) break;

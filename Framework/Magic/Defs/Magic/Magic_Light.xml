@@ -178,4 +178,271 @@
       <li Class="Avir.Magic.HediffCompProperties_LightGlow" />
     </comps>
   </HediffDef>
+
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_LightCrystal</defName>
+    <label>crystal of light</label>
+    <description>A reflector grown by Light meeting Earth: a crystal, sturdier than a shard of light - it does not burn and stands against blasts. It sends every spell of Light back into the point at three quarters of the cast before, and its facets may send it twice. When it breaks, its shards cut whoever stands close.</description>
+    <thingClass>Avir.Magic.Building_LightReflector</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Light/Crystal</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.5,1.5)</drawSize>
+    </graphicData>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>Standable</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <selectable>true</selectable>
+    <useHitPoints>true</useHitPoints>
+    <blockLight>false</blockLight>
+    <statBases>
+      <MaxHitPoints>120</MaxHitPoints>
+      <Flammability>0</Flammability>
+    </statBases>
+    <size>(1,1)</size>
+    <building>
+      <isInert>true</isInert>
+      <claimable>false</claimable>
+      <deconstructible>false</deconstructible>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+    </building>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>6</glowRadius>
+        <glowColor>(220,240,255,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_LightCrystalUnstable</defName>
+    <label>unstable crystal</label>
+    <description>A crystal grown too fast, along a ray or out of a burst. It answers the next spell of Light once - and bursts into shards that cut whoever stands close.</description>
+    <thingClass>Avir.Magic.Building_LightReflector</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Light/Crystal</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.2,1.2)</drawSize>
+    </graphicData>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>Standable</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <selectable>true</selectable>
+    <useHitPoints>true</useHitPoints>
+    <blockLight>false</blockLight>
+    <statBases>
+      <MaxHitPoints>40</MaxHitPoints>
+      <Flammability>0</Flammability>
+    </statBases>
+    <size>(1,1)</size>
+    <building>
+      <isInert>true</isInert>
+      <claimable>false</claimable>
+      <deconstructible>false</deconstructible>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+    </building>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>4</glowRadius>
+        <glowColor>(220,240,255,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_LightCrystalCage</defName>
+    <label>crystal of a cage</label>
+    <description>A crystal grown round someone held by Light and Earth: nothing passes it. A reflector too, while it stands.</description>
+    <thingClass>Avir.Magic.Building_LightReflector</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Light/Crystal</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.5,1.5)</drawSize>
+    </graphicData>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>Impassable</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <selectable>true</selectable>
+    <useHitPoints>true</useHitPoints>
+    <blockLight>false</blockLight>
+    <statBases>
+      <MaxHitPoints>120</MaxHitPoints>
+      <Flammability>0</Flammability>
+    </statBases>
+    <size>(1,1)</size>
+    <building>
+      <isInert>true</isInert>
+      <claimable>false</claimable>
+      <deconstructible>false</deconstructible>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+    </building>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>6</glowRadius>
+        <glowColor>(220,240,255,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_LightCrystalStore</defName>
+    <label>light crystal</label>
+    <description>A crystal raised by a mage of the Crystal: Light feeds on itself in it, and it shines at all hours for about five days, with no power. Its colour can be changed. A reflector too: it answers every spell of Light at a steady share of its strength and never loses focus.</description>
+    <thingClass>Avir.Magic.Building_LightReflector</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Light/Crystal</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.5,1.5)</drawSize>
+    </graphicData>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>PassThroughOnly</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <selectable>true</selectable>
+    <useHitPoints>true</useHitPoints>
+    <blockLight>false</blockLight>
+    <statBases>
+      <MaxHitPoints>150</MaxHitPoints>
+      <Flammability>0</Flammability>
+    </statBases>
+    <size>(1,1)</size>
+    <building>
+      <isInert>true</isInert>
+      <claimable>false</claimable>
+      <deconstructible>true</deconstructible>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+    </building>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>9</glowRadius>
+        <glowColor>(220,240,255,0)</glowColor>
+        <colorPickerEnabled>true</colorPickerEnabled>
+      </li>
+    </comps>
+  </ThingDef>
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_LightCrystalSun</defName>
+    <label>sun crystal</label>
+    <description>A crystal raised by a mage of the Crystal: it burns by day like a sun lamp - plants grow under it - and goes out at night, for about five days, with no power. Its colour can be changed. A reflector too, answering every spell of Light at a steady share.</description>
+    <thingClass>Avir.Magic.Building_LightReflector</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Light/Crystal</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.5,1.5)</drawSize>
+      <color>(1,0.92,0.7)</color>
+    </graphicData>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>PassThroughOnly</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <selectable>true</selectable>
+    <useHitPoints>true</useHitPoints>
+    <blockLight>false</blockLight>
+    <statBases>
+      <MaxHitPoints>150</MaxHitPoints>
+      <Flammability>0</Flammability>
+    </statBases>
+    <size>(1,1)</size>
+    <building>
+      <isInert>true</isInert>
+      <claimable>false</claimable>
+      <deconstructible>true</deconstructible>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+    </building>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>14</glowRadius>
+        <glowColor>(220,240,255,0)</glowColor>
+        <overlightRadius>7.9</overlightRadius>
+        <colorPickerEnabled>true</colorPickerEnabled>
+      </li>
+    </comps>
+  </ThingDef>
+  <HediffDef>
+    <defName>Avir_CrystalWard</defName>
+    <label>ward of crystal</label>
+    <description>A ring of light and crystal over the body. Magic of other elements is not put out but sent back the way it came, at the cost of its charge; the shards of crystals do not pass it at all. Light's own passes it, stronger, and the ward falls.</description>
+    <hediffClass>Avir.Magic.Hediff_SpellWard</hediffClass>
+    <defaultLabelColor>(0.85, 0.95, 1)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>12000~12000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_LightGlow" />
+    </comps>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_LightVigor</defName>
+    <label>strength of light</label>
+    <description>Light gave the body its strength back: tiredness comes slower, the step is lighter.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.95, 0.7)</defaultLabelColor>
+    <isBad>false</isBad>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>7500~7500</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <restFallFactor>0.6</restFallFactor>
+        <capMods><li><capacity>Moving</capacity><offset>0.06</offset></li></capMods>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <DamageDef>
+    <defName>Avir_CrystalShard</defName>
+    <label>crystal shards</label>
+    <workerClass>DamageWorker_AddInjury</workerClass>
+    <externalViolence>true</externalViolence>
+    <deathMessage>{0} has been cut to pieces by crystal shards.</deathMessage>
+    <hediff>Cut</hediff>
+    <harmsHealth>true</harmsHealth>
+    <defaultDamage>4</defaultDamage>
+    <armorCategory>Sharp</armorCategory>
+  </DamageDef>
+
+  <DesignationDef>
+    <defName>Avir_LightCrystalStore</defName>
+    <texturePath>Designations/HarvestPlant</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <DesignationDef>
+    <defName>Avir_LightCrystalSun</defName>
+    <texturePath>Designations/HarvestPlant</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <WorkGiverDef>
+    <defName>Avir_LightCrystal</defName>
+    <label>raise light crystals</label>
+    <giverClass>Avir.Magic.WorkGiver_LightCrystal</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>raise a crystal at</verb>
+    <gerund>raising a crystal</gerund>
+    <priorityInType>4</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+  <JobDef>
+    <defName>Avir_LightCrystal</defName>
+    <driverClass>Avir.Magic.JobDriver_LightCrystal</driverClass>
+    <reportString>raising a crystal of light.</reportString>
+  </JobDef>
 </Defs>
