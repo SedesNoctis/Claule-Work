@@ -304,8 +304,8 @@ namespace Avir.Magic
 
     // ====================================================================== light on the ground
 
-    /// <summary>Light lights the map (the author): a flash, a ray, a reflector, the Light mage himself. A small unseen
-    /// glower that fades by itself; the Light mage's follows him.</summary>
+    /// <summary>Light lights the map (the author): its flashes, rays and reflectors - not the Light mage himself, unless a
+    /// Barrier is on him (Fix205). A small unseen glower that fades by itself.</summary>
     public class LightGlow : ThingWithComps
     {
         public int dies;
@@ -322,13 +322,6 @@ namespace Avir.Magic
             return g;
         }
 
-        /// <summary>A mage whose path is Light, or who has grown to the Apprentice in it.</summary>
-        public static bool LightMage(Pawn p)
-        {
-            Hediff_ArcaneCore c = p != null ? Mages.Core(p) : null;
-            return c != null && (c.path?.kind == RuneKind.Light || Arcane.Stage(c, RuneKind.Light) >= 1);
-        }
-
         protected override void TickInterval(int delta)
         {
             base.TickInterval(delta);
@@ -342,29 +335,6 @@ namespace Avir.Magic
             base.ExposeData();
             Scribe_Values.Look(ref dies, "dies");
             Scribe_References.Look(ref follows, "follows");
-        }
-    }
-
-    /// <summary>A Light mage carries light round him steadily: each second it is put where he stands.</summary>
-    public class MapComponent_LightMages : MapComponent
-    {
-        private readonly Dictionary<Pawn, LightGlow> glows = new Dictionary<Pawn, LightGlow>();
-        public MapComponent_LightMages(Map map) : base(map) { }
-
-        public override void MapComponentTick()
-        {
-            if (Find.TickManager.TicksGame % 60 != 17) return;
-            foreach (Pawn p in map.mapPawns.AllPawnsSpawned)
-            {
-                if (p.Dead || !LightGlow.LightMage(p)) continue;
-                if (glows.TryGetValue(p, out LightGlow g) && g != null && g.Spawned && g.Position == p.Position) { g.dies = Find.TickManager.TicksGame + 200; continue; }
-                if (g != null && g.Spawned) g.Destroy(DestroyMode.Vanish);
-                LightGlow ng = LightGlow.At(map, p.Position, false, 200);
-                if (ng != null) ng.follows = p;
-                glows[p] = ng;
-            }
-            if (glows.Count > 0 && Find.TickManager.TicksGame % 2500 == 17)
-                foreach (Pawn k in glows.Keys.Where(k => k == null || !k.Spawned || k.Map != map).ToList()) glows.Remove(k);
         }
     }
 
@@ -527,9 +497,6 @@ namespace Avir.Magic
 
         [LudeonTK.DebugAction("Magic", "Light: reflector for pawn here", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void ReflectorFor(Pawn p) => Building_LightReflector.Raise(p, p.Map, p.Position, 5f);
-
-        [LudeonTK.DebugAction("Magic", "Light: is pawn a Light mage?", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
-        private static void GlowCheck(Pawn p) => Messages.Message(p.LabelShortCap + (LightGlow.LightMage(p) ? " is a Light mage: light round them." : " is not a Light mage (path Light, or Light from the Apprentice stage)."), MessageTypeDefOf.NeutralEvent, false);
 
         [LudeonTK.DebugAction("Magic", "Light: break pawn's reflectors", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void BreakFor(Pawn p) => Building_LightReflector.BreakAll(Building_LightReflector.Node(p, p.Map), p, true);
