@@ -386,7 +386,7 @@ namespace Avir.Magic
                         {
                             // the conductor: one globe rolls along the line and strikes each foe on it in turn, each a little weaker
                             List<Pawn> line = c.foes.OrderBy(p => p.Position.DistanceTo(by.Position)).ToList();
-                            if (line.Count > 0) f.AddGlobe(SpellOrigin.Of(by).ToVector3Shifted(), by, c.power, 1500, null, line);
+                            if (line.Count > 0) f.AddGlobe(SpellOrigin.Of(by).ToVector3Shifted(), by, c.power, 1500, null, line, c.growth);
                         }
                         else if (c.hold || c.aura || c.shape)
                         {
@@ -395,15 +395,15 @@ namespace Avir.Magic
                             int life = Ticks(c.hold ? 0.8f : 0.5f, c.power);
                             Field(c, y, life);
                             var zone = new HashSet<IntVec3>(c.cells);
-                            int n = Mathf.Clamp(2 + c.cells.Count / 15 + (c.growth ? 2 : 0), 2, 7);
-                            for (int i = 0; i < n && zone.Count > 0; i++) f.AddGlobe(zone.RandomElement().ToVector3Shifted(), by, c.power, life, zone);
+                            int n = Mathf.Clamp(2 + c.cells.Count / 15, 2, 6);
+                            for (int i = 0; i < n && zone.Count > 0; i++) f.AddGlobe(zone.RandomElement().ToVector3Shifted(), by, c.power, life, zone, null, c.growth);
                         }
                         else
                         {
                             // loose: they float out from where they were made and go for the nearest foes (up to 12 cells),
                             // slowly; a globe that finds no one bursts where it is when its time is up
-                            int n = 2 + (c.growth ? 2 : 0);
-                            for (int i = 0; i < n; i++) f.AddGlobe(c.at.ToVector3Shifted() + new Vector3(Rand.Range(-0.6f, 0.6f), 0f, Rand.Range(-0.6f, 0.6f)), by, c.power, 1200, null);
+                            // Growth (Fix227): not more globes, but globes that swell twice as fast and further
+                            for (int i = 0; i < 2; i++) f.AddGlobe(c.at.ToVector3Shifted() + new Vector3(Rand.Range(-0.6f, 0.6f), 0f, Rand.Range(-0.6f, 0.6f)), by, c.power, 1200, null, null, c.growth);
                         }
                         break;
                     }
@@ -420,7 +420,9 @@ namespace Avir.Magic
                 case SecondKind.Swelter:
                     foreach (Pawn p in c.foes) { if (p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Max(0f, p.needs.rest.CurLevel - 0.15f * c.power); Heat(p, 0.03f * c.power * (Sealed(p) ? 1.5f : 1f)); }
                     if (c.drain && by.needs?.rest != null) by.needs.rest.CurLevel = Mathf.Min(1f, by.needs.rest.CurLevel + 0.05f * c.foes.Count);
-                    if (c.hold || c.aura || c.shape) Field(c, y, Ticks(c.aura ? 0.5f : 2f, c.power));
+                    // Fix227 (the author: it stood too short a time): it always lies as a field now - a Release half an hour,
+                    // held two hours - and the heat in it works on, not only in the moment of the cast
+                    Field(c, y, Ticks(c.hold ? 2f : 0.5f, c.power));
                     break;
                 case SecondKind.Thermal:
                     foreach (Pawn p in c.own) MagicFx.Give(p, H("Avir_Updraft"), Ticks(0.5f, c.power));
@@ -441,7 +443,7 @@ namespace Avir.Magic
                     break;
                 case SecondKind.Quag:
                     foreach (IntVec3 x in c.cells) if (Rand.Chance(0.8f)) MirePatch.Spread(x, c.map, by, c.power * 1.3f, c.hold ? 6000 : 3500);
-                    foreach (Pawn p in c.foes) { MagicFx.Give(p, ComboDefOf.Avir_Mired, 600); if (Sealed(p)) MagicFx.Give(p, ComboDefOf.Avir_SinkingSealed, 600); }
+                    foreach (Pawn p in c.foes) { MagicFx.Mire(p, 600); if (Sealed(p)) MagicFx.Give(p, ComboDefOf.Avir_SinkingSealed, 600); }
                     break;
                 case SecondKind.Silt:
                     foreach (Pawn p in c.foes)
@@ -467,8 +469,25 @@ namespace Avir.Magic
                     {
                         ThingDef chunk = Find.World.NaturalRockTypesIn(c.map.Tile).Select(rk => rk.building.mineableThing).FirstOrDefault(x => x != null);
                         foreach (Pawn p in c.foes) { Blunt(p, 8f * c.power, by); MagicFx.Fell(p, p.Position, 0, c.map, by, c.power, 120); }
-                        foreach (IntVec3 x in c.cells.InRandomOrder().Take(c.beam ? Mathf.Max(1, Mathf.RoundToInt(c.cells.Count * 0.15f)) : 1))   // cut down (the author, Fix164) if (chunk != null && ArcaneWorks.Clear(c.map, x)) GenSpawn.Spawn(chunk, x, c.map);
+                        // Fix227: the chunk was lost in a comment (the line ran on after "cut down") - the fall left nothing.
+                        // Now: chunks as before (one; a beam - 15% of its cells), rubble over the ground, the floor broken
+                        // under the heaviest stones, buildings struck, the small green crushed
+                        foreach (IntVec3 x in c.cells.InRandomOrder().Take(c.beam ? Mathf.Max(1, Mathf.RoundToInt(c.cells.Count * 0.15f)) : 1))   // cut down (the author, Fix164)
+                            if (chunk != null && ArcaneWorks.Clear(c.map, x)) GenSpawn.Spawn(chunk, x, c.map);
+                        foreach (IntVec3 x in c.cells)
+                        {
+                            if (Rand.Chance(0.45f)) MagicFx.Rubble(x, c.map);
+                            Building ed = x.GetEdifice(c.map);
+                            if (ed != null && ed.def.useHitPoints && ed.def.destroyable) ed.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 25f * c.power, 0f, -1f, by));
+                            Plant pl = x.GetPlant(c.map);
+                            if (pl != null && !pl.def.plant.IsTree && Rand.Chance(0.6f)) pl.Destroy(DestroyMode.KillFinalize);
+                            else if (pl != null && pl.def.plant.IsTree) pl.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 15f * c.power, 0f, -1f, by));
+                            // a laid floor (wood, tiles, stone) cracks and is gone under a heavy stone - the ground beneath stays
+                            TerrainDef ter = x.GetTerrain(c.map);
+                            if (ter != null && ter.layerable && !ter.IsWater && Rand.Chance(0.2f * Mathf.Min(1.5f, c.power))) c.map.terrainGrid.RemoveTopLayer(x, false);
+                        }
                         Puff(c, MagicFx.EarthDust);
+                        MagicSounds.Play("Rockfall:Crash", c.at, c.map);   // it was heard too quietly (the author) - the thud of the stones under the rumble
                         break;
                     }
                 case SecondKind.Emery:
@@ -483,7 +502,7 @@ namespace Avir.Magic
                     Puff(c, new Color(0.8f, 0.7f, 0.5f, 0.6f));
                     break;
                 case SecondKind.BurningSand:
-                    foreach (Pawn p in c.foes) MagicFx.Give(p, H("Avir_BurningSand"), Ticks(0.3f, c.power));
+                    foreach (Pawn p in c.foes) SandOn(p, c.power);   // on the bare parts it struck (Fix227)
                     Puff(c, new Color(1f, 0.55f, 0.25f, 0.6f));
                     break;
                 case SecondKind.Clay:
@@ -494,6 +513,28 @@ namespace Avir.Magic
                     }
                     Puff(c, new Color(0.7f, 0.45f, 0.3f, 0.6f));
                     break;
+            }
+        }
+
+        /// <summary>Burning sand sticks where it found bare skin (Fix227, the author: on the whole body it was too weak):
+        /// up to 2 + 2×power bare outer parts, each burns on its own until washed; under full armour it gets through the
+        /// gaps onto one part, at half.</summary>
+        internal static void SandOn(Pawn p, float power)
+        {
+            HediffDef d = H("Avir_BurningSand");
+            if (d == null || p == null || p.Dead || !p.RaceProps.IsFlesh || SpellWards.Stops(p, true)) return;
+            var outer = p.health.hediffSet.GetNotMissingParts(BodyPartHeight.Undefined, BodyPartDepth.Outside).Where(b => b.coverageAbs > 0f).ToList();
+            var bare = outer.Where(b => !(p.apparel?.WornApparel.Any(a => a.def.apparel.CoversBodyPart(b)) ?? false)).ToList();
+            bool gaps = bare.Count == 0;
+            var parts = (gaps ? outer : bare).InRandomOrder().Take(gaps ? 1 : Mathf.Clamp(Mathf.RoundToInt(2f + 2f * power), 2, 6)).ToList();
+            int ticks = SpellBodyEffects.Ticks(p, d, Ticks(0.3f, power));
+            foreach (BodyPartRecord part in parts)
+            {
+                Hediff h = p.health.hediffSet.hediffs.FirstOrDefault(x => x.def == d && x.Part == part);
+                if (h == null) { h = HediffMaker.MakeHediff(d, p, part); p.health.AddHediff(h, part); }
+                h.Severity = Mathf.Max(h.Severity, gaps ? 0.5f : 1f);
+                HediffComp_Disappears dis = h.TryGetComp<HediffComp_Disappears>();
+                if (dis != null) dis.ticksToDisappear = Mathf.Max(dis.ticksToDisappear, ticks);
             }
         }
 
@@ -569,13 +610,11 @@ namespace Avir.Magic
             FleckMaker.ThrowLightningGlow(p.DrawPos, p.Map, 1.8f);
             FleckMaker.ThrowMicroSparks(p.DrawPos, p.Map);
             MagicSounds.Play("Discharge", p.Position, p.Map, 1f, 4);
-            if (p.RaceProps.IsMechanoid) { p.TakeDamage(new DamageInfo(DamageDefOf.EMP, 16f * power, 0f, -1f, by)); return; }
-            float metal = b.metalArmour ? 1.5f : 1f, bio = b.bionicLimb ? 1.25f : 1f;
-            // Fix225: it hit too weakly (6) - a globe is a whole bolt kept round, and strikes like one
-            Burn(p, 11f * power * metal * bio, by);
-            if (p.Spawned) Reactions.Conduct(p.Position, p.Map, by, power * 0.6f);   // the globe's charge runs on (Fix182)
-            MagicFx.Stun(p, 90, by);
-            if (b.bionicLimb && Rand.Chance(0.5f)) MagicFx.Give(p, H("Avir_Glitched"), 300);
+            // Fix225: it hit too weakly (6) - a globe is a whole bolt kept round, and strikes like one; Fix227: by the common
+            // rule of the charge - the wet, the metal-clad, the fitted with bionics take it harder
+            Map m = p.Map; IntVec3 at = p.Position;
+            Electricity.Hit(p, 11f * power, by, 90);
+            Reactions.Conduct(at, m, by, power * 0.6f);   // the globe's charge runs on (Fix182)
         }
     }
 
@@ -666,15 +705,19 @@ namespace Avir.Magic
             // whom it strikes is the spell's shaping at the cast, kept (0 - unshaped: anyone alive, its mage too; 1 - Selective
             // Protection: all but the mage's own; 2 - Selective Aid: only them)
             public int sculpt;
+            // the charge it has gathered (Fix227): from 1 it swells as long as it lives unspent - the globe grows, and its
+            // strike and its burst grow with it; Growth makes it swell twice as fast and further
+            public float charge = 1f; public bool growth;
+            public float MaxCharge => growth ? 4f : 2.5f;
             public bool Hits(Pawn p) => p != null && !p.Dead && (sculpt == 0 || owner == null || (sculpt == 2) == SpellSculpt.Own(p, owner));
         }
         public readonly List<Globe> globes = new List<Globe>();
         private const float GlobeSeek = 12f, GlobeSpeed = 0.045f, GlobeRoll = 0.11f, GlobeReach = 0.75f;
 
-        public void AddGlobe(Vector3 at, Pawn owner, float power, int ticks, HashSet<IntVec3> zone, List<Pawn> line = null)
+        public void AddGlobe(Vector3 at, Pawn owner, float power, int ticks, HashSet<IntVec3> zone, List<Pawn> line = null, bool growth = false)
         {
             at.y = 0f;
-            globes.Add(new Globe { pos = at, dir = Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * Vector3.forward, owner = owner, power = power, until = Find.TickManager.TicksGame + ticks, zone = zone, line = line, phase = Rand.Range(0f, 6.28f), sculpt = !SpellSculpt.Active ? 0 : SpellSculpt.Allies ? 2 : 1 });
+            globes.Add(new Globe { growth = growth, pos = at, dir = Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * Vector3.forward, owner = owner, power = power, until = Find.TickManager.TicksGame + ticks, zone = zone, line = line, phase = Rand.Range(0f, 6.28f), sculpt = !SpellSculpt.Active ? 0 : SpellSculpt.Allies ? 2 : 1 });
             FleckMaker.ThrowLightningGlow(at, map, 1.2f);
             MagicSounds.Play("Second:BallLightning", at.ToIntVec3(), map, 0.8f, 6);
         }
@@ -701,6 +744,7 @@ namespace Avir.Magic
                 Globe g = globes[i];
                 if (now >= g.until || g.line != null && g.line.Count == 0) { Burst(g); globes.RemoveAt(i); continue; }
                 if (g.rest > 0) g.rest--;
+                else g.charge = Mathf.Min(g.MaxCharge, g.charge + (g.growth ? 2f : 1f) / 900f);   // +1 in 15 s (Growth: 7.5 s)
                 if (g.target == null || g.target.Dead || !g.target.Spawned || now % 30 == 0) g.target = Seek(g);
                 // the way: straight to the foe, or a lazy wander (kept inside its field)
                 Vector3 want = g.dir;
@@ -722,10 +766,10 @@ namespace Avir.Magic
                 // the strike
                 if (g.target != null && g.rest == 0 && (g.target.DrawPos - g.pos).MagnitudeHorizontal() < GlobeReach)
                 {
-                    SecondOrder.Zap(g.target, g.power, g.owner, g.pos);
+                    SecondOrder.Zap(g.target, g.power * Mathf.Sqrt(g.charge), g.owner, g.pos);
                     if (g.line != null) { g.line.Remove(g.target); g.power *= 0.85f; g.target = null; }
                     else if (g.zone == null) { Explode(g, 1f); globes.RemoveAt(i); continue; }   // a loose globe is spent in its strike - and bursts (Fix226)
-                    else { g.rest = 150; g.target = null; }                         // a globe of a field gathers its charge again
+                    else { g.rest = 150; g.target = null; g.charge = 1f; }          // a globe of a field spends its charge and gathers it again
                 }
             }
         }
@@ -741,9 +785,10 @@ namespace Avir.Magic
         {
             IntVec3 c = g.pos.ToIntVec3();
             if (!c.InBounds(map)) return;
-            float radius = 2.4f * scale * Mathf.Clamp(Mathf.Sqrt(g.power), 0.8f, 1.5f);
+            // the longer it went unspent, the bigger the burst (Fix227): radius by the root of its charge, the blow by the charge
+            float radius = 2.4f * scale * Mathf.Clamp(Mathf.Sqrt(g.power), 0.8f, 1.5f) * Mathf.Sqrt(g.charge);
             var spared = map.mapPawns.AllPawnsSpawned.Where(p => p.Position.DistanceTo(c) <= radius + 1f && !g.Hits(p)).Cast<Thing>().ToList();
-            GenExplosion.DoExplosion(c, map, radius, DamageDefOf.EMP, g.owner, Mathf.RoundToInt(14f * g.power), -1f, DefDatabase<SoundDef>.GetNamedSilentFail("Explosion_EMP"), ignoredThings: spared);
+            GenExplosion.DoExplosion(c, map, radius, DamageDefOf.EMP, g.owner, Mathf.RoundToInt(14f * g.power * g.charge), -1f, DefDatabase<SoundDef>.GetNamedSilentFail("Explosion_EMP"), ignoredThings: spared);
             MagicSounds.Play("Thunder", c, map, 0.55f, 10);   // the clap after the crack
             FleckMaker.Static(g.pos, map, FleckDefOf.ExplosionFlash, radius * 1.8f);
             FleckMaker.ThrowLightningGlow(g.pos, map, radius * 1.2f);
@@ -753,11 +798,9 @@ namespace Avir.Magic
             {
                 if (!g.Hits(p) || p.RaceProps.IsMechanoid) continue;   // a machine has had the EMP
                 float near = 1f - 0.6f * p.Position.DistanceTo(c) / radius;
-                var b = SpellBody.Of(p);
-                p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 9f * g.power * near * (b.metalArmour ? 1.5f : 1f), 0f, -1f, g.owner));
-                if (!p.Dead) MagicFx.Stun(p, Mathf.RoundToInt(80f * near), g.owner);
+                Electricity.Hit(p, 9f * g.power * g.charge * near, g.owner, Mathf.RoundToInt(80f * near));
             }
-            Reactions.Conduct(c, map, g.owner, g.power * 0.7f);
+            Reactions.Conduct(c, map, g.owner, g.power * 0.7f * g.charge);
         }
 
         private static Material globeMat;
@@ -767,7 +810,8 @@ namespace Avir.Magic
             var block = new MaterialPropertyBlock();
             foreach (Globe g in globes)
             {
-                float pulse = 0.85f + 0.12f * Mathf.Sin(t * 9f + g.phase) + 0.05f * Mathf.Sin(t * 23f + g.phase * 2f);
+                float pulse = (0.85f + 0.12f * Mathf.Sin(t * 9f + g.phase) + 0.05f * Mathf.Sin(t * 23f + g.phase * 2f))
+                    * Mathf.Clamp(Mathf.Sqrt(g.power), 0.75f, 1.4f) * (0.7f + 0.3f * g.charge);   // it swells as it gathers (Fix227)
                 Vector3 p = g.pos + new Vector3(0f, 0f, 0.35f + 0.08f * Mathf.Sin(t * 2.2f + g.phase));   // it floats a little above the ground
                 p.y = AltitudeLayer.MoteOverhead.AltitudeFor();
                 block.SetColor(ShaderPropertyIDs.Color, new Color(1f, 1f, 1f, g.rest > 0 ? 0.45f : 1f));
@@ -788,6 +832,27 @@ namespace Avir.Magic
                 Vector3 at = x.ToVector3Shifted() + new Vector3(Rand.Range(-0.4f, 0.4f), 0f, Rand.Range(-0.4f, 0.4f));
                 MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", new Color(0.85f, 0.92f, 1f, 0.75f), at, Rand.Range(1.8f, 3f), 22, w.AngleFlat() - 90f, 0f, 5.3f);
                 if (Rand.Chance(0.2f)) FleckMaker.ThrowDustPuffThick(at, map, 0.9f, new Color(0.82f, 0.86f, 0.9f, 0.4f));
+            }
+        }
+
+        // ---- swelter and thermal look apart (Fix227, the author: Fire-Air-Fire and Air-Fire-Air looked the same) ----
+        // the swelter lies low and heavy - an orange shimmer over the ground and the glow of heat; the thermal goes up -
+        // pale gold wisps and puffs of air rising, no glow at all
+        private void HazeLook(Fld f)
+        {
+            foreach (IntVec3 x in f.cells.InRandomOrder().Take(Mathf.Max(1, f.cells.Count / 10)))
+            {
+                Vector3 v = x.ToVector3Shifted() + new Vector3(Rand.Range(-0.4f, 0.4f), 0f, Rand.Range(-0.4f, 0.4f));
+                if (f.y == SecondKind.Swelter)
+                {
+                    MapComponent_SpellSprites.PutTinted(map, "Haze/Shimmer", new Color(1f, 0.5f, 0.2f, 0.75f), v, Rand.Range(1.4f, 2.2f), 80, -1f, 0.5f);
+                    if (Rand.Chance(0.5f)) FleckMaker.ThrowHeatGlow(x, map, 1.1f);
+                }
+                else
+                {
+                    MapComponent_SpellSprites.PutTintedGrowing(map, "Wind/Wisp", new Color(1f, 0.95f, 0.75f), v, 0.6f, 50, 2.2f);
+                    if (Rand.Chance(0.6f)) FleckMaker.ThrowAirPuffUp(v, map);
+                }
             }
         }
 
@@ -819,7 +884,11 @@ namespace Avir.Magic
                 string key = whirl ? "Hold:Whirl" : "Hold:" + f.y;
                 if (MagicSounds.Table.ContainsKey(key)) MagicSounds.Keep(f, key, SoundAt(f).ToIntVec3(), map);
             }
-            if (now % 10 == 0) foreach (Fld f in fields) if (f.y == SecondKind.Hurricane && f.speed <= 0f) HurricaneWind(f);
+            if (now % 10 == 0) foreach (Fld f in fields)
+            {
+                if (f.y == SecondKind.Hurricane && f.speed <= 0f) HurricaneWind(f);
+                else if (f.y == SecondKind.Swelter || f.y == SecondKind.Thermal) HazeLook(f);
+            }
             // the whirls blow real wind round themselves in Atmosphere Overhaul's air, four times a second, so it builds up
             if (now % 15 == 0 && AtmosphereBridge.Throws)
                 foreach (Fld w in fields.Where(x => x.y == SecondKind.Hurricane && x.speed > 0f))
@@ -877,7 +946,10 @@ namespace Avir.Magic
                             case SecondKind.Typhoon: if (foe) SecondOrder.BoilingRain(p, f.power, f.owner, map, f.center.ToIntVec3()); break;
                             case SecondKind.Ash: if (foe && !SecondOrder.Sealed(p)) MagicFx.Give(p, SecondOrder.H("Avir_Ashen"), 300); break;
                             case SecondKind.Deluge: WaterMagic.Soak(p, f.power); if (Rand.Chance(0.35f)) FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 1f); break;   // soaked again and again while under it (Fix225)
-                            case SecondKind.Swelter: if (foe && p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Max(0f, p.needs.rest.CurLevel - 0.01f * f.power); else if (!foe) MagicFx.Give(p, SecondOrder.H("Avir_Updraft"), 120); break;
+                            case SecondKind.Swelter:
+                                if (foe) { if (p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Max(0f, p.needs.rest.CurLevel - 0.01f * f.power); HealthUtility.AdjustSeverity(p, HediffDefOf.Heatstroke, 0.006f * f.power * (SecondOrder.Sealed(p) ? 1.5f : 1f)); }
+                                else MagicFx.Give(p, SecondOrder.H("Avir_Updraft"), 120);
+                                break;
                             case SecondKind.MarshHaze: if (foe && !SecondOrder.Masked(p)) HealthUtility.AdjustSeverity(p, HediffDefOf.ToxicBuildup, 0.006f * f.power); break;
                             case SecondKind.Emery: if (foe) foreach (Apparel a in p.apparel?.WornApparel.ToList() ?? new List<Apparel>()) a.HitPoints = Mathf.Max(1, a.HitPoints - 1); else MagicFx.Give(p, SecondOrder.H("Avir_Honed"), 300); break;
                             case SecondKind.BallLightning: break;   // its globes strike (Fix225)
@@ -1092,7 +1164,8 @@ namespace Avir.Magic
             Pawn p = parent.pawn;
             if (!p.IsHashIntervalTick(120)) return;
             if ((WaterDefOf.Avir_Soaked != null && p.health.hediffSet.HasHediff(WaterDefOf.Avir_Soaked)) || (p.Spawned && Reactions.Wet(p.Position, p.Map))) { severityAdjustment = -1f; return; }
-            p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 1.2f, 0f, -1f));
+            // it burns the part it lies on, through nothing (it is on the skin) - Fix227
+            p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 2.2f * parent.Severity, 99f, -1f, null, parent.Part));
         }
     }
     public class HediffCompProperties_BurningSand : HediffCompProperties { public HediffCompProperties_BurningSand() { compClass = typeof(HediffComp_BurningSand); } }

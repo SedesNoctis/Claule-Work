@@ -25,7 +25,7 @@ namespace Avir.Magic
             ["El:Water"] = new Line(0.9f, "EmergeFromWater", "Interact_CleanFilth_Fluid"),
             ["El:Air"] = new Line(0.7f, "HissJet", "HissSmall"),
             ["El:Earth"] = new Line(0.6f, "Roof_Collapse", "ChunkRock_Drop"),
-            ["El:Light"] = new Line(0.7f, "Psycast_Skip_Exit", "EnergyShield_Reset"),
+            ["El:Light"] = new Line(0.7f, "Psycast_Skip_Exit", "Psycast_Skip_Entry", "EnergyShield_Reset"),
             ["El:Life"] = new Line(0.8f, "Interact_Sow", "Psycast_Skip_Entry"),
             // the meetings of two
             ["Combo:Steam"] = new Line(0.9f, "HissJet", "GeyserSpray"),
@@ -49,7 +49,7 @@ namespace Avir.Magic
             ["Second:Mudflow"] = new Line(1f, "EmergeFromWater", "Roof_Collapse"),
             ["Second:Swelter"] = new Line(0.6f, "Interact_Ignite"),
             ["Second:Thermal"] = new Line(0.6f, "HissSmall"),
-            ["Second:Rainbow"] = new Line(0.7f, "PsycastPsychicPulse", "Psycast_Skip_Exit"),
+            ["Second:Rainbow"] = new Line(0.7f, "PsycastPsychicPulse", "Psycast_Skip_Exit", "Psycast_Skip_Entry"),
             ["Second:DryWind"] = new Line(0.7f, "HissJet"),
             ["Second:Quag"] = new Line(0.9f, "EmergeFromWater"),
             ["Second:Silt"] = new Line(0.8f, "EmergeFromWater"),
@@ -64,8 +64,10 @@ namespace Avir.Magic
             ["Bolt"] = new Line(0.9f, "Thunder_OnMap"),
             ["Arc"] = new Line(0.8f, "Pawn_Nociosphere_Arc", "EnergyShield_AbsorbDamage"),
             ["Discharge"] = new Line(0.9f, "Explosion_EMP"),
+            ["Steam"] = new Line(0.8f, "HissJet"),
+            ["Rockfall:Crash"] = new Line(1f, "DropPod_Impact", "Roof_Collapse"),
             // the long sounds of fields that stay (sustained while the field is in view)
-            ["Hold:Deluge"] = new Line(0.6f, "Ambient_Rain", "RainOnRoof"),
+            ["Hold:Deluge"] = new Line(0.8f, "Ambient_Rain"),
             ["Hold:Hurricane"] = new Line(0.5f, "Tornado"),
             ["Hold:Typhoon"] = new Line(0.5f, "Tornado"),
             ["Hold:Whirl"] = new Line(0.22f, "Tornado"),
@@ -117,7 +119,10 @@ namespace Avir.Magic
                 SoundInfo info = SoundInfo.InMap(new TargetInfo(at, map), MaintenanceType.PerTick);
                 info.volumeFactor = Table[key].volume;
                 try { s = d.TrySpawnSustainer(info); } catch (System.Exception e) { Log.WarningOnce("[Avir] sound " + key + ": " + e.Message, key.GetHashCode()); s = null; }
-                if (s == null) return;
+                if (s == null) { Log.WarningOnce("[Avir] long sound " + key + " (" + d.defName + ") did not start", key.GetHashCode() ^ 0x51); return; }
+                // the game's weather sounds are silent until the weather turns them up (its "LerpFactor" - how far the
+                // weather has come in): ours is fully in at once (Fix227 - the deluge's rain was silent because of it)
+                try { s.externalParams["LerpFactor"] = 1f; } catch { }
                 held[owner] = s;
             }
             s.Maintain();

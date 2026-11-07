@@ -70,7 +70,9 @@ namespace Avir.Magic
             if (p.RaceProps.IsMechanoid) return 2f;
             float f = 0f;
             if (p.apparel != null) f += Mathf.Min(1f, 0.5f * p.apparel.WornApparel.Count(a => OfThing(a) >= 2));
-            if (p.health.hediffSet.hediffs.Any(MetalPart)) f += 0.5f;
+            // every metal part fitted into the body is a conductor in it (Fix227, the author: bionics are a good conductor -
+            // the more of them, the harder the charge goes through): +0.35 each, up to +1
+            f += Mathf.Min(1f, 0.35f * p.health.hediffSet.hediffs.Count(MetalPart));
             if (WaterDefOf.Avir_Soaked != null && p.health.hediffSet.HasHediff(WaterDefOf.Avir_Soaked)) f += 0.7f;
             return f;
         }
@@ -141,17 +143,27 @@ namespace Avir.Magic
         {
             if (p.Dead) return;   // the mage too, if the charge reaches them (Fix190)
             if (spare && caster != null && !MagicFx.Foe(p, caster)) return;
-            float f = 0.6f + 0.5f * OfPawn(p);
-            if (p.RaceProps.IsMechanoid)
-            {
-                p.TakeDamage(new DamageInfo(DamageDefOf.EMP, 12f * q, 0f, -1f, caster));
-                p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 3f * q, 0f, -1f, caster));
-                return;
-            }
-            p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 4f * q * f, 0f, -1f, caster));
-            foreach (Hediff h in p.health.hediffSet.hediffs.Where(MetalPart).Take(2).ToList())
-                if (h.Part != null && !p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 3f * q, 0f, -1f, caster, h.Part));
-            if (!p.Dead) MagicFx.Stun(p, Mathf.RoundToInt(40f * f), caster);
+            Hit(p, 4f * q, caster, 40);   // Fix227: the common rule
+        }
+
+        /// <summary>How much harder a charge strikes this body than a dry, bare one (Fix227): wet, metal worn, metal fitted
+        /// in - from x1 up to about x2.5.</summary>
+        public static float Factor(Pawn p) => 1f + 0.5f * OfPawn(p);
+
+        /// <summary>A bolt or a discharge into a body (Fix227: one rule for the storm, the ball lightning and the current).
+        /// dmg - for a dry bare body. A machine takes it as an EMP; metal fitted into the body burns at its place, and
+        /// bionics stutter for a while.</summary>
+        public static void Hit(Pawn p, float dmg, Pawn caster, int stun)
+        {
+            if (p == null || p.Dead) return;
+            if (p.RaceProps.IsMechanoid) { p.TakeDamage(new DamageInfo(DamageDefOf.EMP, dmg * 1.4f, 0f, -1f, caster)); p.TakeDamage(new DamageInfo(DamageDefOf.Burn, dmg * 0.3f, 0f, -1f, caster)); return; }
+            float f = Factor(p);
+            p.TakeDamage(new DamageInfo(DamageDefOf.Burn, dmg * f, 0f, -1f, caster));
+            var metal = p.health.hediffSet.hediffs.Where(MetalPart).Where(h => h.Part != null).Take(3).ToList();
+            foreach (Hediff h in metal) if (!p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, dmg * 0.4f, 99f, -1f, caster, h.Part));
+            if (p.Dead) return;
+            if (metal.Count > 0) { HediffDef gl = DefDatabase<HediffDef>.GetNamedSilentFail("Avir_Glitched"); if (gl != null) MagicFx.Give(p, gl, 300 + 150 * metal.Count); }
+            if (stun > 0) MagicFx.Stun(p, Mathf.RoundToInt(stun * f), caster);
         }
 
         /// <summary>Where the sky's lightning goes: near where it was to strike, the tallest and most metal thing under

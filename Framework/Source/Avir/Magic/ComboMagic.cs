@@ -417,7 +417,7 @@ namespace Avir.Magic
                     WeatherEvent_MagicBolt.Strike(map, first != null ? first.Position : Center(cells));
                     if (first != null) AirMagic.Chain(caster, new List<IntVec3> { first.Position }, map, 1 + r.breadth + Mathf.FloorToInt(Reactions.WaterAround(Center(cells), map) * 10f), power, true, true);
                     // every one in the burst is struck by the discharge too, not only the one the bolt leaps from
-                    foreach (Pawn p in foes) { WaterMagic.Soak(p, power); if (!p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, caster)); }
+                    foreach (Pawn p in foes) { WaterMagic.Soak(p, power); if (!p.Dead) Electricity.Hit(p, 5f * power, caster, 30); }   // soaked first, so it bites (Fix227)
                     FleckMaker.Static(Center(cells).ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 4f);
                     // the discharge spreading over the ground from where it fell: short forks out, not one flat picture
                     for (int kf = 0; kf < 5; kf++) MapComponent_SpellSprites.Bolt(map, Center(cells).ToVector3Shifted(), Center(cells).ToVector3Shifted() + Quaternion.AngleAxis(kf * 72f + Rand.Range(-25f, 25f), Vector3.up) * Vector3.forward * Rand.Range(1.2f, FireMagic.PointRadius(r) + 0.5f), 16);
@@ -451,7 +451,7 @@ namespace Avir.Magic
                     foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) MirePatch.Spread(c, map, caster, power, Mathf.RoundToInt(GenDate.TicksPerHour * power));
                     // the mud strikes like a fall of wet earth
                     foreach (Pawn p in foes) if (!p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 10f * power, 0f, -1f, caster));
-                    foreach (Pawn p in foes) { WaterMagic.Soak(p, power); MagicFx.Give(p, ComboDefOf.Avir_Mired, Mathf.RoundToInt(600f * power)); MagicFx.Fell(p, Center(cells), 1, map, caster, power, Mathf.RoundToInt(90f * power)); }
+                    foreach (Pawn p in foes) { WaterMagic.Soak(p, power); MagicFx.Mire(p, Mathf.RoundToInt(600f * power)); MagicFx.Fell(p, Center(cells), 1, map, caster, power, Mathf.RoundToInt(90f * power)); }
                     break;
                 case ComboKind.Dust:
                     // a blast of sand: it grinds every bare part, and the dust hangs
@@ -500,6 +500,10 @@ namespace Avir.Magic
 
         private static void Growth(ComboKind k, Pawn caster, Map map, List<IntVec3> cells, float power, RitualReading r)
         {
+            // under a meeting of three the pair's Growth is that meeting's (Fix227, the author): the ball lightning's
+            // Growth swells its globes - no rain creeping out under it; a mudflow's creeps out as mire, not as water
+            if (SecondOrder.Background && SecondOrder.Now == SecondKind.BallLightning) return;
+            if (SecondOrder.Background && SecondOrder.Now == SecondKind.Mudflow && k == ComboKind.Storm) k = ComboKind.Bog;
             var near = cells.SelectMany(c => GenRadial.RadialCellsAround(c, 2f, true)).Where(c => c.InBounds(map)).Distinct().ToList();
             switch (k)
             {
@@ -576,7 +580,7 @@ namespace Avir.Magic
                     first?.TakeDamage(new DamageInfo(DamageDefOf.Burn, 10f * power, 0.3f, -1f, caster));
                     break;
                 // a jet of mud: knocked down, soaked, stuck
-                case ComboKind.Bog: foreach (Pawn p in foes) { MapComponent_SpellSprites.Put(map, "Bog/Splash", p.DrawPos, 1.4f, 50); WaterMagic.Soak(p, power); MagicFx.Give(p, ComboDefOf.Avir_Mired, Mathf.RoundToInt(600f * power)); MagicFx.Fell(p, caster.Position, 1, map, caster, power, 90); } break;
+                case ComboKind.Bog: foreach (Pawn p in foes) { MapComponent_SpellSprites.Put(map, "Bog/Splash", p.DrawPos, 1.4f, 50); WaterMagic.Soak(p, power); MagicFx.Mire(p, Mathf.RoundToInt(600f * power)); MagicFx.Fell(p, caster.Position, 1, map, caster, power, 90); } break;
                 // a blast of sand along the line
                 case ComboKind.Dust: foreach (Pawn p in foes) { Grind(p, caster, power); MagicFx.Give(p, ComboDefOf.Avir_Dusted, Mathf.RoundToInt(600f * power)); } break;
             }
@@ -865,7 +869,7 @@ namespace Avir.Magic
                         case ComboKind.Dust: if (foe) { MagicFx.Give(p, ComboDefOf.Avir_Dusted, 90); MagicFx.Give(p, EarthAirDefOf.Avir_Buffeted, 120); } break;
                         case ComboKind.Storm: if (foe) WaterMagic.Soak(p, f.power * 0.5f); break;
                         case ComboKind.Magma: if (foe) { p.TakeDamage(new DamageInfo(DamageDefOf.Flame, 2f * f.power, 0f, -1f, f.caster)); if (!p.Dead) MagicFx.Give(p, HeldSlow.Scorched, 120); } break;
-                        case ComboKind.Bog: if (foe) MagicFx.Give(p, ComboDefOf.Avir_Mired, 90); break;
+                        case ComboKind.Bog: if (foe) MagicFx.Mire(p, 90); break;
                     }
                 }
                 if (f.kind == ComboKind.Steam && now % 180 == 0) ComboMagic.Smoke(map, cells, 0.4f);
@@ -912,7 +916,18 @@ namespace Avir.Magic
 
         public static void Pour(IntVec3 c, Map map, Pawn owner, float power, int life, bool setsHard, int stoneLife = 2500, bool lava = false)
         {
-            if (!c.InBounds(map) || c.Impassable(map) || ComboDefOf.Avir_Magma == null) return;
+            if (!c.InBounds(map) || ComboDefOf.Avir_Magma == null) return;
+            // onto open water - a river, a lake, a marsh (Fix227, the author): magma does not show there at all; it boils off
+            // as scalding steam, and the water stays water
+            TerrainDef ter = c.GetTerrain(map);
+            if (ter != null && ter.IsWater)
+            {
+                Gas_ScaldingSteam.Release(c, map, 2);
+                if (Rand.Chance(0.4f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.2f, new Color(1f, 1f, 1f, 0.5f));
+                MagicSounds.Play("Steam", c, map, 1f, 15);
+                return;
+            }
+            if (c.Impassable(map)) return;
             if (Reactions.Pools(c, map).Any(t => !(t is MirePatch)))
             {
                 // poured onto water: it sets at once into black glass, in a burst of steam
@@ -1058,7 +1073,7 @@ namespace Avir.Magic
             {
                 // a mire with no master (a lost hold) takes anyone
                 if (p.Dead || (owner != null && !MagicFx.Foe(p, owner)) || MagicFx.Rooted(p) || SpellWards.Stops(p, true)) continue;
-                MagicFx.Give(p, ComboDefOf.Avir_Mired, 150);
+                MagicFx.Mire(p, 150);
                 // the longer they stay, the deeper they sink; the fallen go under fast
                 // a machine does not drown: the mire only swallows it to the joints and holds it fast, helpless, for as long
                 // as it lies there - to be dug out and taken, not killed. Nor does one wholly sealed (a void suit, a
@@ -1112,7 +1127,7 @@ namespace Avir.Magic
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
             {
                 if (p.Dead) continue;
-                if (owner != null && MagicFx.Foe(p, owner)) MagicFx.Give(p, ComboDefOf.Avir_Mired, 150);
+                if (owner != null && MagicFx.Foe(p, owner)) MagicFx.Mire(p, 150);
                 else Mend(p, 0.4f);
             }
         }
@@ -1132,7 +1147,7 @@ namespace Avir.Magic
             if (!foe.Dead && hs.HasHediff(ComboDefOf.Avir_StormEnchant)) { foe.TakeDamage(new DamageInfo(foe.RaceProps.IsMechanoid ? DamageDefOf.EMP : DamageDefOf.Burn, 5f, 0f, -1f, p)); if (!foe.Dead && Rand.Chance(0.2f)) MagicFx.Stun(foe, 60, p); if (foe.Spawned) FleckMaker.ThrowLightningGlow(foe.DrawPos, foe.Map, 0.8f); }
             if (!foe.Dead && hs.HasHediff(ComboDefOf.Avir_MagmaEnchant)) { foe.TakeDamage(new DamageInfo(DamageDefOf.Flame, 6f, 0f, -1f, p)); if (!foe.Dead && foe.Spawned && Rand.Chance(0.3f)) FireUtility.TryAttachFire(foe, 0.3f, p); }
             if (!foe.Dead && hs.HasHediff(ComboDefOf.Avir_HazeEnchant)) MagicFx.Give(foe, ComboDefOf.Avir_Dazzled, 300);
-            if (!foe.Dead && hs.HasHediff(ComboDefOf.Avir_BogEnchant)) MagicFx.Give(foe, ComboDefOf.Avir_Mired, 300);
+            if (!foe.Dead && hs.HasHediff(ComboDefOf.Avir_BogEnchant)) MagicFx.Mire(foe, 300);
             if (!foe.Dead && hs.HasHediff(ComboDefOf.Avir_DustEnchant)) { ComboMagic.Grind(foe, p, 0.6f); MagicFx.Give(foe, ComboDefOf.Avir_Dusted, 300); }
             // the wards answer whoever strikes their wearer
             var th = foe.health.hediffSet;

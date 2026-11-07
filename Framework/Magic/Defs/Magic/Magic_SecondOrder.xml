@@ -245,7 +245,7 @@
   <HediffDef>
     <defName>Avir_BurningSand</defName>
     <label>burning sand</label>
-    <description>Hot grains stuck to the body: they burn until water washes them off.</description>
+    <description>Hot grains stuck to the bare skin here: they burn this part until water washes them off. Through armour they get only into the gaps.</description>
     <hediffClass>HediffWithComps</hediffClass>
     <defaultLabelColor>(1, 0.55, 0.25)</defaultLabelColor>
     <isBad>true</isBad>

@@ -132,7 +132,9 @@ namespace Avir.Magic
             bool head = false, body = false;
             foreach (Apparel a in p.apparel.WornApparel)
             {
-                if (a.def.techLevel < TechLevel.Spacer) continue;
+                // a mod's armour marked sealed by a patch (Fix227): <modExtensions><li Class="Avir.Magic.SealedGear"/></modExtensions>
+                bool marked = a.def.HasModExtension<SealedGear>();
+                if (a.def.techLevel < TechLevel.Spacer && !marked) continue;
                 var g = a.def.apparel?.bodyPartGroups;
                 if (g == null) continue;
                 if (g.Contains(BodyPartGroupDefOf.FullHead)) head = true;
@@ -194,4 +196,9 @@ namespace Avir.Magic
             return amount;
         }
     }
+
+    /// <summary>Marks a piece of apparel as sealed against the outside for magic (Fix227): for mods whose closed armour
+    /// is not of a spacer's make and does not hold the void without Odyssey. Head cover (FullHead) and body cover (Torso)
+    /// together make a sealed body, as with the spacer's gear.</summary>
+    public class SealedGear : DefModExtension { }
 }

@@ -302,10 +302,8 @@ namespace Avir.Magic
                     // the first strike thunders, the leaps after it crack (Fix225)
                     if (i == 0) MagicSounds.Play("Bolt", from, map); else MagicSounds.Play("Arc", from, map, 1f, 3);
                     FleckMaker.ThrowLightningGlow(at, map, 1.4f);
-                    float wet = cur.health.hediffSet.GetFirstHediffOfDef(WaterDefOf.Avir_Soaked) != null ? 1.5f : 1f;
-                    cur.TakeDamage(new DamageInfo(DamageDefOf.Burn, 8f * power * wet, 0.3f, -1f, caster));
-                    if (!cur.Dead && cur.RaceProps.IsMechanoid) cur.TakeDamage(new DamageInfo(DamageDefOf.EMP, 10f * power, 0f, -1f, caster));
-                    if (!cur.Dead) MagicFx.Stun(cur, 50, caster);
+                    // the wet, the metal-clad and the fitted with bionics take it harder (Electricity.Hit, Fix227)
+                    Electricity.Hit(cur, 8f * power, caster, 50);
                     // standing in water: the bolt runs on through it
                     Reactions.Conduct(from, map, caster, power);
                 }
@@ -486,6 +484,13 @@ namespace Avir.Magic
 
         /// <summary>Thrown up into the air, to fall.</summary>
         public static void Lift(Pawn p, Pawn by, float power) => SpellHurl.Lift(p, by, power);
+
+        /// <summary>Stuck in the mire (Fix227, the author): the mud is wet - whoever it holds is soaked too, lightly.</summary>
+        public static void Mire(Pawn p, int ticks)
+        {
+            Give(p, ComboDefOf.Avir_Mired, ticks);
+            if (p != null && !p.Dead) WaterMagic.Soak(p, 0.5f);
+        }
 
         public static void Give(Pawn p, HediffDef def, int ticks)
         {

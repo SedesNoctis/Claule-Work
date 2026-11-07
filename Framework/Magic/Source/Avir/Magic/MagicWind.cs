@@ -256,7 +256,9 @@ namespace Avir.Magic
                     if (did != null && Prefs.DevMode) Log.Message("[Avir wind] " + p.LabelShort + ": " + did + " at " + sp.ToString("0") + " m/s");
                     continue;
                 }
-                if (t.def.EverHaulable && !(t is Corpse k && k.InnerPawn.BodySize > 1.5f))
+                // the dead fly too (a corpse is a thing); a big one only in a hurricane's wind - up to body size 1.5 at any
+                // wind that lifts it, more past 50 m/s (Fix227)
+                if (t.def.EverHaulable && !(t is Corpse k && k.InnerPawn.BodySize > Mathf.Max(1.5f, s / 35f)))
                 {
                     float mass = Mathf.Max(0.05f, t.GetStatValue(StatDefOf.Mass)) * Mathf.Sqrt(Mathf.Max(1, t.stackCount));
                     float need = 16f + 6f * Mathf.Sqrt(mass);
