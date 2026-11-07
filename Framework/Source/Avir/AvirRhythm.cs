@@ -462,10 +462,13 @@ namespace Avir
     [StaticConstructorOnStartup]
     public static class AvirLightEyes
     {
-        public const float NightBorn = 1.5f;
+        public const float NightBorn = 1.5f, NightStun = 320f;
+        private static bool ArchoEyes(Pawn p) => p?.health?.hediffSet != null && p.health.hediffSet.hediffs.Any(h => h is Hediff_AddedPart && h.Part != null && h.Part.def.tags.Contains(BodyPartTagDefOf.SightSource) && h.def.defName.IndexOf("Archotech", System.StringComparison.OrdinalIgnoreCase) >= 0);
         static AvirLightEyes()
         {
             Avir.Magic.LightMagic.Sensitivity.Add(p => AvirRhythmUtility.IsAvir(p) && (AvirRhythmUtility.IsNocturnal(p) || AvirRhythmUtility.NightOwlLocked(p)) ? NightBorn : 1f);
+            // and they stay stunned the longest (the author, Fix222) - archotech eyes still spare them the stun
+            Avir.Magic.LightMagic.StunOverride.Add(p => AvirRhythmUtility.IsAvir(p) && (AvirRhythmUtility.IsNocturnal(p) || AvirRhythmUtility.NightOwlLocked(p)) && !ArchoEyes(p) ? NightStun : -1f);
         }
     }
 }

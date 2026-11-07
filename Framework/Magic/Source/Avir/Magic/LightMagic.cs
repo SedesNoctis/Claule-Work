@@ -340,8 +340,8 @@ namespace Avir.Magic
         public static readonly List<System.Func<Pawn, float>> Sensitivity = new List<System.Func<Pawn, float>>();
         public static float SensitivityOf(Pawn p) { float f = EyeFactor(p); foreach (var s in Sensitivity) f *= s(p); return f; }
 
-        /// <summary>Light is the strongest blinder (the author, Fix221): living eyes take it whole; bionic ones worse - it presses on
-        /// their sensors; archotech ones bear half. Averaged over the eyes the body has (no eyes - it is never dazzled at all).</summary>
+        /// <summary>Light is the strongest blinder (the author, Fix221-222): living eyes and bionic ones take it whole (each with its
+        /// stun - StunOf); archotech ones bear half, and no stun. Averaged over the eyes the body has (no eyes - it is never dazzled at all).</summary>
         public static float EyeFactor(Pawn p)
         {
             var hs = p?.health?.hediffSet;
@@ -354,7 +354,7 @@ namespace Avir.Magic
                 Hediff added = hs.hediffs.FirstOrDefault(h => h.Part == e && h is Hediff_AddedPart);
                 if (added == null) sum += 1f;
                 else if (added.def.defName.IndexOf("Archotech", System.StringComparison.OrdinalIgnoreCase) >= 0) sum += 0.5f;
-                else sum += 1.25f;
+                else sum += 1f;
             }
             return sum / eyes.Count;
         }
@@ -374,6 +374,30 @@ namespace Avir.Magic
             if (SpellWards.Stops(p, true)) return;
             Hediff h = p.health.hediffSet.GetFirstHediffOfDef(d) ?? p.health.AddHediff(d);
             h.Severity = Mathf.Min(1f, h.Severity + severity);
+            // and the stun of it, by the eyes (the author, Fix222)
+            int stun = Mathf.RoundToInt(StunOf(p) * severity);
+            if (stun > 10 && p.Spawned) p.stances?.stunner?.StunFor(stun, null, false);
+        }
+
+        /// <summary>Ticks of stun for a whole measure of dazzle (the author, Fix222): living eyes - the most of the plain ones;
+        /// bionic - less; archotech - none at all. A module may say more (the night-born Avir - the longest).</summary>
+        public static readonly List<System.Func<Pawn, float>> StunOverride = new List<System.Func<Pawn, float>>();
+        public static float StunOf(Pawn p)
+        {
+            foreach (var f in StunOverride) { float v = f(p); if (v >= 0f) return v; }
+            var hs = p?.health?.hediffSet;
+            if (hs == null) return 0f;
+            var eyes = hs.GetNotMissingParts().Where(x => x.def.tags.Contains(BodyPartTagDefOf.SightSource)).ToList();
+            if (eyes.Count == 0) return 0f;
+            float sum = 0f;
+            foreach (BodyPartRecord e in eyes)
+            {
+                Hediff added = hs.hediffs.FirstOrDefault(x => x.Part == e && x is Hediff_AddedPart);
+                if (added == null) sum += 200f;
+                else if (added.def.defName.IndexOf("Archotech", System.StringComparison.OrdinalIgnoreCase) >= 0) sum += 0f;
+                else sum += 110f;
+            }
+            return sum / eyes.Count;
         }
 
         /// <summary>A flash: dazzles whoever sees it; `dmg` - and sears whom it reaches (Release does, Lift does not).</summary>
