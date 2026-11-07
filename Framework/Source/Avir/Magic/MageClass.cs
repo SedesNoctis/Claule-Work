@@ -110,7 +110,7 @@ namespace Avir.Magic
             {
                 // a wizard who walks no path yet: the first element they cast in becomes their own
                 RuneDef first = Spells.Element(s);
-                if (first != null && first.role == RuneRole.Element) { c.path = first; c.Note("Took " + first.label + " for their own."); }
+                if (first != null && first.role == RuneRole.Element && MagePath.CannotWalk(c.pawn, first) == null) { c.path = first; c.Note("Took " + first.label + " for their own."); }
             }
             List<RuneKind> sh = Shares(s);
             if (sh.Count == 0) return;

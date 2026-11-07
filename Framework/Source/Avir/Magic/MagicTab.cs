@@ -276,8 +276,22 @@ namespace Avir.Magic
             float y = 0f, w = view.width;
             var els = MagePath.Made.ToList();
             RuneDef life = DefDatabase<RuneDef>.AllDefsListForReading.FirstOrDefault(x => x.role == RuneRole.Element && x.kind == RuneKind.Life);
-            if (life != null && !els.Contains(life) && core.KnowsLife) els.Add(life);
-            foreach (RuneDef e in els) y += Scale(new Rect(0f, y, w, 0f), core, e, e == main);
+            // the great elements have their scales too (Fix232): Light always - it can be taken by the path ritual, and every
+            // cast of it teaches; Life always - shown closed while it cannot be taken, filled if the mage has touched it
+            RuneDef light = DefDatabase<RuneDef>.AllDefsListForReading.FirstOrDefault(x => x.role == RuneRole.Element && x.kind == RuneKind.Light);
+            if (light != null && !els.Contains(light)) els.Add(light);
+            if (life != null && !els.Contains(life)) els.Add(life);
+            foreach (RuneDef e in els)
+            {
+                y += Scale(new Rect(0f, y, w, 0f), core, e, e == main);
+                string closed = MageClass.XpIn(core, e.kind) <= 0f ? MagePath.CannotWalk(pawn, e) : null;
+                if (closed != null)
+                {
+                    GUI.color = InkSoft; Text.Font = GameFont.Tiny;
+                    Widgets.Label(new Rect(58f, y - 6f, w - 58f, 18f), "Closed: " + closed + ".");
+                    y += 14f; Text.Font = GameFont.Small;
+                }
+            }
             y += 4f;
             GUI.color = InkSoft; Text.Font = GameFont.Tiny;
             y += 4f;

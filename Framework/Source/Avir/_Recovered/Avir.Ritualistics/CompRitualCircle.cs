@@ -4708,6 +4708,13 @@ public class CompRitualCircle : ThingComp
 			End("the caster is gone, or already has a path.");
 			return true;
 		}
+		// Fix232 (the author): Light - for a sorcerer and a wizard alike; Life - for no one yet
+		string closed = MagePath.CannotWalk(awakenTarget, runeDef);
+		if (closed != null)
+		{
+			End(closed + ".");
+			return true;
+		}
 		if (!Pours(awakenTarget, delta, 300f, runeDef.color))
 		{
 			return false;

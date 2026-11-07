@@ -118,6 +118,16 @@ namespace Avir.Magic
         /// <summary>Elements whose spells are made: the paths a stranger may walk for now.</summary>
         public static List<RuneDef> Made => DefDatabase<RuneDef>.AllDefsListForReading.Where(r => r.role == RuneRole.Element && r.magic && Examples(r).Count > 0).ToList();
 
+        /// <summary>Which element's path a mage may take (Fix232, the author): the four small ones and Light - both a sorcerer
+        /// and a wizard; Life - no one, for now; the other great elements (Time, Space, Darkness) are not made yet.</summary>
+        public static string CannotWalk(Pawn who, RuneDef el)
+        {
+            if (el == null) return "no element";
+            if (el.kind == RuneKind.Life) return "the path of Life is closed - no one can take it yet";
+            if (el.kind == RuneKind.Fire || el.kind == RuneKind.Water || el.kind == RuneKind.Earth || el.kind == RuneKind.Air || el.kind == RuneKind.Light) return null;
+            return "the path of " + el.label + " is not made yet";
+        }
+
         public static string CannotTake(Pawn who)
         {
             if (!Mages.IsMage(who)) return "not a caster";
