@@ -21,11 +21,16 @@ namespace Avir.Magic
     {
         public Pawn druid;
         public float life = 1f;
+        /// <summary>The colour of the Life that grew it (Fix208): the energy in the ring of roots wears it.</summary>
+        public Color tint = LifeMagic.Necrotic;
+        private Material energy;
         public const float PassCost = 3f, FriendCost = 6f, FoeCost = 3f, PullRange = 40f;
 
         public static IEnumerable<Building_LifeGate> On(Map m) => m == null ? Enumerable.Empty<Building_LifeGate>() : m.listerThings.AllThings.OfType<Building_LifeGate>().Where(g => g.Spawned);
 
-        public static void Grow(Pawn druid, Map map, IntVec3 at)
+        public static void Grow(Pawn druid, Map map, IntVec3 at) => Grow(druid, map, at, LifeMagic.Necrotic);
+
+        public static void Grow(Pawn druid, Map map, IntVec3 at, Color tint)
         {
             ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_LifeGate");
             if (def == null || map == null || !at.InBounds(map)) return;
@@ -33,10 +38,21 @@ namespace Avir.Magic
             if (!c.IsValid) { Messages.Message("No room for a living gate there.", MessageTypeDefOf.RejectInput, false); return; }
             var g = (Building_LifeGate)ThingMaker.MakeThing(def);
             g.druid = druid;
+            g.tint = tint;
             GenSpawn.Spawn(g, c, map);
             if (druid?.Faction != null) g.SetFaction(druid.Faction);
             for (int i = 0; i < 8; i++) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted() + Rand.InsideUnitCircleVec3, map, 1.2f, new Color(0.45f, 0.65f, 0.35f, 0.6f));
-            MapComponent_SpellSprites.PutTinted(map, "Life/Mend", new Color(0.55f, 0.85f, 0.45f), c.ToVector3Shifted(), 2.4f, 90);
+            MapComponent_SpellSprites.PutTinted(map, "Life/Mend", tint, c.ToVector3Shifted(), 2.4f, 90);
+        }
+
+        /// <summary>A ring of roots; the energy inside it turns slowly, in the colour of the Life that grew it.</summary>
+        protected override void DrawAt(Vector3 drawLoc, bool flip = false)
+        {
+            if (energy == null) energy = MaterialPool.MatFrom("Things/Building/Avir/Magic/LifeGate_Energy", ShaderDatabase.Transparent, new Color(tint.r, tint.g, tint.b, 0.95f));
+            Vector3 at = drawLoc; at.y -= 0.01f;
+            float s = def.graphicData.drawSize.x;
+            Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(at, Quaternion.AngleAxis(-(Find.TickManager.TicksGame % 3600) / 10f, Vector3.up), new Vector3(s, 1f, s)), energy, 0);
+            base.DrawAt(drawLoc, flip);
         }
 
         private Hediff_ArcaneCore Core => druid != null && !druid.Dead ? Mages.Core(druid) : null;
@@ -157,6 +173,7 @@ namespace Avir.Magic
             base.ExposeData();
             Scribe_References.Look(ref druid, "druid");
             Scribe_Values.Look(ref life, "life", 1f);
+            Scribe_Values.Look(ref tint, "tint", LifeMagic.Necrotic);
         }
     }
 

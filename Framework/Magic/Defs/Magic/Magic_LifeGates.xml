@@ -4,15 +4,15 @@
   <ThingDef ParentName="BuildingBase">
     <defName>Avir_LifeGate</defName>
     <label>living gate</label>
-    <description>A gate of living roots, grown by a caster of Life. Whoever steps into it comes out of another such gate; it can draw a friend or a foe through to itself. It lives on those who go through it - left unused, it dries and dies.</description>
+    <description>A ring of living roots, its middle full of turning energy in the colour of the Life that grew it, grown by a caster of Life. Whoever steps into it comes out of another such gate; it can draw a friend or a foe through to itself. It lives on those who go through it - left unused, it dries and dies.</description>
     <thingClass>Avir.Magic.Building_LifeGate</thingClass>
     <graphicData>
-      <texPath>Things/Mote/Avir/Magic/Life_BranchDome</texPath>
+      <texPath>Things/Building/Avir/Magic/LifeGate_Rim</texPath>
       <graphicClass>Graphic_Single</graphicClass>
       <shaderType>Transparent</shaderType>
-      <drawSize>(2.2,2.2)</drawSize>
-      <color>(0.75,0.95,0.65)</color>
+      <drawSize>(2.4,2.4)</drawSize>
     </graphicData>
+    <drawerType>RealtimeOnly</drawerType>
     <altitudeLayer>Building</altitudeLayer>
     <passability>Standable</passability>
     <rotatable>false</rotatable>

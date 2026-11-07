@@ -166,6 +166,8 @@ namespace Avir.Magic
         }
 
         public static string PairName(RuneKind k) => k == RuneKind.Fire ? "Wild Flame" : k == RuneKind.Water ? "Blood" : k == RuneKind.Earth ? "Emerald" : k == RuneKind.Air ? "Pestilence" : null;
+        /// <summary>The colour of the Life being cast now: its meeting's, else its aspect's, else plain necrotic.</summary>
+        public static Color GateTint => pair != None ? PairColor(pair) : aspect != None ? AspectColor(aspect) : Necrotic;
         public static Color PairColor(RuneKind k) => k == RuneKind.Fire ? new Color(0.85f, 0.8f, 0.3f) : k == RuneKind.Water ? new Color(0.7f, 0.08f, 0.1f) : k == RuneKind.Earth ? new Color(0.2f, 0.7f, 0.4f) : k == RuneKind.Air ? new Color(0.75f, 0.78f, 0.3f) : Necrotic;
 
         public static void Cast(Pawn caster, SpellCircle g, IntVec3 at, float power, Map map)
@@ -186,9 +188,11 @@ namespace Avir.Magic
             bool gate = !pulsing && g.OwnRunes.Any(x => x.kind == RuneKind.Step) && g.OwnRunes.Any(x => x.kind == RuneKind.Anchor);
             if (gate)
             {
-                float fg = Pay(core, 15f);
-                if (fg >= 0.99f) Building_LifeGate.Grow(caster, map, at);
-                else MoteMaker.ThrowText(at.ToVector3Shifted(), map, "Not life enough to grow a gate", Necrotic, 3f);
+                // Blood grows no gates (the author, Fix208); the others' gates glow in the colour of their Life
+                if (pair == RuneKind.Water) { MoteMaker.ThrowText(at.ToVector3Shifted(), map, "Blood grows no gates", PairColor(pair), 3f); gate = false; }
+                float fg = gate ? Pay(core, 15f) : 0f;
+                if (gate && fg >= 0.99f) Building_LifeGate.Grow(caster, map, at, GateTint);
+                else if (gate) MoteMaker.ThrowText(at.ToVector3Shifted(), map, "Not life enough to grow a gate", Necrotic, 3f);
             }
             foreach (Act act in Read(g, out _))
             {

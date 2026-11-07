@@ -346,7 +346,7 @@ namespace Avir.Magic
             {
                 if (r.Map == null) continue;
                 if (flash) LightMagic.Flash(caster, r.Position, 2f, 0.2f, false, false, false, r.Map);
-                MapComponent_SpellSprites.PutTintedGrowing(r.Map, "Light/Shatter", LightMagic.Gold, r.DrawPos, 1.8f, 30, 0.6f);
+                MapComponent_SpellSprites.PutTinted(r.Map, "Light/Shatter", Color.white, r.DrawPos, 2.2f, 35);
                 r.Destroy(DestroyMode.KillFinalize);
             }
         }
