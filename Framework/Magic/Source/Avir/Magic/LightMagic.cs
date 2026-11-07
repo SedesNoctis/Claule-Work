@@ -212,7 +212,7 @@ namespace Avir.Magic
             {
                 foreach (Pawn p in inside)
                 {
-                    for (int i = 0; i < 3; i++) p.TakeDamage(new DamageInfo(Shard, Rand.Range(5f, 9f) * Mathf.Clamp(power, 0.6f, 1.6f), 0.3f, -1f, caster));
+                    for (int i = 0; i < 3; i++) p.TakeDamage(new DamageInfo(Shard, Rand.Range(5f, 9f) * Mathf.Clamp(power, 0.6f, 1.6f), ShardPen, -1f, caster));
                     if (!p.Dead && p.Spawned) SpellHurl.Throw(p, from == c ? c + GenAdj.AdjacentCells.RandomElement() : from, 2, map, caster, power);
                 }
                 ShardsAt(map, c, c.ToVector3Shifted(), caster);
@@ -220,7 +220,7 @@ namespace Avir.Magic
             }
             foreach (IntVec3 n in GenAdj.AdjacentCells.Select(d => c + d).Where(x => x.InBounds(map)))
                 foreach (Pawn p in n.GetThingList(map).OfType<Pawn>().Where(p => !p.Dead).ToList())
-                    p.TakeDamage(new DamageInfo(Shard, Rand.Range(2f, 4f), 0.2f, -1f, caster));
+                    p.TakeDamage(new DamageInfo(Shard, Rand.Range(2f, 4f), ShardPen, -1f, caster));
             Building_LightReflector.RaiseAt(caster, map, c, Def("Avir_LightCrystalUnstable"));
         }
 
@@ -237,7 +237,7 @@ namespace Avir.Magic
             foreach (Pawn p in GenRadial.RadialDistinctThingsAround(c, map, 2.9f, true).OfType<Pawn>().ToList())
             {
                 if (p.Dead || !GenSight.LineOfSight(c, p.Position, map, true)) continue;
-                for (int i = 0; i < 2; i++) p.TakeDamage(new DamageInfo(Shard, Rand.Range(3f, 6f), 0.2f, -1f, by));
+                for (int i = 0; i < 2; i++) p.TakeDamage(new DamageInfo(Shard, Rand.Range(3f, 6f), ShardPen, -1f, by));
             }
             MapComponent_SpellSprites.PutTinted(map, "Light/CrystalShatter", Color.white, draw, 2.6f, 30);
             for (int i = 0; i < 4; i++) FleckMaker.ThrowMicroSparks(draw + Rand.InsideUnitCircleVec3 * 0.6f, map);
@@ -338,7 +338,33 @@ namespace Avir.Magic
 
         /// <summary>How hard Light hits a body's eyes: modules add their own (the Avir's night-born eyes suffer more, Fix215).</summary>
         public static readonly List<System.Func<Pawn, float>> Sensitivity = new List<System.Func<Pawn, float>>();
-        public static float SensitivityOf(Pawn p) { float f = 1f; foreach (var s in Sensitivity) f *= s(p); return f; }
+        public static float SensitivityOf(Pawn p) { float f = EyeFactor(p); foreach (var s in Sensitivity) f *= s(p); return f; }
+
+        /// <summary>Light is the strongest blinder (the author, Fix221): living eyes take it whole; bionic ones worse - it presses on
+        /// their sensors; archotech ones bear half. Averaged over the eyes the body has (no eyes - it is never dazzled at all).</summary>
+        public static float EyeFactor(Pawn p)
+        {
+            var hs = p?.health?.hediffSet;
+            if (hs == null) return 1f;
+            var eyes = hs.GetNotMissingParts().Where(x => x.def.tags.Contains(BodyPartTagDefOf.SightSource)).ToList();
+            if (eyes.Count == 0) return 1f;
+            float sum = 0f;
+            foreach (BodyPartRecord e in eyes)
+            {
+                Hediff added = hs.hediffs.FirstOrDefault(h => h.Part == e && h is Hediff_AddedPart);
+                if (added == null) sum += 1f;
+                else if (added.def.defName.IndexOf("Archotech", System.StringComparison.OrdinalIgnoreCase) >= 0) sum += 0.5f;
+                else sum += 1.25f;
+            }
+            return sum / eyes.Count;
+        }
+
+        /// <summary>Combat Extended counts (the author, Fix221): crystal shards cut deep - in CE as a rifle round goes (mm), else
+        /// half of the armour; searing light gets through heat armour well.</summary>
+        private static bool? ce;
+        public static bool CE => ce ?? (ce = ModsConfig.IsActive("CETeam.CombatExtended")).Value;
+        public static float ShardPen => CE ? 8f : 0.5f;
+        public static float SearPen => 0.6f;   // heat armour reads the same scale with or without CE
 
         public static void DazzlePawn(Pawn p, float severity)
         {
@@ -358,7 +384,7 @@ namespace Avir.Magic
                 {
                     float near = 1f - 0.4f * p.Position.DistanceTo(at) / Mathf.Max(1f, r);
                     DazzlePawn(p, sev * near);
-                    if (dmg > 0f) p.TakeDamage(new DamageInfo(Sear, dmg * near, 0f, -1f, caster));
+                    if (dmg > 0f) p.TakeDamage(new DamageInfo(Sear, dmg * near, SearPen, -1f, caster));
                 }
             Glint(map, at.ToVector3Shifted(), r * 2f, bright);
         }
@@ -374,13 +400,13 @@ namespace Avir.Magic
                     {
                         DazzlePawn(p, sev);
                         // the ray burns whoever stands in it, not only at its end (the author, Fix210)
-                        if (c != to) p.TakeDamage(new DamageInfo(Sear, 3f + 7f * sev, 0f, -1f, caster));
+                        if (c != to) p.TakeDamage(new DamageInfo(Sear, 3f + 7f * sev, SearPen, -1f, caster));
                     }
                 if (c.Impassable(map) && c != to) { to = c; break; }   // a wall takes the ray
             }
             // where it ends, it sears
             foreach (Pawn p in to.GetThingList(map).OfType<Pawn>().ToList())
-                if (Reached(p, caster, shaped, aid)) p.TakeDamage(new DamageInfo(Sear, 4f + 10f * sev, 0f, -1f, caster));
+                if (Reached(p, caster, shaped, aid)) p.TakeDamage(new DamageInfo(Sear, 4f + 10f * sev, SearPen, -1f, caster));
             RayLine(map, from.ToVector3Shifted(), to.ToVector3Shifted(), bright);
             Glint(map, to.ToVector3Shifted(), 1.6f, bright);
         }
@@ -741,7 +767,7 @@ namespace Avir.Magic
                 refl[i].busyUntil = at;
                 // the works' crystals answer at a steady 15% of the circle, less for each more of them (the author, Fix217)
                 // so do the unstable ones (the author, Fix220): a share, no facets - and they burst after
-                float p = refl[i].Work || refl[i].Unstable ? power * 0.15f * Mathf.Pow(0.85f, works++) : power * Mathf.Pow(refl[i].Decay, echo);
+                float p = refl[i].Unstable ? power * 0.15f : refl[i].Work ? power * 0.15f * Mathf.Pow(0.85f, works++) : power * Mathf.Pow(refl[i].Decay, echo);
                 me.shots.Add(new Shot { caster = caster, root = root, circle = links[i % n], from = refl[i], aim = aim, power = p, at = at, echo = echo, held = held, node = refl });
                 // a faceted crystal may send its circle twice
                 if (refl[i].Faceted && Rand.Chance(0.2f))
@@ -752,7 +778,7 @@ namespace Avir.Magic
         /// <summary>Defocus (the author, Fix211): before they break, every reflector of the node fires once - each its own
         /// circle (or the one that went astray), in a random direction, at full echo strength. The more were gathered,
         /// the worse it is on a great spell.</summary>
-        private void Scatter(Shot s, int now, List<Building_LightReflector> only = null)
+        private void Scatter(Shot s, int now, List<Building_LightReflector> only = null, bool anyWay = false)
         {
             var node = only ?? Building_LightReflector.Node(s.caster, map).Where(r => !r.Work && !r.IsCrystal).ToList();
             var pending = shots.Where(x => !x.wild && x.from != null).GroupBy(x => x.from).ToDictionary(g => g.Key, g => g.First());
@@ -767,7 +793,7 @@ namespace Avir.Magic
                 float dist = Mathf.Max(5f, r.Position.DistanceTo(s.aim));
                 Vector3 toward = (s.aim.ToVector3Shifted() - r.TrueCenter()); toward.y = 0f;
                 if (toward.sqrMagnitude < 0.01f) toward = Vector3.forward;
-                float spread = Rand.Range(-1f, 1f); spread = Mathf.Sign(spread) * spread * spread * 55f;   // most near the line, some far off it
+                float spread = Rand.Range(-1f, 1f); spread = anyWay ? Rand.Range(0f, 360f) : Mathf.Sign(spread) * spread * spread * 55f;   // most near the line, some far off it
                 Vector3 dir = Quaternion.AngleAxis(spread, Vector3.up) * toward.normalized;
                 dist *= Rand.Range(0.6f, 2.1f);
                 IntVec3 land = r.Position;
@@ -816,6 +842,12 @@ namespace Avir.Magic
                 LightMagic.RayLine(map, src.ToVector3Shifted(), land.ToVector3Shifted(), LightMagic.Bright(s.circle));
                 LightMagic.EchoShot(s.caster, s.root, s.circle, src, land, s.power, map);
                 if (s.from.Unstable && s.from.Spawned && !shots.Any(x => x.from == s.from)) { s.from.Burst(s.caster); continue; }
+                if (lost && s.from.Unstable && s.from.Spawned)
+                {
+                    // an unstable crystal losing focus aims anywhere at all, with its own strength, and bursts (the author, Fix221)
+                    Scatter(s, now, new List<Building_LightReflector> { s.from }, true);
+                    continue;
+                }
                 if (lost && s.from.IsCrystal && s.from.Spawned)
                 {
                     // a crystal loses its own focus alone (the author, Fix217): only it goes wild and breaks, the rest hold
