@@ -179,11 +179,19 @@ namespace Avir.Magic
             if (a.caster.Position != a.stand) return false;
             if (a.route != null) return true;   // a route is walked to its end (a wall on the way only stops a stroke)
             LocalTargetInfo t = a.target;
-            if (t.HasThing && (t.Thing.Destroyed || !t.Thing.Spawned || t.Thing.Map != a.caster.Map || (t.Thing is Pawn tp && tp.Dead))) return false;
-            IntVec3 at = t.Cell;
+            // Fix242 (the author): a target lifted, thrown or carried is off the map for a moment - inside what carries it;
+            // the stream holds on to it there. It breaks only when the target is truly gone: destroyed, dead, off this map
+            if (t.HasThing && !Present(t.Thing, a.caster.Map)) return false;
+            IntVec3 at = Where(t);
             if (!at.InBounds(a.caster.Map) || a.caster.Position.DistanceTo(at) > 40f) return false;
             return GenSight.LineOfSight(a.caster.Position, at, a.caster.Map, true);
         }
+
+        /// <summary>Is a thing still here for a stream to hold: on the map, or held by something on it (a flyer, a lift).</summary>
+        public static bool Present(Thing th, Map map) => th != null && !th.Destroyed && !(th is Pawn p && p.Dead) && th.SpawnedOrAnyParentSpawned && th.MapHeld == map;
+
+        /// <summary>Where a target is now - a held one where its holder is.</summary>
+        public static IntVec3 Where(LocalTargetInfo t) => t.HasThing ? (t.Thing.Spawned ? t.Thing.Position : t.Thing.PositionHeld) : t.Cell;
 
         /// <summary>The living aura round this pawn, if any.</summary>
         public static MapComponent_Auras.Aura Of(Pawn p) => p?.MapHeld?.GetComponent<MapComponent_Auras>()?.all.FirstOrDefault(a => a.caster == p && !a.beam);
@@ -368,14 +376,14 @@ namespace Avir.Magic
             {
                 Aura a = all[i];
                 if (now % 30 == 0 && !a.beam) Glow(a, 3);
-                if (a.beam && a.route == null && now % 8 == 0) SpellAura.BeamSight(map, a, a.caster.DrawPos, a.target.Cell.ToVector3Shifted());
+                if (a.beam && a.route == null && now % 8 == 0) SpellAura.BeamSight(map, a, a.caster.DrawPos, a.target.HasThing && a.target.Thing.Spawned ? a.target.Thing.DrawPos : SpellAura.Where(a.target).ToVector3Shifted());
                 // the caster faces where the beam goes, as one who shoots (the author)
-                if (a.beam && a.target.IsValid && a.caster.Spawned && a.target.Cell != a.caster.Position) a.caster.rotationTracker?.FaceCell(a.target.Cell);
+                if (a.beam && a.target.IsValid && a.caster.Spawned && SpellAura.Where(a.target) != a.caster.Position) a.caster.rotationTracker?.FaceCell(SpellAura.Where(a.target));
                 if (a.route != null)
                 {
                     // the marks where they are now: one set on someone goes with them; the fallen leave theirs where they fell
                     for (int m = 0; m < a.route.Count; m++)
-                        if (a.route[m].HasThing && (!a.route[m].Thing.Spawned || a.route[m].Thing is Pawn mp && mp.Dead)) a.route[m] = new LocalTargetInfo(a.route[m].Thing.PositionHeld);
+                        if (a.route[m].HasThing && !SpellAura.Present(a.route[m].Thing, map)) a.route[m] = new LocalTargetInfo(a.route[m].Thing.PositionHeld);   // lifted - still held (Fix242); gone - the mark stays where it was
                     var cells = a.route.Select(SpellRoute.Pos).ToList();
                     SpellRoute.EndOf[a.caster.thingIDNumber] = cells[cells.Count - 1];
                     // a link stretched past its reach breaks the stream (Fix235)
@@ -447,7 +455,7 @@ namespace Avir.Magic
                                     SpellOrigin.From = lg.Key == a.caster.Position ? IntVec3.Invalid : lg.Key;
                                     SpellDash.CastPart(a.caster, part.Copy(), a.combo, a.el, new LocalTargetInfo(lg.Value), a.power * SpellAura.PulseShare);
                                 }
-                            else SpellDash.CastPart(a.caster, part.Copy(), a.combo, a.el, a.beam ? a.target : new LocalTargetInfo(a.caster.Position), a.power * SpellAura.PulseShare);
+                            else SpellDash.CastPart(a.caster, part.Copy(), a.combo, a.el, a.beam ? (a.target.HasThing && !a.target.Thing.Spawned ? new LocalTargetInfo(SpellAura.Where(a.target)) : a.target) : new LocalTargetInfo(a.caster.Position), a.power * SpellAura.PulseShare);
                         }
                         finally { SpellOrigin.From = keepFrom; }
                     }

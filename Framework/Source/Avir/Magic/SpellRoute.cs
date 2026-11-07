@@ -72,7 +72,7 @@ namespace Avir.Magic
         }
 
         /// <summary>Where a mark is now: a mark set on someone goes with them (Fix235); on the ground it stays.</summary>
-        public static IntVec3 Pos(LocalTargetInfo t) => t.HasThing && t.Thing.Spawned ? t.Thing.Position : t.Cell;
+        public static IntVec3 Pos(LocalTargetInfo t) => SpellAura.Where(t);   // a held one (lifted, thrown) where its holder is (Fix242)
 
         // ---- the marks named while aiming, taken when the beam begins
         public class Pending { public List<LocalTargetInfo> marks; public List<float> reach; public bool chain; public float hold = 1f; }
