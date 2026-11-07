@@ -17,6 +17,9 @@ namespace Avir.Magic
     {
         public Dictionary<IntVec3, TerrainDef> from = new Dictionary<IntVec3, TerrainDef>(), to = new Dictionary<IntVec3, TerrainDef>();
         public Dictionary<IntVec3, int> until = new Dictionary<IntVec3, int>();
+        // what is left when a cell goes back (Fix229: "obsidian" - an island's lumps)
+        public Dictionary<IntVec3, string> after = new Dictionary<IntVec3, string>();
+        public void Then(IntVec3 c, int ticks, string what) => after[c] = what;
         public MapComponent_TempTerrain(Map map) : base(map) { }
         public static MapComponent_TempTerrain Of(Map m) => m?.GetComponent<MapComponent_TempTerrain>();
 
@@ -41,8 +44,12 @@ namespace Avir.Magic
             int now = Find.TickManager.TicksGame;
             foreach (IntVec3 c in until.Where(kv => kv.Value <= now).Select(kv => kv.Key).ToList())
             {
-                if (to.TryGetValue(c, out TerrainDef t) && map.terrainGrid.TerrainAt(c) == t && from.TryGetValue(c, out TerrainDef f)) map.terrainGrid.SetTerrain(c, f);
-                until.Remove(c); from.Remove(c); to.Remove(c);
+                if (to.TryGetValue(c, out TerrainDef t) && map.terrainGrid.TerrainAt(c) == t && from.TryGetValue(c, out TerrainDef f))
+                {
+                    map.terrainGrid.SetTerrain(c, f);
+                    if (after.TryGetValue(c, out string what) && what == "obsidian") SpellGround.Lumps(c, map);
+                }
+                until.Remove(c); from.Remove(c); to.Remove(c); after.Remove(c);
             }
         }
 
@@ -52,6 +59,8 @@ namespace Avir.Magic
             Scribe_Collections.Look(ref from, "from", LookMode.Value, LookMode.Def);
             Scribe_Collections.Look(ref to, "to", LookMode.Value, LookMode.Def);
             Scribe_Collections.Look(ref until, "until", LookMode.Value, LookMode.Value);
+            Scribe_Collections.Look(ref after, "after", LookMode.Value, LookMode.Value);
+            if (after == null) after = new Dictionary<IntVec3, string>();
             if (from == null) from = new Dictionary<IntVec3, TerrainDef>();
             if (to == null) to = new Dictionary<IntVec3, TerrainDef>();
             if (until == null) until = new Dictionary<IntVec3, int>();

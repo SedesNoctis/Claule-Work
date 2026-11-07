@@ -331,6 +331,7 @@ namespace Avir.Magic
                         break;
                     }
                 case SecondKind.Obsidian:
+                    foreach (IntVec3 x in c.cells) if (Rand.Chance(0.5f)) SpellGround.Glass(x, c.map, GenDate.TicksPerDay);   // the ground bakes to glass (Fix229)
                     foreach (IntVec3 x in c.cells) { if (Rand.Chance(0.5f)) ShardGround.Scatter(x, c.map, ComboDefOf.Avir_Obsidian); if (Rand.Chance(0.2f)) Gas_ScaldingSteam.Release(x, c.map, 1); }
                     foreach (Pawn p in c.foes) p.TakeDamage(new DamageInfo(DamageDefOf.Cut, 6f * c.power, 0.4f, -1f, by));
                     break;

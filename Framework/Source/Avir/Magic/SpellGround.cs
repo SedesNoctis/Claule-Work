@@ -87,6 +87,37 @@ namespace Avir.Magic
             if (rough != null) MapComponent_TempTerrain.Of(m)?.Set(c, rough, ticks);
         }
 
+        /// <summary>Soft ground baked to a glass crust for a while (obsidian's quench, Fix229): slick, slow, barren.</summary>
+        public static void Glass(IntVec3 c, Map m, int ticks)
+        {
+            TerrainDef g = T("Avir_GlassGround");
+            if (g != null && Free(c, m) && Soft(c.GetTerrain(m))) MapComponent_TempTerrain.Of(m)?.Set(c, g, ticks);
+        }
+
+        /// <summary>Lava onto shallow water (Fix229, the author): an island of black glass that bears weight; when its time
+        /// is up the water takes the cell back and the island breaks into lumps of obsidian (Odyssey's, or our shards).</summary>
+        public static bool Island(IntVec3 c, Map m)
+        {
+            if (!c.InBounds(m)) return false;
+            TerrainDef t = c.GetTerrain(m), crust = T("Avir_ObsidianCrust");
+            if (t == null || crust == null || !t.IsWater || t.defName.Contains("Deep") || t.defName.Contains("Ocean")) return false;
+            var temp = MapComponent_TempTerrain.Of(m);
+            if (temp == null) return false;
+            int ticks = Rand.Range(2, 4) * GenDate.TicksPerDay;
+            temp.SetDry(c, crust, ticks);
+            Gas_ScaldingSteam.Release(c, m, 1);
+            temp.Then(c, ticks, "obsidian");
+            return true;
+        }
+
+        /// <summary>What an island leaves when the water takes it back.</summary>
+        public static void Lumps(IntVec3 c, Map m)
+        {
+            ThingDef ob = DefDatabase<ThingDef>.GetNamedSilentFail("Obsidian");
+            if (ob != null) { Thing t = ThingMaker.MakeThing(ob); t.stackCount = Rand.RangeInclusive(2, 5); GenPlace.TryPlaceThing(t, c, m, ThingPlaceMode.Near); }
+            else ShardGround.Scatter(c, m, ComboDefOf.Avir_Obsidian);
+        }
+
         /// <summary>A scorch on the ground (ash), nothing broken.</summary>
         public static void Scorch(IntVec3 c, Map m)
         {

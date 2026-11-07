@@ -922,6 +922,8 @@ namespace Avir.Magic
             TerrainDef ter = c.GetTerrain(map);
             if (ter != null && ter.IsWater)
             {
+                // lava (not magma) onto shallow water sets into a black-glass island (Fix229, the author)
+                if (lava && SpellGround.Island(c, map)) return;
                 Gas_ScaldingSteam.Release(c, map, 2);
                 if (Rand.Chance(0.4f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.2f, new Color(1f, 1f, 1f, 0.5f));
                 MagicSounds.Play("Steam", c, map, 1f, 15);

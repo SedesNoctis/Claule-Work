@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <!-- Fix229: grounds the meetings leave for a while (MapComponent_TempTerrain gives back what was there). -->
+  <TerrainDef ParentName="NaturalTerrainBase">
+    <defName>Avir_GlassGround</defName>
+    <label>glass crust</label>
+    <description>Ground baked to a brittle glassy crust by quenched magma. Slick and sharp: slow to cross, and nothing grows on it until it crumbles back into soil.</description>
+    <texturePath>Terrain/Surfaces/Ice</texturePath>
+    <color>(0.42, 0.36, 0.48)</color>
+    <edgeType>FadeRough</edgeType>
+    <renderPrecedence>352</renderPrecedence>
+    <pathCost>16</pathCost>
+    <fertility>0</fertility>
+    <statBases><Beauty>-2</Beauty><BeautyOutdoors>0</BeautyOutdoors></statBases>
+    <affordances><li>Light</li></affordances>
+  </TerrainDef>
+  <TerrainDef ParentName="NaturalTerrainBase">
+    <defName>Avir_ObsidianCrust</defName>
+    <label>obsidian crust</label>
+    <description>Lava that met shallow water and set into black glass. It bears weight for now; in time the water undercuts it and it breaks into lumps of obsidian.</description>
+    <texturePath>Terrain/Surfaces/Ice</texturePath>
+    <color>(0.16, 0.13, 0.2)</color>
+    <edgeType>FadeRough</edgeType>
+    <renderPrecedence>353</renderPrecedence>
+    <pathCost>6</pathCost>
+    <fertility>0</fertility>
+    <statBases><Beauty>-1</Beauty><BeautyOutdoors>0</BeautyOutdoors></statBases>
+    <affordances><li>Light</li><li>Medium</li></affordances>
+  </TerrainDef>
+</Defs>
