@@ -41,6 +41,8 @@ namespace Avir.Magic
             public Dictionary<SpellCircle, ComboKind> combos;
             /// <summary>Where the caster stood when the spell was let go: a later step aimed at the caster goes back here.</summary>
             public IntVec3 origin = IntVec3.Invalid;
+            /// <summary>The point the spell was let go at: Light's reflectors send their echoes back into it.</summary>
+            public IntVec3 aim = IntVec3.Invalid;
             /// <summary>The further places named for Reach and Thread, in order, and how many are used.</summary>
             public List<IntVec3> hops = new List<IntVec3>();
             public int hopNext;
@@ -63,6 +65,7 @@ namespace Avir.Magic
                 Scribe_Values.Look(ref giveUp, "giveUp");
                 Scribe_Values.Look(ref endByMage, "endByMage");
                 Scribe_Values.Look(ref origin, "origin", IntVec3.Invalid);
+                Scribe_Values.Look(ref aim, "aim", IntVec3.Invalid);
                 if (Scribe.mode == LoadSaveMode.PostLoadInit && root != null) { links = Order(root); combos = Combos.Pairs(root); }
             }
         }
@@ -110,11 +113,11 @@ namespace Avir.Magic
                 if (c.Great)
                 {
                     Walk(c.inner, back, c, list);
-                    if (LifeMagic.Is(c.element) && c.OwnRunes.Any()) list.Add(c);
+                    if ((LifeMagic.Is(c.element) || LightMagic.Is(c.element)) && c.OwnRunes.Any()) list.Add(c);
                     continue;
                 }
                 if (c.element != null) list.Add(c);
-                else if (box != null && LifeMagic.Is(box.element) && c.OwnRunes.Any()) list.Add(c);
+                else if (box != null && (LifeMagic.Is(box.element) || LightMagic.Is(box.element)) && c.OwnRunes.Any()) list.Add(c);
             }
         }
 
@@ -131,7 +134,7 @@ namespace Avir.Magic
             var c = new Chain
             {
                 caster = caster, root = root, links = Order(root), power = power, target = target,
-                storm = false, wallTo = FireMagic.WallTo, combos = Combos.Pairs(root), origin = caster.Position,
+                storm = false, wallTo = FireMagic.WallTo, combos = Combos.Pairs(root), origin = caster.Position, aim = target.Cell,
                 hops = SpellHops.Take(caster)
             };
             LifeMagic.BeginSpell(caster);
@@ -151,6 +154,15 @@ namespace Avir.Magic
             SpellCircle circle = c.links[c.next++];
             Pawn caster = c.caster;
             if (caster == null || caster.Dead || !caster.Spawned) return;
+            // a circle of Light: from the caster into the point (its echoes come once the spell is over)
+            if (LightMagic.IsLink(c.root, circle))
+            {
+                LightMagic.CastCircle(caster, circle, caster.Position, c.target.Cell, c.power, caster.Map);
+                c.target = new LocalTargetInfo(c.target.Cell);
+                c.waitCaster = false; c.waitFor = null; c.endByMage = false;
+                int t1 = Find.TickManager.TicksGame; c.giveUp = t1 + Patience; c.at = t1 + Gap;
+                return;
+            }
             // a circle of Life (a great one's own runes, or a small one with no element in it): Life's own grammar
             if (LifeMagic.IsLink(c.root, circle))
             {
@@ -247,6 +259,8 @@ namespace Avir.Magic
         {
             LifeMagic.EndSpell(c.caster);
             if (c.caster == null || c.caster.Dead || !c.caster.Spawned) return;
+            // Light: new reflectors stand up round the point, and the living ones send their echoes into it
+            if (LightMagic.Any(c.root)) LightMagic.Reflect(c.caster, c.root, c.aim.IsValid ? c.aim : c.target.Cell, c.origin, c.power);
             WeaveSpell.AfterCircles(c.caster, c.root, c.target, c.power, c.caster.Map);
         }
 

@@ -115,6 +115,11 @@ namespace Avir.Magic
             for (int k = 0; k < order.Count; k++)
             {
                 SpellCircle c = order[k];
+                if (LightMagic.IsLink(root, c))
+                {
+                    parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + (k > 0 ? "then: " : "") + (c.Great ? "" : "a small circle of ") + LightMagic.Text(c));
+                    continue;
+                }
                 if (LifeMagic.IsLink(root, c))
                 {
                     LifeMagic.PairOfText = LifeMagic.PairOf(root, c.Great ? c : root.ParentOf(c));
@@ -146,6 +151,7 @@ namespace Avir.Magic
             {
                 if (g.element == null) { parts.Add("a great circle with no element yet"); continue; }
                 if (g.element.kind == RuneKind.Life) { if (g.inner.Count > 0) parts.Add("Life round its circles: every friend they touch is mended from the store as each strikes"); }
+                else if (g.element.kind == RuneKind.Light) { if (g.inner.Any(x => x.element != null)) parts.Add("Light round other elements (not made yet - only pure Light for now)"); }
                 else parts.Add(g.element.LabelCap + (g.inner.Count > 0 ? " round it" : "") + " (not made yet)");
             }
             e.main = string.Join(order.Count > 1 ? "\n" : "; ", parts) + ".";
@@ -153,6 +159,11 @@ namespace Avir.Magic
             foreach (var g in smalls.GroupBy(c => c.element).Where(g => g.Key != null && g.Count() > 1))
                 e.extras.Insert(0, new KeyValuePair<string, string>(g.Key.LabelCap + " ×" + g.Count() + ": resonance", "Circles of the same element strengthen each other: +" + (25 * (g.Count() - 1)) + "% to each."));
             foreach (ComboKind ck in pairs.Values.Distinct()) e.extras.Insert(0, new KeyValuePair<string, string>(Combos.Label(ck).CapitalizeFirst() + ": two elements met", ComboText.Short(ck)));
+            if (LightMagic.Any(root))
+            {
+                e.extras.Insert(0, new KeyValuePair<string, string>("Price of Light: Defocus", LightMagic.DefocusText));
+                e.extras.Insert(0, new KeyValuePair<string, string>("Reflection", LightMagic.ReflectionText));
+            }
             if (Wraps(root, RuneKind.Life)) e.extras.Insert(0, new KeyValuePair<string, string>("Life Wraps", "Friends within the spell's reach are mended as it strikes - out of the store of life."));
             foreach (RuneKind lk in LifeMagic.Circles(root).Select(g => LifeMagic.PairOf(root, g)).Where(k => k != LifeMagic.None).Distinct())
                 e.extras.Insert(0, new KeyValuePair<string, string>(LifeMagic.PairName(lk), LifeMagic.PairText(lk)));
@@ -213,6 +224,7 @@ namespace Avir.Magic
             foreach (ComboKind k in Combos.Pairs(root).Values.Distinct()) ComboMagic.Price(k, caster);
             foreach (RuneKind lp in Small(root).Select(c => LifeMagic.PairOfCircle(root, c)).Where(k => k != LifeMagic.None).Distinct()) LifeMagic.PayPair(lp, caster);
             LifeMagic.Slip(caster, root);
+            LightMagic.Slip(caster, root);
             if (plain.Any(c => AirMagic.Is(c.element))) AirMagic.Winded(caster);
         }
 

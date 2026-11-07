@@ -19,6 +19,8 @@ namespace Avir.Magic
         public static bool Flies(RitualSchema s, out bool beam)
         {
             beam = false;
+            // light does not fly: it is there at once
+            if (s?.weave != null && LightMagic.Any(s.weave)) return false;
             bool any = false;
             foreach (RitualReading r in Parts(s))
             {
