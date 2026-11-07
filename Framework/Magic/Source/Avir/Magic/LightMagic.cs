@@ -72,12 +72,14 @@ namespace Avir.Magic
         /// <summary>Does this circle act within a Crystal (its own great circle of Light, or the one round it)?</summary>
         public static bool InCrystal(SpellCircle root, SpellCircle c) => c != null && Crystal(c.Great ? c : BoxOf(root, c));
 
-        /// <summary>A small circle of an element that echoes: sealed in Light, or standing in a Crystal (not its own Earth).</summary>
+        /// <summary>A small circle of an element that echoes (the author, Fix219): any inside a great circle of Light - sealed or
+        /// not - the Earth that went into a Crystal aside. The reflectors are concentrators: they send back everything the
+        /// great circle of Light holds, in the usual order (the small circles first, clockwise, then Light's own runes).</summary>
         public static bool SealedIn(SpellCircle root, SpellCircle c)
         {
             if (c == null || c.Great || c.element == null || Is(c.element)) return false;
             SpellCircle box = BoxOf(root, c);
-            return Sealed(box) || (Crystal(box) && Absorbed(box) != c);
+            return box != null && Absorbed(box) != c;
         }
 
         /// <summary>The echo is being cast now (no crystals grow from echoes - the author: the field must not be spammed).</summary>

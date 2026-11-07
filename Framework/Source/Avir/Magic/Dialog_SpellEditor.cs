@@ -1246,7 +1246,7 @@ namespace Avir.Magic
             {
                 var inner = sel.inner.Where(k => !k.Great && k.element != null).ToList();
                 if (LightMagic.Crystal(sel)) return "Shine bright like a diamond! And be the reason of someone else's blindness.";
-                if (inner.Count > 0 && !LightMagic.Sealed(sel)) return "Light swallows what you put in it. Write a Closing in its first section if you want your fire to stay fire.";
+                if (inner.Count > 0 && !LightMagic.Sealed(sel)) return "Everything you put in Light, every shard throws back. Mind where the shards stand - and where you do.";
                 if (inner.Any(k => k.element.kind == RuneKind.Earth)) return "Shine bright like a diamond! And be the reason of someone else's blindness.";
                 if (inner.Any(k => k.element.kind == RuneKind.Fire)) return "Fire sealed in Light, and every shard throws it back. The field burns twice. Now we're talking.";
                 if (inner.Count > 0) return "Sealed and echoed. Light is good for one thing - doing the same harm again, from everywhere.";

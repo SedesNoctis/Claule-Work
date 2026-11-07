@@ -182,7 +182,7 @@ namespace Avir.Magic
                     if (g.inner.Any(x => x.element != null))
                         parts.Add(LightMagic.Sealed(g) ? "Light sealed round its elements: they work as themselves, and every reflector echoes them"
                                   : LightMagic.Crystal(g) ? "Crystal - Light meeting Earth: the reflectors are crystals, the forms grow crystals, the other circles inside work as themselves and echo"
-                                  : "Light meeting the elements round it (not made yet) - a Closing in Light's first section keeps them apart, and then they echo");
+                                  : "Light round its elements: they work as they are, and every reflector echoes them (a Closing in Light's first section keeps them apart from Light - their strength is then their own)");
                 }
                 else parts.Add(g.element.LabelCap + (g.inner.Count > 0 ? " round it" : "") + " (not made yet)");
             }
@@ -198,7 +198,7 @@ namespace Avir.Magic
                 var echoes = LightMagic.EchoCircles(root);
                 string what = string.Join(", ", echoes.Select(c => LightMagic.IsLink(root, c) ? "Light" + (c.Great ? "" : " (small)") : (Combos.Pairs(root).TryGetValue(c, out ComboKind ek) ? Combos.Label(ek) : c.element.label)));
                 e.extras.Insert(0, new KeyValuePair<string, string>("Echoes: " + echoes.Count, echoes.Count == 0 ? "Nothing here echoes." :
-                    "What the reflectors send back, each from where it stands: " + what + ". A full echo takes " + echoes.Count + " reflector" + (echoes.Count > 1 ? "s" : "") + "; a cast raises about as many new ones (fewer in a Crystal). Elements inside Light echo only when kept apart by a Closing in Light's own first section - or round a Crystal."));
+                    "What the reflectors send back, each from where it stands: " + what + ". A full echo takes " + echoes.Count + " reflector" + (echoes.Count > 1 ? "s" : "") + "; a cast raises about as many new ones (fewer in a Crystal). Everything inside a great circle of Light echoes - its small circles first, clockwise, then Light's own runes; the Earth that went into a Crystal is the Crystal itself."));
                 if (LightMagic.AnyCrystal(root))
                     e.extras.Insert(0, new KeyValuePair<string, string>("Crystal", "Light meeting Earth. The first circle of Earth inside goes into the Light and makes it Crystal; the other circles stay themselves (Earth, Fire - magma...) and echo. The reflectors are crystals: sturdier, not burning, standing against blasts; each echo keeps three quarters of the cast before, and a crystal's facets may send its circle twice. Fewer of them rise with a cast, but the forms grow them: a wall - a wall of crystals, a cell between; a beam or a release - unstable crystals that answer once and burst into shards; a hold - a cage of crystals round whom it holds. Earth's longer reach stays, its stone underfoot does not help. When crystals break, their shards cut whoever stands close. A crystal that loses focus breaks alone - the rest hold. A Barrier lays a ward of Crystal: it sends spells back and stops shards."));
                 if (LightMagic.Circles(root).Any(LightMagic.Sealed))
