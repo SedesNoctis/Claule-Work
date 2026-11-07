@@ -560,7 +560,8 @@ namespace Avir.Magic
                 // a stream of lava: it burns all on it and sets into a path of rubble
                 case ComboKind.Magma:
                     if (line.Count > 1) { Vector3 a0 = line[0].ToVector3Shifted(), a1 = line[line.Count - 1].ToVector3Shifted(); Vector3 d = a1 - a0; MapComponent_SpellSprites.Put(map, "Magma/Fissure", (a0 + a1) / 2f, d.MagnitudeHorizontal() + 1f, 240, d.AngleFlat() - 90f, 0f, Mathf.Max(1.5f, 4f / (1 + r.breadth))); }
-                    foreach (IntVec3 c in line) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(600f * power), false);
+                    // a stream of lava lies a while before it cools (Fix218: it set almost at once before)
+                    foreach (IntVec3 c in line) MagmaPool.Pour(c, map, caster, power, Mathf.RoundToInt(1800f * Mathf.Max(0.5f, power)), false);
                     break;
                 // a ray of heat: all on it dazzled, the first burnt through
                 case ComboKind.Haze:

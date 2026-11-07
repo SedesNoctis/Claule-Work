@@ -222,15 +222,17 @@ namespace Avir.Magic
             if (map == null || root == null || !at.InBounds(map) || !Any(root)) return;
             float range = Range(root);
             var links = EchoCircles(root);
-            bool beam = links.Any(g => g.OwnRunes.Any(x => x.kind == RuneKind.Beam));
+            var beams = links.Where(g => g.OwnRunes.Any(x => x.kind == RuneKind.Beam)).ToList();
+            int breadth = beams.Count > 0 ? beams.Max(g => g.OwnRunes.Count(x => x.kind == RuneKind.Breadth)) : 0;
             var cells = new List<IntVec3>();
             int n = 0;
             foreach (Building_LightReflector r in Building_LightReflector.Node(mage, map))
             {
-                if (r.Position.DistanceTo(at) > range) continue;
+                if (r.Position.DistanceTo(at) > range || !GenSight.LineOfSight(r.Position, at, map, true)) continue;
                 n++;
                 GenDraw.DrawLineBetween(r.TrueCenter(), at.ToVector3Shifted(), SimpleColor.Yellow, 0.2f);
-                if (beam) cells.AddRange(GenSight.BresenhamCellsBetween(r.Position, at).Where(c => c.InBounds(map) && c != r.Position));
+                // the echo's own beam, as wide as the cast's (a stream of lava from every reflector - Fix218)
+                if (beams.Count > 0) cells.AddRange(FireMagic.Beam(r.Position, at, map, breadth).Where(c => c.InBounds(map) && c != r.Position));
             }
             if (cells.Count > 0) GenDraw.DrawFieldEdges(cells.Distinct().ToList(), new Color(1f, 0.9f, 0.55f));
         }

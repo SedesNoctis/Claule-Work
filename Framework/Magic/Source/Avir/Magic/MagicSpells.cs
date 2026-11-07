@@ -524,7 +524,7 @@ namespace Avir.Magic
         {
             if (spell?.icon == null && MeetingGlyphs.NameForSpellCached(spell) == null) { base.DrawIcon(rect, buttonMat, parms); return; }
             Color keep = GUI.color;
-            SpellIconArt.Draw(rect.ContractedBy(rect.width * 0.08f), spell);
+            SpellIconArt.Draw(rect.ContractedBy(rect.width * 0.08f), spell, true);
             if (disabled && !parms.lowLight) { GUI.color = new Color(0f, 0f, 0f, 0.45f); GUI.DrawTexture(rect, BaseContent.WhiteTex); }
             GUI.color = keep;
         }

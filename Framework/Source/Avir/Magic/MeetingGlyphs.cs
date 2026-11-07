@@ -101,12 +101,12 @@ namespace Avir.Magic
 
         /// <summary>The meeting's sign drawn as the elements' are: its rune in its own colour (glowing on the dark, inked on
         /// the parchment) - not black.</summary>
-        public static void DrawSign(Rect r, string name)
+        public static void DrawSign(Rect r, string name, bool onDark = false)
         {
             Texture2D glow = Get(name, false), ink = Get(name, true);
             if (glow == null) return;
             Color keep = GUI.color, c = ColorOf(name);
-            bool light = FlowStyle.Pick(ink, glow) == glow;
+            bool light = onDark || FlowStyle.Pick(ink, glow) == glow;
             GUI.color = light || ink == null ? Color.Lerp(c, Color.white, 0.15f) : SpellGlyph.Ink(c);
             GUI.DrawTexture(r, light || ink == null ? glow : ink, ScaleMode.ScaleToFit);
             GUI.color = keep;

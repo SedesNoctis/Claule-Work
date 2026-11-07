@@ -73,14 +73,15 @@ namespace Avir.Magic
         public static RuneDef DefaultGlyph(RitualSchema s) => s == null ? null : Spells.Element(s) ?? RitualEvaluator.Read(s).verbs.FirstOrDefault();
 
         /// <summary>The spell's sign: the one the player made, else its element on a dark disc.</summary>
-        public static void Draw(Rect r, RitualSchema s)
+        public static void Draw(Rect r, RitualSchema s, bool onDark = false)
         {
             if (s?.icon == null)
             {
                 // a spell of a meeting signs itself with the meeting's rune (Fix183)
-                // (Fix192) in the meeting's own colour - before, the inked rune came out black
+                // (Fix192) in the meeting's own colour - before, the inked rune came out black;
+                // (Fix218) on a dark ground (the command button) always the glowing rune, whatever the parchment style
                 string mn = MeetingGlyphs.NameForSpellCached(s);
-                if (mn != null) { MeetingGlyphs.DrawSign(r.ContractedBy(r.width * 0.06f), mn); return; }
+                if (mn != null) { MeetingGlyphs.DrawSign(r.ContractedBy(r.width * 0.06f), mn, onDark); return; }
                 SpellGlyph.Draw(r.ContractedBy(r.width * 0.06f), DefaultGlyph(s)); return;
             }
             Draw(r, s.icon, DefaultGlyph(s));
