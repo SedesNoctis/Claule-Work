@@ -186,9 +186,13 @@ namespace Avir.Magic
         /// or, too strong, it breaks the ward and goes on. Its own kind exactly (an element on its element's ward, a meeting
         /// on that meeting's ward): the ward is scattered and the spell goes on stronger - except fire on a fiery ward, where both
         /// go out. True - the spell is put out.</summary>
+        /// <summary>The last ward that put a spell out was one of Light: the spell is not put out but sent back the way it came (Fix207).</summary>
+        public static bool Mirrored;
+
         public static bool Meets(IWard d, RuneKind[] inc, float power, Map map, IntVec3 at, out float boost)
         {
             boost = 1f;
+            Mirrored = false;
             if (d == null || inc == null || inc.Length == 0) return false;
             RuneKind[] mine = d.Parts;
             // its own kind (the author, Fix124): fire on a ward of fire, magma on a ward of magma - the ward is scattered
@@ -213,7 +217,8 @@ namespace Avir.Magic
                 bool steam = (mine.Contains(RuneKind.Fire) && inc.Contains(RuneKind.Water)) || (mine.Contains(RuneKind.Water) && inc.Contains(RuneKind.Fire));
                 if (steam) ComboMagic.Smoke(map, FireMagic.Point(at, map, 2.5f), 0.7f);
                 Puff(map, at, 1f);
-                if (map != null) MoteMaker.ThrowText(at.ToVector3Shifted(), map, steam ? "Put out - steam" : "Spell put out", 3f);
+                Mirrored = mine.Contains(RuneKind.Light);
+                if (map != null) MoteMaker.ThrowText(at.ToVector3Shifted(), map, Mirrored ? "Reflected" : steam ? "Put out - steam" : "Spell put out", 3f);
                 return true;
             }
             // too strong: the ward breaks - and what it held is taken off the spell, which goes on weaker
@@ -499,8 +504,10 @@ namespace Avir.Magic
                     continue;
                 }
                 // another element: put out at the cost of charge; too strong - the ward breaks, the rest comes through
-                if (w.Energy >= share) { w.Energy -= share; continue; }
+                // (a ward of Light sends what it stops back the way the spell came - Fix207)
+                if (w.Energy >= share) { w.Energy -= share; if (direct && mine.Contains(RuneKind.Light)) LightMagic.MirrorBlow(p, dinfo, share); continue; }
                 left += share - w.Energy;
+                if (direct && mine.Contains(RuneKind.Light) && w.Energy > 0f) LightMagic.MirrorBlow(p, dinfo, w.Energy);
                 w.Energy = 0f;
                 fall = true;
             }

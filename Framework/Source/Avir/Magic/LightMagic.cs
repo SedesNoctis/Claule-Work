@@ -86,6 +86,44 @@ namespace Avir.Magic
 
         public static HediffDef Ward => H("Avir_LightWard");
 
+        // ------------------------------------------------------------------ the Barrier reflects (Fix207, the author)
+
+        /// <summary>A flying spell stopped by a ward of Light flies back the way it came - to where it was cast from.</summary>
+        public static void BounceBolt(Map map, IntVec3 at, Pawn caster, RitualSchema spell, float power)
+        {
+            if (map == null || caster == null || spell == null) return;
+            IntVec3 back = caster.Spawned && caster.Map == map ? caster.Position : at;
+            if (back == at) return;
+            ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail(SpellBolt.Flies(spell, out bool beam) && beam ? "Avir_SpellBeam" : "Avir_SpellBall");
+            if (def == null) return;
+            Glint(map, at.ToVector3Shifted(), 1.6f, true);
+            var bolt = (Projectile_Spell)GenSpawn.Spawn(def, at, map);
+            bolt.mage = caster; bolt.spell = spell.Copy(); bolt.power = power; bolt.tint = Spells.ColorOf(spell); bolt.mirrored = true;
+            bolt.Launch(null, at.ToVector3Shifted(), new LocalTargetInfo(back), new LocalTargetInfo(back), ProjectileHitFlags.IntendedTarget | ProjectileHitFlags.NonTargetWorld, true);
+        }
+
+        /// <summary>A blow a ward of Light stopped on its wearer goes back along the line to whoever struck: the first one
+        /// standing on that line takes it (the caster, or whoever is in the way).</summary>
+        public static void MirrorBlow(Pawn wearer, DamageInfo d, float amount)
+        {
+            if (wearer?.Map == null || amount < 0.5f || !(d.Instigator is Pawn src) || src == wearer || !src.Spawned || src.Map != wearer.Map) return;
+            Map map = wearer.Map;
+            IntVec3 a = wearer.Position, b = src.Position;
+            Vector3 dir = (b - a).ToVector3(); dir.y = 0f;
+            if (dir.sqrMagnitude < 0.01f) return;
+            IntVec3 far = (a.ToVector3Shifted() + dir.normalized * Mathf.Max(dir.magnitude, 12f)).ToIntVec3();
+            Pawn hit = null; IntVec3 end = far;
+            foreach (IntVec3 c in GenSight.BresenhamCellsBetween(a, far))
+            {
+                if (c == a) continue;
+                if (!c.InBounds(map) || c.Impassable(map)) { end = c; break; }
+                hit = c.GetThingList(map).OfType<Pawn>().FirstOrDefault(x => x != wearer && !x.Dead);
+                if (hit != null) { end = c; break; }
+            }
+            RayLine(map, wearer.DrawPos, end.ToVector3Shifted(), true, 18);
+            if (hit != null) SpellShock.Queue(hit, new DamageInfo(d.Def, amount, d.ArmorPenetrationInt, -1f, wearer));
+        }
+
         /// <summary>The Barrier of Light (Fix206), as everywhere: the last rune of the circle - a ward on the caster, who
         /// then carries light round him (the only way a Light mage glows himself); anywhere else - a dome of light where
         /// the spell strikes (round the caster, with an Aura), lighting the ground under it.</summary>
@@ -243,7 +281,7 @@ namespace Avir.Magic
                     case RuneKind.Release: bits.Add("a flash - sears and dazzles all who see it"); break;
                     case RuneKind.Lift: bits.Add("a fierce flash - nothing is thrown up, the light can blind outright"); break;
                     case RuneKind.Beam: bits.Add("a ray of light - dazzles along its line, sears where it ends"); break;
-                    case RuneKind.Barrier: if (!SpellSculpt.Of(g) || g.sections.Count == 0 || !g.sections[g.sections.Count - 1].runes.Contains(r)) bits.Add("a ward of light - on the caster as the circle's last rune (they carry light round them), a glowing dome anywhere else"); break;
+                    case RuneKind.Barrier: if (!SpellSculpt.Of(g) || g.sections.Count == 0 || !g.sections[g.sections.Count - 1].runes.Contains(r)) bits.Add("a ward of light - on the caster as the circle's last rune (they carry light round them), a glowing dome anywhere else; what it stops goes back the way it came"); break;
                     case RuneKind.Drain: bits.Add("the light taken away - a blind patch; those who cannot see in the dark shoot almost blind in it"); break;
                     default: if (r.role == RuneRole.Verb && !LifeMagic.Side(r.kind) && r.kind != RuneKind.Amplify && r.kind != RuneKind.Breadth) bits.Add(r.label + " - not made for Light yet"); break;
                 }

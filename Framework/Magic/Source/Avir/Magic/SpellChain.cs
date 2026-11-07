@@ -208,7 +208,19 @@ namespace Avir.Magic
             try
             {
                 // a spell landing inside a dome meets it first (Магия-правила.md, part 1)
-                if (SpellWards.Strikes(one) && SpellWards.DomeTakes(caster.Map, c.target.Cell, circle.element, met, ref pHere)) { after = null; }
+                if (SpellWards.Strikes(one) && SpellWards.DomeTakes(caster.Map, c.target.Cell, circle.element, met, ref pHere))
+                {
+                    after = null;
+                    // a dome of Light: the circle goes back the way it came, and strikes where the cast came from (Fix207)
+                    if (SpellWards.Mirrored && c.origin.IsValid && c.origin.InBounds(caster.Map))
+                    {
+                        SpellWards.Mirrored = false;
+                        var back = new LocalTargetInfo(c.origin);
+                        LightMagic.RayLine(caster.Map, c.target.Cell.ToVector3Shifted(), c.origin.ToVector3Shifted(), true);
+                        float pb = pHere;
+                        SpellWards.InOrder(caster, one, met, circle.element, back, pb, part => SpellDash.CastPart(caster, part, met, circle.element, back, pb));
+                    }
+                }
                 // the barriers in their turn; two elements that met work as what they made
                 else SpellWards.InOrder(caster, one, met, circle.element, c.target, pHere, part => SpellDash.CastPart(caster, part, met, circle.element, c.target, pHere));
             }

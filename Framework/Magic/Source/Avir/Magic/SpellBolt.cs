@@ -60,7 +60,11 @@ namespace Avir.Magic
         public static bool Quench(IntVec3 c, Map map, Pawn caster, RitualSchema spell, ref float power)
         {
             if (map == null || !c.InBounds(map)) return false;
-            if (map.GetComponent<MapComponent_WardsDrawn>()?.Quench(c, caster, Elements(spell), ref power) == true) return true;
+            if (map.GetComponent<MapComponent_WardsDrawn>()?.Quench(c, caster, Elements(spell), ref power) == true)
+            {
+                if (SpellWards.Mirrored) LightMagic.BounceBolt(map, c, caster, spell, power);
+                return true;
+            }
             foreach (Pawn p in c.GetThingList(map).OfType<Pawn>())
             {
                 // the caster's own side is flown over, as any shot is; a foe's ward stands in the way
@@ -75,7 +79,14 @@ namespace Avir.Magic
                     return true;
                 }
                 float need = 12f * power;
-                if (w.energy >= need) { w.Spend(need); Spark(p, map, "Spell put out"); return true; }
+                if (w.energy >= need)
+                {
+                    w.Spend(need);
+                    // a ward of Light sends it back the way it came (Fix207)
+                    if (mine.Contains(RuneKind.Light)) { Spark(p, map, "Reflected"); LightMagic.BounceBolt(map, c, caster, spell, power); }
+                    else Spark(p, map, "Spell put out");
+                    return true;
+                }
                 power *= Mathf.Clamp01(1f - w.energy / Mathf.Max(0.01f, need));
                 w.Fall("Ward broken");
                 return false;
@@ -111,6 +122,8 @@ namespace Avir.Magic
         public RitualSchema spell;
         public float power = 1f;
         public Color tint = Color.white;
+        /// <summary>Sent back by a ward of Light: it flies home past every ward (else it would bounce for ever).</summary>
+        public bool mirrored;
         private bool Beam => def.defName == "Avir_SpellBeam";
         private Material mat;
 
@@ -136,6 +149,7 @@ namespace Avir.Magic
             Scribe_Deep.Look(ref spell, "spell");
             Scribe_Values.Look(ref power, "power", 1f);
             Scribe_Values.Look(ref tint, "tint", Color.white);
+            Scribe_Values.Look(ref mirrored, "mirrored");
         }
 
         protected override void TickInterval(int delta)
@@ -143,7 +157,7 @@ namespace Avir.Magic
             base.TickInterval(delta);
             if (!Spawned) return;
             // a ward in its way puts it out: the spell is spent, the ward is gone, nothing passes and nothing grows
-            if (Position != mage?.Position && Ward.Quench(Position, Map, mage, spell, ref power)) { Destroy(); return; }
+            if (!mirrored && Position != mage?.Position && Ward.Quench(Position, Map, mage, spell, ref power)) { Destroy(); return; }
             // a trail behind it, of its own element: embers for fire, spray for water, a faint haze of its colour for the rest
             RuneDef el = spell != null ? Spells.Element(spell) : null;
             if (!this.IsHashIntervalTick(Beam ? 1 : 2, delta)) return;
