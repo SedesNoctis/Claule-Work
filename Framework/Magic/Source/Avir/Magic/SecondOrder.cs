@@ -724,23 +724,40 @@ namespace Avir.Magic
                 {
                     SecondOrder.Zap(g.target, g.power, g.owner, g.pos);
                     if (g.line != null) { g.line.Remove(g.target); g.power *= 0.85f; g.target = null; }
-                    else if (g.zone == null) { globes.RemoveAt(i); continue; }   // a loose globe is spent in its strike
+                    else if (g.zone == null) { Explode(g, 1f); globes.RemoveAt(i); continue; }   // a loose globe is spent in its strike - and bursts (Fix226)
                     else { g.rest = 150; g.target = null; }                         // a globe of a field gathers its charge again
                 }
             }
         }
 
-        /// <summary>A globe's end where it is: a burst - a flash, the sound, and a lesser strike on the foes beside it.</summary>
-        private void Burst(Globe g)
+        /// <summary>A globe's end where it is (its time up, its field gone, its line struck through): it bursts.</summary>
+        private void Burst(Globe g) => Explode(g, 1f);
+
+        /// <summary>The electric burst of a globe (Fix226, the author: a strong electric blast and the sound of the
+        /// discharge). Ball lightning in life is told of ending so too - with a bang. Here: the game's own EMP wave
+        /// (machines, turrets, shields, bionics), and over it our own - a burn and a jolt on every body it reaches,
+        /// weaker to the edge, and the charge running on through water and metal. Whom it reaches - the cast's shaping.</summary>
+        private void Explode(Globe g, float scale)
         {
             IntVec3 c = g.pos.ToIntVec3();
             if (!c.InBounds(map)) return;
-            FleckMaker.Static(g.pos, map, FleckDefOf.ExplosionFlash, 2.2f);
-            FleckMaker.ThrowLightningGlow(g.pos, map, 2.2f);
-            for (int k = 0; k < 4; k++) MapComponent_SpellSprites.Bolt(map, g.pos, g.pos + Quaternion.AngleAxis(k * 90f + Rand.Range(-30f, 30f), Vector3.up) * Vector3.forward * Rand.Range(1f, 1.8f), 10);
-            MagicSounds.Play("Discharge", c, map, 1f, 4);
-            foreach (Pawn p in GenRadial.RadialDistinctThingsAround(c, map, 1.9f, true).OfType<Pawn>().ToList())
-                if (g.Hits(p)) SecondOrder.Zap(p, g.power * 0.6f, g.owner, g.pos);
+            float radius = 2.4f * scale * Mathf.Clamp(Mathf.Sqrt(g.power), 0.8f, 1.5f);
+            var spared = map.mapPawns.AllPawnsSpawned.Where(p => p.Position.DistanceTo(c) <= radius + 1f && !g.Hits(p)).Cast<Thing>().ToList();
+            GenExplosion.DoExplosion(c, map, radius, DamageDefOf.EMP, g.owner, Mathf.RoundToInt(14f * g.power), -1f, DefDatabase<SoundDef>.GetNamedSilentFail("Explosion_EMP"), ignoredThings: spared);
+            MagicSounds.Play("Thunder", c, map, 0.55f, 10);   // the clap after the crack
+            FleckMaker.Static(g.pos, map, FleckDefOf.ExplosionFlash, radius * 1.8f);
+            FleckMaker.ThrowLightningGlow(g.pos, map, radius * 1.2f);
+            for (int k = 0; k < 7; k++) MapComponent_SpellSprites.Bolt(map, g.pos, g.pos + Quaternion.AngleAxis(k * 51f + Rand.Range(-20f, 20f), Vector3.up) * Vector3.forward * Rand.Range(radius * 0.6f, radius + 0.6f), 12);
+            for (int k = 0; k < 6; k++) FleckMaker.ThrowMicroSparks(g.pos, map);
+            foreach (Pawn p in GenRadial.RadialDistinctThingsAround(c, map, radius, true).OfType<Pawn>().ToList())
+            {
+                if (!g.Hits(p) || p.RaceProps.IsMechanoid) continue;   // a machine has had the EMP
+                float near = 1f - 0.6f * p.Position.DistanceTo(c) / radius;
+                var b = SpellBody.Of(p);
+                p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 9f * g.power * near * (b.metalArmour ? 1.5f : 1f), 0f, -1f, g.owner));
+                if (!p.Dead) MagicFx.Stun(p, Mathf.RoundToInt(80f * near), g.owner);
+            }
+            Reactions.Conduct(c, map, g.owner, g.power * 0.7f);
         }
 
         private static Material globeMat;
@@ -792,10 +809,14 @@ namespace Avir.Magic
             fields.RemoveAll(f => f.until <= now);
             // the long sounds of the fields (Fix225): rain over a deluge, the roar of a hurricane, a typhoon, an inferno
             MagicSounds.Sweep(o => !(o is Fld) || fields.Contains((Fld)o));
+            bool raging = fields.Any(x => x.y == SecondKind.Hurricane && x.speed <= 0f);
             foreach (Fld f in fields)
             {
-                if (f.cells == null || f.cells.Count == 0 || f.y == SecondKind.Hurricane && f.speed > 0f) continue;   // a whirl is heard in its hurricane
-                string key = "Hold:" + f.y;
+                if (f.cells == null || f.cells.Count == 0) continue;
+                // a whirl is heard in its hurricane while that rages; after it, each whirl howls on its own, quieter (Fix226)
+                bool whirl = f.y == SecondKind.Hurricane && f.speed > 0f;
+                if (whirl && raging) { MagicSounds.Stop(f); continue; }
+                string key = whirl ? "Hold:Whirl" : "Hold:" + f.y;
                 if (MagicSounds.Table.ContainsKey(key)) MagicSounds.Keep(f, key, SoundAt(f).ToIntVec3(), map);
             }
             if (now % 10 == 0) foreach (Fld f in fields) if (f.y == SecondKind.Hurricane && f.speed <= 0f) HurricaneWind(f);

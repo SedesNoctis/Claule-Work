@@ -68,6 +68,7 @@ namespace Avir.Magic
             ["Hold:Deluge"] = new Line(0.6f, "Ambient_Rain", "RainOnRoof"),
             ["Hold:Hurricane"] = new Line(0.5f, "Tornado"),
             ["Hold:Typhoon"] = new Line(0.5f, "Tornado"),
+            ["Hold:Whirl"] = new Line(0.22f, "Tornado"),
             ["Hold:Inferno"] = new Line(0.7f, "FireBurning"),
         };
 

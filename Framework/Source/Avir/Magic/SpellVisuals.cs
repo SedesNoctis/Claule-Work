@@ -181,3 +181,35 @@ namespace Avir.Magic
         }
     }
 }
+
+namespace Avir.Magic
+{
+    /// <summary>A bolt from the sky, as the game draws its own lightning (Fix226: a storm's Release looked like a flat sprite
+    /// lying on the ground, and its first bolt flew sideways out of the mage). The sky flashes, the bolt stands from the
+    /// clouds to the ground for a moment. No damage and no sound of its own - the spell does those.</summary>
+    public class WeatherEvent_MagicBolt : RimWorld.WeatherEvent_LightningFlash
+    {
+        private readonly Verse.IntVec3 at;
+        private UnityEngine.Mesh mesh;
+        private static UnityEngine.Material boltMat;
+        public WeatherEvent_MagicBolt(Verse.Map map, Verse.IntVec3 at) : base(map) { this.at = at; }
+        public override void FireEvent() { mesh = RimWorld.LightningBoltMeshPool.RandomBoltMesh; }
+        public override void WeatherEventDraw()
+        {
+            if (mesh == null) return;
+            if (boltMat == null) boltMat = HarmonyLib.AccessTools.Field(typeof(RimWorld.WeatherEvent_LightningStrike), "LightningMat")?.GetValue(null) as UnityEngine.Material;
+            if (boltMat == null) return;
+            UnityEngine.Graphics.DrawMesh(mesh, at.ToVector3ShiftedWithAltitude(Verse.AltitudeLayer.Weather), UnityEngine.Quaternion.identity, Verse.FadedMaterialPool.FadedVersionOf(boltMat, LightningBrightness), 0);
+        }
+
+        /// <summary>Strike `at` from the sky (seen only; the caller hurts and sounds).</summary>
+        public static void Strike(Verse.Map map, Verse.IntVec3 at)
+        {
+            if (map == null || !at.InBounds(map)) return;
+            map.weatherManager.eventHandler.AddEvent(new WeatherEvent_MagicBolt(map, at));
+            RimWorld.FleckMaker.Static(at, map, RimWorld.FleckDefOf.ShotFlash, 6f);
+            RimWorld.FleckMaker.ThrowLightningGlow(at.ToVector3Shifted(), map, 2.5f);
+            for (int i = 0; i < 4; i++) RimWorld.FleckMaker.ThrowMicroSparks(at.ToVector3Shifted(), map);
+        }
+    }
+}

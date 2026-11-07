@@ -281,10 +281,11 @@ namespace Avir.Magic
             }
         }
 
-        internal static void Chain(Pawn caster, List<IntVec3> line, Map map, int jumps, float power, bool storm)
+        /// <param name="fromSky">the first bolt falls from above (a storm's Release, Fix226), not from the mage</param>
+        internal static void Chain(Pawn caster, List<IntVec3> line, Map map, int jumps, float power, bool storm, bool fromSky = false)
         {
             Pawn first = MagicFx.PawnsIn(line, map).Where(p => p != caster && MagicFx.Foe(p, caster)).OrderBy(p => p.Position.DistanceToSquared(SpellOrigin.Of(caster))).FirstOrDefault();
-            Vector3 prev = caster.DrawPos;
+            Vector3 prev = fromSky && first != null ? first.DrawPos : caster.DrawPos;
             IntVec3 prevCell = SpellOrigin.Of(caster);
             var hit = new HashSet<Pawn>();
             Pawn cur = first;
@@ -296,7 +297,7 @@ namespace Avir.Magic
                 if (storm)
                 {
                     // the discharge: burns and a jolt; machines are struck harder, the soaked take more
-                    MapComponent_SpellSprites.Bolt(map, prev, at);
+                    if (!(fromSky && i == 0)) MapComponent_SpellSprites.Bolt(map, prev, at);
                     MapComponent_SpellSprites.Put(map, "Storm/Strike", at, 1.8f, 20);
                     // the first strike thunders, the leaps after it crack (Fix225)
                     if (i == 0) MagicSounds.Play("Bolt", from, map); else MagicSounds.Play("Arc", from, map, 1f, 3);

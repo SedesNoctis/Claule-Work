@@ -413,11 +413,14 @@ namespace Avir.Magic
                     // a bolt falls on the point, and leaps on
                     Pawn first = foes.OrderBy(p => p.Position.DistanceToSquared(Center(cells))).FirstOrDefault();
                     // on wet ground the bolt finds more to leap to: +1 jump for every tenth of the water round
-                    if (first != null) AirMagic.Chain(caster, new List<IntVec3> { first.Position }, map, 1 + r.breadth + Mathf.FloorToInt(Reactions.WaterAround(Center(cells), map) * 10f), power, true);
+                    // Fix226: the bolt falls from the sky (on the first foe, or on the point) - before it flew sideways out of the mage
+                    WeatherEvent_MagicBolt.Strike(map, first != null ? first.Position : Center(cells));
+                    if (first != null) AirMagic.Chain(caster, new List<IntVec3> { first.Position }, map, 1 + r.breadth + Mathf.FloorToInt(Reactions.WaterAround(Center(cells), map) * 10f), power, true, true);
                     // every one in the burst is struck by the discharge too, not only the one the bolt leaps from
                     foreach (Pawn p in foes) { WaterMagic.Soak(p, power); if (!p.Dead) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 6f * power, 0f, -1f, caster)); }
                     FleckMaker.Static(Center(cells).ToVector3Shifted(), map, FleckDefOf.ExplosionFlash, 4f);
-                    MapComponent_SpellSprites.Put(map, "Storm/Bolt_Fork", Center(cells).ToVector3Shifted(), 3.5f, 22);
+                    // the discharge spreading over the ground from where it fell: short forks out, not one flat picture
+                    for (int kf = 0; kf < 5; kf++) MapComponent_SpellSprites.Bolt(map, Center(cells).ToVector3Shifted(), Center(cells).ToVector3Shifted() + Quaternion.AngleAxis(kf * 72f + Rand.Range(-25f, 25f), Vector3.up) * Vector3.forward * Rand.Range(1.2f, FireMagic.PointRadius(r) + 0.5f), 16);
                     MapComponent_SpellSprites.Put(map, "Storm/Strike", Center(cells).ToVector3Shifted(), 2.6f, 24);
                     MagicSounds.Play("Bolt", Center(cells), map);   // Fix225: the storm had no voice and was taken for doing nothing
                     break;
