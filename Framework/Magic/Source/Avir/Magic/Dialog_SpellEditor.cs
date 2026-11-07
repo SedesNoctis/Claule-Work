@@ -1038,8 +1038,14 @@ namespace Avir.Magic
                 Find.WindowStack.Add(new Dialog_SpellWizard(TakeCircle));
             TooltipHandler.TipRegion(new Rect(r.xMax - 170f, y, 170f, 30f), "Write a circle page by page: the element, what it does, how it reaches, what strengthens it - with large cards and what it will do read at every click. It goes into the chosen empty circle, or beside the others.");
             y += 38f;
-            float w = (r.width - 24f) / 4f;
+            float w = (r.width - 32f) / 5f;
             if (Button(new Rect(r.x, y, w, 34f), "Rub out all", true)) { s.weave = NewSpell(); sel = s.weave.inner[0]; section = -1; ClearPick(); }
+            // Fix245 (the author): turn what is chosen to read the other way round - a section, a circle (with all inside it),
+            // or, with the binding rim chosen, the whole spell - as a spell read widdershins reads it (the first stays first,
+            // the rest go back the other way). Distortion will turn spells; this keeps their sense without rewriting them
+            Rect rev = new Rect(r.x + 4f * (w + 8f), y, w, 34f);
+            if (Button(rev, "Reverse the pattern", true)) { SpellPattern.Reverse(sel, sel.binding ? -1 : section); ClearPick(); SoundDefOf.Tick_High.PlayOneShotOnCamera(); }
+            TooltipHandler.TipRegion(rev, "Turn what is chosen to read the other way round (widdershins): a section - its places; a circle - its sections and the circles inside it; the binding rim - the whole spell. The first rune and the first circle stay first, the rest go back the other way.");
             if (Button(new Rect(r.x + (w + 8f), y, w, 34f), "Remove this circle", !sel.binding))
             {
                 SpellCircle p = root.ParentOf(sel);
@@ -1362,6 +1368,38 @@ namespace Avir.Magic
             GUI.color = Color.white;
             if (enabled && Widgets.ButtonInvisible(r)) { SoundDefOf.Click.PlayOneShotOnCamera(); return true; }
             return false;
+        }
+    }
+
+    /// <summary>Reversing a pattern (Fix245): the places of a section, the sections and inner circles of a circle, or all
+    /// of a spell, turned to read the other way round - the first stays first, the rest in the opposite order (as
+    /// SpellChain reads a spell widdershins).</summary>
+    public static class SpellPattern
+    {
+        private static void Turn<T>(List<T> l)
+        {
+            if (l == null || l.Count < 3) return;   // one or two: the first stays first, nothing else moves
+            l.Reverse(1, l.Count - 1);
+        }
+
+        public static void Section(RitualRing g)
+        {
+            if (g == null) return;
+            while (g.runes.Count < g.Slots) g.runes.Add(null);
+            Turn(g.runes);
+            g.Trim();
+        }
+
+        /// <summary>section >= 0 - that section of the circle only; otherwise the circle and everything inside it.</summary>
+        public static void Reverse(SpellCircle c, int section)
+        {
+            if (c == null) return;
+            if (section >= 0 && section < c.sections.Count && !c.binding) { Section(c.sections[section]); return; }
+            foreach (SpellCircle x in c.All())
+            {
+                foreach (RitualRing g in x.sections) Section(g);
+                Turn(x.inner);
+            }
         }
     }
 }
