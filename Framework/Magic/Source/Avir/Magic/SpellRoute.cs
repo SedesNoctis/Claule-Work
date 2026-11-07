@@ -61,41 +61,54 @@ namespace Avir.Magic
             foreach (RitualRing g in s.rings) g.runes.RemoveAll(x => x != null && x.kind == RuneKind.Step);
         }
 
+        /// <summary>How hard the stream is to hold (Fix235, the author: every element more makes it harder): every element
+        /// of the spell past the first shortens each link of the route by 15% (to 40% at most).</summary>
+        public static float HoldOf(RitualSchema s)
+        {
+            int n = s?.weave != null ? Circles(s).Count(rs => rs.Any(x => x.role == RuneRole.Element))
+                : s?.rings.SelectMany(g => g.runes).Count(x => x != null && x.role == RuneRole.Element) ?? 1;
+            return Mathf.Max(0.4f, 1f - 0.15f * Mathf.Max(0, n - 1));
+        }
+
+        /// <summary>Where a mark is now: a mark set on someone goes with them (Fix235); on the ground it stays.</summary>
+        public static IntVec3 Pos(LocalTargetInfo t) => t.HasThing && t.Thing.Spawned ? t.Thing.Position : t.Cell;
+
         // ---- the marks named while aiming, taken when the beam begins
-        public class Pending { public List<IntVec3> marks; public bool chain; }
+        public class Pending { public List<LocalTargetInfo> marks; public List<float> reach; public bool chain; public float hold = 1f; }
         private static readonly Dictionary<int, Pending> pending = new Dictionary<int, Pending>();
-        public static void Set(Pawn mage, List<IntVec3> marks, bool chain) { if (mage == null) return; if (marks == null || marks.Count < 2) pending.Remove(mage.thingIDNumber); else pending[mage.thingIDNumber] = new Pending { marks = marks.ToList(), chain = chain }; }
+        public static void Set(Pawn mage, Pending p) { if (mage == null) return; if (p == null || p.marks.Count < 2) pending.Remove(mage.thingIDNumber); else pending[mage.thingIDNumber] = p; }
         public static Pending Take(Pawn mage) { if (mage == null || !pending.TryGetValue(mage.thingIDNumber, out Pending p)) return null; pending.Remove(mage.thingIDNumber); return p; }
 
-        /// <summary>Aiming the marks after the first, one by one: a left click sets the next, a right click takes the last
-        /// back (or, with none set, stops aiming). The whole route is drawn as it is made.</summary>
-        public static void Aim(Pawn mage, RitualSchema spell, IntVec3 first, System.Action<List<IntVec3>> done)
+        /// <summary>Aiming the marks after the first, one by one: a left click sets the next (on the ground, or on someone -
+        /// then the mark goes with them), a right click takes the last back. The whole route is drawn as it is made, and each
+        /// link's reach is shortened by how hard the spell is to hold.</summary>
+        public static void Aim(Pawn mage, RitualSchema spell, LocalTargetInfo first, System.Action done)
         {
             int need = Marks(spell, out bool chain);
-            float range = Spells.Range(spell);
-            var marks = new List<IntVec3> { first };
+            float range = Spells.Range(spell), hold = HoldOf(spell);
+            var p = new Pending { marks = new List<LocalTargetInfo> { first }, reach = new List<float> { range }, chain = chain, hold = hold };
             void Ask()
             {
-                if (marks.Count >= need) { Set(mage, marks, chain); done(marks); return; }
-                int i = marks.Count; IntVec3 from = chain ? marks[i - 1] : mage.Position;
-                float reach = ReachOf(range, i, chain);
+                if (p.marks.Count >= need) { Set(mage, p); done(); return; }
+                int i = p.marks.Count; IntVec3 from = chain ? Pos(p.marks[i - 1]) : mage.Position;
+                float reach = ReachOf(range, i, chain) * hold;
                 Messages.Message("Route of the beam: mark " + (i + 1) + " of " + need + (chain ? " (it goes on from the last mark)" : "") + ". Right click - take the last mark back.", MessageTypeDefOf.SilentInput, false);
                 var parms = new TargetingParameters { canTargetLocations = true, canTargetPawns = true, canTargetSelf = false, canTargetBuildings = false };
                 Find.Targeter.BeginTargeting(parms, t =>
                 {
                     if (!mage.Spawned) return;
-                    if (t.Cell.DistanceTo(from) > reach) { Messages.Message("Too far from the mark before.", MessageTypeDefOf.RejectInput, false); Ask(); return; }
-                    marks.Add(t.Cell); Ask();
+                    if (t.Cell.DistanceTo(from) > reach) { Messages.Message("Too far from the mark before.", MessageTypeDefOf.RejectInput, false); Deferred = Ask; return; }
+                    p.marks.Add(t); p.reach.Add(ReachOf(range, i, chain)); Deferred = Ask;
                 }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(from) <= reach, mage,
                 () =>
                 {
                     // the game ends the aiming before it acts on a click; only a right click is "one back" (Escape - stop)
                     Event e = Event.current;
-                    if (e != null && e.type == EventType.MouseDown && e.button == 1 && marks.Count > 1)
-                    { marks.RemoveAt(marks.Count - 1); Deferred = Ask; }
+                    if (e != null && e.type == EventType.MouseDown && e.button == 1 && p.marks.Count > 1)
+                    { p.marks.RemoveAt(p.marks.Count - 1); p.reach.RemoveAt(p.reach.Count - 1); Deferred = Ask; }
                 },
                 null, true, null,
-                t => Draw(mage, marks, chain, from, reach));
+                t => Draw(mage, p.marks.Select(Pos).ToList(), chain, from, reach));
             }
             Ask();
         }
@@ -104,14 +117,13 @@ namespace Avir.Magic
         public static void Draw(Pawn mage, List<IntVec3> marks, bool chain, IntVec3 from, float reach)
         {
             if (reach < GenRadial.MaxRadialPatternRadius) GenDraw.DrawRadiusRing(from, reach);
-            Vector3 prev = chain ? mage.DrawPos : marks[0].ToVector3Shifted();
             if (chain) GenDraw.DrawLineBetween(mage.DrawPos, marks[0].ToVector3Shifted(), SimpleColor.Cyan);
+            else GenDraw.DrawLineBetween(mage.DrawPos, marks[0].ToVector3Shifted(), SimpleColor.White);
             for (int i = 1; i < marks.Count; i++)
             {
                 GenDraw.DrawLineBetween(marks[i - 1].ToVector3Shifted(), marks[i].ToVector3Shifted(), SimpleColor.Cyan);
                 if (!chain) GenDraw.DrawLineBetween(mage.DrawPos, marks[i].ToVector3Shifted(), SimpleColor.White);
             }
-            if (!chain) GenDraw.DrawLineBetween(mage.DrawPos, marks[0].ToVector3Shifted(), SimpleColor.White);
             IntVec3 m = Verse.UI.MouseCell();
             if (m.InBounds(mage.Map)) GenDraw.DrawLineBetween(marks[marks.Count - 1].ToVector3Shifted(), m.ToVector3Shifted(), m.DistanceTo(from) <= reach ? SimpleColor.Yellow : SimpleColor.Red);
             GenDraw.DrawFieldEdges(marks);

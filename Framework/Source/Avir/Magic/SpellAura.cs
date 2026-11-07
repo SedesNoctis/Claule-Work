@@ -149,11 +149,13 @@ namespace Avir.Magic
                 // the route: the strike walks it at its pace - 2.5 cells a second, slower for every Anchor past the first,
                 // quicker with Amplify; it strikes once a second all the way, and the caster stands till it is walked
                 SpellMods.Own(part, RuneKind.Beam, out int amp, out _, out _, out _);
-                b.route = route.marks; b.chain = route.chain;
+                b.route = route.marks; b.reach = route.reach; b.chain = route.chain; b.hold = route.hold;
                 b.speed = 2.5f * Mathf.Pow(0.75f, Mathf.Max(0, anchor - 1)) * (1f + 0.2f * amp);
-                b.left = Mathf.CeilToInt(SpellRoute.Length(b.route) / b.speed) + 1;
-                b.target = new LocalTargetInfo(b.route[0]);
-                hold.expiryInterval = b.left * b.interval + 30;
+                b.left = 99999;   // it lasts as long as the route takes (it may lengthen: marks on the moving go with them)
+                b.target = new LocalTargetInfo(SpellRoute.Pos(b.route[0]));
+                // the standing lasts about as long as the route takes, half again for marks that move off (the order lock
+                // ends with the stream itself)
+                hold.expiryInterval = Mathf.RoundToInt((SpellRoute.Length(b.route.Select(SpellRoute.Pos).ToList()) / b.speed + 2f) * 60f * 1.5f);
             }
             b.parts.Add(part.Copy());
             b.next = Find.TickManager.TicksGame + b.interval;
@@ -251,7 +253,7 @@ namespace Avir.Magic
             public LocalTargetInfo target;
             public IntVec3 stand;   // a stream is held standing: the caster stepping off it lets it go
             // a beam on a route (Fix234): its marks, chained or swept from the caster, how far along it is, how fast it goes
-            public List<IntVec3> route; public bool chain; public float along, speed; public int leg;
+            public List<LocalTargetInfo> route; public List<float> reach; public bool chain; public float along, speed, hold = 1f; public int leg;
             public float flash;   // when it last struck (real time), for the flare of the ring
             public float seed = Rand.Range(0f, 360f);
         }
@@ -322,14 +324,27 @@ namespace Avir.Magic
                 if (now % 30 == 0 && !a.beam) Glow(a, 3);
                 if (a.route != null)
                 {
+                    // the marks where they are now: one set on someone goes with them; the fallen leave theirs where they fell
+                    for (int m = 0; m < a.route.Count; m++)
+                        if (a.route[m].HasThing && (!a.route[m].Thing.Spawned || a.route[m].Thing is Pawn mp && mp.Dead)) a.route[m] = new LocalTargetInfo(a.route[m].Thing.PositionHeld);
+                    var cells = a.route.Select(SpellRoute.Pos).ToList();
+                    // a link stretched past its reach breaks the stream (Fix235)
+                    if (now % 15 == 0)
+                        for (int m = 0; m < cells.Count; m++)
+                        {
+                            IntVec3 from = a.chain && m > 0 ? cells[m - 1] : a.caster.Position;
+                            if (cells[m].DistanceTo(from) > a.reach[m] * a.hold) { a.left = 0; MoteMaker.ThrowText(cells[m].ToVector3Shifted(), map, "the route breaks", 2.5f); break; }
+                        }
+                    if (a.left <= 0) continue;
                     a.along += a.speed / 60f;
-                    Vector3 pt = SpellRoute.PointAt(a.route, a.along, out a.leg);
+                    if (a.along >= SpellRoute.Length(cells) + a.speed) a.left = 0;   // walked to its end
+                    Vector3 pt = SpellRoute.PointAt(cells, a.along, out a.leg);
                     a.target = new LocalTargetInfo(pt.ToIntVec3());
                     if (now % 6 == 0)
                     {
                         Color col = SpellAura.ColorOf(a); col.a = 0.6f;
                         FleckMaker.ThrowDustPuffThick(pt, map, 0.8f, col);
-                        Vector3 from = a.chain ? a.route[a.leg].ToVector3Shifted() : a.caster.DrawPos;
+                        Vector3 from = a.chain ? cells[a.leg].ToVector3Shifted() : a.caster.DrawPos;
                         if (now % 12 == 0) MapComponent_SpellSprites.Bolt(map, from, pt, 10);
                     }
                 }
@@ -376,7 +391,7 @@ namespace Avir.Magic
                     {
                         // a chained route strikes from the mark it last passed, not from the caster (Fix234)
                         IntVec3 keepFrom = SpellOrigin.From;
-                        if (a.route != null && a.chain && a.leg > 0) SpellOrigin.From = a.route[a.leg];
+                        if (a.route != null && a.chain && a.leg > 0) SpellOrigin.From = SpellRoute.Pos(a.route[a.leg]);
                         try { SpellDash.CastPart(a.caster, part.Copy(), a.combo, a.el, a.beam ? a.target : new LocalTargetInfo(a.caster.Position), a.power * SpellAura.PulseShare); }
                         finally { SpellOrigin.From = keepFrom; }
                     }
