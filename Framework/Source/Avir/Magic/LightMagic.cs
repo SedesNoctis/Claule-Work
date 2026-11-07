@@ -181,13 +181,13 @@ namespace Avir.Magic
             if (runes.Any(x => x.kind == RuneKind.Beam) && wild != null)
             {
                 var line = GenSight.BresenhamCellsBetween(from.IsValid ? from : caster.Position, at).Where(x => x.InBounds(map)).ToList();
-                for (int i = 3; i < line.Count; i += 3) Building_LightReflector.RaiseAt(caster, map, line[i], wild);
+                for (int i = 3; i < line.Count; i += 3) RaiseUnstable(caster, map, line[i], line[i - 1], power);
             }
             if (runes.Any(x => x.kind == RuneKind.Release) && wild != null)
                 for (int i = 0, n = Rand.RangeInclusive(2, 3); i < n; i++)
                 {
                     IntVec3 cell = at + GenRadial.RadialPattern[Rand.RangeInclusive(1, 20)];
-                    if (cell.InBounds(map) && GenSight.LineOfSight(at, cell, map, true)) Building_LightReflector.RaiseAt(caster, map, cell, wild);
+                    if (cell.InBounds(map) && GenSight.LineOfSight(at, cell, map, true)) RaiseUnstable(caster, map, cell, at, power);
                 }
             if (runes.Any(x => x.kind == RuneKind.Hold) && cage != null)
             {
@@ -202,19 +202,45 @@ namespace Avir.Magic
 
         private static ThingDef Def(string n) => DefDatabase<ThingDef>.GetNamedSilentFail(n);
 
+        /// <summary>An unstable crystal grows (the author, Fix220): its growing cuts whoever stands next to it; grown inside someone,
+        /// it cuts them hard, throws them off - and bursts at once.</summary>
+        public static void RaiseUnstable(Pawn caster, Map map, IntVec3 c, IntVec3 from, float power)
+        {
+            if (map == null || !c.InBounds(map) || !c.Walkable(map) || c.GetEdifice(map) != null) return;
+            var inside = c.GetThingList(map).OfType<Pawn>().Where(p => !p.Dead).ToList();
+            if (inside.Count > 0)
+            {
+                foreach (Pawn p in inside)
+                {
+                    for (int i = 0; i < 3; i++) p.TakeDamage(new DamageInfo(Shard, Rand.Range(5f, 9f) * Mathf.Clamp(power, 0.6f, 1.6f), 0.3f, -1f, caster));
+                    if (!p.Dead && p.Spawned) SpellHurl.Throw(p, from == c ? c + GenAdj.AdjacentCells.RandomElement() : from, 2, map, caster, power);
+                }
+                ShardsAt(map, c, c.ToVector3Shifted(), caster);
+                return;
+            }
+            foreach (IntVec3 n in GenAdj.AdjacentCells.Select(d => c + d).Where(x => x.InBounds(map)))
+                foreach (Pawn p in n.GetThingList(map).OfType<Pawn>().Where(p => !p.Dead).ToList())
+                    p.TakeDamage(new DamageInfo(Shard, Rand.Range(2f, 4f), 0.2f, -1f, caster));
+            Building_LightReflector.RaiseAt(caster, map, c, Def("Avir_LightCrystalUnstable"));
+        }
+
         /// <summary>A crystal bursting: real shards, not magic - they cut whoever stands close and can see the crystal (wards meet
         /// them as plain blows; a ward of Crystal stops them, plain wards of Light or Earth pay double).</summary>
         public static void Shards(Building_LightReflector r, Pawn by)
         {
-            Map map = r?.Map;
+            if (r?.Map != null) ShardsAt(r.Map, r.Position, r.DrawPos, by);
+        }
+
+        public static void ShardsAt(Map map, IntVec3 c, Vector3 draw, Pawn by)
+        {
             if (map == null) return;
-            foreach (Pawn p in GenRadial.RadialDistinctThingsAround(r.Position, map, 2.9f, true).OfType<Pawn>().ToList())
+            foreach (Pawn p in GenRadial.RadialDistinctThingsAround(c, map, 2.9f, true).OfType<Pawn>().ToList())
             {
-                if (p.Dead || !GenSight.LineOfSight(r.Position, p.Position, map, true)) continue;
+                if (p.Dead || !GenSight.LineOfSight(c, p.Position, map, true)) continue;
                 for (int i = 0; i < 2; i++) p.TakeDamage(new DamageInfo(Shard, Rand.Range(3f, 6f), 0.2f, -1f, by));
             }
-            MapComponent_SpellSprites.PutTinted(map, "Light/CrystalShatter", Color.white, r.DrawPos, 2.6f, 30);
-            for (int i = 0; i < 4; i++) FleckMaker.ThrowMicroSparks(r.DrawPos + Rand.InsideUnitCircleVec3 * 0.6f, map);
+            MapComponent_SpellSprites.PutTinted(map, "Light/CrystalShatter", Color.white, draw, 2.6f, 30);
+            for (int i = 0; i < 4; i++) FleckMaker.ThrowMicroSparks(draw + Rand.InsideUnitCircleVec3 * 0.6f, map);
         }
 
         /// <summary>While the point is chosen: a line from every reflector in reach into it (a ray, if the spell has a Beam)
@@ -714,7 +740,8 @@ namespace Avir.Magic
                 int at = Mathf.Max(now + 18 + 9 * i, refl[i].busyUntil + 12);
                 refl[i].busyUntil = at;
                 // the works' crystals answer at a steady 15% of the circle, less for each more of them (the author, Fix217)
-                float p = refl[i].Work ? power * 0.15f * Mathf.Pow(0.85f, works++) : power * Mathf.Pow(refl[i].Decay, echo);
+                // so do the unstable ones (the author, Fix220): a share, no facets - and they burst after
+                float p = refl[i].Work || refl[i].Unstable ? power * 0.15f * Mathf.Pow(0.85f, works++) : power * Mathf.Pow(refl[i].Decay, echo);
                 me.shots.Add(new Shot { caster = caster, root = root, circle = links[i % n], from = refl[i], aim = aim, power = p, at = at, echo = echo, held = held, node = refl });
                 // a faceted crystal may send its circle twice
                 if (refl[i].Faceted && Rand.Chance(0.2f))

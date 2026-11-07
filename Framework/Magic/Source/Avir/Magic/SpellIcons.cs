@@ -81,8 +81,11 @@ namespace Avir.Magic
                 // (Fix192) in the meeting's own colour - before, the inked rune came out black;
                 // (Fix218) on a dark ground (the command button) always the glowing rune, whatever the parchment style
                 string mn = MeetingGlyphs.NameForSpellCached(s);
-                if (mn != null) { MeetingGlyphs.DrawSign(r.ContractedBy(r.width * 0.06f), mn, onDark); return; }
-                SpellGlyph.Draw(r.ContractedBy(r.width * 0.06f), DefaultGlyph(s)); return;
+                if (mn != null) { MeetingGlyphs.DrawSign(r.ContractedBy(r.width * 0.06f), mn, true); return; }
+                // (Fix220) a spell with no sign of its own wears its element's glowing rune in the element's colour - not black ink
+                RuneDef g = DefaultGlyph(s);
+                if (g?.Glow != null) { Color k = GUI.color; GUI.color = Color.Lerp(g.color, Color.white, 0.15f); GUI.DrawTexture(r.ContractedBy(r.width * 0.06f), g.Glow, ScaleMode.ScaleToFit); GUI.color = k; return; }
+                SpellGlyph.Draw(r.ContractedBy(r.width * 0.06f), g); return;
             }
             Draw(r, s.icon, DefaultGlyph(s));
         }

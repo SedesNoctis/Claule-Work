@@ -279,9 +279,22 @@ namespace Avir.Magic
 
     /// <summary>Ground covered in shards of glass - black from quenched magma, pale from fused sand. Whoever walks on it
     /// is cut about the feet and goes carefully; it lasts for days.</summary>
-    public class ShardGround : ThingWithComps
+    /// <summary>Shards on the ground (obsidian, glass): filth now (the author, Fix220) - the colonists sweep them up, and swept
+    /// obsidian gives obsidian (Odyssey's, or our chunk without it).</summary>
+    public class ShardGround : Filth
     {
         public int left = 60000 * 3;
+        private bool expired;
+
+        public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
+        {
+            Map m = Map; IntVec3 at = Position;
+            base.DeSpawn(mode);
+            if (expired || m == null || def != ComboDefOf.Avir_Obsidian) return;
+            ThingDef ody = DefDatabase<ThingDef>.GetNamedSilentFail("Obsidian");
+            if (ody != null) { Thing t = ThingMaker.MakeThing(ody); t.stackCount = Rand.RangeInclusive(1, 3); GenPlace.TryPlaceThing(t, at, m, ThingPlaceMode.Near); }
+            else if (Rand.Chance(0.2f) && DefDatabase<ThingDef>.GetNamedSilentFail("Avir_ObsidianChunk") is ThingDef ch) GenPlace.TryPlaceThing(ThingMaker.MakeThing(ch), at, m, ThingPlaceMode.Near);
+        }
 
         public static void Scatter(IntVec3 c, Map map, ThingDef def)
         {
@@ -295,7 +308,7 @@ namespace Avir.Magic
         protected override void Tick()
         {
             base.Tick();
-            if (--left <= 0) { Destroy(); return; }
+            if (--left <= 0) { expired = true; Destroy(); return; }
             if (!this.IsHashIntervalTick(60)) return;
             foreach (Pawn p in Position.GetThingList(Map).OfType<Pawn>().ToList())
             {

@@ -1681,12 +1681,17 @@
   <ThingDef>
     <defName>Avir_Obsidian</defName>
     <label>obsidian shards</label>
-    <description>Magma quenched by water, set at once into black glass. It cuts the feet of whoever walks over it.</description>
+    <description>Magma quenched by water, set at once into black glass. It cuts the feet of whoever walks over it. It can be swept up - and the obsidian kept.</description>
     <thingClass>Avir.Magic.ShardGround</thingClass>
-    <category>Ethereal</category>
+    <category>Filth</category>
     <tickerType>Normal</tickerType>
     <altitudeLayer>Filth</altitudeLayer>
     <useHitPoints>false</useHitPoints>
+    <filth>
+      <cleaningWorkToReduceThickness>80</cleaningWorkToReduceThickness>
+      <canFilthAttach>false</canFilthAttach>
+      <maxThickness>1</maxThickness>
+    </filth>
     <selectable>true</selectable>
     <drawerType>RealtimeOnly</drawerType>
     <graphicData>
@@ -1699,12 +1704,17 @@
   <ThingDef>
     <defName>Avir_Glass</defName>
     <label>glass shards</label>
-    <description>Sand fused by heat into glass. It cuts the feet of whoever walks over it.</description>
+    <description>Sand fused by heat into glass. It cuts the feet of whoever walks over it. It can be swept up.</description>
     <thingClass>Avir.Magic.ShardGround</thingClass>
-    <category>Ethereal</category>
+    <category>Filth</category>
     <tickerType>Normal</tickerType>
     <altitudeLayer>Filth</altitudeLayer>
     <useHitPoints>false</useHitPoints>
+    <filth>
+      <cleaningWorkToReduceThickness>80</cleaningWorkToReduceThickness>
+      <canFilthAttach>false</canFilthAttach>
+      <maxThickness>1</maxThickness>
+    </filth>
     <selectable>true</selectable>
     <drawerType>RealtimeOnly</drawerType>
     <graphicData>
