@@ -319,7 +319,7 @@ namespace Avir.Magic
         }
 
         public const string ReflectionText = "Every cast of Light raises reflectors round the point - one per circle of Light, one more now and then for the skilled - as far from the point as the caster stands, on any side, behind the caster too. They burn for a few hours and light the ground. Each living reflector of the caster within range sends one circle back into the point: a full set is an echo at half the strength of the cast before it; a reflector over a full set casts the first circle of the next echo. A reflector can be broken; the foes' mages' reflectors are foes too.";
-        public const string DefocusText = "The more reflectors held at once, the harder the light is to keep in focus. A shot that loses it slides along its reflector's line - beyond the reflector at times, into whoever stands behind it - and then every reflector of the node goes wild: each strikes once more, its own circle at full echo strength, in a random direction, and shatters. The more were gathered, the worse it is.";
+        public const string DefocusText = "The more reflectors held at once, the harder the light is to keep in focus. A shot that loses it slides along its reflector's line - beyond the reflector at times, into whoever stands behind it - and then the node breaks like a prism: each reflector strikes once more, its own circle at full echo strength, toward the point but split and thrown aside - past it at times, into the caster - and shatters. The more were gathered, the worse it is.";
     }
 
     // ====================================================================== the reflectors
@@ -517,8 +517,14 @@ namespace Avir.Magic
             {
                 if (!r.Spawned) continue;
                 Shot own = pending.TryGetValue(r, out Shot p) ? p : s;
+                // a broken prism (the author, Fix212): the ray still goes toward the centre, but split and thrown aside - like a
+                // burning-glass's beam fanning out; it may run past the centre and on, into the caster behind it
                 float dist = Mathf.Max(5f, r.Position.DistanceTo(s.aim));
-                Vector3 dir = Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * Vector3.forward;
+                Vector3 toward = (s.aim.ToVector3Shifted() - r.TrueCenter()); toward.y = 0f;
+                if (toward.sqrMagnitude < 0.01f) toward = Vector3.forward;
+                float spread = Rand.Range(-1f, 1f); spread = Mathf.Sign(spread) * spread * spread * 55f;   // most near the line, some far off it
+                Vector3 dir = Quaternion.AngleAxis(spread, Vector3.up) * toward.normalized;
+                dist *= Rand.Range(0.6f, 2.1f);
                 IntVec3 land = r.Position;
                 // the stray ray goes until a wall takes it
                 for (float k = 1f; k <= dist; k += 1f)
