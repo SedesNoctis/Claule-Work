@@ -1238,6 +1238,8 @@ namespace Avir.Magic
                 foreach (RitualRing sec in c.sections)
                     if (sec.runes.Where(x => x != null && x.role == RuneRole.Verb).GroupBy(x => x.kind).Any(g => g.Count() >= 4))
                         return "You know, there is a word made to describe you. \"The s-s-s-st-stutterer.\"";
+            // a spell built against itself: Arlie says it herself, not the codex (Fix248)
+            foreach (var w in SpellHeal.Warnings(s)) { string said = SpellHeal.ArlieOf(w.Value); if (said != null) return said; }
             if (sel.binding) return "The rim holds everything together. You, so far, hold nothing. Pick a circle.";
             if (all.All(c => c.element == null && !c.OwnRunes.Any())) return "An empty heart. Give it an element - any will do for a start. I'll wait. Not long.";
             if (sel.Great && sel.element == null) return "A great circle without its seal is a crown without a head. Life, Light, Time, Space or Darkness - on top.";

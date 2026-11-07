@@ -111,7 +111,8 @@ namespace Avir.Magic
                     + " What is left on the ground (magma, mire, held fields) does not know its own.");
                 if (nAid > 0) e0.Add("Turned to its own", "Two Barriers and a Thread in the outermost section of a circle turn its blow to the caster's own people - the caster among them - and past the foes; "
                     + (1f - SpellSculpt.Keeps).ToStringPercent() + " weaker for it. For mending, warding and strengthening one's own from the circle.");
-                foreach (var w in SpellHeal.Warnings(s)) e0.Add(w.Key, w.Value);
+                // the codex keeps the explanation; Arlie's own words go to her (Fix248, the author: she spoke from the codex)
+                foreach (var w in SpellHeal.Warnings(s)) e0.Add(w.Key, SpellHeal.WithoutArlie(w.Value));
                 if (s.weave != null) foreach (var w in LifeMagic.Warnings(s.weave)) e0.Add(w.Key, w.Value);
                 if (s.weave != null ? s.weave.Working.Any(k => SpellHeal.Implodes(k.AsSchema())) : SpellHeal.Implodes(s))
                     e0.Add("Drawn in", "A Thread on a Release turns the blast round: whoever it would throw out is drawn in to its heart instead - never past it. Good for gathering foes under the next circle.");

@@ -156,6 +156,22 @@ namespace Avir.Magic
             return false;
         }
 
+        /// <summary>Arlie's words in a warning ("Arlie: \"...\"" on its first line), if any.</summary>
+        public static string ArlieOf(string text)
+        {
+            if (text == null || !text.StartsWith("Arlie: \"")) return null;
+            int end = text.IndexOf("\"\n", 8);
+            return end > 8 ? text.Substring(8, end - 8) : null;
+        }
+
+        /// <summary>A warning without Arlie's words - what the codex shows.</summary>
+        public static string WithoutArlie(string text)
+        {
+            if (ArlieOf(text) == null) return text;
+            int end = text.IndexOf("\"\n", 8);
+            return text.Substring(end + 2);
+        }
+
         /// <summary>The codex's warnings on a spell that heals and wounds the same people - or heals the foes and wounds
         /// one's own (Arlie's words, the author's).</summary>
         public static IEnumerable<KeyValuePair<string, string>> Warnings(RitualSchema s)
