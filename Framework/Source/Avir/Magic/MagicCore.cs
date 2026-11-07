@@ -1116,6 +1116,8 @@ namespace Avir.Magic
                 Spell("TEST Implosion, then a blast (air, two sections)", "Air:Release,Thread,Amplify|Release,Amplify"),
                 Spell("TEST Healing thread (water: Beam + Thread + Restore)", "Water:Beam,Thread,Restore"),
                 Spell("TEST Streaming beam of fire (Beam + Anchor)", "Fire:Beam,Anchor|Release"),
+                Spell("TEST Beam on a route: fire swept between two marks (Beam + Anchor + Thread)", "Fire:Beam,Anchor,Thread|Release"),
+                Spell("TEST Beam on a chained route: storm, four marks (Beam + Anchor + Thread + Step x3)", "Water:Beam,Anchor,Thread,Step,Step,Step|Release", "Air:Release"),
                 Spell("TEST Stream of healing (Beam + Anchor + Thread + Restore, own only)", "Water:Beam,Anchor,Thread,Restore|Barrier,Barrier,Thread"),
                 Spell("TEST Living aura of water (spares own)", "Water:Aura,Anchor|Release|Barrier,Barrier"),
                 Spell("TEST Living aura of storm", "Water:Aura,Anchor|Release|Barrier,Barrier", "Air:Aura,Anchor|Release|Barrier,Barrier"),

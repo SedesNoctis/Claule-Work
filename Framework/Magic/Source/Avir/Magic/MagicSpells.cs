@@ -462,6 +462,8 @@ namespace Avir.Magic
             {
                 if (!mage.Spawned) return;
                 if (t.Cell.DistanceTo(mage.Position) > range) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
+                // a beam on a route (Fix234): its further marks first
+                if (SpellRoute.Marks(spell, out _) > 1) { LocalTargetInfo first = t; SpellRoute.Deferred = () => SpellRoute.Aim(mage, spell, first.Cell, marks => Then(first, IntVec3.Invalid)); return; }
                 Then(t, IntVec3.Invalid);
             }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, null, null, true, null,
             t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));

@@ -70,6 +70,7 @@ namespace Avir.Magic
         {
             RitualSchema s = schema;
             if (s == null) return null;
+            SpellRoute.StripSteps(s);   // a route's Steps are its marks, not flights (Fix234)
             var seq = new List<KeyValuePair<int, int>>();
             for (int g = 0; g < s.rings.Count; g++)
                 for (int i = 0; i < s.rings[g].runes.Count; i++)

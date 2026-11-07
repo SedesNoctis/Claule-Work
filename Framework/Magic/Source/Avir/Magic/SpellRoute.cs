@@ -1,0 +1,152 @@
+using System.Collections.Generic;
+using System.Linq;
+using Avir.Ritualistics;
+using RimWorld;
+using UnityEngine;
+using Verse;
+using Verse.AI;
+
+namespace Avir.Magic
+{
+    /// <summary>The beam on a route (Fix234, the author). Beam + Anchor + Thread in one circle: a streaming beam whose
+    /// point of strike walks along a route the player marks - it sweeps the ground between the marks at its own pace, and
+    /// strikes once a second wherever it is. Every Step written in that circle (they do not carry the caster here) turns
+    /// it into a chain: the beam reaches a mark and goes on from that mark to the next, not from the caster - up to nine
+    /// marks, each reaching 10% less far than the one before (the ninth - a tenth of the spell's reach). Without a Step -
+    /// two marks, swept from the caster. The caster stands while it lasts; "Break off the stream" lets it go.</summary>
+    public static class SpellRoute
+    {
+        public const int MaxMarks = 9;
+        /// <summary>Done on the next frame (the aiming cannot be begun again from inside its own end).</summary>
+        public static System.Action Deferred;
+
+        private static IEnumerable<List<RuneDef>> Circles(RitualSchema s)
+        {
+            if (s == null) yield break;
+            if (s.weave != null) { foreach (SpellCircle c in s.weave.Working) yield return c.OwnRunes.ToList(); yield break; }
+            yield return s.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
+        }
+
+        /// <summary>Beam, Anchor, Thread written one after another - and the Thread not turned to mending (no Restoration
+        /// right after it: Beam + Anchor + Thread + Restore stays the stream of healing).</summary>
+        public static bool IsRoute(List<RuneDef> runes)
+        {
+            for (int i = 0; i + 2 < runes.Count; i++)
+                if (runes[i].kind == RuneKind.Beam && runes[i + 1].kind == RuneKind.Anchor && runes[i + 2].kind == RuneKind.Thread
+                    && (i + 3 >= runes.Count || runes[i + 3].kind != RuneKind.Restore)) return true;
+            return false;
+        }
+
+        /// <summary>How many marks the spell asks for (0 - not a route), and whether it chains.</summary>
+        public static int Marks(RitualSchema s, out bool chain)
+        {
+            chain = false;
+            foreach (List<RuneDef> rs in Circles(s))
+            {
+                if (!IsRoute(rs)) continue;
+                int steps = rs.Count(x => x.kind == RuneKind.Step);
+                chain = steps > 0;
+                return chain ? Mathf.Min(MaxMarks, 1 + steps) : 2;
+            }
+            return 0;
+        }
+
+        /// <summary>How far mark i (0 - the first, the spell's target) may be from the one before it.</summary>
+        public static float ReachOf(float range, int i, bool chain) => chain ? range * Mathf.Max(0.1f, 1f - 0.1f * i) : range;
+
+        /// <summary>A route part's Steps are its marks, not flights: they are taken out before the circle is read.</summary>
+        public static void StripSteps(RitualSchema s)
+        {
+            if (s?.rings == null || !IsRoute(s.rings.SelectMany(g => g.runes).Where(x => x != null).ToList())) return;
+            foreach (RitualRing g in s.rings) g.runes.RemoveAll(x => x != null && x.kind == RuneKind.Step);
+        }
+
+        // ---- the marks named while aiming, taken when the beam begins
+        public class Pending { public List<IntVec3> marks; public bool chain; }
+        private static readonly Dictionary<int, Pending> pending = new Dictionary<int, Pending>();
+        public static void Set(Pawn mage, List<IntVec3> marks, bool chain) { if (mage == null) return; if (marks == null || marks.Count < 2) pending.Remove(mage.thingIDNumber); else pending[mage.thingIDNumber] = new Pending { marks = marks.ToList(), chain = chain }; }
+        public static Pending Take(Pawn mage) { if (mage == null || !pending.TryGetValue(mage.thingIDNumber, out Pending p)) return null; pending.Remove(mage.thingIDNumber); return p; }
+
+        /// <summary>Aiming the marks after the first, one by one: a left click sets the next, a right click takes the last
+        /// back (or, with none set, stops aiming). The whole route is drawn as it is made.</summary>
+        public static void Aim(Pawn mage, RitualSchema spell, IntVec3 first, System.Action<List<IntVec3>> done)
+        {
+            int need = Marks(spell, out bool chain);
+            float range = Spells.Range(spell);
+            var marks = new List<IntVec3> { first };
+            void Ask()
+            {
+                if (marks.Count >= need) { Set(mage, marks, chain); done(marks); return; }
+                int i = marks.Count; IntVec3 from = chain ? marks[i - 1] : mage.Position;
+                float reach = ReachOf(range, i, chain);
+                Messages.Message("Route of the beam: mark " + (i + 1) + " of " + need + (chain ? " (it goes on from the last mark)" : "") + ". Right click - take the last mark back.", MessageTypeDefOf.SilentInput, false);
+                var parms = new TargetingParameters { canTargetLocations = true, canTargetPawns = true, canTargetSelf = false, canTargetBuildings = false };
+                Find.Targeter.BeginTargeting(parms, t =>
+                {
+                    if (!mage.Spawned) return;
+                    if (t.Cell.DistanceTo(from) > reach) { Messages.Message("Too far from the mark before.", MessageTypeDefOf.RejectInput, false); Ask(); return; }
+                    marks.Add(t.Cell); Ask();
+                }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(from) <= reach, mage,
+                () =>
+                {
+                    // the game ends the aiming before it acts on a click; only a right click is "one back" (Escape - stop)
+                    Event e = Event.current;
+                    if (e != null && e.type == EventType.MouseDown && e.button == 1 && marks.Count > 1)
+                    { marks.RemoveAt(marks.Count - 1); Deferred = Ask; }
+                },
+                null, true, null,
+                t => Draw(mage, marks, chain, from, reach));
+            }
+            Ask();
+        }
+
+        /// <summary>The route as made so far, and the next leg under the cursor.</summary>
+        public static void Draw(Pawn mage, List<IntVec3> marks, bool chain, IntVec3 from, float reach)
+        {
+            if (reach < GenRadial.MaxRadialPatternRadius) GenDraw.DrawRadiusRing(from, reach);
+            Vector3 prev = chain ? mage.DrawPos : marks[0].ToVector3Shifted();
+            if (chain) GenDraw.DrawLineBetween(mage.DrawPos, marks[0].ToVector3Shifted(), SimpleColor.Cyan);
+            for (int i = 1; i < marks.Count; i++)
+            {
+                GenDraw.DrawLineBetween(marks[i - 1].ToVector3Shifted(), marks[i].ToVector3Shifted(), SimpleColor.Cyan);
+                if (!chain) GenDraw.DrawLineBetween(mage.DrawPos, marks[i].ToVector3Shifted(), SimpleColor.White);
+            }
+            if (!chain) GenDraw.DrawLineBetween(mage.DrawPos, marks[0].ToVector3Shifted(), SimpleColor.White);
+            IntVec3 m = Verse.UI.MouseCell();
+            if (m.InBounds(mage.Map)) GenDraw.DrawLineBetween(marks[marks.Count - 1].ToVector3Shifted(), m.ToVector3Shifted(), m.DistanceTo(from) <= reach ? SimpleColor.Yellow : SimpleColor.Red);
+            GenDraw.DrawFieldEdges(marks);
+        }
+
+        /// <summary>Length of a route.</summary>
+        public static float Length(List<IntVec3> marks) { float l = 0f; for (int i = 1; i < marks.Count; i++) l += marks[i].DistanceTo(marks[i - 1]); return l; }
+
+        /// <summary>Where on the route a beam that has gone `along` cells is: the point, and the mark it last passed.</summary>
+        public static Vector3 PointAt(List<IntVec3> marks, float along, out int leg)
+        {
+            leg = 0;
+            for (int i = 1; i < marks.Count; i++)
+            {
+                float d = marks[i].DistanceTo(marks[i - 1]);
+                if (along <= d || i == marks.Count - 1) { leg = i - 1; return Vector3.Lerp(marks[i - 1].ToVector3Shifted(), marks[i].ToVector3Shifted(), d <= 0f ? 1f : Mathf.Clamp01(along / d)); }
+                along -= d;
+            }
+            return marks[marks.Count - 1].ToVector3Shifted();
+        }
+    }
+
+    /// <summary>The caster of a stream stands (Fix234, the author): an order to go elsewhere is refused while the stream
+    /// holds - "Break off the stream" first.</summary>
+    [HarmonyLib.HarmonyPatch(typeof(Pawn_JobTracker), nameof(Pawn_JobTracker.TryTakeOrderedJob))]
+    public static class Patch_StreamStands
+    {
+        public static bool Prefix(Pawn_JobTracker __instance, Job job, ref bool __result)
+        {
+            Pawn p = HarmonyLib.Traverse.Create(__instance).Field("pawn").GetValue<Pawn>();
+            if (p?.MapHeld == null || job == null || job.def == JobDefOf.Wait_MaintainPosture) return true;
+            if (p.MapHeld.GetComponent<MapComponent_Auras>()?.all.Any(a => a.beam && a.caster == p) != true) return true;
+            Messages.Message(p.LabelShortCap + " holds a stream and cannot move - break off the stream first.", p, MessageTypeDefOf.RejectInput, false);
+            __result = false;
+            return false;
+        }
+    }
+}
