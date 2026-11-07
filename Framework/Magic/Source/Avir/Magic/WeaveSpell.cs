@@ -266,7 +266,6 @@ namespace Avir.Magic
             foreach (ComboKind k in Combos.Pairs(root).Values.Distinct()) ComboMagic.Price(k, caster);
             foreach (RuneKind lp in Small(root).Select(c => LifeMagic.PairOfCircle(root, c)).Where(k => k != LifeMagic.None).Distinct()) LifeMagic.PayPair(lp, caster);
             LifeMagic.Slip(caster, root);
-            LightMagic.Slip(caster, root);
             if (plain.Any(c => AirMagic.Is(c.element))) AirMagic.Winded(caster);
         }
 

@@ -225,7 +225,9 @@ namespace Avir.Magic
             }
         }
 
-        internal static bool Sculptable(Plant pl) => pl.def.plant != null && (pl.def.plant.IsTree || pl.def.plant.harvestedThingDef != null || pl.def.GetStatValueAbstract(StatDefOf.Beauty) > 0f) && pl.Growth > 0.3f;
+        internal static bool Sculptable(Plant pl) => pl.def.plant != null && !Grassy(pl.def) && (pl.def.plant.IsTree || pl.def.plant.harvestedThingDef != null || pl.def.GetStatValueAbstract(StatDefOf.Beauty) > 0f) && pl.Growth > 0.3f;
+        /// <summary>Grass and its like (tufts, many to a cell) make no statue (the author, Fix223).</summary>
+        internal static bool Grassy(ThingDef d) => d?.plant != null && !d.plant.IsTree && (d.defName.IndexOf("grass", System.StringComparison.OrdinalIgnoreCase) >= 0 || d.plant.maxMeshCount >= 4);
 
         // ================================================================== the meetings' answers to each rune: taking
 

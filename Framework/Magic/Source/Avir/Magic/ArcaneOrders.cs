@@ -858,3 +858,29 @@ namespace Avir.Magic
         public static ThingDef Rock(Map map) => Find.World.NaturalRockTypesIn(map.Tile).FirstOrDefault() ?? ThingDefOf.Granite;
     }
 }
+
+namespace Avir.Magic
+{
+    /// <summary>Cancelling an arcane order the vanilla way (the author, Fix223): the arcane orders mark the cell, and a wall or
+    /// rock standing on it showed no Cancel - now the Cancel command on the thing takes off our marks on its cell too.</summary>
+    [HarmonyLib.HarmonyPatch(typeof(RimWorld.Designator_Cancel), nameof(RimWorld.Designator_Cancel.CanDesignateThing))]
+    public static class Patch_CancelArcaneOnThing
+    {
+        public static bool Ours(Verse.Map map, Verse.IntVec3 c) => map != null && c.InBounds(map) && map.designationManager.AllDesignationsAt(c).Any(d => d.def.defName.StartsWith("Avir_") && d.def.designateCancelable && d.target.HasThing == false);
+        public static void Postfix(Verse.Thing t, ref Verse.AcceptanceReport __result)
+        {
+            if (!__result.Accepted && t != null && t.Spawned && Ours(t.Map, t.Position)) __result = true;
+        }
+    }
+
+    [HarmonyLib.HarmonyPatch(typeof(RimWorld.Designator_Cancel), nameof(RimWorld.Designator_Cancel.DesignateThing))]
+    public static class Patch_CancelArcaneOnThingDo
+    {
+        public static void Postfix(Verse.Thing t)
+        {
+            if (t == null || !t.Spawned) return;
+            foreach (Verse.Designation d in t.Map.designationManager.AllDesignationsAt(t.Position).Where(d => d.def.defName.StartsWith("Avir_") && d.def.designateCancelable && !d.target.HasThing).ToList())
+                t.Map.designationManager.RemoveDesignation(d);
+        }
+    }
+}

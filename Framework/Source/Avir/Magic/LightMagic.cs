@@ -24,6 +24,8 @@ namespace Avir.Magic
     public static class LightMagic
     {
         public static readonly Color Gold = new Color(1f, 0.93f, 0.68f);
+        /// <summary>The Crystal's own colour (Light meeting Earth, Fix223): a cold prism-white.</summary>
+        public static readonly Color CrystalColor = new Color(0.72f, 0.9f, 1f);
         /// <summary>By night Light turns silver-blue (the author, Fix210).</summary>
         public static readonly ColorInt NightGlow = new ColorInt(175, 205, 255, 0), DayGlow = new ColorInt(255, 238, 190, 0);
         public static bool Night(Map m) => m != null && m.skyManager.CurSkyGlow < 0.4f;
@@ -233,12 +235,11 @@ namespace Avir.Magic
 
         public static void ShardsAt(Map map, IntVec3 c, Vector3 draw, Pawn by)
         {
-            if (map == null) return;
-            foreach (Pawn p in GenRadial.RadialDistinctThingsAround(c, map, 2.9f, true).OfType<Pawn>().ToList())
-            {
-                if (p.Dead || !GenSight.LineOfSight(c, p.Position, map, true)) continue;
-                for (int i = 0; i < 2; i++) p.TakeDamage(new DamageInfo(Shard, Rand.Range(3f, 6f), ShardPen, -1f, by));
-            }
+            if (map == null || !c.InBounds(map)) return;
+            // a burst of shards, as a grenade bursts (the author, Fix223): with its sound and its blast, cutting whoever it reaches
+            GenExplosion.DoExplosion(c, map, 2.6f, Shard, by, Mathf.RoundToInt(Rand.Range(7f, 11f)), ShardPen, DefDatabase<SoundDef>.GetNamedSilentFail("Explosion_Bomb"));
+            foreach (Pawn p in GenRadial.RadialDistinctThingsAround(c, map, 2.6f, true).OfType<Pawn>().ToList())
+                if (!p.Dead && GenSight.LineOfSight(c, p.Position, map, true)) p.TakeDamage(new DamageInfo(Shard, Rand.Range(3f, 6f), ShardPen, -1f, by));
             MapComponent_SpellSprites.PutTinted(map, "Light/CrystalShatter", Color.white, draw, 2.6f, 30);
             for (int i = 0; i < 4; i++) FleckMaker.ThrowMicroSparks(draw + Rand.InsideUnitCircleVec3 * 0.6f, map);
         }
@@ -473,7 +474,7 @@ namespace Avir.Magic
 
         /// <summary>A spell with Light in it has been cast: new reflectors stand up round the point, and every living
         /// reflector of the caster within range sends a circle back into it.</summary>
-        public static void Reflect(Pawn caster, SpellCircle root, IntVec3 aim, IntVec3 casterAt, float power)
+        public static void Reflect(Pawn caster, SpellCircle root, IntVec3 aim, IntVec3 casterAt, float power, int castBorn = -1)
         {
             Map map = caster?.Map;
             if (map == null || !aim.InBounds(map)) return;
@@ -490,7 +491,8 @@ namespace Avir.Magic
             // order (the author); the reflectors this cast raises answer only the next cast (the author: balance)
             float range = Range(root);
             // a reflector that cannot see the point through a wall reflects nothing (the author, Fix217)
-            var refl = Building_LightReflector.Node(caster, map).Where(x => x.Position.DistanceTo(aim) <= range && GenSight.LineOfSight(x.Position, aim, map, true)).InRandomOrder().ToList();
+            // what this very cast grew (crystals of its forms) answers only the next one (the author, Fix223)
+            var refl = Building_LightReflector.Node(caster, map).Where(x => (castBorn < 0 || x.born < castBorn) && x.Position.DistanceTo(aim) <= range && GenSight.LineOfSight(x.Position, aim, map, true)).InRandomOrder().ToList();
             ThingDef kind = DefDatabase<ThingDef>.GetNamedSilentFail(crystal ? "Avir_LightCrystal" : "Avir_LightReflector");
             for (int i = 0; i < n; i++) Building_LightReflector.Raise(caster, map, aim, dist, kind);
             if (refl.Count == 0) return;
@@ -514,11 +516,15 @@ namespace Avir.Magic
 
         /// <summary>A lost hold on Light: the focus goes at once - every reflector of the node breaks in a flash; the more there
         /// were, the worse for the mage.</summary>
-        public static void Slip(Pawn caster, SpellCircle root)
+        public static void Slip(Pawn caster, SpellCircle root, IntVec3 aim, float power)
         {
             if (caster?.Map == null || !Any(root)) return;
             int n = Building_LightReflector.Held(caster.Map);
-            Building_LightReflector.BreakAll(Building_LightReflector.Node(caster, caster.Map).Where(r => !r.Work), caster, true);
+            // the hold lost (the author, Fix223): the node does not just fall - every reflector strikes wild first, as in defocus
+            var node = Building_LightReflector.Node(caster, caster.Map).Where(r => !r.Work).ToList();
+            var links = EchoCircles(root);
+            if (links.Count > 0 && node.Count > 0 && aim.IsValid) MapComponent_LightEchoes.Wild(caster, root, links, node, aim, power, caster.Map);
+            else Building_LightReflector.BreakAll(node, caster, true);
             DazzlePawn(caster, 0.35f + 0.03f * n);
         }
 
@@ -567,6 +573,9 @@ namespace Avir.Magic
 
         /// <summary>When it is free to send the next shot: the casts of a node go one after another (the author).</summary>
         public int busyUntil;
+        /// <summary>When it stood up.</summary>
+        public int born;
+        public override void SpawnSetup(Map map, bool respawningAfterLoad) { base.SpawnSetup(map, respawningAfterLoad); if (!respawningAfterLoad) born = Find.TickManager.TicksGame; }
 
         // its kind, by its def (Fix217)
         public bool IsCrystal => def.defName.StartsWith("Avir_LightCrystal");
@@ -704,6 +713,7 @@ namespace Avir.Magic
             base.ExposeData();
             Scribe_References.Look(ref caster, "caster");
             Scribe_Values.Look(ref dies, "dies", -1);
+            Scribe_Values.Look(ref born, "born");
         }
     }
 
@@ -802,6 +812,20 @@ namespace Avir.Magic
         /// <summary>Defocus (the author, Fix211): before they break, every reflector of the node fires once - each its own
         /// circle (or the one that went astray), in a random direction, at full echo strength. The more were gathered,
         /// the worse it is on a great spell.</summary>
+        /// <summary>The node going wild at a lost hold: each reflector its circle, toward the point but thrown aside (unstable ones
+        /// anywhere), and shatters.</summary>
+        public static void Wild(Pawn caster, SpellCircle root, List<SpellCircle> links, List<Building_LightReflector> node, IntVec3 aim, float power, Map map)
+        {
+            var me = map.GetComponent<MapComponent_LightEchoes>();
+            if (me == null) return;
+            int now = Find.TickManager.TicksGame;
+            for (int i = 0; i < node.Count; i++)
+            {
+                var s = new Shot { caster = caster, root = root, circle = links[i % links.Count], from = node[i], aim = aim, power = power * (node[i].Unstable ? 0.15f : node[i].Decay), held = node.Count, node = node };
+                me.Scatter(s, now + 6 * i, new List<Building_LightReflector> { node[i] }, node[i].Unstable);
+            }
+        }
+
         private void Scatter(Shot s, int now, List<Building_LightReflector> only = null, bool anyWay = false)
         {
             var node = only ?? Building_LightReflector.Node(s.caster, map).Where(r => !r.Work && !r.IsCrystal).ToList();

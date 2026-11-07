@@ -629,7 +629,9 @@ namespace Avir.Magic
                 if (c.element == null) return lc;
                 if (bp != LifeMagic.None && c.element.kind == bp) return Color.Lerp(c.element.color, lc, 0.5f);
             }
-            if (c.element == null && !c.Great && rootNow?.ParentOf(c) is SpellCircle gb && gb.Great && gb.element != null) return gb.element.color;
+            if (c.Great && LightMagic.Crystal(c)) return LightMagic.CrystalColor;
+            if (!c.Great && rootNow?.ParentOf(c) is SpellCircle cb && LightMagic.Absorbed(cb) == c) return LightMagic.CrystalColor;
+            if (c.element == null && !c.Great && rootNow?.ParentOf(c) is SpellCircle gb && gb.Great && gb.element != null) return LightMagic.Crystal(gb) ? LightMagic.CrystalColor : gb.element.color;
             return c.element?.color ?? new Color(0.85f, 0.78f, 0.62f);
         }
         private static readonly Dictionary<SpellCircle, SecondKind> seconds = new Dictionary<SpellCircle, SecondKind>();

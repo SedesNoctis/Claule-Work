@@ -116,6 +116,7 @@ namespace Avir.Magic
             SpellCircle first = MapComponent_SpellChain.Order(s.weave).FirstOrDefault();
             // a meeting of the second order, or Life with its partner, gives the whole spell its colour
             if (first != null && SecondOrder.Of(s.weave).TryGetValue(first, out SecondKind y)) return SecondOrder.ColorOf(y, SecondOrder.PairOf(y), SecondOrder.Third(y));
+            if (LightMagic.AnyCrystal(s.weave)) return LightMagic.CrystalColor;
             SpellCircle box = LifeMagic.Circles(s.weave).FirstOrDefault();
             if (box != null) { RuneKind lp = LifeMagic.PairOf(s.weave, box); RuneKind la = LifeMagic.AspectOf(s.weave, box); return lp != LifeMagic.None ? LifeMagic.PairColor(lp) : la != LifeMagic.None ? LifeMagic.AspectColor(la) : box.element.color; }
             ComboKind k = Combos.Of(s.weave, first);
@@ -166,7 +167,7 @@ namespace Avir.Magic
                 Messages.Message(caster.LabelShortCap + " lost the hold on " + s.name + ": the Arcana burnt through.", caster, MessageTypeDefOf.NegativeEvent, false);
                 core.Note("Lost the hold on " + s.name + ".");
                 MageClass.Cast(core, s, cost, true);
-                if (s.weave != null) WeaveSpell.Slip(caster, s.weave);
+                if (s.weave != null) { WeaveSpell.Slip(caster, s.weave); LightMagic.Slip(caster, s.weave, target.Cell, Power(s)); }
                 else if (FireMagic.Is(r.elements.FirstOrDefault())) FireMagic.Raging(caster);
                 else if (WaterMagic.Is(r.elements.FirstOrDefault())) WaterMagic.Chilled(caster);
                 else if (EarthMagic.Is(r.elements.FirstOrDefault())) EarthMagic.Petrified(caster);

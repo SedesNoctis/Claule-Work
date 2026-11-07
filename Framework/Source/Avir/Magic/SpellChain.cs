@@ -34,6 +34,8 @@ namespace Avir.Magic
             public IntVec3 wallTo = IntVec3.Invalid;
             public LocalTargetInfo target;
             public int at;
+            /// <summary>When the spell was let go: what it grew itself (crystals) answers only the next cast (Fix223).</summary>
+            public int born = -1;
             public bool waitCaster;
             public List<Pawn> waitFor;
             public int giveUp;
@@ -66,6 +68,7 @@ namespace Avir.Magic
                 Scribe_Values.Look(ref endByMage, "endByMage");
                 Scribe_Values.Look(ref origin, "origin", IntVec3.Invalid);
                 Scribe_Values.Look(ref aim, "aim", IntVec3.Invalid);
+                Scribe_Values.Look(ref born, "born", -1);
                 if (Scribe.mode == LoadSaveMode.PostLoadInit && root != null) { links = Order(root); combos = Combos.Pairs(root); }
             }
         }
@@ -117,7 +120,8 @@ namespace Avir.Magic
                     continue;
                 }
                 // the Earth that went into a Crystal is the Crystal now - not a circle of its own (Fix217)
-                if (c.element != null && !(box != null && LightMagic.Absorbed(box) == c)) list.Add(c);
+                if (box != null && LightMagic.Absorbed(box) == c) continue;   // (Fix223: it used to slip through as a circle anyway)
+                if (c.element != null) list.Add(c);
                 else if (box != null && (LifeMagic.Is(box.element) || LightMagic.Is(box.element)) && c.OwnRunes.Any()) list.Add(c);
             }
         }
@@ -135,7 +139,7 @@ namespace Avir.Magic
             var c = new Chain
             {
                 caster = caster, root = root, links = Order(root), power = power, target = target,
-                storm = false, wallTo = FireMagic.WallTo, combos = Combos.Pairs(root), origin = caster.Position, aim = target.Cell,
+                storm = false, wallTo = FireMagic.WallTo, combos = Combos.Pairs(root), origin = caster.Position, aim = target.Cell, born = Find.TickManager.TicksGame,
                 hops = SpellHops.Take(caster)
             };
             LifeMagic.BeginSpell(caster);
@@ -347,7 +351,7 @@ namespace Avir.Magic
             LifeMagic.EndSpell(c.caster);
             if (c.caster == null || c.caster.Dead || !c.caster.Spawned) return;
             // Light: new reflectors stand up round the point, and the living ones send their echoes into it
-            if (LightMagic.Any(c.root)) LightMagic.Reflect(c.caster, c.root, c.aim.IsValid ? c.aim : c.target.Cell, c.origin, c.power);
+            if (LightMagic.Any(c.root)) LightMagic.Reflect(c.caster, c.root, c.aim.IsValid ? c.aim : c.target.Cell, c.origin, c.power, c.born);
             WeaveSpell.AfterCircles(c.caster, c.root, c.target, c.power, c.caster.Map);
         }
 
