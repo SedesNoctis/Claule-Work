@@ -791,8 +791,10 @@ namespace Avir.Magic
                 Color col = f.y == SecondKind.Typhoon ? new Color(0.45f, 0.85f, 0.95f) : Color.white; col.a = 0.55f * Mathf.Clamp01((f.until - now) / 600f) + 0.05f * Mathf.Sin(t * 1.3f);
                 block.SetColor(ShaderPropertyIDs.Color, col);
                 float size = f.rad * 2f;
-                float turn = f.y == SecondKind.Hurricane && f.speed > 0f ? t * 140f : f.y == SecondKind.Typhoon ? t * 95f : t * 4f;   // a whirl spins fast
-                if (m != null) Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis((turn + f.mid.x * 13f) % 360f, Vector3.up), new Vector3(size, 1f, size)), m, 0, null, 0, block);
+                // a whirl spins fast; a field with a direction of its own (rain, a dry wind, rising heat) does not turn at all (Fix224)
+                bool still = f.y == SecondKind.Deluge || f.y == SecondKind.DryWind || f.y == SecondKind.Thermal || f.y == SecondKind.Swelter;
+                float turn = still ? 0f : f.y == SecondKind.Hurricane && f.speed > 0f ? t * 140f : f.y == SecondKind.Typhoon ? t * 95f : t * 4f;
+                if (m != null) Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.AngleAxis(still ? 0f : (turn + f.mid.x * 13f) % 360f, Vector3.up), new Vector3(size, 1f, size)), m, 0, null, 0, block);
                 if (f.y == SecondKind.Typhoon || f.y == SecondKind.Deluge) Rain(f, t, now);
             }
         }
@@ -826,7 +828,8 @@ namespace Avir.Magic
                 // storm's: the deluge's own rain is drawn over it (Rain); here - splashes and rings
                 case SecondKind.Deluge:
                     FleckMaker.Static(c, map, FleckDefOf.WaterSplash, 0.7f);
-                    MapComponent_SpellSprites.PutTintedGrowing(map, "Wave/Ripple", new Color(0.6f, 0.8f, 1f), v, 0.8f, 50, 1.6f); break;
+                    // rings only where the rain falls into water (Fix224: on dry ground they read as strange bubbles)
+                    if (Reactions.Wet(c, map) || c.GetTerrain(map).IsWater) MapComponent_SpellSprites.PutTintedGrowing(map, "Wave/Ripple", new Color(0.6f, 0.8f, 1f), v, 0.5f, 40, 1.2f); break;
                 case SecondKind.Hurricane:
                     MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", new Color(0.8f, 0.9f, 1f, 0.75f), v, 1.6f, 25, Rand.Range(0f, 360f), 0f, 4f); break;
                 case SecondKind.Mudflow:

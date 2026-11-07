@@ -365,7 +365,33 @@ namespace Avir.Magic
         private static bool? ce;
         public static bool CE => ce ?? (ce = ModsConfig.IsActive("CETeam.CombatExtended")).Value;
         public static float ShardPen => CE ? 8f : 0.5f;
-        public static float SearPen => 0.6f;   // heat armour reads the same scale with or without CE
+        public static float SearPen => 0.6f;
+
+        /// <summary>A burn of light lies on the skin - never inside the body (Fix224: it used to burn livers and hearts).</summary>
+        public static DamageInfo SearOn(float amount, Pawn by)
+        {
+            var d = new DamageInfo(Sear, amount, SearPen, -1f, by);
+            d.SetBodyRegion(BodyPartHeight.Undefined, BodyPartDepth.Outside);
+            return d;
+        }
+
+        /// <summary>Light burns the eyes that look at it (the author, Fix224): living eyes are burnt; bionic ones are wrecked - the
+        /// light floods their sensors; archotech ones it only tries at, seldom.</summary>
+        public static void EyeBurn(Pawn p, float sev, Pawn by)
+        {
+            if (p == null || p.Dead || !Sees(p) || Sear == null || sev <= 0f) return;
+            if (!Rand.Chance(Mathf.Clamp01(0.2f + 0.45f * sev))) return;
+            var hs = p.health.hediffSet;
+            var eyes = hs.GetNotMissingParts().Where(x => x.def.tags.Contains(BodyPartTagDefOf.SightSource)).ToList();
+            if (eyes.Count == 0) return;
+            BodyPartRecord e = eyes.RandomElement();
+            Hediff added = hs.hediffs.FirstOrDefault(h => h.Part == e && h is Hediff_AddedPart);
+            float dmg;
+            if (added == null) dmg = 2f + 6f * sev;
+            else if (added.def.defName.IndexOf("Archotech", System.StringComparison.OrdinalIgnoreCase) >= 0) { if (!Rand.Chance(0.12f)) return; dmg = 3f + 6f * sev; }
+            else dmg = 6f + 14f * sev;
+            p.TakeDamage(new DamageInfo(Sear, dmg, 99f, -1f, by, e));
+        }   // heat armour reads the same scale with or without CE
 
         public static void DazzlePawn(Pawn p, float severity)
         {
@@ -409,7 +435,7 @@ namespace Avir.Magic
                 {
                     float near = 1f - 0.4f * p.Position.DistanceTo(at) / Mathf.Max(1f, r);
                     DazzlePawn(p, sev * near);
-                    if (dmg > 0f) p.TakeDamage(new DamageInfo(Sear, dmg * near, SearPen, -1f, caster));
+                    if (dmg > 0f) { p.TakeDamage(SearOn(dmg * near, caster)); EyeBurn(p, sev * near, caster); }
                 }
             Glint(map, at.ToVector3Shifted(), r * 2f, bright);
         }
@@ -425,13 +451,13 @@ namespace Avir.Magic
                     {
                         DazzlePawn(p, sev);
                         // the ray burns whoever stands in it, not only at its end (the author, Fix210)
-                        if (c != to) p.TakeDamage(new DamageInfo(Sear, 3f + 7f * sev, SearPen, -1f, caster));
+                        if (c != to) { p.TakeDamage(SearOn(3f + 7f * sev, caster)); EyeBurn(p, sev, caster); }
                     }
                 if (c.Impassable(map) && c != to) { to = c; break; }   // a wall takes the ray
             }
             // where it ends, it sears
             foreach (Pawn p in to.GetThingList(map).OfType<Pawn>().ToList())
-                if (Reached(p, caster, shaped, aid)) p.TakeDamage(new DamageInfo(Sear, 4f + 10f * sev, SearPen, -1f, caster));
+                if (Reached(p, caster, shaped, aid)) { p.TakeDamage(SearOn(4f + 10f * sev, caster)); EyeBurn(p, sev * 1.3f, caster); }
             RayLine(map, from.ToVector3Shifted(), to.ToVector3Shifted(), bright);
             Glint(map, to.ToVector3Shifted(), 1.6f, bright);
         }
