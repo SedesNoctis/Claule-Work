@@ -190,6 +190,7 @@ namespace Avir.Magic
     [HarmonyPatch(typeof(WeatherEvent_LightningStrike), nameof(WeatherEvent_LightningStrike.DoStrike))]
     public static class Patch_LightningStrike
     {
+        public const float WildGlobeChance = 0.025f;
         public static void Prefix(ref IntVec3 strikeLoc, Map map)
         {
             if (!AvirMagic.On || map == null || !strikeLoc.IsValid || AvirMod.Settings != null && !AvirMod.Settings.electricity) return;
@@ -198,7 +199,15 @@ namespace Avir.Magic
 
         public static void Postfix(IntVec3 strikeLoc, Map map)
         {
-            if (!AvirMagic.On || map == null || !strikeLoc.IsValid || AvirMod.Settings != null && !AvirMod.Settings.electricity) return;
+            if (!AvirMagic.On || map == null || !strikeLoc.IsValid) return;
+            // a wild ball lightning (Fix228, the author: very rarely a thunderstorm's strike leaves one) - no one's, it
+            // strikes anyone; a little charged already
+            if ((AvirMod.Settings == null || AvirMod.Settings.wildGlobes) && Rand.Chance(WildGlobeChance))
+            {
+                IntVec3 at = strikeLoc;
+                map.GetComponent<SecondFields>()?.Later(30, () => map.GetComponent<SecondFields>()?.AddGlobe(at.ToVector3Shifted(), null, Rand.Range(0.8f, 1.3f), Rand.Range(1500, 3000), null, null, Rand.Chance(0.3f)));
+            }
+            if (AvirMod.Settings != null && !AvirMod.Settings.electricity) return;
             Electricity.Spread(strikeLoc, map, 1.6f, null, false);
         }
     }

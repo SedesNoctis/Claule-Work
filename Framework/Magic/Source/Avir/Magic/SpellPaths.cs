@@ -20,12 +20,15 @@ namespace Avir.Magic
         public MapComponent_TempTerrain(Map map) : base(map) { }
         public static MapComponent_TempTerrain Of(Map m) => m?.GetComponent<MapComponent_TempTerrain>();
 
-        public void Set(IntVec3 c, TerrainDef def, int ticks)
+        /// <summary>Heat drying wet ground (a marsh counts as water to the game): the water check is passed over (Fix228).</summary>
+        public void SetDry(IntVec3 c, TerrainDef def, int ticks) => Set(c, def, ticks, true);
+
+        public void Set(IntVec3 c, TerrainDef def, int ticks, bool drying = false)
         {
             if (def == null || !c.InBounds(map) || c.GetEdifice(map) != null) return;
             TerrainDef was = map.terrainGrid.TerrainAt(c);
             if (was == def) { if (until.ContainsKey(c)) until[c] = Mathf.Max(until[c], Find.TickManager.TicksGame + ticks); return; }
-            if (was.IsWater && !def.IsWater) return;   // the trail does not fill in water
+            if (was.IsWater && !def.IsWater && !drying) return;   // the trail does not fill in water
             if (!from.ContainsKey(c)) from[c] = was;
             to[c] = def;
             until[c] = Find.TickManager.TicksGame + ticks;

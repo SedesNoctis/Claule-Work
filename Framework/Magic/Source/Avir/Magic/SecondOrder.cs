@@ -259,6 +259,7 @@ namespace Avir.Magic
                     foreach (Pawn p in c.foes) { Burn(p, 4f * c.power, by); Heat(p, 0.06f * c.power * (Sealed(p) ? 2f : 1f)); MagicFx.Give(p, H("Avir_HeatTrap"), 600); Dry(p); }
                     foreach (Pawn p in c.own) if (c.aura) { Dry(p); MagicFx.Give(p, H("Avir_Dried"), Ticks(1f, c.power)); }
                     foreach (IntVec3 x in c.cells) foreach (Thing t in Reactions.Pools(x, c.map).ToList()) t.Destroy();
+                    foreach (IntVec3 x in c.cells) SpellGround.Dry(x, c.map, GenDate.TicksPerDay);   // mud and marsh dry, ice melts (Fix228)
                     if (c.hold || c.shape) Field(c, y, Ticks(1f, c.power));
                     Puff(c, new Color(1f, 0.7f, 0.4f, 0.5f));
                     break;
@@ -415,6 +416,7 @@ namespace Avir.Magic
                         if (c.hold || Rand.Chance(0.5f)) MagicFx.Bury(p, c.power);
                     }
                     foreach (IntVec3 x in c.cells) if (Rand.Chance(0.25f)) MirePatch.Spread(x, c.map, by, c.power, 1500);
+                    foreach (IntVec3 x in c.cells) if (Rand.Chance(0.6f)) SpellGround.Muddy(x, c.map, GenDate.TicksPerDay);   // the ground under it is mud for a day (Fix228)
                     foreach (Pawn p in c.own) if (c.restore) { Hediff b = H("Avir_Buried") != null ? p.health.hediffSet.GetFirstHediffOfDef(H("Avir_Buried")) : null; if (b != null) p.health.RemoveHediff(b); }
                     break;
                 case SecondKind.Swelter:
@@ -422,11 +424,11 @@ namespace Avir.Magic
                     if (c.drain && by.needs?.rest != null) by.needs.rest.CurLevel = Mathf.Min(1f, by.needs.rest.CurLevel + 0.05f * c.foes.Count);
                     // Fix227 (the author: it stood too short a time): it always lies as a field now - a Release half an hour,
                     // held two hours - and the heat in it works on, not only in the moment of the cast
-                    Field(c, y, Ticks(c.hold ? 2f : 0.5f, c.power));
+                    Field(c, y, Ticks(c.hold ? 6f : 2f, c.power));   // Fix228: longer - no wounds, its work is slow (the author)
                     break;
                 case SecondKind.Thermal:
                     foreach (Pawn p in c.own) MagicFx.Give(p, H("Avir_Updraft"), Ticks(0.5f, c.power));
-                    Field(c, y, Ticks(c.hold ? 3f : 0.5f, c.power));
+                    Field(c, y, Ticks(c.hold ? 6f : 2f, c.power));   // Fix228: longer - no wounds, its work is slow (the author)
                     break;
                 case SecondKind.Rainbow:
                     foreach (Pawn p in c.foes) MagicFx.Give(p, ComboDefOf.Avir_Dazzled, Mathf.RoundToInt(900f * c.power * SpellBody.Of(p).eyeDazzle));
@@ -443,6 +445,7 @@ namespace Avir.Magic
                     break;
                 case SecondKind.Quag:
                     foreach (IntVec3 x in c.cells) if (Rand.Chance(0.8f)) MirePatch.Spread(x, c.map, by, c.power * 1.3f, c.hold ? 6000 : 3500);
+                    foreach (IntVec3 x in c.cells) if (Rand.Chance(0.5f)) SpellGround.Marshy(x, c.map, c.hold ? 12000 : 7000);   // the ground itself goes to marsh for a while (Fix228)
                     foreach (Pawn p in c.foes) { MagicFx.Mire(p, 600); if (Sealed(p)) MagicFx.Give(p, ComboDefOf.Avir_SinkingSealed, 600); }
                     break;
                 case SecondKind.Silt:
@@ -543,6 +546,8 @@ namespace Avir.Magic
             if (map == null || !at.InBounds(map)) return;
             Gas_ScaldingSteam.Release(at, map, 2);
             FleckMaker.ThrowDustPuffThick(at.ToVector3Shifted(), map, 2f, new Color(0.9f, 0.9f, 0.9f, 0.7f));
+            // the ground cracks open: the floor breaks, soft ground shows bare stone for a day (Fix228)
+            if (!spring) foreach (IntVec3 x in GenRadial.RadialCellsAround(at, 1.5f, true)) if (x.InBounds(map) && Rand.Chance(0.7f)) SpellGround.Crack(x, map, GenDate.TicksPerDay);
             foreach (Pawn p in GenRadial.RadialDistinctThingsAround(at, map, 1.5f, true).OfType<Pawn>().ToList())
             {
                 if (spring && by != null && !p.HostileTo(by)) { SpellHeal.Mend(p, 3f * power); continue; }
@@ -801,6 +806,7 @@ namespace Avir.Magic
                 Electricity.Hit(p, 9f * g.power * g.charge * near, g.owner, Mathf.RoundToInt(80f * near));
             }
             Reactions.Conduct(c, map, g.owner, g.power * 0.7f * g.charge);
+            SpellGround.Scorch(c, map);   // a scorch where it burst (Fix228)
         }
 
         private static Material globeMat;
@@ -955,7 +961,14 @@ namespace Avir.Magic
                             case SecondKind.BallLightning: break;   // its globes strike (Fix225)
                         }
                     }
-                    if (f.y == SecondKind.Deluge) foreach (Thing t in here.Where(t => t is Fire).ToList()) if (!t.Destroyed) t.Destroy();
+                    if (f.y == SecondKind.Deluge)
+                    {
+                        foreach (Thing t in here.Where(t => t is Fire).ToList()) if (!t.Destroyed) t.Destroy();
+                        // a long rain soaks the ground to mud and melts the ice (Fix228) - slowly: a third of the ground in its two hours
+                        if (Rand.Chance(0.004f)) SpellGround.Muddy(c, map, GenDate.TicksPerDay / 2);
+                        if (Rand.Chance(0.003f)) SpellGround.Melt(c, map, GenDate.TicksPerDay);
+                        SpellGround.QuenchOnLava(c, map);
+                    }
                 }
             }
         }

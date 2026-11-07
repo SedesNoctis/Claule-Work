@@ -169,6 +169,15 @@ namespace Avir.Magic
             for (int i = 0; i < 4; i++) f?.AddGlobe(zone.RandomElement().ToVector3Shifted(), null, 1f, 2500, zone);
         }
 
+        [LudeonTK.DebugAction("Magic", "Ball lightning: a wild one from a strike here", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void WildHere()
+        {
+            IntVec3 c = Verse.UI.MouseCell(); Map map = Find.CurrentMap;
+            map.weatherManager.eventHandler.AddEvent(new WeatherEvent_MagicBolt(map, c));
+            Play("Bolt", c, map, 1f, 0);
+            map.GetComponent<SecondFields>()?.AddGlobe(c.ToVector3Shifted(), null, 1f, 2500, null);
+        }
+
         [LudeonTK.DebugAction("Magic", "Deluge here (an hour)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void DelugeHere() { IntVec3 c = Verse.UI.MouseCell(); Map map = Find.CurrentMap; map.GetComponent<SecondFields>()?.Add(SecondKind.Deluge, GenRadial.RadialCellsAround(c, 5f, true).Where(x => x.InBounds(map)).ToList(), 2500, null, 1f); }
 

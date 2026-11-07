@@ -116,6 +116,7 @@ namespace Avir.Magic
                             p.TakeDamage(new DamageInfo(DamageDefOf.Blunt, (10f + 3f * rv.amplify) * power, 0f, -1f, caster));
                             if (!p.Dead) MagicFx.Fell(p, from, 1, map, caster, power, Mathf.RoundToInt(90f * power));
                         }
+                        foreach (IntVec3 c in cells) SpellGround.BreakFloor(c, map, c == from ? 0.5f : 0.08f);   // the blow cracks a laid floor (Fix228)
                         foreach (IntVec3 c in cells) { if (Rand.Chance(0.5f)) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.8f, MagicFx.EarthDust); if (Rand.Chance(0.25f)) MagicFx.Rubble(c, map); }
                         break;
                     case RuneKind.Hold:

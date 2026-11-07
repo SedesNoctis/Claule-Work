@@ -928,6 +928,7 @@ namespace Avir.Magic
                 return;
             }
             if (c.Impassable(map)) return;
+            SpellGround.Burn(c, map);   // a floor that burns, burns under it (Fix228)
             if (Reactions.Pools(c, map).Any(t => !(t is MirePatch)))
             {
                 // poured onto water: it sets at once into black glass, in a burst of steam

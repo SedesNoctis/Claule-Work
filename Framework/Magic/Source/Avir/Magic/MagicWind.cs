@@ -470,6 +470,9 @@ namespace Avir.Magic
         private float spin, angle, height, speed;
         private Pawn by;
         private bool hitWall;
+        // what the flying thing itself takes from what it strikes - a wall, a body (Fix228, the author: bodies break on
+        // bodies and on things; the heavier what flies, the harder it hits - and the harder it is hit back)
+        private float bruise;
 
         public WindBorne() { inner = new ThingOwner<Thing>(this); }
         public ThingOwner GetDirectlyHeldThings() => inner;
@@ -482,17 +485,25 @@ namespace Avir.Magic
             ThingDef def = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_WindBorne");
             Map map = thing.Map;
             if (def == null || map == null) return;
-            IntVec3 start = thing.Position, end = start; bool wall = false;
+            IntVec3 start = thing.Position, end = start; bool wall = false; float wallBlow = 0f;
             for (int i = 1; i <= Mathf.CeilToInt(dist); i++)
             {
                 IntVec3 n = (start.ToVector3Shifted() + dir * i).ToIntVec3();
                 if (!n.InBounds(map)) break;
                 Building e = n.GetEdifice(map);
-                if (e != null && e.def.Fillage == FillCategory.Full) { wall = true; if (e.def.useHitPoints && !(e.def.building?.isNaturalRock ?? false)) e.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Mathf.Min(20f, thing.GetStatValue(StatDefOf.Mass) * windSpeed * 0.05f), 0f, -1f, by)); break; }
+                if (e != null && e.def.Fillage == FillCategory.Full)
+                {
+                    wall = true;
+                    float blow = Mathf.Min(20f, thing.GetStatValue(StatDefOf.Mass) * windSpeed * 0.05f);
+                    if (e.def.useHitPoints && !(e.def.building?.isNaturalRock ?? false)) e.TakeDamage(new DamageInfo(DamageDefOf.Blunt, blow, 0f, -1f, by));
+                    wallBlow = Mathf.Max(2f, blow);   // and the thing strikes the wall as hard
+                    break;
+                }
                 end = n;
             }
             if (end == start) return;
             var w = (WindBorne)ThingMaker.MakeThing(def);
+            w.bruise = wall ? wallBlow : 0f;
             w.from = start.ToVector3Shifted(); w.to = end.ToVector3Shifted(); w.by = by; w.hitWall = wall; w.speed = windSpeed; w.charged = charged;
             w.dur = Mathf.Clamp(Mathf.RoundToInt((w.to - w.from).magnitude * 7f), 10, 90);
             w.height = Mathf.Clamp((w.to - w.from).magnitude * 0.18f, 0.3f, 1.6f);
@@ -528,7 +539,9 @@ namespace Avir.Magic
                     Pawn q = mass >= 3f ? Position.GetFirstPawn(Map) : null;
                     if (q != null && q != by)
                     {
-                        q.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Mathf.Min(30f, mass * speed * 0.02f + 3f), 0f, -1f, by));
+                        float blow = Mathf.Min(30f, mass * speed * 0.02f + 3f);
+                        q.TakeDamage(new DamageInfo(DamageDefOf.Blunt, blow, 0f, -1f, by));
+                        bruise += blow * 0.6f;   // the flying thing (a body most of all) is broken on the one it strikes
                         if (mass >= 10f && q.Spawned) Avir.Artifactorics.AmuletBattleTelekinesis.LayDown(q, 90);
                         FleckMaker.ThrowDustPuffThick(q.DrawPos, Map, 1.3f, new Color(0.6f, 0.6f, 0.6f, 0.8f));
                         to = Position.ToVector3Shifted(); dur = t; // it stops there
@@ -551,6 +564,8 @@ namespace Avir.Magic
                 Pawn under = at.InBounds(map) ? at.GetFirstPawn(map) : null;
                 if (under != null) under.TakeDamage(new DamageInfo(DamageDefOf.Blunt, Mathf.Min(12f, thing.GetStatValue(StatDefOf.Mass) * 2f), 0f, -1f, by));
                 if (!GenPlace.TryPlaceThing(thing, at.InBounds(map) ? at : Position, map, ThingPlaceMode.Near)) thing.Destroy();
+                // the knocks it took on the way (a wall, a body): a corpse is mangled, a thing loses its hit points (Fix228)
+                if (bruise > 0f && !thing.Destroyed && thing.def.useHitPoints) thing.TakeDamage(new DamageInfo(DamageDefOf.Blunt, bruise, 0f, -1f, by));
                 FleckMaker.ThrowDustPuff(at, map, hitWall ? 1.2f : 0.7f);
                 if (charged)
                 {
@@ -579,7 +594,7 @@ namespace Avir.Magic
             Scribe_Values.Look(ref from, "from"); Scribe_Values.Look(ref to, "to");
             Scribe_Values.Look(ref t, "t"); Scribe_Values.Look(ref dur, "dur");
             Scribe_Values.Look(ref spin, "spin"); Scribe_Values.Look(ref angle, "angle"); Scribe_Values.Look(ref height, "height"); Scribe_Values.Look(ref speed, "speed");
-            Scribe_Values.Look(ref hitWall, "hitWall"); Scribe_Values.Look(ref charged, "charged");
+            Scribe_Values.Look(ref hitWall, "hitWall"); Scribe_Values.Look(ref charged, "charged"); Scribe_Values.Look(ref bruise, "bruise");
             Scribe_References.Look(ref by, "by");
         }
     }

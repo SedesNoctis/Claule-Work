@@ -81,7 +81,7 @@ namespace Avir
         // air's momentum: seconds the wind holds between casts, share per stage, stages
         public float airMomentumSeconds = 10f, airMomentumStep = 0.15f;
         public bool magicBarsOnPane = true;
-        public bool magicAutoM = true, magicWorkDetail = true, paintedMire = true, atmoWind = true, weatherWind = true, electricity = true;
+        public bool magicAutoM = true, magicWorkDetail = true, paintedMire = true, atmoWind = true, weatherWind = true, electricity = true, wildGlobes = true;
         public Dictionary<string, int> condOverrides = new Dictionary<string, int>();
         public float atmoWindScale = 1f;
         public int airMomentumStages = 3;
@@ -158,6 +158,7 @@ namespace Avir
             Scribe_Values.Look(ref atmoWind, "atmoWind", true);
             Scribe_Values.Look(ref weatherWind, "weatherWind", true);
             Scribe_Values.Look(ref electricity, "electricity", true);
+            Scribe_Values.Look(ref wildGlobes, "wildGlobes", true);
             Scribe_Collections.Look(ref condOverrides, "condOverrides", LookMode.Value, LookMode.Value);
             if (condOverrides == null) condOverrides = new Dictionary<string, int>();
             Scribe_Values.Look(ref atmoWindScale, "atmoWindScale", 1f);
@@ -242,6 +243,8 @@ namespace Avir
             list.CheckboxLabeled("Lightning runs on (water, metal, wires)", ref o.electricity,
                 "The sky's lightning seeks the tall and the metal; any strike's charge runs on along water, metal, wires and mechanoids - striking, charging batteries, frying components. Off - lightning as in the base game (magic's own conduction through water stays).");
             if (list.ButtonText("Materials and lightning...")) Find.WindowStack.Add(new Avir.Magic.Dialog_Conductivity());
+            list.CheckboxLabeled("Wild ball lightning in thunderstorms", ref o.wildGlobes,
+                "Very rarely (about one strike in forty) the sky's lightning leaves a ball lightning behind: it drifts about, swells, goes for whoever is near - anyone - and bursts. Off - never.");
             list.CheckboxLabeled("Weather winds and arcane gusts", ref o.weatherWind,
                 "Gusts cross the map in rain, storms, snowstorms and windy weather (out of doors, sheltered behind walls); our howling storm brings cold squalls; where the stream rages, arcane gusts break loose. With Atmosphere Overhaul the weather's wind is its own, the arcane gusts stay.");
             list.Label("Strength of magic wind (ours, or Atmosphere Overhaul's): x" + o.atmoWindScale.ToString("0.0"));

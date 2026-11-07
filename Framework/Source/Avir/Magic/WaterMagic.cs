@@ -186,7 +186,10 @@ namespace Avir.Magic
         {
             // a pool, not a drop: wide and deep enough to be seen
             ThingDef pool = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_SpellPuddle") ?? ThingDefOf.Filth_Water;
-            if (pool == null || !c.InBounds(map) || !c.Standable(map) || c.GetTerrain(map).IsWater) return;
+            if (pool == null || !c.InBounds(map)) return;
+            if (SpellGround.QuenchOnLava(c, map)) return;   // onto lava: steam, the lava stays (Fix228)
+            // no pools on water, a marsh or mud - they are wet already (Fix228, the author)
+            if (!c.Standable(map) || c.GetTerrain(map).IsWater || Reactions.Wet(c, map) && !c.GetThingList(map).Any(t => t.def == pool)) return;
             // the game's own filth check turns water away on some ground; spell water lies wherever it falls
             if (!FilthMaker.TryMakeFilth(c, map, pool, 3) && !c.GetThingList(map).Any(t => t.def == pool)) GenSpawn.Spawn(pool, c, map);
         }
