@@ -1045,7 +1045,7 @@ namespace Avir.Magic
             // the rest go back the other way). Distortion will turn spells; this keeps their sense without rewriting them
             Rect rev = new Rect(r.x + 4f * (w + 8f), y, w, 34f);
             if (Button(rev, "Reverse the pattern", true)) { SpellPattern.Reverse(sel, sel.binding ? -1 : section); ClearPick(); SoundDefOf.Tick_High.PlayOneShotOnCamera(); }
-            TooltipHandler.TipRegion(rev, "Turn what is chosen to read the other way round (widdershins): a section - its places; a circle - its sections and the circles inside it; the binding rim - the whole spell. The first rune and the first circle stay first, the rest go back the other way.");
+            TooltipHandler.TipRegion(rev, "Turn what is chosen to read the other way round (widdershins): a section - its places, first and last changing places; a circle - every section of it, and the circles inside it; the binding rim - the whole spell. The centre (the element) never moves; of the circles inside, the first stays first.");
             if (Button(new Rect(r.x + (w + 8f), y, w, 34f), "Remove this circle", !sel.binding))
             {
                 SpellCircle p = root.ParentOf(sel);
@@ -1371,9 +1371,9 @@ namespace Avir.Magic
         }
     }
 
-    /// <summary>Reversing a pattern (Fix245): the places of a section, the sections and inner circles of a circle, or all
-    /// of a spell, turned to read the other way round - the first stays first, the rest in the opposite order (as
-    /// SpellChain reads a spell widdershins).</summary>
+    /// <summary>Reversing a pattern (Fix245-246): the places of each section turned whole (first and last change places);
+    /// the circles inside turned as a spell read widdershins reads them (the first stays first); the centre - the element -
+    /// never moves.</summary>
     public static class SpellPattern
     {
         private static void Turn<T>(List<T> l)
@@ -1382,11 +1382,12 @@ namespace Avir.Magic
             l.Reverse(1, l.Count - 1);
         }
 
+        /// <summary>A section turned whole (Fix246, the author: the first and the last change places - not "the first stays").</summary>
         public static void Section(RitualRing g)
         {
             if (g == null) return;
             while (g.runes.Count < g.Slots) g.runes.Add(null);
-            Turn(g.runes);
+            g.runes.Reverse();
             g.Trim();
         }
 

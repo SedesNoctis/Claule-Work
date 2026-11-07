@@ -82,6 +82,9 @@ namespace Avir
         public float airMomentumSeconds = 10f, airMomentumStep = 0.15f;
         public bool magicBarsOnPane = true;
         public bool magicAutoM = true, magicWorkDetail = true, paintedMire = true, atmoWind = true, weatherWind = true, electricity = true, wildGlobes = true;
+        /// <summary>What each Reach adds to a spell's instability (Fix246, the author's hotfix while composure cannot yet be
+        /// trained): the rune's own 0.10, or down to 0.01.</summary>
+        public float reachRisk = 0.10f;
         public Dictionary<string, int> condOverrides = new Dictionary<string, int>();
         public float atmoWindScale = 1f;
         public int airMomentumStages = 3;
@@ -159,6 +162,7 @@ namespace Avir
             Scribe_Values.Look(ref weatherWind, "weatherWind", true);
             Scribe_Values.Look(ref electricity, "electricity", true);
             Scribe_Values.Look(ref wildGlobes, "wildGlobes", true);
+            Scribe_Values.Look(ref reachRisk, "reachRisk", 0.10f);
             Scribe_Collections.Look(ref condOverrides, "condOverrides", LookMode.Value, LookMode.Value);
             if (condOverrides == null) condOverrides = new Dictionary<string, int>();
             Scribe_Values.Look(ref atmoWindScale, "atmoWindScale", 1f);
@@ -243,6 +247,9 @@ namespace Avir
             list.CheckboxLabeled("Lightning runs on (water, metal, wires)", ref o.electricity,
                 "The sky's lightning seeks the tall and the metal; any strike's charge runs on along water, metal, wires and mechanoids - striking, charging batteries, frying components. Off - lightning as in the base game (magic's own conduction through water stays).");
             if (list.ButtonText("Materials and lightning...")) Find.WindowStack.Add(new Avir.Magic.Dialog_Conductivity());
+            list.Label((TaggedString)("Instability of each Reach: " + o.reachRisk.ToStringPercent("0")), -1f,
+                "How much every Reach rune adds to a spell's instability - the chance to lose hold of it. The rune's own is 10%; lower it (down to 1%) while composure cannot yet be trained.");
+            o.reachRisk = Mathf.Round(list.Slider(o.reachRisk, 0.01f, 0.10f) * 100f) / 100f;
             list.CheckboxLabeled("Wild ball lightning in thunderstorms", ref o.wildGlobes,
                 "Very rarely (about one strike in forty) the sky's lightning leaves a ball lightning behind: it drifts about, swells, goes for whoever is near - anyone - and bursts. Off - never.");
             list.CheckboxLabeled("Weather winds and arcane gusts", ref o.weatherWind,

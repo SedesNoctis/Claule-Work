@@ -262,7 +262,8 @@ namespace Avir.Ritualistics
                 {
                     if (rune == null) continue;
                     r.cost += rune.cost;
-                    r.instability += rune.instability;
+                    // Reach: the setting's instability (Fix246 - the author's hotfix, 1% to 10%)
+                    r.instability += rune.kind == RuneKind.Reach && AvirMod.Settings != null ? AvirMod.Settings.reachRisk : rune.instability;
                     r.actWeight += rune.actWeight;
                     switch (rune.kind)
                     {

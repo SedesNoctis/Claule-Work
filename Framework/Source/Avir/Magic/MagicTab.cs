@@ -474,7 +474,10 @@ namespace Avir.Magic
             // 3. the core
             Heading(ref y, w, "Core");
             y += Row(y, w, "Level " + core.level, Mathf.FloorToInt(core.Capacity) + " Arcana", true);
-            y += Bar(y, w, "Composure", core.Composure, new Color(0.35f, 0.55f, 0.85f), "Steadier hands, a wider safe band. Now " + lo.ToStringPercent() + " to " + hi.ToStringPercent() + ".");
+            y += Bar(y, w, "Composure", core.Composure, new Color(0.35f, 0.55f, 0.85f), "Steadier hands, a wider safe band. Now " + lo.ToStringPercent() + " to " + hi.ToStringPercent() + "."
+                + "\n\nHow a spell holds (Fix246): a spell's instability is the sum of its runes' (each element 0.05, a form 0.15, a Reach " + (AvirMod.Settings?.reachRisk ?? 0.1f).ToString("0.00") + "...), with the pull of the stream. Up to the caster's composure it always holds; past it, every 0.1 over takes off about 4% (more for an element the caster knows little)."
+                + " A sorcerer (not Avir) holds as if with 30% more composure. Composure here: the stat, plus a pattern the hand knows (practice), plus a steady hand standing near."
+                + "\n\n" + ComposureExplained(pawn));
             Hediff g = pawn.health.hediffSet.GetFirstHediffOfDef(MagicDefOf.Avir_ArcaneGreatness);
             y += Bar(y, w, "Greatness", g?.Severity ?? 0f, new Color(0.9f, 0.62f, 0.15f), "Grows when the Arcana runs high, and with spells cast in a strong stream. Too much of it, and the Arcana bursts out.");
             Hediff h = pawn.health.hediffSet.GetFirstHediffOfDef(MagicDefOf.Avir_ArcaneHollow);
@@ -540,6 +543,15 @@ namespace Avir.Magic
             Widgets.Label(new Rect(w * 0.42f, y, w * 0.58f, 24f), value);
             Text.Anchor = TextAnchor.UpperLeft;
             return 24f;
+        }
+
+        /// <summary>The composure stat taken apart, as the game's stat card would show it.</summary>
+        private static string ComposureExplained(Pawn p)
+        {
+            StatDef st = RitualDefOf.Avir_Composure;
+            if (st == null || p == null) return "";
+            try { return st.Worker.GetExplanationFull(StatRequest.For(p), ToStringNumberSense.Absolute, p.GetStatValue(st)); }
+            catch { return ""; }
         }
 
         private static float Bar(float y, float w, string label, float v, Color c, string tip)
