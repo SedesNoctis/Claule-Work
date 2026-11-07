@@ -108,25 +108,42 @@ namespace Avir.Magic
                     { p.marks.RemoveAt(p.marks.Count - 1); p.reach.RemoveAt(p.reach.Count - 1); Deferred = Ask; }
                 },
                 null, true, null,
-                t => Draw(mage, p.marks.Select(Pos).ToList(), chain, from, reach));
+                t => Draw(mage, spell, p.marks.Select(Pos).ToList(), chain, from, reach));
             }
             Ask();
         }
 
-        /// <summary>The route as made so far, and the next leg under the cursor.</summary>
-        public static void Draw(Pawn mage, List<IntVec3> marks, bool chain, IntVec3 from, float reach)
+        /// <summary>The route as made so far, and the next leg under the cursor (Fix236: the author saw no beam from a mark):
+        /// every leg is drawn as the beam will strike it - its cells edged in the spell's colour, as any beam is shown while
+        /// aimed - with a bright line along it; the leg to the cursor yellow while in reach, red past it.</summary>
+        public static void Draw(Pawn mage, RitualSchema spell, List<IntVec3> marks, bool chain, IntVec3 from, float reach)
         {
+            Map map = mage.Map;
             if (reach < GenRadial.MaxRadialPatternRadius) GenDraw.DrawRadiusRing(from, reach);
-            if (chain) GenDraw.DrawLineBetween(mage.DrawPos, marks[0].ToVector3Shifted(), SimpleColor.Cyan);
-            else GenDraw.DrawLineBetween(mage.DrawPos, marks[0].ToVector3Shifted(), SimpleColor.White);
-            for (int i = 1; i < marks.Count; i++)
+            int breadth = Circles(spell).Where(IsRoute).Select(rs => rs.Count(x => x.kind == RuneKind.Breadth)).FirstOrDefault();
+            Color col = Spells.ColorOf(spell);
+            var cells = new HashSet<IntVec3>();
+            void Leg(IntVec3 a, IntVec3 b, Color c)
             {
-                GenDraw.DrawLineBetween(marks[i - 1].ToVector3Shifted(), marks[i].ToVector3Shifted(), SimpleColor.Cyan);
-                if (!chain) GenDraw.DrawLineBetween(mage.DrawPos, marks[i].ToVector3Shifted(), SimpleColor.White);
+                cells.UnionWith(FireMagic.Beam(a, b, map, breadth).Where(x => x.InBounds(map)));
+                GenDraw.DrawLineBetween(a.ToVector3Shifted(), b.ToVector3Shifted(), SolidColorMaterials.SimpleSolidColorMaterial(new Color(c.r, c.g, c.b, 0.85f)), 0.12f);
             }
+            Leg(mage.Position, marks[0], col);
+            for (int i = 1; i < marks.Count; i++) Leg(chain ? marks[i - 1] : mage.Position, marks[i], col);
+            if (cells.Count > 0) GenDraw.DrawFieldEdges(cells.ToList(), new Color(col.r, col.g, col.b, 1f));
+            // where the strike walks between the marks
+            for (int i = 1; i < marks.Count; i++) GenDraw.DrawLineBetween(marks[i - 1].ToVector3Shifted(), marks[i].ToVector3Shifted(), SimpleColor.Cyan);
             IntVec3 m = Verse.UI.MouseCell();
-            if (m.InBounds(mage.Map)) GenDraw.DrawLineBetween(marks[marks.Count - 1].ToVector3Shifted(), m.ToVector3Shifted(), m.DistanceTo(from) <= reach ? SimpleColor.Yellow : SimpleColor.Red);
-            GenDraw.DrawFieldEdges(marks);
+            if (m.InBounds(map))
+            {
+                bool ok = m.DistanceTo(from) <= reach;
+                IntVec3 src = chain ? marks[marks.Count - 1] : mage.Position;
+                var next = FireMagic.Beam(src, m, map, breadth).Where(x => x.InBounds(map)).ToList();
+                if (next.Count > 0) GenDraw.DrawFieldEdges(next, ok ? Color.yellow : Color.red);
+                GenDraw.DrawLineBetween(src.ToVector3Shifted(), m.ToVector3Shifted(), SolidColorMaterials.SimpleSolidColorMaterial(ok ? new Color(1f, 0.9f, 0.2f, 0.9f) : new Color(1f, 0.2f, 0.2f, 0.9f)), 0.12f);
+                if (!chain) GenDraw.DrawLineBetween(marks[marks.Count - 1].ToVector3Shifted(), m.ToVector3Shifted(), SimpleColor.Cyan);
+            }
+            foreach (IntVec3 k in marks) GenDraw.DrawTargetHighlight(new LocalTargetInfo(k));
         }
 
         /// <summary>Length of a route.</summary>
