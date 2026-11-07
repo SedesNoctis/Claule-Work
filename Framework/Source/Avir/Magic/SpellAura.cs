@@ -188,8 +188,11 @@ namespace Avir.Magic
             string key = a.combo != ComboKind.None ? a.combo.ToString() : a.el?.kind.ToString() ?? "Fire";
             Color col = ColorOf(a); col.a = 0.9f;
             // the author's art when it is there (Лист 34): a seamless strip, laid along the beam; until then a streak of its colour
-            if (ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Beam/Beam_" + key, false) != null)
-                MapComponent_SpellSprites.Put(map, "Beam/Beam_" + key, (from + to) / 2f, len, 12, d.AngleFlat() - 90f, 0f, len / 0.6f);
+            // Fix239: the author's strips (Beam/Beam_<Kind>, Лист 34), laid along it as the ray of Light is; else the flying
+            // beam's own art of the element (Things/Projectile/Magic/Beam_<Kind>); else a streak of its colour
+            string strip = "Things/Mote/Avir/Magic/Beam/Beam_" + key, proj = "Things/Projectile/Magic/Beam_" + (a.el?.kind.ToString() ?? key);
+            string art = ContentFinder<Texture2D>.Get(strip, false) != null ? strip : ContentFinder<Texture2D>.Get(proj, false) != null ? proj : null;
+            if (art != null) MapComponent_SpellSprites.PutAbs(map, art, Color.white, (from + to) / 2f, 0.8f, len, 12, d.AngleFlat());
             else MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", col, (from + to) / 2f, len, 12, d.AngleFlat() - 90f, 0f, len / 0.45f);
             // a storm's beam is a beam - with lightning crackling along it now and then (the author: it looked like no beam)
             if (a.combo == ComboKind.Storm && Rand.Chance(0.35f)) MapComponent_SpellSprites.Bolt(map, from, to, 8);
