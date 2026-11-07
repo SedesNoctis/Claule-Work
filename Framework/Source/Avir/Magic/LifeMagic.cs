@@ -205,7 +205,16 @@ namespace Avir.Magic
                     Pawn to = Reached(caster, g, Area(last, range, map)).Where(Hurt).OrderBy(p => p.Position.DistanceToSquared(last)).FirstOrDefault();
                     if (to != null) { Leap(map, last, to.Position); where = to.Position; }
                 }
-                if (act.side == RuneKind.Drain) { Take(caster, core, g, act, where, r, power, map); if (act.verb != RuneKind.Beam && act.verb != RuneKind.Step) MapComponent_SpellSprites.Put(map, "Life/Drain", where.ToVector3Shifted(), r * 2f, 60, -1f, -3f); }
+                if (act.side == RuneKind.Drain)
+                {
+                    Take(caster, core, g, act, where, r, power, map);
+                    if (act.verb != RuneKind.Beam && act.verb != RuneKind.Step)
+                    {
+                        MapComponent_SpellSprites.Put(map, "Life/Drain", where.ToVector3Shifted(), r * 2f, 60, -1f, -3f);
+                        // the withered patch it leaves for a while (sheet 17b, Fix209)
+                        MapComponent_SpellSprites.Put(map, "Life/DeadGround_" + (Rand.Bool ? "A" : "B"), where.ToVector3Shifted(), r * 2.1f, 900);
+                    }
+                }
                 else
                 {
                     bool gave = Give(caster, core, g, act, where, r, power, map);
@@ -368,7 +377,12 @@ namespace Avir.Magic
                     foreach (IntVec3 c in cells) if (Rand.Chance(0.5f)) Wisp(c.ToVector3Shifted(), map);
                     break;
                 case RuneKind.Hold:      // vines that drink while they hold
-                    foreach (Pawn p in Reached(caster, g, Area(at, r, map))) MagicFx.Give(p, H("Avir_Entangled"), Mathf.RoundToInt(360f * power));
+                    foreach (Pawn p in Reached(caster, g, Area(at, r, map)))
+                    {
+                        MagicFx.Give(p, H("Avir_Entangled"), Mathf.RoundToInt(360f * power));
+                        // dead roots burst from the ground round the held one (sheet 17b, Fix209)
+                        MapComponent_SpellSprites.Put(map, "Life/Roots_" + "ABC"[Rand.Range(0, 3)], p.DrawPos, 1.9f, Mathf.RoundToInt(360f * power));
+                    }
                     got += Wither(caster, Reached(caster, g, Area(at, r, map)), 3f * power, map);
                     break;
                 case RuneKind.Growth:    // from the green only: no creature is touched
