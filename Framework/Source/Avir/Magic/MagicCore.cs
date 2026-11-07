@@ -781,7 +781,7 @@ namespace Avir.Magic
 
     public static class MagicDev
     {
-        private const string Cat = "Avir magic";
+        private const string Cat = "Magic";
 
         private static bool Ready() { if (AvirMagic.On) return true; Messages.Message("Magic is off (mod settings; it takes effect after a restart).", MessageTypeDefOf.RejectInput, false); return false; }
 

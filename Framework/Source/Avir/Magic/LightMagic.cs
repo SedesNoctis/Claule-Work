@@ -27,6 +27,8 @@ namespace Avir.Magic
         private static HediffDef H(string n) => DefDatabase<HediffDef>.GetNamedSilentFail(n);
         public static HediffDef Dazzle => H("Avir_LightDazzle");
         public static HediffDef DarkZone => H("Avir_LightBlindZone");
+        /// <summary>Light's own damage: a burn of light - the skin seared where the light struck.</summary>
+        public static DamageDef Sear => DefDatabase<DamageDef>.GetNamedSilentFail("Avir_LightSear") ?? DamageDefOf.Burn;
 
         public static bool Is(RuneDef e) => e != null && e.kind == RuneKind.Light;
         public static IEnumerable<SpellCircle> Circles(SpellCircle root) => root == null ? Enumerable.Empty<SpellCircle>() : WeaveSpell.Greats(root).Where(g => Is(g.element));
@@ -66,7 +68,7 @@ namespace Avir.Magic
             {
                 switch (rune.kind)
                 {
-                    case RuneKind.Release: Flash(caster, at, r, 0.35f * power, false, shaped, aid, map); any = true; break;
+                    case RuneKind.Release: Flash(caster, at, r, 0.35f * power, false, shaped, aid, map, 7f * power); any = true; break;
                     case RuneKind.Lift: Flash(caster, at, r, 0.75f * power, true, shaped, aid, map); any = true; break;
                     case RuneKind.Beam: Ray(caster, from, at, 0.45f * power, Bright(g), shaped, aid, map); any = true; break;
                     case RuneKind.Drain: MapComponent_LightZones.Darken(map, at, r + 0.5f, Mathf.RoundToInt(GenDate.TicksPerHour * Mathf.Clamp(power, 0.3f, 3f))); any = true; break;
@@ -91,11 +93,16 @@ namespace Avir.Magic
             h.Severity = Mathf.Min(1f, h.Severity + severity);
         }
 
-        public static void Flash(Pawn caster, IntVec3 at, float r, float sev, bool bright, bool shaped, bool aid, Map map)
+        /// <summary>A flash: dazzles whoever sees it; `dmg` - and sears whom it reaches (Release does, Lift does not).</summary>
+        public static void Flash(Pawn caster, IntVec3 at, float r, float sev, bool bright, bool shaped, bool aid, Map map, float dmg = 0f)
         {
             foreach (Pawn p in GenRadial.RadialDistinctThingsAround(at, map, r, true).OfType<Pawn>().ToList())
                 if (Reached(p, caster, shaped, aid) && GenSight.LineOfSight(at, p.Position, map, true))
-                    DazzlePawn(p, sev * (1f - 0.4f * p.Position.DistanceTo(at) / Mathf.Max(1f, r)));
+                {
+                    float near = 1f - 0.4f * p.Position.DistanceTo(at) / Mathf.Max(1f, r);
+                    DazzlePawn(p, sev * near);
+                    if (dmg > 0f) p.TakeDamage(new DamageInfo(Sear, dmg * near, 0f, -1f, caster));
+                }
             Glint(map, at.ToVector3Shifted(), r * 2f, bright);
         }
 
@@ -111,7 +118,7 @@ namespace Avir.Magic
             }
             // where it ends, it sears
             foreach (Pawn p in to.GetThingList(map).OfType<Pawn>().ToList())
-                if (Reached(p, caster, shaped, aid)) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 3f + 4f * sev, 0f, -1f, caster));
+                if (Reached(p, caster, shaped, aid)) p.TakeDamage(new DamageInfo(Sear, 4f + 10f * sev, 0f, -1f, caster));
             RayLine(map, from.ToVector3Shifted(), to.ToVector3Shifted(), bright);
             Glint(map, to.ToVector3Shifted(), 1.6f, bright);
         }
@@ -194,7 +201,7 @@ namespace Avir.Magic
             foreach (RuneDef r in g.OwnRunes)
                 switch (r.kind)
                 {
-                    case RuneKind.Release: bits.Add("a flash - dazzles all who see it"); break;
+                    case RuneKind.Release: bits.Add("a flash - sears and dazzles all who see it"); break;
                     case RuneKind.Lift: bits.Add("a fierce flash - nothing is thrown up, the light can blind outright"); break;
                     case RuneKind.Beam: bits.Add("a ray of light - dazzles along its line, sears where it ends"); break;
                     case RuneKind.Drain: bits.Add("the light taken away - a blind patch; those who cannot see in the dark shoot almost blind in it"); break;
@@ -424,22 +431,22 @@ namespace Avir.Magic
 
     public static class LightDev
     {
-        [LudeonTK.DebugAction("Avir magic", "Light: flash here (r3)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Light: flash here (r3)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void FlashHere() => LightMagic.Flash(null, Verse.UI.MouseCell(), 3f, 0.5f, false, false, false, Find.CurrentMap);
 
-        [LudeonTK.DebugAction("Avir magic", "Light: fierce flash here (Lift, r3)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Light: fierce flash here (Lift, r3)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void FierceHere() => LightMagic.Flash(null, Verse.UI.MouseCell(), 3f, 1f, true, false, false, Find.CurrentMap);
 
-        [LudeonTK.DebugAction("Avir magic", "Light: blind patch here (r4, 1 h)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Light: blind patch here (r4, 1 h)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void BlindHere() => MapComponent_LightZones.Darken(Find.CurrentMap, Verse.UI.MouseCell(), 4f, GenDate.TicksPerHour);
 
-        [LudeonTK.DebugAction("Avir magic", "Light: reflector for pawn here", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Light: reflector for pawn here", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void ReflectorFor(Pawn p) => Building_LightReflector.Raise(p, p.Map, p.Position, 5f);
 
-        [LudeonTK.DebugAction("Avir magic", "Light: break pawn's reflectors", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Light: break pawn's reflectors", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void BreakFor(Pawn p) => Building_LightReflector.BreakAll(p, p.Map, true);
 
-        [LudeonTK.DebugAction("Avir magic", "Light: clear blind patches", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Light: clear blind patches", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void ClearZones() { var z = MapComponent_LightZones.Of(Find.CurrentMap); if (z != null) { z.Clear(); } }
     }
 }

@@ -100,4 +100,28 @@
       </li>
     </stages>
   </HediffDef>
+
+  <DamageDef>
+    <defName>Avir_LightSear</defName>
+    <label>searing light</label>
+    <workerClass>DamageWorker_AddInjury</workerClass>
+    <externalViolence>true</externalViolence>
+    <deathMessage>{0} has been seared to death by light.</deathMessage>
+    <hediff>Avir_LightBurn</hediff>
+    <harmsHealth>true</harmsHealth>
+    <defaultDamage>6</defaultDamage>
+    <armorCategory>Heat</armorCategory>
+  </DamageDef>
+  <HediffDef ParentName="InjuryBase">
+    <defName>Avir_LightBurn</defName>
+    <label>light burn</label>
+    <labelNoun>a burn of light</labelNoun>
+    <description>Skin seared where light struck it: shallow, bright-edged, quick to blister.</description>
+    <comps>
+      <li Class="HediffCompProperties_TendDuration"><labelTendedWell>bandaged</labelTendedWell><labelTendedWellInner>tended</labelTendedWellInner><labelSolidTendedWell>tended</labelSolidTendedWell></li>
+      <li Class="HediffCompProperties_Infecter"><infectionChance>0.1</infectionChance></li>
+      <li Class="HediffCompProperties_GetsPermanent"><permanentLabel>light scar</permanentLabel></li>
+    </comps>
+    <injuryProps><painPerSeverity>0.0175</painPerSeverity><averagePainPerSeverityPermanent>0.00625</averagePainPerSeverityPermanent><canMerge>true</canMerge><destroyedLabel>burned away</destroyedLabel></injuryProps>
+  </HediffDef>
 </Defs>

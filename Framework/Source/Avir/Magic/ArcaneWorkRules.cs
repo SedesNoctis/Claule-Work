@@ -622,7 +622,7 @@ namespace Avir.Magic
 {
     public static class ArcaneWorkDev
     {
-        private const string Cat = "Avir magic";
+        private const string Cat = "Magic";
 
         [LudeonTK.DebugAction(Cat, "Arcane works: put together all charms now", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void Charms(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c == null) return; foreach (var g in ArcaneWork.Groups) ArcaneWork.EnsureCharms(c, g); }

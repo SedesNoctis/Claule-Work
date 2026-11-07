@@ -41,10 +41,10 @@ namespace Avir.Magic
             return CellFinder.RandomCell(map).ToVector3Shifted();
         }
 
-        [LudeonTK.DebugAction("Avir magic", "Wind: weather gust now (34 m/s front)", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Wind: weather gust now (34 m/s front)", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void DevWeather() { var c = Find.CurrentMap?.GetComponent<MapComponent_WeatherWind>(); if (c == null) return; if (c.angle < 0f) c.angle = 90f; var g = MapComponent_MagicWind.Blow(c.map, MapComponent_MagicWind.Shape.Front, Verse.UI.MouseCell().ToVector3Shifted(), 12f, 34f, 300, null, c.Dir); if (g != null) g.weather = true; }
 
-        [LudeonTK.DebugAction("Avir magic", "Wind: arcane gust now", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Wind: arcane gust now", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void DevArcane() { var c = Find.CurrentMap?.GetComponent<MapComponent_WeatherWind>(); if (c == null) return; if (c.angle < 0f) c.angle = 90f; var g = MapComponent_MagicWind.Blow(c.map, MapComponent_MagicWind.Shape.Round, Verse.UI.MouseCell().ToVector3Shifted(), 3.2f, 46f, 420, null, c.Dir, true); if (g != null) g.tint = new Color(0.72f, 0.5f, 1f, 0.85f); }
 
         private void WeatherGust()

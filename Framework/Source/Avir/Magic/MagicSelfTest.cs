@@ -38,7 +38,7 @@ namespace Avir.Magic
 
         private static string Name(RuneKind k) => k.ToString();
 
-        [LudeonTK.DebugAction("Avir magic", "Magic: self-test of every meeting", allowedGameStates = LudeonTK.AllowedGameStates.Playing)]
+        [LudeonTK.DebugAction("Magic", "Magic: self-test of every meeting", allowedGameStates = LudeonTK.AllowedGameStates.Playing)]
         public static void Run()
         {
             var bad = new List<string>();

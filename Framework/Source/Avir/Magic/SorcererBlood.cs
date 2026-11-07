@@ -77,7 +77,7 @@ namespace Avir.Magic
 
     public static class SorcererBloodDev
     {
-        [LudeonTK.DebugAction("Avir magic", "Sorcerer blood: inherit now (a child of two sorcerers)", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Sorcerer blood: inherit now (a child of two sorcerers)", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void InheritNow(Pawn p) => GameComponent_SorcererBlood.Inherit(p);
     }
 }

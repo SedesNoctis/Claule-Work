@@ -273,16 +273,16 @@ namespace Avir.Artifactorics
             GenPlace.TryPlaceThing(t, Verse.UI.MouseCell(), Find.CurrentMap, ThingPlaceMode.Near);
         }
 
-        [DebugAction("Avir artifactorics", "Spawn empty batteries x5", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("Artifactorics", "Spawn empty batteries x5", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void EmptyBatteries() => Spawn(ArtifactBatteryDefOf.Avir_CrystalBatteryEmpty, 5);
 
-        [DebugAction("Avir artifactorics", "Spawn charged batteries x5", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("Artifactorics", "Spawn charged batteries x5", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void ChargedBatteries() => Spawn(ArtifactBatteryDefOf.Avir_CrystalBattery, 5, t => t.TryGetComp<CompCrystalBattery>().stored = CompCrystalBattery.Capacity);
 
-        [DebugAction("Avir artifactorics", "Spawn half-charged battery", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("Artifactorics", "Spawn half-charged battery", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void HalfBattery() => Spawn(ArtifactBatteryDefOf.Avir_CrystalBattery, 1, t => t.TryGetComp<CompCrystalBattery>().stored = CompCrystalBattery.Capacity / 2f);
 
-        [DebugAction("Avir artifactorics", "Give charged batteries x5", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("Artifactorics", "Give charged batteries x5", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void GiveBatteries(Pawn p)
         {
             if (p?.inventory == null) return;
@@ -292,7 +292,7 @@ namespace Avir.Artifactorics
             p.inventory.innerContainer.TryAdd(t);
         }
 
-        [DebugAction("Avir artifactorics", "Drain worn artifacts to 10%", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("Artifactorics", "Drain worn artifacts to 10%", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Drain(Pawn p)
         {
             foreach (CompArtifactSocket s in ArtifactWearCache.Worn(p))
@@ -300,7 +300,7 @@ namespace Avir.Artifactorics
             ArtifactMilestones.Invalidate(p);
         }
 
-        [DebugAction("Avir artifactorics", "Fill worn artifacts' charge", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("Artifactorics", "Fill worn artifacts' charge", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Fill(Pawn p)
         {
             foreach (CompArtifactSocket s in ArtifactWearCache.Worn(p))
@@ -308,7 +308,7 @@ namespace Avir.Artifactorics
             ArtifactMilestones.Invalidate(p);
         }
 
-        [DebugAction("Avir artifactorics", "Amulet: +10 points", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("Artifactorics", "Amulet: +10 points", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void AmuletPoints(Pawn p)
         {
             CompAvirAmulet a = AmuletDevelopment.WornBy(p);
@@ -317,7 +317,7 @@ namespace Avir.Artifactorics
             for (int guard = 0; guard < 100000 && AmuletDevelopment.PointsEarned(a) < target; guard++) a.xpEarned += 500f;
         }
 
-        [DebugAction("Avir artifactorics", "Artifacts: +5 points each", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("Artifactorics", "Artifacts: +5 points each", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void ArtifactPoints(Pawn p)
         {
             foreach (CompArtifactSocket s in ArtifactWearCache.Worn(p))
@@ -329,7 +329,7 @@ namespace Avir.Artifactorics
             }
         }
 
-        [DebugAction("Avir artifactorics", "Spawn Avir amulet (choose metals)...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("Artifactorics", "Spawn Avir amulet (choose metals)...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void ChosenAmulet()
         {
             Map map = Find.CurrentMap;
@@ -349,7 +349,7 @@ namespace Avir.Artifactorics
                     })));
         }
 
-        [DebugAction("Avir artifactorics", "Spawn artifact (choose metals)...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("Artifactorics", "Spawn artifact (choose metals)...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void ChosenArtifact()
         {
             Map map = Find.CurrentMap;
@@ -367,7 +367,7 @@ namespace Avir.Artifactorics
                     })));
         }
 
-        [DebugAction("Avir artifactorics", "Spawn A'Shaign amulet (tisserium)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("Artifactorics", "Spawn A'Shaign amulet (tisserium)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void AShaignAmulet()
         {
             Apparel t = AvirFactionGear.MakeAmulet(DefDatabase<ArtifactMetalDef>.GetNamedSilentFail("ArtifactMetal_Silver"),
@@ -375,7 +375,7 @@ namespace Avir.Artifactorics
             if (t != null) GenPlace.TryPlaceThing(t, Verse.UI.MouseCell(), Find.CurrentMap, ThingPlaceMode.Near);
         }
 
-        [DebugAction("Avir artifactorics", "Spawn A'Schialis amulet (essentium)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        [DebugAction("Artifactorics", "Spawn A'Schialis amulet (essentium)", actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void ASchialisAmulet()
         {
             Apparel t = AvirFactionGear.MakeAmulet(DefDatabase<ArtifactMetalDef>.GetNamedSilentFail("ArtifactMetal_Gold"),

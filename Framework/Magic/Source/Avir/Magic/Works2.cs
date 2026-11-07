@@ -504,7 +504,7 @@ namespace Avir.Magic
 
     public static class Works2Dev
     {
-        private const string Cat = "Avir magic";
+        private const string Cat = "Magic";
 
         [DebugAction(Cat, "Second-order works: what can this caster do", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Report(Pawn p)

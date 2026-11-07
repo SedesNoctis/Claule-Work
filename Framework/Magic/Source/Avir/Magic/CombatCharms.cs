@@ -146,10 +146,10 @@ namespace Avir.Magic
 {
     public static class CombatCharmsDev
     {
-        [LudeonTK.DebugAction("Avir magic", "Battle charm: put together now (dangerous allowed)", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Battle charm: put together now (dangerous allowed)", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void Make(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) CombatCharms.Ensure(c, true); }
 
-        [LudeonTK.DebugAction("Avir magic", "Battle charm: put together now (tame)", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Battle charm: put together now (tame)", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void MakeTame(Pawn p) { Hediff_ArcaneCore c = Mages.Core(p); if (c != null) CombatCharms.Ensure(c, false); }
     }
 }

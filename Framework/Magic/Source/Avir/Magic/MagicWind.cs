@@ -587,13 +587,13 @@ namespace Avir.Magic
 {
     public static class MagicWindDev
     {
-        [LudeonTK.DebugAction("Avir magic", "Wind: blast out here (46 m/s)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Wind: blast out here (46 m/s)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void Out() => MapComponent_MagicWind.Blow(Find.CurrentMap, MapComponent_MagicWind.Shape.Out, Verse.UI.MouseCell().ToVector3Shifted(), 6f, 46f, 60, null);
 
-        [LudeonTK.DebugAction("Avir magic", "Wind: whirl here (44 m/s, 5 s)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Wind: whirl here (44 m/s, 5 s)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void Round() => MapComponent_MagicWind.Blow(Find.CurrentMap, MapComponent_MagicWind.Shape.Round, Verse.UI.MouseCell().ToVector3Shifted(), 3f, 44f, 300, null);
 
-        [LudeonTK.DebugAction("Avir magic", "Wind: front east (32 m/s, 3 s)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Wind: front east (32 m/s, 3 s)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void Front() => MapComponent_MagicWind.Blow(Find.CurrentMap, MapComponent_MagicWind.Shape.Front, Verse.UI.MouseCell().ToVector3Shifted(), 7f, 32f, 180, null, UnityEngine.Vector3.right);
     }
 }

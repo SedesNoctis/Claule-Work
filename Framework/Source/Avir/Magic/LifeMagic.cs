@@ -1082,7 +1082,7 @@ namespace Avir.Magic
 
     public static class LifeDev
     {
-        private const string Cat = "Avir magic";
+        private const string Cat = "Magic";
 
         [DebugAction(Cat, "Life: a store full / empty (Life, Wild Flame, Blood, Emerald, Pestilence)", actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void Store(Pawn p)

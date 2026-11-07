@@ -227,13 +227,13 @@ namespace Avir.Magic
 
     public static class PartialsDev
     {
-        [LudeonTK.DebugAction("Avir magic", "Partial: Thunder here", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Partial: Thunder here", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void ThunderHere() { IntVec3 c = Verse.UI.MouseCell(); Partials.Thunder(null, Find.CurrentMap, GenRadial.RadialCellsAround(c, 4f, true).Where(x => x.InBounds(Find.CurrentMap)).ToList(), c, 1f); }
 
-        [LudeonTK.DebugAction("Avir magic", "Partial: sand spout here", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Partial: sand spout here", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void SpoutHere() => Partials.Spout(null, Find.CurrentMap, Verse.UI.MouseCell(), 3f, 1f);
 
-        [LudeonTK.DebugAction("Avir magic", "Partial: dust veil here (r4, 1 min)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        [LudeonTK.DebugAction("Magic", "Partial: dust veil here (r4, 1 min)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void VeilHere() { IntVec3 c = Verse.UI.MouseCell(); Partials.Veil(null, Find.CurrentMap, GenRadial.RadialCellsAround(c, 4f, true).Where(x => x.InBounds(Find.CurrentMap)).ToList(), 1f, 3600); }
     }
 }
