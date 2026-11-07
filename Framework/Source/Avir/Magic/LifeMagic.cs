@@ -332,6 +332,25 @@ namespace Avir.Magic
 
         /// <summary>Round small circles: the friends the spell touched are mended - out of the store.</summary>
         private static SpellCircle wrapOf;
+        /// <summary>The shade of Life over small circles sealed from it (the author, Fix215): by the sides written in its own
+        /// runes - Withering drinks whom they touched (into the store), Restoration mends them, both - first drinks, then
+        /// mends; neither - no shade at all. Whom - by the small circle's outer edge (Barriers, Thread), as everywhere.</summary>
+        public static void Shade(Pawn caster, SpellCircle g, IntVec3 at, float radius, float power, Map map, SpellCircle small)
+        {
+            bool drain = g.OwnRunes.Any(x => x.kind == RuneKind.Drain), give = g.OwnRunes.Any(x => x.kind == RuneKind.Restore);
+            if (drain)
+            {
+                flows.TryGetValue(caster.thingIDNumber, out flow);
+                try
+                {
+                    var who = Reached(caster, small ?? g, Area(at, radius, map)).ToList();
+                    if (who.Count > 0) { flow += Wither(caster, who, 3f * power, map); MapComponent_SpellSprites.Put(map, "Life/Drain", at.ToVector3Shifted(), radius * 1.6f, 50, -1f, -3f); }
+                }
+                finally { if (flows.ContainsKey(caster.thingIDNumber)) flows[caster.thingIDNumber] = flow; flow = 0f; }
+            }
+            if (give) Wrap(caster, g, at, radius, power, map, small);
+        }
+
         public static void Wrap(Pawn caster, SpellCircle g, IntVec3 at, float radius, float power, Map map, SpellCircle small = null)
         {
             wrapOf = small;

@@ -186,6 +186,8 @@ namespace Avir
             // The A'Shacsaign are night-born and nothing changes that - not a parent, a faction or a
             // schedule. Same lock as Night Owl, so every path that honours one honours the other.
             if (pawn != null && Patch_AvirAShacsaignSpawn.IsSubrace(pawn)) return true;
+            // Linarians are night-born too, wherever they live (the author, Fix215)
+            if (pawn?.genes?.Xenotype != null && pawn.genes.Xenotype.defName == "Avir_Linarian") return true;
             if (pawn?.story?.traits == null) return false;
 
             List<Trait> traits = pawn.story.traits.allTraits;
@@ -446,6 +448,22 @@ namespace Avir
                 case RhythmState.Ambiguous: return ThoughtState.ActiveAtStage(2);
                 default: return ThoughtState.Inactive;
             }
+        }
+    }
+}
+
+namespace Avir
+{
+    /// <summary>The Avir's side of Light (the author, Fix215): night-born eyes - the A'Shaign, the A'Shacsaign, the Linarians,
+    /// the Primals, and any Avir living by night - are blinded harder by it; the day-living A'Schialis bear it as anyone does
+    /// (their A'Shacsaign stay night-born). Hooked into the magic from here, so the magic itself knows nothing of the Avir.</summary>
+    [StaticConstructorOnStartup]
+    public static class AvirLightEyes
+    {
+        public const float NightBorn = 1.5f;
+        static AvirLightEyes()
+        {
+            Avir.Magic.LightMagic.Sensitivity.Add(p => AvirRhythmUtility.IsAvir(p) && (AvirRhythmUtility.IsNocturnal(p) || AvirRhythmUtility.NightOwlLocked(p)) ? NightBorn : 1f);
         }
     }
 }

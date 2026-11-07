@@ -204,8 +204,13 @@ namespace Avir.Magic
         /// <summary>Can it see the light at all (the blind are not dazzled; one already dazzled still is).</summary>
         public static bool Sees(Pawn p) => p?.health?.capacities != null && (p.health.capacities.GetLevel(PawnCapacityDefOf.Sight) > 0.05f || (Dazzle != null && p.health.hediffSet.HasHediff(Dazzle)));
 
+        /// <summary>How hard Light hits a body's eyes: modules add their own (the Avir's night-born eyes suffer more, Fix215).</summary>
+        public static readonly List<System.Func<Pawn, float>> Sensitivity = new List<System.Func<Pawn, float>>();
+        public static float SensitivityOf(Pawn p) { float f = 1f; foreach (var s in Sensitivity) f *= s(p); return f; }
+
         public static void DazzlePawn(Pawn p, float severity)
         {
+            severity *= SensitivityOf(p);
             HediffDef d = Dazzle;
             if (d == null || p == null || p.Dead || !Sees(p) || severity <= 0f) return;
             if (SpellWards.Stops(p, true)) return;

@@ -1237,7 +1237,24 @@ namespace Avir.Magic
             if (sel.element == null && !sel.Great && root.ParentOf(sel) is SpellCircle lbox && lbox.Great && LifeMagic.Is(lbox.element))
                 return sel.OwnRunes.Any() ? "A small circle of Life. It takes or it gives - make sure it knows which."
                                           : "No element? Here it does not need one: inside Life it is Life. Tie a verb to Withering or Restoration.";
+            if (sel.element == null && !sel.Great && root.ParentOf(sel) is SpellCircle gbox && gbox.Great && LightMagic.Is(gbox.element))
+                return sel.OwnRunes.Any() ? "A small circle of Light. Loud, bright and everywhere at once - like a cousin you didn't invite."
+                                          : "Inside Light it is Light. Give it something to do - Release, Lift, Beam, or Withering, if you'd rather put it out.";
             if (sel.element == null) return "A circle with no heart is a nest with no egg. Put an element in the middle.";
+            // Light (Fix215): Arlie is a night creature - she has no love for Light, only for what it breaks
+            if (sel.Great && LightMagic.Is(sel.element))
+            {
+                var inner = sel.inner.Where(k => !k.Great && k.element != null).ToList();
+                if (inner.Count > 0 && !LightMagic.Sealed(sel)) return "Light swallows what you put in it. Write a Closing in its first section if you want your fire to stay fire.";
+                if (inner.Any(k => k.element.kind == RuneKind.Earth)) return "Shine bright like a diamond! And be the reason of someone's blindness.";
+                if (inner.Any(k => k.element.kind == RuneKind.Fire)) return "Fire sealed in Light, and every shard throws it back. The field burns twice. Now we're talking.";
+                if (inner.Count > 0) return "Sealed and echoed. Light is good for one thing - doing the same harm again, from everywhere.";
+                if (sel.OwnRunes.Any(x => x.kind == RuneKind.Drain)) return "Taking the light away? Finally, a spell of Light I could love.";
+                if (sel.OwnRunes.Any(x => x.kind == RuneKind.Lift)) return "Blind them outright. At last Light is good for something.";
+                if (sel.OwnRunes.Any(x => x.kind == RuneKind.Beam)) return "A ray. It burns all the way through whoever stands in it. Mind where you stand.";
+                if (!sel.OwnRunes.Any()) return "Light. Ugh. All glare and no shade. It does burn, though. Give it a Release and see who squints.";
+                return "More shards, more echoes - and more to lose when the focus slips. You'll find out. Loudly.";
+            }
             if (sel.Great && LifeMagic.Is(sel.element))
             {
                 RuneKind lp = LifeMagic.PairOf(root, sel);
