@@ -157,7 +157,22 @@ namespace Avir.Magic
                 // ends with the stream itself)
                 hold.expiryInterval = Mathf.RoundToInt((SpellRoute.Length(b.route.Select(SpellRoute.Pos).ToList()) / b.speed + 2f) * 60f * 1.5f);
             }
-            b.parts.Add(part.Copy());
+            // what each stroke casts (Fix240, the author: the streams struck no one): a stream with no verb is a Release - a
+            // beam is a blow thrown, as a bare wall of fire still burns (Fix185); a route's own Thread is its mark, not a
+            // thread of the blow - it is taken out of the strokes (a Thread after two Barriers, the shaping, stays)
+            RitualSchema stroke = part.Copy();
+            foreach (RitualRing g in stroke.rings)
+                for (int i = g.runes.Count - 1; i >= 0; i--)
+                    if (route != null && g.runes[i] != null && g.runes[i].kind == RuneKind.Thread && !(i > 0 && g.runes[i - 1] != null && g.runes[i - 1].kind == RuneKind.Barrier)) { g.runes.RemoveAt(i); break; }
+            if (!RitualEvaluator.Read(stroke).verbs.Any(v => v.role == RuneRole.Verb))
+            {
+                RuneDef release = DefDatabase<RuneDef>.GetNamedSilentFail("Avir_Rune_Release");
+                RitualRing home = stroke.rings.FirstOrDefault(g => g.runes.Any(x => x != null && x.kind == RuneKind.Beam)) ?? stroke.rings.LastOrDefault();
+                if (release != null && home != null) home.runes.Add(release);
+            }
+            SpellMods.Own(part, RuneKind.Beam, out _, out int bw, out _, out _);
+            b.breadth = bw;
+            b.parts.Add(stroke);
             b.next = Find.TickManager.TicksGame + b.interval;
             c.all.Add(b);
             if (caster.Spawned) MoteMaker.ThrowText(caster.DrawPos, caster.Map, "Stream", 2f);
@@ -192,8 +207,9 @@ namespace Avir.Magic
             // beam's own art of the element (Things/Projectile/Magic/Beam_<Kind>); else a streak of its colour
             string strip = "Things/Mote/Avir/Magic/Beam/Beam_" + key, proj = "Things/Projectile/Magic/Beam_" + (a.el?.kind.ToString() ?? key);
             string art = ContentFinder<Texture2D>.Get(strip, false) != null ? strip : ContentFinder<Texture2D>.Get(proj, false) != null ? proj : null;
-            if (art != null) MapComponent_SpellSprites.PutAbs(map, art, Color.white, (from + to) / 2f, 0.8f, len, 12, d.AngleFlat());
-            else MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", col, (from + to) / 2f, len, 12, d.AngleFlat() - 90f, 0f, len / 0.45f);
+            float width = 1f + 2f * Mathf.Max(0, a.breadth);   // as wide as the cells it strikes (the author)
+            if (art != null) MapComponent_SpellSprites.PutAbs(map, art, Color.white, (from + to) / 2f, width, len, 12, d.AngleFlat());
+            else MapComponent_SpellSprites.PutTinted(map, "Wind/Streak", col, (from + to) / 2f, len, 12, d.AngleFlat() - 90f, 0f, len / width);
             // a storm's beam is a beam - with lightning crackling along it now and then (the author: it looked like no beam)
             if (a.combo == ComboKind.Storm && Rand.Chance(0.35f)) MapComponent_SpellSprites.Bolt(map, from, to, 8);
             if (Rand.Chance(0.5f)) FleckMaker.ThrowLightningGlow(to, map, 0.7f);
@@ -358,6 +374,8 @@ namespace Avir.Magic
                 Aura a = all[i];
                 if (now % 30 == 0 && !a.beam) Glow(a, 3);
                 if (a.beam && a.route == null && now % 8 == 0) SpellAura.BeamSight(map, a, a.caster.DrawPos, a.target.Cell.ToVector3Shifted());
+                // the caster faces where the beam goes, as one who shoots (the author)
+                if (a.beam && a.target.IsValid && a.caster.Spawned && a.target.Cell != a.caster.Position) a.caster.rotationTracker?.FaceCell(a.target.Cell);
                 if (a.route != null)
                 {
                     // the marks where they are now: one set on someone goes with them; the fallen leave theirs where they fell
