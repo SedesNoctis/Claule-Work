@@ -176,10 +176,11 @@ namespace Avir.Magic
                 things = p => p.Map.listerBuildings.allBuildingsColonist.Where(b => b.TryGetComp<CompPowerPlantWind>() != null),
                 thingOk = (p, t) => !WindBoost.On(t),
                 effect = (p, t, c) => { WindBoost.Set(t.Thing, Mathf.RoundToInt(GenDate.TicksPerHour * 8f * WorkSpells.Now.S)); Fx(p.Map, t.Cell, MagicFx.AirDust, 2f); return true; } },
-            ["Avir_2Charge"] = new Work2 { y = SecondKind.BallLightning, cost = 8f,
-                things = p => p.Map.listerBuildings.allBuildingsColonist.Where(b => b.TryGetComp<CompPowerBattery>() != null),
-                thingOk = (p, t) => t.TryGetComp<CompPowerBattery>().StoredEnergyPct < 0.7f,
-                effect = (p, t, c) => { t.Thing.TryGetComp<CompPowerBattery>().AddEnergy(600f * WorkSpells.Now.S); FleckMaker.ThrowLightningGlow(t.Thing.DrawPos, p.Map, 2f); return true; } },
+            // Fix231 (the author): not charging a battery by hand - making a ball lightning that stays where marked and
+            // gives itself into batteries or the arcane network (KeptGlobe); from an adept; marked again - a bigger globe
+            ["Avir_2Charge"] = new Work2 { y = SecondKind.BallLightning, cost = 8f, desName = "Avir_2Charge",
+                cellOk = (p, c) => Arcane.Stage(Mages.Core(p), Kinds(SecondKind.BallLightning)) >= 2,
+                effect = (p, t, c) => { Unmark(p.Map, t.Cell, "Avir_2Charge"); return KeptGlobe.Make(p.Map, t.Cell, 1.5f * WorkSpells.Now.S, p) != null; } },
             ["Avir_2Clear"] = new Work2 { y = SecondKind.Mudflow, desName = "Avir_2Clear",
                 effect = (p, t, c) =>
                 {
@@ -491,6 +492,7 @@ namespace Avir.Magic
     public class Designator_2Basalt : Designator_Arcane2 { protected override string Key => "Avir_2Basalt"; protected override string Label2 => "Draw basalt (volcano)"; protected override string Desc2 => "A caster of the volcano (fire, earth; an adept of earth) draws two chunks of basalt up here."; }
     public class Designator_2Obsidian : Designator_Arcane2 { protected override string Key => "Avir_2Obsidian"; protected override string Label2 => "Make obsidian (obsidian)"; protected override string Desc2 => "A caster of fire, earth and water quenches magma here into obsidian - sharp black glass for blades."; }
     public class Designator_2Ash : Designator_Arcane2 { protected override string Key => "Avir_2Ash"; protected override string Label2 => "Ash the ground (ash)"; protected override string Desc2 => "A caster of fire, earth and air lets ash fall here: a plain fertiliser, +20% fertility for ten days."; protected override AcceptanceReport Ok(IntVec3 c) => Map.terrainGrid.TerrainAt(c).fertility > 0f; }
+    public class Designator_2Charge : Designator_Arcane2 { protected override string Key => "Avir_2Charge"; protected override string Label2 => "Kept ball lightning (ball lightning)"; protected override string Desc2 => "An adept caster of water, air and fire makes a ball lightning stay here. Set it on or beside a power conduit or battery: it charges the batteries fast; else it feeds the energy keepers of the arcane network near it; with nothing to take its charge it swells and in the end breaks loose. Mark it again - a bigger globe. It can be loosed to guard the colony."; protected override AcceptanceReport Ok(IntVec3 c) => c.Standable(Map); }
     public class Designator_2Clear : Designator_Arcane2 { protected override string Key => "Avir_2Clear"; protected override string Label2 => "Clear land (mudflow)"; protected override string Desc2 => "A caster of water, air and earth tears up the trees and bushes here; the wood is piled up."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetPlant(Map) != null; }
     public class Designator_2Moat : Designator_Arcane2 { protected override string Key => "Avir_2Moat"; protected override string Label2 => "Moat (quagmire)"; protected override string Desc2 => "A caster of the quagmire (water, earth; an adept of water) floods these cells into shallow water for 30 days - a moat."; }
     public class Designator_2SiltWater : Designator_Arcane2 { protected override string Key => "Avir_2SiltWater"; protected override string Label2 => "Ground to water (silt)"; protected override string Desc2 => "A caster of silt (water, earth; an adept of earth) turns this ground into shallow water for 30 days."; }

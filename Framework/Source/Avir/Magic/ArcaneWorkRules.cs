@@ -305,7 +305,7 @@ namespace Avir.Magic
             ["Avir_2HeatRoom"] = "ties a heat knot - a room stays warm for ten hours",
             ["Avir_2Vent"] = "airs a room: clears the gas and cools it if overheated",
             ["Avir_ArcaneCharge"] = "charges batteries by a storm",
-            ["Avir_2Charge"] = "charges the batteries harder (ball lightning)",
+            ["Avir_2Charge"] = "makes a ball lightning that stays and charges the batteries (ball lightning)",
             ["Avir_2Wind"] = "drives the wind turbines at full even in still air",
             ["Avir_2Dry"] = "dries the stores - rot is set back",
             ["Avir_2Preserve"] = "keeps stores and corpses on the edge of rotting from rotting",

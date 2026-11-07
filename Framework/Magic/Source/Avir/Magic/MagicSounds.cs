@@ -178,8 +178,8 @@ namespace Avir.Magic
             map.GetComponent<SecondFields>()?.AddGlobe(c.ToVector3Shifted(), null, 1f, 2500, null);
         }
 
-        [LudeonTK.DebugAction("Magic", "Ball lightning: a kept one here (lamp, charges batteries)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
-        private static void KeptHere() { IntVec3 c = Verse.UI.MouseCell(); Find.CurrentMap.GetComponent<SecondFields>()?.AddGlobe(c.ToVector3Shifted(), null, 1f, 15000, null, null, false, true); }
+        [LudeonTK.DebugAction("Magic", "Ball lightning: a kept globe here (battery)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void KeptHere() { KeptGlobe.Make(Find.CurrentMap, Verse.UI.MouseCell(), 1.5f, null); }
 
         [LudeonTK.DebugAction("Magic", "Deluge here (an hour)", actionType = LudeonTK.DebugActionType.ToolMap, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void DelugeHere() { IntVec3 c = Verse.UI.MouseCell(); Map map = Find.CurrentMap; map.GetComponent<SecondFields>()?.Add(SecondKind.Deluge, GenRadial.RadialCellsAround(c, 5f, true).Where(x => x.InBounds(map)).ToList(), 2500, null, 1f); }

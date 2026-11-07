@@ -266,7 +266,7 @@
   </JobDef>
   <WorkGiverDef>
     <defName>Avir_2Charge</defName>
-    <label>charge the batteries</label>
+    <label>make a kept ball lightning</label>
     <giverClass>Avir.Magic.WorkGiver_Arcane2</giverClass>
     <workType>Avir_MagicWork</workType>
     <verb>charge</verb>
@@ -277,7 +277,7 @@
   <JobDef>
     <defName>Avir_2Charge</defName>
     <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
-    <reportString>charging a battery with ball lightning.</reportString>
+    <reportString>making a ball lightning stay.</reportString>
   </JobDef>
   <WorkGiverDef>
     <defName>Avir_2Clear</defName>
@@ -294,6 +294,26 @@
     <driverClass>Avir.Magic.JobDriver_Arcane2</driverClass>
     <reportString>tearing the trees up with a mudflow.</reportString>
   </JobDef>
+  <DesignationDef>
+    <defName>Avir_2Charge</defName>
+    <texturePath>Designations/CutPlant</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <ThingDef>
+    <defName>Avir_KeptGlobe</defName>
+    <label>kept ball lightning</label>
+    <description>A ball lightning made to stay. It gives its charge into the batteries of a power net it touches, or into the energy keepers of the arcane network near it. With nothing to draw it, it swells - and in the end breaks loose. It can be loosed on purpose to guard the colony.</description>
+    <thingClass>Avir.Magic.KeptGlobe</thingClass>
+    <category>Ethereal</category>
+    <tickerType>Normal</tickerType>
+    <drawerType>RealtimeOnly</drawerType>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <useHitPoints>false</useHitPoints>
+    <selectable>true</selectable>
+    <rotatable>false</rotatable>
+    <drawOffscreen>false</drawOffscreen>
+  </ThingDef>
   <DesignationDef>
     <defName>Avir_2Clear</defName>
     <texturePath>Designations/CutPlant</texturePath>

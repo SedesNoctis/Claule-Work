@@ -384,15 +384,7 @@ namespace Avir.Magic
                         // things of their own now - they float, seek, strike and burst (SecondFields.Globe)
                         SecondFields f = F(c.map);
                         if (f == null) break;
-                        if (c.hold && c.drain)
-                        {
-                            // a kept globe (Fix230, the author): Hold and Drawing out together catch it instead of loosing it -
-                            // it hangs where it was made, seeks no one, gives light, and pours its charge into the batteries
-                            // near it; when its time is up it goes out with a soft pop, harming no one
-                            int n = c.growth ? 2 : 1;
-                            for (int i = 0; i < n; i++) f.AddGlobe(c.at.ToVector3Shifted() + new Vector3(i * 0.8f, 0f, 0f), by, c.power, Ticks(6f, c.power), null, null, c.growth, true);
-                        }
-                        else if (c.beam)
+                        if (c.beam)
                         {
                             // the conductor: one globe rolls along the line and strikes each foe on it in turn, each a little weaker
                             List<Pawn> line = c.foes.OrderBy(p => p.Position.DistanceTo(by.Position)).ToList();
@@ -723,45 +715,56 @@ namespace Avir.Magic
             // strike and its burst grow with it; Growth makes it swell twice as fast and further
             public float charge = 1f; public bool growth;
             public float MaxCharge => growth ? 4f : 2.5f;
-            public bool kept;
-            public IntVec3 food = IntVec3.Invalid;   // metal or a battery it is drawn to when it has no one to strike      // caught, not loosed: a lamp and a charge for the batteries (Fix230)
-            public bool Hits(Pawn p) => p != null && !p.Dead && (sculpt == 0 || owner == null || (sculpt == 2) == SpellSculpt.Own(p, owner));
+            public IntVec3 food = IntVec3.Invalid;   // metal or a battery it is drawn to when it has no one to strike
+            public bool Hits(Pawn p) => p != null && !p.Dead && (sculpt == 0 || owner == null || (sculpt == 2) == SpellSculpt.Own(p, owner))
+                && (!SecondFields.Warded(p) || SecondFields.StormWard(p) != null);   // it does not go after the warded (Fix231)
         }
         public readonly List<Globe> globes = new List<Globe>();
-        private const float GlobeSeek = 12f, GlobeSpeed = 0.045f, GlobeRoll = 0.11f, GlobeReach = 0.75f;
+        private const float GlobeSeek = 50f, GlobeSpeed = 0.05f, GlobeRoll = 0.11f, GlobeReach = 0.75f;
 
-        public void AddGlobe(Vector3 at, Pawn owner, float power, int ticks, HashSet<IntVec3> zone, List<Pawn> line = null, bool growth = false, bool kept = false)
+        public Globe AddGlobe(Vector3 at, Pawn owner, float power, int ticks, HashSet<IntVec3> zone, List<Pawn> line = null, bool growth = false)
         {
             at.y = 0f;
-            globes.Add(new Globe { growth = growth, kept = kept, pos = at, dir = Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * Vector3.forward, owner = owner, power = power, until = Find.TickManager.TicksGame + ticks, zone = zone, line = line, phase = Rand.Range(0f, 6.28f), sculpt = !SpellSculpt.Active ? 0 : SpellSculpt.Allies ? 2 : 1 });
+            var made = new Globe { growth = growth, pos = at, dir = Quaternion.AngleAxis(Rand.Range(0f, 360f), Vector3.up) * Vector3.forward, owner = owner, power = power, until = Find.TickManager.TicksGame + ticks, zone = zone, line = line, phase = Rand.Range(0f, 6.28f), sculpt = !SpellSculpt.Active ? 0 : SpellSculpt.Allies ? 2 : 1 };
+            globes.Add(made);
             FleckMaker.ThrowLightningGlow(at, map, 1.2f);
             MagicSounds.Play("Second:BallLightning", at.ToIntVec3(), map, 0.8f, 6);
+            return made;
         }
 
+        /// <summary>Whom it goes for (Fix231, the author): anyone it may strike within fifty cells (its field, if held) - the
+        /// nearer and the better they conduct, the likelier; the warded it passes by, but a ward of the storm draws it - it
+        /// spends itself into the ward and charges it instead of harming.</summary>
         private Pawn Seek(Globe g)
         {
             if (g.line != null) { g.line.RemoveAll(p => p == null || p.Dead || !p.Spawned || p.Map != map); return g.line.FirstOrDefault(); }
             IntVec3 here = g.pos.ToIntVec3();
-            Pawn best = null; float bd = float.MaxValue;
+            Pawn best = null; float bs = float.MaxValue;
             foreach (Pawn p in map.mapPawns.AllPawnsSpawned)
             {
                 if (!g.Hits(p)) continue;
-                if (g.zone != null ? !g.zone.Contains(p.Position) : p.Position.DistanceTo(here) > GlobeSeek) continue;
-                float d = (p.DrawPos - g.pos).MagnitudeHorizontalSquared();
-                if (d < bd) { bd = d; best = p; }
+                float d = p.Position.DistanceTo(here);
+                if (g.zone != null ? !g.zone.Contains(p.Position) : d > GlobeSeek) continue;
+                float sc = d - 4f * Electricity.OfPawn(p) - (StormWard(p) != null ? 6f : 0f);
+                if (sc < bs) { bs = sc; best = p; }
             }
             return best;
         }
+
+        public static IWard StormWard(Pawn p) => SpellWards.Layers(p).FirstOrDefault(w => w != null && w.Energy > 0f && w.Parts.Contains(RuneKind.Water) && w.Parts.Contains(RuneKind.Air));
+        public static bool Warded(Pawn p) => SpellWards.Layers(p).Any(w => w != null && w.Energy > 0f);
+
+        /// <summary>Slow far off, quicker as it closes in (Fix231): from a crawl at fifty cells to its full speed within four.</summary>
+        private static float Pace(float dist, float full) => full * Mathf.Lerp(1f, 0.2f, Mathf.Clamp01((dist - 4f) / 40f));
 
         private void TickGlobes(int now)
         {
             for (int i = globes.Count - 1; i >= 0; i--)
             {
                 Globe g = globes[i];
-                if (now >= g.until || g.line != null && g.line.Count == 0) { if (g.kept) GoOut(g); else Burst(g); globes.RemoveAt(i); continue; }
-                // it gives light as it goes (Fix230)
-                if (now % 60 == 0) LightGlow.At(map, g.pos.ToIntVec3(), g.kept || g.charge > 2f, 75);
-                if (g.kept) { if (now % 60 == 0) Feed(g); if (now % 25 == 0) FleckMaker.ThrowLightningGlow(g.pos, map, 0.7f); continue; }
+                if (now >= g.until || g.line != null && g.line.Count == 0) { Burst(g); globes.RemoveAt(i); continue; }
+                // it gives light as it goes, wider the bigger it is (Fix230)
+                if (now % 60 == 0) LightGlow.At(map, g.pos.ToIntVec3(), g.charge > 2f, 75);
                 if (now % 30 == 0) Eat(g);
                 if (g.rest > 0) g.rest--;
                 else g.charge = Mathf.Min(g.MaxCharge, g.charge + (g.growth ? 2f : 1f) / 900f);   // +1 in 15 s (Growth: 7.5 s)
@@ -772,7 +775,8 @@ namespace Avir.Magic
                 else if (g.food.IsValid) { Vector3 to = g.food.ToVector3Shifted() - g.pos; to.y = 0f; if (to.sqrMagnitude > 0.3f) want = to.normalized; }
                 else if (now % 20 == 0) g.dir = Quaternion.AngleAxis(Rand.Range(-40f, 40f), Vector3.up) * g.dir;
                 g.dir = Vector3.Slerp(g.dir, want, 0.12f).normalized;
-                Vector3 next = g.pos + g.dir * (g.line != null ? GlobeRoll : GlobeSpeed) * (g.rest > 0 ? 0.5f : 1f);
+                float far = g.target != null ? (g.target.DrawPos - g.pos).MagnitudeHorizontal() : g.food.IsValid ? (g.food.ToVector3Shifted() - g.pos).MagnitudeHorizontal() : 10f;
+                Vector3 next = g.pos + g.dir * (g.line != null ? GlobeRoll : Pace(far, GlobeSpeed)) * (g.rest > 0 ? 0.5f : 1f);
                 IntVec3 nc = next.ToIntVec3();
                 bool keep = nc.InBounds(map) && !nc.Impassable(map) && (g.zone == null || g.zone.Contains(nc));
                 if (keep) g.pos = next; else g.dir = Quaternion.AngleAxis(Rand.Range(120f, 240f), Vector3.up) * g.dir;
@@ -785,6 +789,16 @@ namespace Avir.Magic
                 }
                 if (now % 25 == 0) FleckMaker.ThrowLightningGlow(g.pos, map, 0.9f);
                 // the strike
+                if (g.target != null && g.rest == 0 && (g.target.DrawPos - g.pos).MagnitudeHorizontal() < GlobeReach && StormWard(g.target) is IWard sw)
+                {
+                    // into a ward of the storm: it charges the ward, harms no one, and is spent
+                    sw.Energy = Mathf.Min(sw.EnergyMax, sw.Energy + 0.25f * sw.EnergyMax * g.charge);
+                    FleckMaker.ThrowLightningGlow(g.target.DrawPos, map, 2f);
+                    MapComponent_SpellSprites.Bolt(map, g.pos, g.target.DrawPos, 12);
+                    MagicSounds.Play("Arc", g.target.Position, map, 1f, 0);
+                    MoteMaker.ThrowText(g.target.DrawPos, map, "ward charged", new Color(0.65f, 0.75f, 1f), 2.5f);
+                    globes.RemoveAt(i); continue;
+                }
                 if (g.target != null && g.rest == 0 && (g.target.DrawPos - g.pos).MagnitudeHorizontal() < GlobeReach)
                 {
                     SecondOrder.Zap(g.target, g.power * Mathf.Sqrt(g.charge), g.owner, g.pos);
@@ -803,6 +817,16 @@ namespace Avir.Magic
             IntVec3 here = g.pos.ToIntVec3();
             float cap = g.MaxCharge + 1f;
             IntVec3 best = IntVec3.Invalid; float bestScore = 0f;
+            // far off (Fix231: fifty cells): batteries and metal buildings, from the map's lists
+            if (g.zone == null)
+                foreach (Building b in map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial).OfType<Building>())
+                {
+                    float d = b.Position.DistanceTo(here);
+                    if (d > GlobeSeek || d <= 6f) continue;
+                    CompPowerBattery bt = b.TryGetComp<CompPowerBattery>();
+                    float sc0 = (bt != null && bt.StoredEnergy > 1f ? 6f : Electricity.OfThing(b) >= 2 ? 2f : 0f) - d * 0.1f;
+                    if (sc0 > bestScore) { bestScore = sc0; best = b.Position; }
+                }
             foreach (IntVec3 x in GenRadial.RadialCellsAround(here, 6f, true))
             {
                 if (!x.InBounds(map)) continue;
@@ -825,29 +849,6 @@ namespace Avir.Magic
                 if (sc > bestScore) { bestScore = sc; best = x; }
             }
             g.food = best;
-        }
-
-        /// <summary>A kept globe pours its charge into the batteries within four cells (Fix230): about 30 Wd a second at
-        /// full strength, less as the charge runs low.</summary>
-        private void Feed(Globe g)
-        {
-            IntVec3 here = g.pos.ToIntVec3();
-            foreach (Building b in GenRadial.RadialDistinctThingsAround(here, map, 4f, true).OfType<Building>().ToList())
-            {
-                CompPowerBattery bat = b.TryGetComp<CompPowerBattery>();
-                if (bat == null || bat.AmountCanAccept <= 0f) continue;
-                float give = Mathf.Min(bat.AmountCanAccept, 30f * g.power * Mathf.Sqrt(g.charge));
-                bat.AddEnergy(give);
-                if (Rand.Chance(0.25f)) MapComponent_SpellSprites.Bolt(map, g.pos, b.TrueCenter(), 8);
-                break;   // one battery at a time
-            }
-        }
-
-        /// <summary>A kept globe's end: a soft pop, a flash, no harm.</summary>
-        private void GoOut(Globe g)
-        {
-            FleckMaker.ThrowLightningGlow(g.pos, map, 1.5f);
-            MagicSounds.Play("Arc", g.pos.ToIntVec3(), map, 0.6f, 0);
         }
 
         /// <summary>A globe's end where it is (its time up, its field gone, its line struck through): it bursts.</summary>
