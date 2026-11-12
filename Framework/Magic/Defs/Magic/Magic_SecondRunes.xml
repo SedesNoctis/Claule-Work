@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+  <!-- Fix255: what the remade meetings of three leave (the author's choices, Справочник-стихий, part 5). -->
+
+  <HediffDef>
+    <defName>Avir_RainbowSteady</defName>
+    <label>under the rainbow</label>
+    <description>A rainbow stands overhead: the eye is steadier, the heart quieter.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.6, 0.9)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>300~300</disappearsAfterTicks></li>
+    </comps>
+    <stages>
+      <li>
+        <statOffsets>
+          <ShootingAccuracyPawn>0.04</ShootingAccuracyPawn>
+          <MentalBreakThreshold>-0.08</MentalBreakThreshold>
+        </statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_Tinder</defName>
+    <label>tinder-dry</label>
+    <description>The dry wind has taken every drop out of the clothes and hair: the next fire takes twice as hard.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.9, 0.6, 0.3)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>2500~2500</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li>
+    </comps>
+    <stages>
+      <li>
+        <damageFactors>
+          <Flame>2</Flame>
+          <Burn>2</Burn>
+        </damageFactors>
+      </li>
+    </stages>
+  </HediffDef>
+
+  <HediffDef>
+    <defName>Avir_ClayFigure</defName>
+    <label>clay figure</label>
+    <description>Clay set all over: a figure of clay with someone inside, held where it stood until it cracks.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.68, 0.38, 0.22)</defaultLabelColor>
+    <isBad>true</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>900~900</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li>
+    </comps>
+  </HediffDef>
+
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_ClayWall</defName>
+    <label>raw clay wall</label>
+    <description>A wall of wet clay raised in a moment by a caster of clay. It slumps away in two days - unless fire bakes it: then it is a brick wall for good.</description>
+    <thingClass>Avir.Magic.Building_ClayWall</thingClass>
+    <category>Building</category>
+    <graphicData>
+      <texPath>Things/Building/Linked/RockSmooth_Atlas</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <linkType>CornerFiller</linkType>
+      <linkFlags><li>Rock</li><li>MapEdge</li></linkFlags>
+      <color>(150,88,62)</color>
+    </graphicData>
+    <uiIconPath>Things/Building/Linked/WallSmooth_MenuIcon</uiIconPath>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>Impassable</passability>
+    <blockWind>true</blockWind>
+    <castEdgeShadows>true</castEdgeShadows>
+    <fillPercent>1</fillPercent>
+    <coversFloor>true</coversFloor>
+    <staticSunShadowHeight>1.0</staticSunShadowHeight>
+    <rotatable>false</rotatable>
+    <selectable>true</selectable>
+    <tickerType>Rare</tickerType>
+    <useHitPoints>true</useHitPoints>
+    <statBases>
+      <MaxHitPoints>150</MaxHitPoints>
+      <Flammability>0</Flammability>
+      <Beauty>-2</Beauty>
+    </statBases>
+    <building>
+      <isInert>true</isInert>
+      <canBuildNonEdificesUnder>false</canBuildNonEdificesUnder>
+      <deconstructible>false</deconstructible>
+    </building>
+  </ThingDef>
+</Defs>
