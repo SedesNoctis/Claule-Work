@@ -102,10 +102,10 @@ namespace Avir.Magic
                 case SecondKind.Inferno: return "Dry heat, no steam: it dries everything in reach, strips the wet and water wards, and cooks those sealed in armour twice as fast (the heat has nowhere to go).";
                 case SecondKind.Boil: return "Boiling water: everything wet in reach boils - the soaked and those standing in water are scalded every second; the dry are spared. Held, it is a cauldron.";
                 case SecondKind.Geyser: return "Boiling mud and steam burst from the ground in turn, throwing whoever stands over them. Beside a natural geyser it is stronger.";
-                case SecondKind.Typhoon: return "A whirl of boiling rain that walks by itself: it draws the foes near it into its wall, soaks them and scalds the soaked half again as hard; what it has passed over stays wet and veiled in steam. Its own runes: Release - it walks on from where it was cast; Hold - the eye of the storm: it stands, inside the eye it is still and shots into it go astray, the ring round it scalds; Lift - whoever it holds when it ends is flung out. A Restoration, a Withering, a Wall find nothing in it to work through.";
+                case SecondKind.Typhoon: return "A whirl of boiling rain that walks by itself: it draws the foes near it into its wall, soaks them and scalds the soaked half again as hard; what it has passed over stays wet and veiled in steam. Its own runes: Release - it walks on from where it was cast; Beam with Anchor and Thread - its road is laid by marks, as a route is, and it walks them one after another; Hold - the eye of the storm: it stands, inside the eye it is still and shots into it go astray, the ring round it scalds; Lift - whoever it holds when it ends is flung out. A Restoration, a Withering, a Wall find nothing in it to work through.";
                 case SecondKind.Lava: return "Lava: it runs further and burns harder than magma, and before it is gone it cools into magma, which then goes its own way.";
                 case SecondKind.Volcano: return "Fire inside stone: the ground cracks, and a heartbeat later stones and magma burst up from below - where armour is thinnest. With Lift a basalt pillar rises under the foe and holds them up there until it falls.";
-                case SecondKind.Obsidian: return "Magma quenched: a burst of steam and black glass, sharp and brittle.";
+                case SecondKind.Obsidian: return "Lava quenched by water: it makes nothing out of air, it turns what is hot there into black glass. A pool of magma or lava sets and bursts into shards all round, a fire goes out into a crust of glass; on cold ground - only a little glass. The more heat there was, the harder the burst. Its own runes: Wall - a ridge of obsidian blades on the ground. A finishing blow after magma, lava, a volcano or a blaze.";
                 case SecondKind.Ash: return "A scorching cloud: it blinds and chokes the unsealed, and the ash it lets fall feeds the ground a little (+20% fertility for ten days). Its own runes: Hold - ash falls for hours, there is dusk under it and one's own in it are hard to hit; Purge - the ash smothers fire, and fire does not come back there for a while; Growth - wider, and the soil richer. A Beam, a Lift, a Step, a Restoration find nothing in ash.";
                 case SecondKind.Deluge: return "Weather one carries: rain over the place - everything wet, fires out, lightning through the pools. Its own runes: Release - it comes down at once, throws the running off their feet and leaves pools; Hold - it stands for hours and washes the wounds of one's own; Restoration - a mending rain over everyone under it; Growth - it waters what grows. A Lift, a Beam, a Step find nothing in rain to work through.";
                 case SecondKind.Hurricane: return "Wind: it throws everyone, breaks what is light, and knocks shots out of the air - an aura of it shields one's own. Every throw in the spell flies half again as far and strikes harder; every Lift goes 1.6 times higher, and the fall is as much harder. It is unstable: it leaves whirls behind (two; one when held; three with Growth) that wander for a while and spin whoever they catch round - friend or foe, all but the one who made them.";
@@ -115,13 +115,13 @@ namespace Avir.Magic
                 case SecondKind.Thermal: return "A rising warm current: shots through it rise and miss, one's own move lighter in it. Its own runes: Hold - it stands for hours; Purge - it draws gas and smoke up out of the place and out of a closed room it reaches; Growth - every fire near it burns twice as big. A Release, a Beam, a Restoration find nothing in it.";
                 case SecondKind.Rainbow: return "A bow of colour from the caster to the place: the foes under it are dazzled, one's own glad at the sight. Stronger over wet ground or in a deluge; there is no rainbow by night. Its own runes: Hold - the bow stands for hours, and one's own under it aim steadier and do not break. A Withering, a Growth, a Lift, a Wall, a Step find nothing in it.";
                 case SecondKind.DryWind: return "The enemy of water, and everything dry burns: it dries the soaked, the pools, the mud and the mire, wilts the green, tires and parches the foes - and whoever it dried takes the next fire twice as hard. Its own runes: Hold - a drought lies for hours: the crops in it die, and the dead in it dry into mummies that never rot, never stink and have no meat; Purge - it takes the wet, the mud, the clay and the silt off one's own and off the ground. A Lift, a Beam, a Restoration, a Step find nothing in it.";
-                case SecondKind.Quag: return "The bog, deeper and quicker: the heavy sink first.";
+                case SecondKind.Quag: return "The bog, deeper and quicker: the heavy sink first, the ground goes to marsh for a while. Its own runes: Hold - one's own go down into the bog and are hidden from the foes while they stay in it; Step - the caster goes down where they stand (it must be bog) and comes up out of the bog where the spell lands, catching the foes beside them.";
                 case SecondKind.Silt: return "Silt chokes mechanisms - turrets jam, machines stall, joints of armour and bionics clog. Held, it sets and holds the caught.";
-                case SecondKind.MarshGas: return "Marsh gas: it does not burn by itself - another spark sets it off. Breathed, it presses on the lungs (not deadly); a gas mask or a sealed suit keeps it out.";
+                case SecondKind.MarshGas: return "Marsh gas: it does not burn by itself - another spark sets it off. Breathed, it presses on the lungs (not deadly); a gas mask or a sealed suit keeps it out. Its own runes: Beam - a fuse, an unbroken line of gas from the caster to the place: lit at one end, it burns to the other.";
                 case SecondKind.MarshHaze: return "A marsh haze: it poisons the foes who breathe it and hides one's own inside it; in a closed room it fills the room. Its own runes: Hold - will-o'-the-wisps kindle in it and the foes wander after them; Growth - it creeps on by itself over water, marsh, mud and mire, never onto dry stone or a floor. A Beam, a Lift, a Wall, a Restoration find nothing in it.";
-                case SecondKind.Rockfall: return "Stones from above: a blow to head and shoulders that shakes through armour, and rubble left for cover.";
+                case SecondKind.Rockfall: return "Stones from above: a blow to head and shoulders that shakes through armour, and rubble left for cover. Its own runes: Hold - the scree goes on falling for an hour, and no one crosses it unhurt.";
                 case SecondKind.Emery: return "It wears away: armour and clothes lose their strength. An aura of it hones one's own blades instead.";
-                case SecondKind.BurningSand: return "Hot grains stick and burn until water washes them off.";
+                case SecondKind.BurningSand: return "Hot grains stick and burn until water washes them off. Its own runes: Hold - the sand stays hot on the ground for an hour and sticks to whoever wades through it.";
                 case SecondKind.Clay: return "Clay binds arms and legs and sets into a crust - a foe can be taken alive. Its own runes: Hold - whoever is clay all over sets into a figure, held where it stood; Wall - a wall of raw clay, raised at once, that slumps away in two days unless fire bakes it into brick. A Beam, a Lift, a Growth, a Step find nothing in it.";
             }
             return "";
@@ -190,6 +190,18 @@ namespace Avir.Magic
 
         /// <summary>While the pair under a second-order meeting is cast as its background (Fix191).</summary>
         public static bool Background;
+        /// <summary>Fix257: the marks of a typhoon's road, taken from the aiming (Beam + Anchor + Thread), for this cast only.</summary>
+        public static List<IntVec3> RouteNow;
+        /// <summary>Fix257: a Step written in a quagmire - the caster goes down into the bog and comes up in another part of it.</summary>
+        public static bool QuagStep;
+        /// <summary>Boggy ground underfoot: marsh, mud, a mire, shallow standing water.</summary>
+        public static bool BoggyAt(Map m, IntVec3 c)
+        {
+            if (m == null || !c.InBounds(m)) return false;
+            TerrainDef t = c.GetTerrain(m);
+            if (t != null && !t.layerable && (t.defName.Contains("Marsh") || t.defName.Contains("Mud") || t.defName.Contains("Bog") || t.defName.Contains("Swamp") || t.IsWater && !t.defName.Contains("Deep") && !t.defName.Contains("Ocean") && !t.defName.Contains("Moving"))) return true;
+            return c.GetThingList(m).Any(x => x is MirePatch);
+        }
         public const float BackgroundShare = 0.33f;
 
         /// <summary>Does this part strike as a second-order meeting (the same rule as Apply: a meeting, and a deed)?</summary>
@@ -231,7 +243,7 @@ namespace Avir.Magic
         public static void Apply(Pawn caster, RitualSchema part, RitualReading r, LocalTargetInfo target, float power)
         {
             bool keep = applying; applying = true;
-            try { ApplyNow(caster, part, r, target, power); } finally { applying = keep; }
+            try { ApplyNow(caster, part, r, target, power); } finally { applying = keep; RouteNow = null; QuagStep = false; }
         }
 
         private static void ApplyNow(Pawn caster, RitualSchema part, RitualReading r, LocalTargetInfo target, float power)
@@ -248,6 +260,7 @@ namespace Avir.Magic
             // and a mending lets through only the meetings that have a mending of their own (the author, Fix149: a ward
             // spell poured lava round its caster)
             bool acts = ctx.release || ctx.beam || ctx.hold || ctx.growth || ctx.lift || ctx.drain || ctx.purge || ctx.aura || ctx.shape || ctx.enchant;
+            if (!acts && QuagStep) acts = true;   // Fix257: the quagmire's own Step
             if (!acts && (!ctx.restore || (y != SecondKind.Boil && y != SecondKind.Geyser && y != SecondKind.Mudflow && y != SecondKind.Deluge))) return;
             ctx.breadth = r.breadth;
             MagicSounds.Play("Second:" + y, ctx.at, map);   // Fix225
@@ -328,7 +341,13 @@ namespace Avir.Magic
                         if (f == null) break;
                         Vector3 dir = (c.at - by.Position).ToVector3(); dir.y = 0f;
                         dir = dir.sqrMagnitude < 0.01f ? Vector3.forward : dir.normalized;
-                        f.AddMoving(y, c.at, dir, c.hold ? 0f : 1f, c.hold ? Ticks(0.5f, c.power) : Mathf.RoundToInt(900f * Mathf.Max(0.6f, c.power)), by, c.power);
+                        // Fix257 (the author): Beam + Anchor + Thread - its road by marks, as a route of a beam is aimed; it walks
+                        // from the first mark to the last, one cell a second, and drawing in all the way
+                        List<IntVec3> road = !c.hold && RouteNow != null && RouteNow.Count >= 2 ? RouteNow.Where(x => x.InBounds(c.map)).ToList() : null;
+                        int walk = 0;
+                        if (road != null) { for (int i = 1; i < road.Count; i++) walk += Mathf.CeilToInt(road[i].DistanceTo(road[i - 1])); }
+                        f.AddMoving(y, road != null ? road[0] : c.at, dir, c.hold ? 0f : 1f, c.hold ? Ticks(0.5f, c.power) : road != null ? (walk + 4) * 60 : Mathf.RoundToInt(900f * Mathf.Max(0.6f, c.power)), by, c.power);
+                        if (road != null) { f.fields[f.fields.Count - 1].path = road; f.fields[f.fields.Count - 1].pathAt = 1; }
                         SecondFields.Fld fl = f.fields[f.fields.Count - 1];
                         fl.eye = c.hold; fl.lift = c.lift;
                         if (c.hold) fl.cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(c.at, SecondFields.EyeRadius, true).Where(x => x.InBounds(c.map)));
@@ -380,10 +399,41 @@ namespace Avir.Magic
                         break;
                     }
                 case SecondKind.Obsidian:
-                    foreach (IntVec3 x in c.cells) if (Rand.Chance(0.5f)) SpellGround.Glass(x, c.map, GenDate.TicksPerDay);   // the ground bakes to glass (Fix229)
-                    foreach (IntVec3 x in c.cells) { if (Rand.Chance(0.5f)) ShardGround.Scatter(x, c.map, ComboDefOf.Avir_Obsidian); if (Rand.Chance(0.2f)) Gas_ScaldingSteam.Release(x, c.map, 1); }
-                    foreach (Pawn p in c.foes) p.TakeDamage(new DamageInfo(DamageDefOf.Cut, 6f * c.power, 0.4f, -1f, by));
-                    break;
+                    {
+                        // Fix257 (the author: "yes"): obsidian is lava quenched by water. It makes nothing out of air - it turns what
+                        // is hot there into glass: a pool of magma or lava sets black and bursts into shards all round, a fire goes
+                        // out into a crust of glass; on cold ground - only a little glass. The more heat there was, the harder the
+                        // burst: a finishing blow after magma, lava, a volcano or a blaze. Wall - a ridge of obsidian blades.
+                        int heat = 0;
+                        var bursts = new List<IntVec3>();
+                        foreach (IntVec3 x in c.cells)
+                        {
+                            var here = x.GetThingList(c.map);
+                            MagmaPool mp = here.OfType<MagmaPool>().FirstOrDefault();
+                            if (mp != null) { heat += mp.lava ? 3 : 2; bursts.Add(x); mp.Destroy(); SpellGround.Glass(x, c.map, GenDate.TicksPerDay * 2); ShardGround.Scatter(x, c.map, ComboDefOf.Avir_Obsidian); Gas_ScaldingSteam.Release(x, c.map, 1); continue; }
+                            if (SpellGround.Lava(x.GetTerrain(c.map))) { heat += 3; bursts.Add(x); MapComponent_TempTerrain.Of(c.map)?.SetDry(x, SpellGround.T("Avir_ObsidianCrust") ?? x.GetTerrain(c.map), GenDate.TicksPerDay); Gas_ScaldingSteam.Release(x, c.map, 1); continue; }
+                            Fire fire = here.OfType<Fire>().FirstOrDefault();
+                            if (fire != null) { heat += 1; bursts.Add(x); fire.Destroy(); SpellGround.Glass(x, c.map, GenDate.TicksPerDay); continue; }
+                            if (Rand.Chance(0.15f)) SpellGround.Glass(x, c.map, GenDate.TicksPerDay / 2);
+                        }
+                        if (c.shape) foreach (IntVec3 x in c.cells) ShardGround.Scatter(x, c.map, ComboDefOf.Avir_Obsidian);
+                        if (heat == 0)
+                        {
+                            foreach (Pawn p in c.foes) p.TakeDamage(new DamageInfo(DamageDefOf.Cut, 2f * c.power, 0.2f, -1f, by));
+                            MoteMaker.ThrowText(c.at.ToVector3Shifted(), c.map, "Nothing hot to quench", ColorOf(y), 2.5f);
+                            break;
+                        }
+                        // the burst: every foe near a quenched place is cut, more for every place near it (at most three)
+                        foreach (Pawn p in c.map.mapPawns.AllPawnsSpawned.Where(p => !p.Dead && MagicFx.Foe(p, by)).ToList())
+                        {
+                            int near = bursts.Count(b => b.DistanceTo(p.Position) <= 2.5f);
+                            if (near == 0) continue;
+                            for (int k = 0; k < Mathf.Min(3, near); k++) p.TakeDamage(new DamageInfo(DamageDefOf.Cut, (4f + 1.5f * Mathf.Min(heat, 10)) * c.power * 0.5f, 0.4f, -1f, by));
+                        }
+                        foreach (IntVec3 b in bursts) { FleckMaker.ThrowMicroSparks(b.ToVector3Shifted(), c.map); MapComponent_SpellSprites.PutTinted(c.map, "Haze/Shimmer", new Color(0.4f, 0.3f, 0.55f, 0.8f), b.ToVector3Shifted(), 1.4f, 40, -1f, 0.6f); }
+                        MagicSounds.Play("Rockfall:Crash", c.at, c.map, 0.7f, 0);
+                        break;
+                    }
                 case SecondKind.Ash:
                     foreach (Pawn p in c.foes) if (!Sealed(p)) { MagicFx.Give(p, H("Avir_Ashen"), Ticks(0.5f, c.power)); HealthUtility.AdjustSeverity(p, HediffDefOf.ToxicBuildup, 0.03f * c.power); }
                     {
@@ -590,6 +640,12 @@ namespace Avir.Magic
                     foreach (IntVec3 x in c.cells) if (Rand.Chance(0.8f)) MirePatch.Spread(x, c.map, by, c.power * 1.3f, c.hold ? 6000 : 3500);
                     foreach (IntVec3 x in c.cells) if (Rand.Chance(0.5f)) SpellGround.Marshy(x, c.map, c.hold ? 12000 : 7000);   // the ground itself goes to marsh for a while (Fix228)
                     foreach (Pawn p in c.foes) { MagicFx.Mire(p, 600); if (Sealed(p)) MagicFx.Give(p, ComboDefOf.Avir_SinkingSealed, 600); }
+                    // Fix257 (the author): Hold - one's own go down into the bog and are hidden there from the foes, while they
+                    // stay in it; Step - the caster goes down where they stand and comes up in the bog where the spell lands
+                    if (c.hold && H("Avir_SunkInMire") != null)
+                        foreach (Pawn p in c.own.Concat(by.Spawned && c.cells.Contains(by.Position) ? new[] { by } : new Pawn[0]).Distinct())
+                            if (BoggyAt(c.map, p.Position) || c.cells.Contains(p.Position)) MagicFx.Give(p, H("Avir_SunkInMire"), Ticks(2f, c.power));
+                    if (QuagStep) QuagSink(c, by);
                     break;
                 case SecondKind.Silt:
                     foreach (Pawn p in c.foes)
@@ -605,7 +661,8 @@ namespace Avir.Magic
                     Puff(c, new Color(0.45f, 0.4f, 0.3f, 0.6f));
                     break;
                 case SecondKind.MarshGas:
-                    foreach (IntVec3 x in c.cells) if (Rand.Chance(0.6f)) Gas_MarshGas.Release(x, c.map, 2, false);
+                    // Fix257: a Beam lays a fuse - an unbroken line of gas from the caster to the place: lit at one end, it burns to the other
+                    foreach (IntVec3 x in c.cells) if (c.beam || Rand.Chance(0.6f)) Gas_MarshGas.Release(x, c.map, c.beam ? 0 : 2, false);
                     foreach (Pawn p in c.foes) if (!Masked(p)) MagicFx.Give(p, H("Avir_MarshLungs"), Ticks(0.5f, c.power));
                     break;
                 case SecondKind.MarshHaze:
@@ -642,6 +699,7 @@ namespace Avir.Magic
                             if (ter != null && ter.layerable && !ter.IsWater && Rand.Chance(0.2f * Mathf.Min(1.5f, c.power))) c.map.terrainGrid.RemoveTopLayer(x, false);
                         }
                         Puff(c, MagicFx.EarthDust);
+                        if (c.hold) { Field(c, y, Ticks(1f, c.power)); SecondFields.Fld rk = Laid(c, y); if (rk != null) rk.held = true; }   // Fix257: the scree goes on
                         MagicSounds.Play("Rockfall:Crash", c.at, c.map);   // it was heard too quietly (the author) - the thud of the stones under the rumble
                         break;
                     }
@@ -658,6 +716,8 @@ namespace Avir.Magic
                     break;
                 case SecondKind.BurningSand:
                     foreach (Pawn p in c.foes) SandOn(p, c.power);   // on the bare parts it struck (Fix227)
+                    // Fix257: Hold - the sand stays hot on the ground for an hour and burns whoever wades through it
+                    if (c.hold) { Field(c, y, Ticks(1f, c.power)); SecondFields.Fld sf = Laid(c, y); if (sf != null) sf.held = true; }
                     Puff(c, new Color(1f, 0.55f, 0.25f, 0.6f));
                     break;
                 case SecondKind.Clay:
@@ -684,6 +744,32 @@ namespace Avir.Magic
                     Puff(c, new Color(0.7f, 0.45f, 0.3f, 0.6f));
                     break;
             }
+        }
+
+        /// <summary>Through the bog (Fix257, the author's old idea): the caster sinks where they stand - if it is bog, or right
+        /// beside it - and a moment later comes up out of the bog where the spell lands (the quagmire has just made it bog).
+        /// Foes beside the place they come up are caught in the mire.</summary>
+        private static void QuagSink(Ctx c, Pawn by)
+        {
+            Map m = c.map;
+            if (!by.Spawned || by.Map != m) return;
+            IntVec3 from = by.Position;
+            bool down = BoggyAt(m, from) || GenAdj.AdjacentCells.Any(o => BoggyAt(m, from + o));
+            if (!down) { MoteMaker.ThrowText(by.DrawPos, m, "No bog to go down into", ColorOf(SecondKind.Quag), 3f); return; }
+            var ups = GenRadial.RadialCellsAround(c.at, 4f, true).Where(x => x.InBounds(m) && x.Standable(m) && x.GetFirstPawn(m) == null && (BoggyAt(m, x) || c.cells.Contains(x))).ToList();
+            if (ups.Count == 0) return;
+            IntVec3 up = ups.OrderBy(x => x.DistanceToSquared(c.at)).First();
+            MapComponent_SpellSprites.Put(m, "Bog/Splash", from.ToVector3Shifted(), 2.2f, 60);
+            by.pather?.StopDead();
+            by.stances?.stunner?.StunFor(60, null, false, false);
+            Pawn mage = by; float pw = c.power;
+            F(m)?.Later(55, () =>
+            {
+                if (mage.Dead || !mage.Spawned || mage.Map != m) return;
+                mage.Position = up; mage.Notify_Teleported(true, true);
+                MapComponent_SpellSprites.Put(m, "Bog/Splash", up.ToVector3Shifted(), 2.4f, 70);
+                foreach (Pawn q in GenRadial.RadialDistinctThingsAround(up, m, 1.9f, true).OfType<Pawn>().Where(q => q != mage && MagicFx.Foe(q, mage)).ToList()) MagicFx.Mire(q, Mathf.RoundToInt(600f * pw));
+            });
         }
 
         /// <summary>The deluge's mending (Fix251): the rain washes one's own - open wounds are tended (poorly, but all of them
@@ -823,6 +909,8 @@ namespace Avir.Magic
             public bool heal, grow, eye, lift;
             /// <summary>Fix255: a held field (its own runes work on while it lies); a rainbow's two feet; a haze's first size.</summary>
             public bool held; public Vector3 arcFrom, arcTo; public int startCells;
+            /// <summary>Fix257: a typhoon's road by marks, and how far along it is.</summary>
+            public List<IntVec3> path; public int pathAt;
             /// <summary>Fix252: a field lasts for hours - it is kept through a save (it used to be gone on loading).</summary>
             public void ExposeData()
             {
@@ -831,6 +919,7 @@ namespace Avir.Magic
                 Scribe_Values.Look(ref dir, "dir"); Scribe_Values.Look(ref speed, "speed"); Scribe_Values.Look(ref center, "center");
                 Scribe_Values.Look(ref heal, "heal"); Scribe_Values.Look(ref grow, "grow"); Scribe_Values.Look(ref eye, "eye"); Scribe_Values.Look(ref lift, "lift");
                 Scribe_Values.Look(ref held, "held"); Scribe_Values.Look(ref arcFrom, "arcFrom"); Scribe_Values.Look(ref arcTo, "arcTo"); Scribe_Values.Look(ref startCells, "startCells");
+                Scribe_Collections.Look(ref path, "path", LookMode.Value); Scribe_Values.Look(ref pathAt, "pathAt");
                 if (Scribe.mode == LoadSaveMode.PostLoadInit && cells == null) cells = new HashSet<IntVec3>();
             }
         }
@@ -1198,6 +1287,12 @@ namespace Avir.Magic
                 if (f.y == SecondKind.Typhoon && f.speed > 0f)
                 {
                     IntVec3 was = f.center.ToIntVec3();
+                    if (f.path != null && f.pathAt < f.path.Count)
+                    {
+                        Vector3 aim = f.path[f.pathAt].ToVector3Shifted() - f.center; aim.y = 0f;
+                        if (aim.magnitude <= 1.05f) { f.pathAt++; if (f.pathAt >= f.path.Count) f.until = Mathf.Min(f.until, now + 60); }
+                        if (aim.sqrMagnitude > 0.01f) f.dir = aim.normalized;
+                    }
                     Vector3 next = f.center + f.dir * f.speed;
                     // it does not walk through rock or off the map: it stands and spends itself there
                     if (next.ToIntVec3().InBounds(map) && !next.ToIntVec3().Filled(map)) f.center = next; else f.until = Mathf.Min(f.until, now + 120);
@@ -1269,6 +1364,7 @@ namespace Avir.Magic
                                 else MagicFx.Give(p, SecondOrder.H("Avir_Updraft"), 120);
                                 break;
                             case SecondKind.Rainbow: if (!foe && f.held) MagicFx.Give(p, SecondOrder.H("Avir_RainbowSteady"), 300); break;
+                            case SecondKind.BurningSand: if (foe && f.held && p.pather != null && p.pather.MovingNow && Rand.Chance(0.35f)) SecondOrder.SandOn(p, f.power * 0.5f); break;
                             case SecondKind.DryWind: if (foe && f.held && !SecondOrder.Sealed(p) && p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Max(0f, p.needs.rest.CurLevel - 0.004f * f.power); break;
                             case SecondKind.MarshHaze: if (foe && f.held) Wisp(p, f); if (foe && !SecondOrder.Masked(p)) HealthUtility.AdjustSeverity(p, HediffDefOf.ToxicBuildup, 0.006f * f.power); break;
                             case SecondKind.Emery: if (foe) foreach (Apparel a in p.apparel?.WornApparel.ToList() ?? new List<Apparel>()) a.HitPoints = Mathf.Max(1, a.HitPoints - 1); else MagicFx.Give(p, SecondOrder.H("Avir_Honed"), 300); break;
@@ -1276,6 +1372,14 @@ namespace Avir.Magic
                         }
                     }
                     // Fix255: a drought held: the crops under it die
+                    // Fix257: a rockfall held - stones go on falling for an hour; no one crosses it unhurt
+                    if (f.y == SecondKind.Rockfall && f.held && Rand.Chance(0.015f))
+                    {
+                        MagicFx.Rubble(c, map);
+                        FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), map, 1.2f, MagicFx.EarthDust);
+                        foreach (Pawn q in here.OfType<Pawn>().Where(q => !q.Dead).ToList()) { q.TakeDamage(new DamageInfo(DamageDefOf.Blunt, 5f * f.power, 0f, -1f, f.owner)); MagicFx.Fell(q, q.Position, 0, map, f.owner, f.power * 0.5f, 90); }
+                        if (Rand.Chance(0.2f)) MagicSounds.Play("Rockfall:Crash", c, map, 0.5f, 40);
+                    }
                     // a drought held dries the dead in it into mummies (Fix255)
                     if (f.y == SecondKind.DryWind && f.held)
                         for (int k = 0; k < here.Count; k++) if (here[k] is Corpse corpse) GameComponent_Mummies.Dry(corpse, GameComponent_Mummies.PerDroughtTick * Mathf.Max(0.5f, f.power));

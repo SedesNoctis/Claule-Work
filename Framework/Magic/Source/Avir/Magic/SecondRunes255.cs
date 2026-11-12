@@ -133,3 +133,20 @@ namespace Avir.Magic
         private static void BakeHere() => (Verse.UI.MouseCell().GetEdifice(Find.CurrentMap) as Building_ClayWall)?.Bake(Building_ClayWall.BakedThrough);
     }
 }
+
+namespace Avir.Magic
+{
+    public class HediffCompProperties_InTheBog : HediffCompProperties { public HediffCompProperties_InTheBog() { compClass = typeof(HediffComp_InTheBog); } }
+
+    /// <summary>Hidden in the quagmire (Fix257): it lasts only while its bearer stays in the bog - a step onto dry ground,
+    /// and they are seen again.</summary>
+    public class HediffComp_InTheBog : HediffComp
+    {
+        public override bool CompShouldRemove => base.CompShouldRemove || Pawn != null && Pawn.Spawned && !SecondOrder.BoggyAt(Pawn.Map, Pawn.Position);
+        public override void CompPostTickInterval(ref float severityAdjustment, int delta)
+        {
+            if (Pawn != null && Pawn.Spawned && Pawn.IsHashIntervalTick(90, delta) && Rand.Chance(0.4f))
+                FleckMaker.ThrowDustPuffThick(Pawn.DrawPos, Pawn.Map, 0.6f, new Color(0.35f, 0.3f, 0.2f, 0.4f));
+        }
+    }
+}

@@ -126,6 +126,12 @@ namespace Avir.Magic
             if (Pulsing || caster?.Map == null || part?.rings == null || !target.IsValid) return;
             var runes = part.rings.SelectMany(g => g.runes).Where(x => x != null).ToList();
             SpellRoute.Pending route = SpellRoute.IsRoute(runes) ? SpellRoute.Take(caster) : null;
+            // Fix257: under a typhoon the route is the typhoon's road, not a stream's - the whirl walks the marks itself
+            if (route != null && SecondOrder.Now == SecondKind.Typhoon)
+            {
+                SecondOrder.RouteNow = route.marks.Select(SpellRoute.Pos).ToList();
+                return;
+            }
             if (!runes.Any(x => x.kind == RuneKind.Beam) || runes.Any(x => x.kind == RuneKind.Aura || x.kind == RuneKind.Step && route == null)) return;
             SpellMods.Own(part, RuneKind.Beam, out _, out _, out int anchor, out _);
             // the Anchor must be the beam's own (written after it), not the whole circle's

@@ -174,6 +174,16 @@ namespace Avir.Magic
                 // a meeting of the second order is the blow (the author, Fix191): the pair under it only shows, as a
                 // background - a third of its strength, and its steam harmless - while the meeting strikes with its own
                 bool second = SecondOrder.Takes(r);
+                // Fix257: a Step in a quagmire is the bog's own - the caster goes down and comes up in it; the pair under it
+                // does not fling them across as well
+                if (SecondOrder.Now == SecondKind.Quag && r.verbs.Any(v => v.kind == RuneKind.Step))
+                {
+                    part = part.Copy();
+                    foreach (RitualRing g in part.rings) g.runes.RemoveAll(x => x != null && x.kind == RuneKind.Step);
+                    r = RitualEvaluator.Read(part);
+                    second = SecondOrder.Takes(r);
+                    SecondOrder.QuagStep = true;
+                }
                 SecondOrder.Background = second;
                 try { Dispatch(caster, part, r, k, el, target, second ? power * SecondOrder.BackgroundShare : power); }
                 finally { SecondOrder.Background = false; }

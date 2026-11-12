@@ -93,4 +93,19 @@
       <deconstructible>false</deconstructible>
     </building>
   </ThingDef>
+  <HediffDef>
+    <defName>Avir_SunkInMire</defName>
+    <label>sunk in the bog</label>
+    <description>Gone down into the quagmire up to the eyes: the foes do not see them while they stay in the bog.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.45, 0.4, 0.28)</defaultLabelColor>
+    <isBad>false</isBad>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Invisibility"><visibleToPlayer>true</visibleToPlayer></li>
+      <li Class="HediffCompProperties_Disappears"><disappearsAfterTicks>5000~5000</disappearsAfterTicks><showRemainingTime>true</showRemainingTime></li>
+      <li Class="HediffCompProperties_DisappearsOnDeath"/>
+      <li Class="Avir.Magic.HediffCompProperties_InTheBog"/>
+    </comps>
+  </HediffDef>
 </Defs>
