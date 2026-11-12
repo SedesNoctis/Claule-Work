@@ -81,12 +81,13 @@ namespace Avir
         // air's momentum: seconds the wind holds between casts, share per stage, stages
         public float airMomentumSeconds = 10f, airMomentumStep = 0.15f;
         public bool magicBarsOnPane = true;
-        public bool magicAutoM = true, magicWorkDetail = true, paintedMire = true, atmoWind = true, weatherWind = true, electricity = true, wildGlobes = true;
+        public bool magicAutoM = true, magicWorkDetail = true, paintedMire = true, atmoWind = true, weatherWind = true, electricity = true, wildGlobes = true, windLook = true;
         /// <summary>What each Reach adds to a spell's instability (Fix246, the author's hotfix while composure cannot yet be
         /// trained): the rune's own 0.10, or down to 0.01.</summary>
         public float reachRisk = 0.10f;
         public Dictionary<string, int> condOverrides = new Dictionary<string, int>();
         public float atmoWindScale = 1f;
+        public float windLookDensity = 1f;
         public int airMomentumStages = 3;
         // earth (and magma, bog) casts slower by this much
         public float earthCastFactor = 1.5f;
@@ -166,6 +167,8 @@ namespace Avir
             Scribe_Collections.Look(ref condOverrides, "condOverrides", LookMode.Value, LookMode.Value);
             if (condOverrides == null) condOverrides = new Dictionary<string, int>();
             Scribe_Values.Look(ref atmoWindScale, "atmoWindScale", 1f);
+            Scribe_Values.Look(ref windLook, "windLook", true);
+            Scribe_Values.Look(ref windLookDensity, "windLookDensity", 1f);
             Scribe_Values.Look(ref magicWorkDetail, "magicWorkDetail", true);
             Scribe_Values.Look(ref airMomentumStep, "airMomentumStep", 0.15f);
             Scribe_Values.Look(ref airMomentumStages, "airMomentumStages", 3);
@@ -254,6 +257,13 @@ namespace Avir
                 "Very rarely (about one strike in forty) the sky's lightning leaves a ball lightning behind: it drifts about, swells, goes for whoever is near - anyone - and bursts. Off - never.");
             list.CheckboxLabeled("Weather winds and arcane gusts", ref o.weatherWind,
                 "Gusts cross the map in rain, storms, snowstorms and windy weather (out of doors, sheltered behind walls); our howling storm brings cold squalls; where the stream rages, arcane gusts break loose. With Atmosphere Overhaul the weather's wind is its own, the arcane gusts stay.");
+            list.CheckboxLabeled("Wind seen on the map", ref o.windLook,
+                "The map's own wind drawn over the ground wherever it blows: strands, curls, gusts in a strong wind, leaves, sand or snow carried along. It is the same wind that moves gas - its direction and strength - and it breaks at walls and under roofs. Only a picture: it costs nothing in the game's ticks. Off while Atmosphere Overhaul draws its own.");
+            if (o.windLook)
+            {
+                list.Label("How much wind is drawn: x" + o.windLookDensity.ToString("0.0"));
+                o.windLookDensity = list.Slider(o.windLookDensity, 0.3f, 2.5f);
+            }
             list.Label("Strength of magic wind (ours, or Atmosphere Overhaul's): x" + o.atmoWindScale.ToString("0.0"));
             o.atmoWindScale = list.Slider(o.atmoWindScale, 0.3f, 3f);
             list.CheckboxLabeled("Painted mire", ref o.paintedMire,

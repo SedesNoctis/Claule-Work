@@ -23,6 +23,19 @@ namespace Avir.Magic
         public class Gust { public Shape shape; public Vector3 at, dir; public float radius, strength; public int born, life; public Pawn owner; public bool charged, weather; public Color tint = Color.clear; public int sculpt; }
 
         private readonly List<Gust> gusts = new List<Gust>();
+        /// <summary>How much a gust blowing here quickens the wind that is seen (AmbientWind): 1 - none.</summary>
+        public float BoostAt(Vector3 p)
+        {
+            float b = 1f;
+            for (int i = 0; i < gusts.Count; i++)
+            {
+                Gust g = gusts[i];
+                float dx = p.x - g.at.x, dz = p.z - g.at.z;
+                if (dx * dx + dz * dz <= g.radius * g.radius) b = Mathf.Max(b, 1f + Mathf.Min(1.2f, g.strength / 35f));
+            }
+            return b;
+        }
+        public int GustCount => gusts.Count;
         private readonly Dictionary<int, int> rest = new Dictionary<int, int>();   // a thing just moved is left alone a moment
         public MapComponent_MagicWind(Map map) : base(map) { }
         public static MapComponent_MagicWind Of(Map m) => m?.GetComponent<MapComponent_MagicWind>();
