@@ -513,6 +513,7 @@ namespace Avir.Magic
             // under a meeting of three the pair's Growth is that meeting's (Fix227, the author): the ball lightning's
             // Growth swells its globes - no rain creeping out under it; a mudflow's creeps out as mire, not as water
             if (SecondOrder.Background && SecondOrder.Now == SecondKind.BallLightning) return;
+            if (k == ComboKind.Magma && SecondOrder.NoMagma) return;   // Fix250: no magma creeping out from under Ash and the like
             if (SecondOrder.Background && SecondOrder.Now == SecondKind.Mudflow && k == ComboKind.Storm) k = ComboKind.Bog;
             var near = cells.SelectMany(c => GenRadial.RadialCellsAround(c, 2f, true)).Where(c => c.InBounds(map)).Distinct().ToList();
             switch (k)
@@ -927,6 +928,7 @@ namespace Avir.Magic
         public static void Pour(IntVec3 c, Map map, Pawn owner, float power, int life, bool setsHard, int stoneLife = 2500, bool lava = false)
         {
             if (!c.InBounds(map) || ComboDefOf.Avir_Magma == null) return;
+            if (SecondOrder.NoMagma) return;   // Fix250: only Magma, Lava and the Volcano pour magma
             // onto open water - a river, a lake, a marsh (Fix227, the author): magma does not show there at all; it boils off
             // as scalding steam, and the water stays water
             TerrainDef ter = c.GetTerrain(map);

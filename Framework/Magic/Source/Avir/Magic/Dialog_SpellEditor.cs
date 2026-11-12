@@ -618,10 +618,13 @@ namespace Avir.Magic
             if (seconds.TryGetValue(c, out SecondKind y)) return SecondOrder.ColorOf(y, SecondOrder.PairOf(y), SecondOrder.Third(y));
             if (met.TryGetValue(c, out ComboKind k)) return Combos.ColorOf(k);
             // a great circle of Life with an element inside takes its meeting's colour (the author's rule)
-            if (c.Great && LifeMagic.Is(c.element) && rootNow != null) { RuneKind lp = LifeMagic.PairOf(rootNow, c); if (lp != LifeMagic.None) return LifeMagic.PairColor(lp); RuneKind la = LifeMagic.AspectOf(rootNow, c); if (la != LifeMagic.None) return LifeMagic.AspectColor(la); }
+            if (c.Great && LifeMagic.Is(c.element) && rootNow != null) { RuneKind lp = LifeMagic.PairOf(rootNow, c); if (lp != LifeMagic.None) return LifeMagic.PairColor(lp); RuneKind la = LifeMagic.AspectOf(rootNow, c); if (la != LifeMagic.None) return LifeMagic.AspectColor(la); LifeMix lm0 = LifeMagic.MixOf(rootNow, c); if (lm0 != LifeMix.None) return LifeMagic.MixColor(lm0); }
             // inside a great circle of Life: the small circles of Life take the meeting's colour, the element that met it leans toward it
             if (!c.Great && rootNow?.ParentOf(c) is SpellCircle b && b.Great && LifeMagic.Is(b.element))
             {
+                // a mixed triple (Fix250): its own colour for the whole box - the small circles lean toward it, so the three read as one new circle
+                LifeMix bm = LifeMagic.MixOf(rootNow, b);
+                if (bm != LifeMix.None) return c.element == null ? LifeMagic.MixColor(bm) : Color.Lerp(c.element.color, LifeMagic.MixColor(bm), 0.6f);
                 RuneKind bp = LifeMagic.PairOf(rootNow, b);
                 RuneKind ba = LifeMagic.AspectOf(rootNow, b);
                 Color lc = bp != LifeMagic.None ? LifeMagic.PairColor(bp) : ba != LifeMagic.None ? LifeMagic.AspectColor(ba) : b.element.color;

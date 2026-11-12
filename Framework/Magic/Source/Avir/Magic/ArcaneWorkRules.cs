@@ -49,7 +49,7 @@ namespace Avir.Magic
             G("Smooth", "Build", "smooth", "Smoothing floors and walls by earth.", new[] { "Avir_MagicSmooth" }, "Construction"),
             G("Grow", "Grow", "grow", "Quickening growth, enriching soil by bog, watering the fields, ashing the ground.", new[] { "Avir_ArcaneGrowth", "Avir_ArcaneEnrich", "Avir_2Water", "Avir_2Ash", "Avir_LifeCrops", "Avir_LifeEmerald", "Avir_LifeAge" }, "Growing", "FSFHarvesting"),
             G("Clear", "Grow", "clear land", "Clearing land of plants.", new[] { "Avir_2Clear" }, "PlantCutting"),
-            G("Mine", "Mine", "mine", "Drawing ore up, quarrying rock, drawing clay.", new[] { "Avir_ArcaneDrill", "Avir_2Quarry", "Avir_2DigClay" }, "Mining", "FSFDrilling"),
+            G("Mine", "Mine", "mine", "Drawing ore up, quarrying rock (earth - one at a time, the rockfall - several), drawing clay.", new[] { "Avir_ArcaneDrill", "Avir_2Quarry", "Avir_2DigClay" }, "Mining", "FSFDrilling"),
             G("StoneCut", "Mine", "stone cut", "Cutting stone into blocks by dust.", new[] { "Avir_ArcaneCut" }, "FSFStoneCut", "Crafting"),
             G("Smelt", "Smith", "smelt", "Smelting slag by magma, smelting things by lava.", new[] { "Avir_ArcaneSmelt", "Avir_2SmeltItems" }, "FSFSmelt", "Smithing"),
             G("Smith", "Smith", "craft", "Making obsidian, firing bricks, honing blades.", new[] { "Avir_2Obsidian", "Avir_2Bricks", "Avir_2Hone" }, "Smithing", "Crafting"),
@@ -59,7 +59,7 @@ namespace Avir.Magic
             G("Warm", "Warm", "warmth", "Warming rooms by haze, tying heat knots, airing the rooms (only magic does this).", new[] { "Avir_ArcaneWarm", "Avir_2HeatRoom", "Avir_2Vent" }),
             G("Power", "Power", "power", "Charging batteries, driving the wind turbines (only magic does this).", new[] { "Avir_ArcaneCharge", "Avir_2Charge", "Avir_2Wind" }),
             G("Stores", "Stores", "stores", "Drying and preserving the stores (only magic does this).", new[] { "Avir_2Dry", "Avir_2Preserve" }),
-            G("Land", "Land", "land", "The arcane orders on land and water: stone and water, moats, silt, geysers, lava cores, marsh gas, rainbows (only magic does this).", new[] { "Avir_ArcaneWater", "Avir_ArcaneHotSpring", "Avir_ArcaneStone", "Avir_2Moat", "Avir_2SiltWater", "Avir_2SiltLand", "Avir_2SiltDump", "Avir_2RaiseGeyser", "Avir_2SealGeyser", "Avir_2LavaCore", "Avir_2LavaPool", "Avir_2LavaSet", "Avir_2MarshGas", "Avir_2Rainbow" }),
+            G("Land", "Land", "land", "The arcane orders on land and water: stone and water, moats, silt, geysers, lava cores, marsh gas, rainbows, light and sun crystals (only magic does this).", new[] { "Avir_ArcaneWater", "Avir_ArcaneHotSpring", "Avir_ArcaneStone", "Avir_2Moat", "Avir_2SiltWater", "Avir_2SiltLand", "Avir_2SiltDump", "Avir_2RaiseGeyser", "Avir_2SealGeyser", "Avir_2LavaCore", "Avir_2LavaPool", "Avir_2LavaSet", "Avir_2MarshGas", "Avir_2Rainbow", "Avir_LightCrystal" }),
         };
         private static List<Group> merged;
         private static List<Group> Merged => merged ?? (merged = detailed.GroupBy(g => g.parent).Select(gr =>
@@ -273,6 +273,7 @@ namespace Avir.Magic
             ["Avir_LifeCrops"] = "quickens the growing patch, once a day each; a caster of Decay takes the blight off too",
             ["Avir_LifeGather"] = "milks, shears and gathers from the animals at a touch - they stand still for Life",
             ["Avir_LifeEmerald"] = "turns marked plants into emerald statues (Emerald)",
+            ["Avir_LightCrystal"] = "raises a light crystal (shines at all hours) or a sun crystal (burns by day, plants grow under it) where marked, and renews those running low - no power needed",
             ["Avir_LifeAge"] = "ages the brew in the fermenting barrels on by a quarter (Decay)",
             ["Avir_LifeSoothe"] = "eases the tired and the low: recreation, a little rest, a good memory",
             ["Avir_LifeCare"] = "comes to the one lying on a medical bed for a massage and works the back loose: recreation, rest, ease",
@@ -380,6 +381,8 @@ namespace Avir.Magic
                 case "Avir_LifeHeal": case "Avir_LifeCrops": case "Avir_LifeGather": case "Avir_LifeSoothe": return new[] { RuneKind.Life };
                 case "Avir_LifeCure": return new[] { RuneKind.Life, RuneKind.Air };
                 case "Avir_LifeEmerald": return new[] { RuneKind.Life, RuneKind.Earth };
+                case "Avir_LightCrystal": return new[] { RuneKind.Light, RuneKind.Earth };   // Hotfix252: a mage of the Crystal - Light meeting Earth
+                case "Avir_2Quarry": return new[] { RuneKind.Earth };   // Fix250: quarrying is Earth's own
                 case "Avir_LifeAge": return new[] { RuneKind.Life, RuneKind.Earth, RuneKind.Air };
                 case "Avir_LifeCare": return new[] { RuneKind.Life };
                 case "Avir_LifeBathSteam": return new[] { RuneKind.Life, RuneKind.Fire, RuneKind.Water };

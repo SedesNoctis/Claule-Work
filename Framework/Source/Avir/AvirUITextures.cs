@@ -33,7 +33,7 @@ namespace Avir
                     Texture2D tex = list[key];
                     if (tex == null) continue;
                     if (seen == null || key == "UI/Artifactorics/Panel") seen = key + ": " + tex.graphicsFormat + ", wrap " + tex.wrapMode;
-                    if (!GraphicsFormatUtility.IsSRGBFormat(tex.graphicsFormat) && tex.wrapMode == TextureWrapMode.Repeat) continue;
+                    if (tex.graphicsFormat.ToString().IndexOf("SRGB", StringComparison.OrdinalIgnoreCase) < 0 && tex.wrapMode == TextureWrapMode.Repeat) continue;
                     Texture2D mine = Read(pack, key);
                     if (mine == null) continue;
                     mine.name = tex.name;

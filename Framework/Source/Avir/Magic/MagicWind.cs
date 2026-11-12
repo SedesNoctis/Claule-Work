@@ -302,6 +302,7 @@ namespace Avir.Magic
 
         /// <summary>The game's gas grid drifts (Fix185-188): a share of the cell's gas goes on - more in a stronger wind - most
         /// of it downwind, some slipping aside, the rest lingers; a cloud stretches, frays and thins as it goes.</summary>
+        public const int Wisp = 6;
         public static void DriftGridGas(Map map, IntVec3 c, IntVec3 to, Vector3 w, float s)
         {
             if (!to.InBounds(map) || to == c || !map.gasGrid.AnyGasAt(c) || !map.gasGrid.GasCanMoveTo(to)) return;
@@ -316,14 +317,24 @@ namespace Avir.Magic
             for (int sh = 0; sh < 32; sh += 8)
             {
                 int v = (int)((a >> sh) & 0xFF);
+                // a wisp is blown apart, not carried on (Fix250): thin gas in the wind is gone - or a cloud would be smeared
+                // over the whole map as a film that never clears, and every cell of it moved every second
+                if (v <= Wisp) continue;
                 int moved = Mathf.RoundToInt(v * share), aside = canSide ? Mathf.RoundToInt(moved * 0.3f) : 0;
+                if (moved <= 2) aside = 0;
                 stay |= (uint)(v - moved) << sh;
                 onTo |= (uint)Mathf.Min(255, (int)((b >> sh) & 0xFF) + moved - aside) << sh;
                 onSide |= (uint)Mathf.Min(255, (int)((sd >> sh) & 0xFF) + aside) << sh;
             }
-            map.gasGrid.SetDirect(c, stay);
-            map.gasGrid.SetDirect(to, onTo);
-            if (canSide) map.gasGrid.SetDirect(side, onSide);
+            // what the far cells had and did not get anything added to stays as it was
+            for (int sh = 0; sh < 32; sh += 8)
+            {
+                if (((onTo >> sh) & 0xFF) == 0) onTo |= b & (0xFFu << sh);
+                if (((onSide >> sh) & 0xFF) == 0) onSide |= sd & (0xFFu << sh);
+            }
+            if (stay != a) map.gasGrid.SetDirect(c, stay);
+            if (onTo != b) map.gasGrid.SetDirect(to, onTo);
+            if (canSide && onSide != sd) map.gasGrid.SetDirect(side, onSide);
         }
 
         /// <summary>A gas that is a thing (steam, marsh gas, a mod's) drifts a cell on, if there is room.</summary>

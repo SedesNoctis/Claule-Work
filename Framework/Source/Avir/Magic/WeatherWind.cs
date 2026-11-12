@@ -108,28 +108,85 @@ namespace Avir.Magic
 
         private static IntVec3 Next(IntVec3 c, Vector3 dir, float s) => (c.ToVector3Shifted() + dir * (s > 14f ? 2f : 1.2f)).ToIntVec3();
 
+        /// <summary>How much one pass may move (Fix250): the pass is once a second, and a map full of gas must not cost more
+        /// than a small map does. What is not reached this second is reached the next.</summary>
+        private const int GridBudget = 1200, ThingBudget = 300;
+        private readonly List<int> gasCells = new List<int>();
+        private MapComponent_WeatherWind weather;
+        public static int LastGridCells, LastGridMoved, LastThingMoved;   // for the dev readout
+
         public override void MapComponentTick()
         {
             if (AvirMod.Settings != null && !AvirMod.Settings.weatherWind) return;
             if (Find.TickManager.TicksGame % 60 != 17) return;
-            // gases that are things
-            foreach (ThingDef d in GasDefs)
-                foreach (Thing t in map.listerThings.ThingsOfDef(d).ToList())
-                {
-                    if (!(t is Gas gas) || !Steady(t.Position, out Vector3 dir, out float s)) continue;
-                    if (!Rand.Chance(Mathf.Clamp(s / 8f, 0f, 0.85f))) continue;
-                    MapComponent_MagicWind.DriftGasThing(gas, map, Next(t.Position, dir, s));
-                }
-            // the game's gas grid - only where Atmosphere Overhaul does not move it already
-            if (AtmosphereBridge.On) return;
-            withGas.Clear();
-            int n = map.cellIndices.NumGridCells;
-            for (int i = 0; i < n; i++) if (map.gasGrid.GetDirect(i) != 0u) withGas.Add(map.cellIndices.IndexToCell(i));
-            foreach (IntVec3 c in withGas.InRandomOrder())
+            bool ao = AtmosphereBridge.On;
+            // the game's breeze is one for the whole map: read once, not for every cell (Fix250)
+            Vector3 gdir = Vector3.forward; float gs = 0f;
+            if (!ao)
             {
-                if (!Steady(c, out Vector3 dir, out float s) || !Rand.Chance(Mathf.Clamp(s / 10f, 0f, 0.8f))) continue;
-                MapComponent_MagicWind.DriftGridGas(map, c, Next(c, dir, s), dir, s * 0.6f);
+                gs = map.windManager.WindSpeed * 6f;
+                if (gs < 1.5f) { LastGridMoved = LastThingMoved = 0; return; }
+                weather = weather ?? map.GetComponent<MapComponent_WeatherWind>();
+                gdir = weather != null ? weather.Dir : Vector3.forward;
             }
+            // gases that are things
+            int tried = 0; LastThingMoved = 0;
+            foreach (ThingDef d in GasDefs)
+            {
+                List<Thing> list = map.listerThings.ThingsOfDef(d);
+                int cnt = list.Count;
+                if (cnt == 0) continue;
+                int start = Rand.Range(0, cnt);
+                for (int k = 0; k < cnt && tried < ThingBudget; k++)
+                {
+                    if (!(list[(start + k) % cnt] is Gas gas) || !gas.Spawned) continue;
+                    Vector3 dir = gdir; float s = gs;
+                    if (ao) { if (!Steady(gas.Position, out dir, out s)) continue; }
+                    else if (gas.Position.Roofed(map)) continue;
+                    tried++;
+                    if (!Rand.Chance(Mathf.Clamp(s / 8f, 0f, 0.85f))) continue;
+                    if (MapComponent_MagicWind.DriftGasThing(gas, map, Next(gas.Position, dir, s))) LastThingMoved++;
+                }
+                if (tried >= ThingBudget) break;
+            }
+            // the game's gas grid - only where Atmosphere Overhaul does not move it already
+            if (ao) return;
+            gasCells.Clear();
+            int n = map.cellIndices.NumGridCells;
+            for (int i = 0; i < n; i++) if (map.gasGrid.GetDirect(i) != 0u) gasCells.Add(i);
+            LastGridCells = gasCells.Count; LastGridMoved = 0;
+            int total = gasCells.Count;
+            if (total == 0) return;
+            int passes = Mathf.Min(total, GridBudget);
+            float chance = Mathf.Clamp(gs / 10f, 0f, 0.8f);
+            IntVec3 step = Next(IntVec3.Zero, gdir, gs) - IntVec3.Zero;
+            for (int k = 0; k < passes; k++)
+            {
+                // a few of many: picked at random; all of few: shuffled as they are taken
+                int pick = Rand.Range(k, total);
+                int idx = gasCells[pick]; gasCells[pick] = gasCells[k]; gasCells[k] = idx;
+                IntVec3 c = map.cellIndices.IndexToCell(idx);
+                if (c.Roofed(map) || !Rand.Chance(chance)) continue;
+                MapComponent_MagicWind.DriftGridGas(map, c, c + step, gdir, gs * 0.6f);
+                LastGridMoved++;
+            }
+        }
+
+        [LudeonTK.DebugAction("Magic", "Wind: gas drift readout (log)", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void DevReadout()
+        {
+            Map m = Find.CurrentMap; if (m == null) return;
+            int cells = 0, n = m.cellIndices.NumGridCells;
+            for (int i = 0; i < n; i++) if (m.gasGrid.GetDirect(i) != 0u) cells++;
+            int things = GasDefs.Sum(d => m.listerThings.ThingsOfDef(d).Count);
+            Log.Message("[Avir] gas drift: " + cells + " grid cells with gas, " + things + " gas things; last pass moved " + LastGridMoved + " cells (budget " + GridBudget + ") and " + LastThingMoved + " things (budget " + ThingBudget + "); wind " + (m.windManager.WindSpeed * 6f).ToString("0.0") + " m/s" + (AtmosphereBridge.On ? ", Atmosphere Overhaul moves the grid" : ""));
+        }
+
+        [LudeonTK.DebugAction("Magic", "Wind: fill 40x40 with smoke here (stress)", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void DevFill()
+        {
+            Map m = Find.CurrentMap; if (m == null) return;
+            foreach (IntVec3 c in CellRect.CenteredOn(Verse.UI.MouseCell(), 20)) if (c.InBounds(m) && !c.Filled(m)) GasUtility.AddGas(c, m, GasType.BlindSmoke, 255);
         }
     }
 }

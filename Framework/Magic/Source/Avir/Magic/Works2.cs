@@ -18,6 +18,9 @@ namespace Avir.Magic
     public class Work2
     {
         public SecondKind y;
+        /// <summary>The plain elements that can do it too, in a smaller way (Fix250: quarrying is Earth's own; the rockfall
+        /// only brings down several at once).</summary>
+        public RuneKind[] plain;
         public float cost = 6f, xp = 12f;
         public int ticks = 240;
         public string desName;                                         // cells marked by an arcane order, or
@@ -49,10 +52,46 @@ namespace Avir.Magic
             return c != null && c.arcana >= cost && ks.All(k => MagicWork.Knows(c, k)) && ArcaneWork.StageOk(c, ks, true) ? c : null;
         }
 
+        /// <summary>Able by the meeting itself, or by the work's plain elements.</summary>
+        public static Hediff_ArcaneCore Able(Pawn p, Work2 w, float cost)
+        {
+            if (w == null) return null;
+            Hediff_ArcaneCore c = Able(p, w.y, cost);
+            if (c != null || w.plain == null || !AvirMagic.On || p == null) return c;
+            c = Mages.Core(p);
+            return c != null && c.arcana >= cost && w.plain.All(k => MagicWork.Knows(c, k)) && ArcaneWork.StageOk(c, w.plain, false) ? c : null;
+        }
+        /// <summary>By which elements this caster does it: the meeting's, or the plain ones.</summary>
+        public static RuneKind[] KindsFor(Pawn p, Work2 w) => w.plain == null || Able(p, w.y, 0f) != null ? Kinds(w.y) : w.plain;
+        public static bool ByMeeting(Pawn p, Work2 w) => Able(p, w.y, 0f) != null;
+
+        /// <summary>Lava or magma on the cell or right beside it (Fix250: a lava core and basalt come out of the land, not out of anywhere).</summary>
+        public static bool NearLava(Map m, IntVec3 c)
+        {
+            for (int i = 0; i < 9; i++)
+            {
+                IntVec3 x = c + GenAdj.AdjacentCellsAndInside[i];
+                if (!x.InBounds(m)) continue;
+                TerrainDef t = x.GetTerrain(m);
+                if (SpellGround.Lava(t) || t != null && t.defName.IndexOf("Magma", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                if (x.GetThingList(m).Any(q => q.def.defName.IndexOf("Magma", StringComparison.OrdinalIgnoreCase) >= 0 || q.def.defName.IndexOf("Lava", StringComparison.OrdinalIgnoreCase) >= 0 && q.def.category == ThingCategory.Building)) return true;
+            }
+            return false;
+        }
+        /// <summary>Bare stone underfoot: the land's own rough rock, hewn or smoothed.</summary>
+        public static bool StoneGround(Map m, IntVec3 c)
+        {
+            TerrainDef t = c.GetTerrain(m);
+            if (t == null || t.IsWater) return false;
+            return t.smoothedTerrain != null || t.defName.EndsWith("_Rough") || t.defName.EndsWith("_RoughHewn") || t.defName.EndsWith("_Smooth") || t.defName.IndexOf("Cooled", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         public static DesignationDef D(string n) => DefDatabase<DesignationDef>.GetNamedSilentFail(n);
         private static IEnumerable<IntVec3> Marked(Pawn p, string d) => D(d) == null ? Enumerable.Empty<IntVec3>() : p.Map.designationManager.SpawnedDesignationsOfDef(D(d)).Select(x => x.target.Cell).ToList();
         private static bool Home(Pawn p, IntVec3 c) => p.Map.areaManager.Home[c];
         private static void Unmark(Map m, IntVec3 c, string d) { if (D(d) != null) m.designationManager.TryRemoveDesignation(c, D(d)); }
+        /// <summary>Hotfix250: is there anything on the cell that smelting can turn into metal.</summary>
+        public static bool HasSmeltable(Map m, IntVec3 c) => c.GetThingList(m).Any(x => x.def.category == ThingCategory.Item && x.def.smeltable);
         private static void Spawn(ThingDef def, int count, IntVec3 at, Map map) { if (def == null) return; Thing t = ThingMaker.MakeThing(def); t.stackCount = Mathf.Min(count, def.stackLimit); GenPlace.TryPlaceThing(t, at, map, ThingPlaceMode.Near); }
         private static void Fx(Map m, IntVec3 c, Color col, float s = 1.2f) => FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), m, s, col);
 
@@ -103,7 +142,11 @@ namespace Avir.Magic
                     Map m = p.Map; Thing g = m.listerThings.ThingsOfDef(ThingDefOf.SteamGeyser).FirstOrDefault(x => x.OccupiedRect().Contains(t.Cell));
                     Unmark(m, t.Cell, "Avir_2SealGeyser");
                     if (g == null || m.thingGrid.ThingsListAt(g.Position).Any(x => x is Building && x != g)) return false;
-                    g.Destroy(); Fx(m, t.Cell, MagicFx.EarthDust, 2f); return true;
+                    // the game holds a geyser to be indestructible (Fix250): it is taken off the map by leave
+                    bool keep = Thing.allowDestroyNonDestroyable;
+                    Thing.allowDestroyNonDestroyable = true;
+                    try { g.Destroy(); } finally { Thing.allowDestroyNonDestroyable = keep; }
+                    Fx(m, t.Cell, MagicFx.EarthDust, 2f); return !g.Spawned;
                 } },
             ["Avir_2Rinse"] = new Work2 { y = SecondKind.Typhoon, cost = 6f,
                 things = p => p.Map.listerFilthInHomeArea.FilthInHomeArea,
@@ -120,16 +163,18 @@ namespace Avir.Magic
                 } },
             // ---- magma
             ["Avir_2SmeltItems"] = new Work2 { y = SecondKind.Lava, desName = "Avir_2SmeltItems",
+                cellOk = (p, x) => HasSmeltable(p.Map, x),   // Hotfix250: no walk to an empty cell
                 effect = (p, t, c) =>
                 {
                     Map m = p.Map; int n = 0;
                     foreach (Thing x in t.Cell.GetThingList(m).Where(x => x.def.category == ThingCategory.Item && x.def.smeltable).ToList())
                     { foreach (Thing pr in x.SmeltProducts(1f)) GenPlace.TryPlaceThing(pr, t.Cell, m, ThingPlaceMode.Near); x.Destroy(); n++; }
-                    if (n == 0) Unmark(m, t.Cell, "Avir_2SmeltItems");
+                    if (!HasSmeltable(m, t.Cell)) Unmark(m, t.Cell, "Avir_2SmeltItems");   // Hotfix250: nothing left to smelt here - the mark goes
                     FleckMaker.ThrowFireGlow(t.CenterVector3, m, 1.2f);
                     return n > 0;
                 } },
             ["Avir_2LavaCore"] = new Work2 { y = SecondKind.Lava, cost = 12f, ticks = 400, desName = "Avir_2LavaCore",
+                cellOk = (p, x) => NearLava(p.Map, x),
                 effect = (p, t, c) => { Spawn(Def("Avir_LavaCore"), 1, t.Cell, p.Map); Unmark(p.Map, t.Cell, "Avir_2LavaCore"); FleckMaker.ThrowFireGlow(t.CenterVector3, p.Map, 1.5f); return true; } },
             // a pool of lava (the author, Fix190): Odyssey's shallow lava for seven and a half days; the order renews itself
             // before it runs out (with a word to the player) - a forge's heat, a trap at the gate, a hearth that needs no wood
@@ -139,6 +184,7 @@ namespace Avir.Magic
             ["Avir_2LavaSet"] = new Work2 { y = SecondKind.Lava, cost = 2f, ticks = 120, desName = "Avir_2LavaSet",
                 effect = (p, t, c) => LavaPools.Set(p, t.Cell) },
             ["Avir_2Basalt"] = new Work2 { y = SecondKind.Volcano, cost = 8f, ticks = 300, desName = "Avir_2Basalt",
+                cellOk = (p, x) => StoneGround(p.Map, x) || NearLava(p.Map, x),
                 effect = (p, t, c) => { Spawn(Def("Avir_ChunkBasalt"), 1, t.Cell, p.Map); Spawn(Def("Avir_ChunkBasalt"), 1, t.Cell, p.Map); Unmark(p.Map, t.Cell, "Avir_2Basalt"); Fx(p.Map, t.Cell, MagicFx.EarthDust, 1.6f); return true; } },
             ["Avir_2Obsidian"] = new Work2 { y = SecondKind.Obsidian, cost = 10f, ticks = 360, desName = "Avir_2Obsidian",
                 effect = (p, t, c) => { ThingDef ody = Def("Obsidian"); if (ody != null) Spawn(ody, 10 + (WorkSpells.Now.amplify > 0 ? 5 : 0), t.Cell, p.Map); else Spawn(Def("Avir_ObsidianChunk"), 1 + (WorkSpells.Now.amplify > 0 ? 1 : 0), t.Cell, p.Map); Unmark(p.Map, t.Cell, "Avir_2Obsidian"); Gas_ScaldingSteam.Release(t.Cell, p.Map, 1); return true; } },
@@ -249,7 +295,7 @@ namespace Avir.Magic
                 } },
             ["Avir_2MarshGas"] = new Work2 { y = SecondKind.MarshGas, cost = 6f, ticks = 300, desName = "Avir_2MarshGas",
                 cellOk = (p, x) => Rested(p.Map, x, "gas", GenDate.TicksPerDay / 2),
-                effect = (p, t, c) => { Stamp(p.Map, t.Cell, "gas"); Spawn(Def("Avir_MarshGas"), 1 + (WorkSpells.Now.amplify > 0 ? 1 : 0), t.Cell, p.Map); return true; } },
+                effect = (p, t, c) => { Stamp(p.Map, t.Cell, "gas"); Spawn(Def("Avir_MarshGas"), 1 + (WorkSpells.Now.amplify > 0 ? 1 : 0), t.Cell, p.Map); Fx(p.Map, t.Cell, new Color(0.55f, 0.65f, 0.3f, 0.55f)); return true; } },
             ["Avir_2Preserve"] = new Work2 { y = SecondKind.MarshHaze, cost = 6f,
                 things = p => p.Map.listerThings.ThingsInGroup(ThingRequestGroup.HaulableEver).Where(t => t.IsInAnyStorage()).Concat(p.Map.listerThings.ThingsInGroup(ThingRequestGroup.Corpse)),
                 thingOk = (p, t) => t.TryGetComp<CompRottable>() is CompRottable r && r.RotProgressPct > 0.5f && r.RotProgressPct < 1f,
@@ -262,11 +308,13 @@ namespace Avir.Magic
                     return n > 0;
                 } },
             // ---- dust
-            ["Avir_2Quarry"] = new Work2 { y = SecondKind.Rockfall, cost = 8f, ticks = 300, desName = "Avir_2Quarry",
+            ["Avir_2Quarry"] = new Work2 { y = SecondKind.Rockfall, plain = new[] { RuneKind.Earth }, cost = 8f, ticks = 300, desName = "Avir_2Quarry",
+                // marked through the fog like any mining: a rock is taken when it is seen and has an open side
+                cellOk = (p, x) => !x.Fogged(p.Map) && GenAdj.AdjacentCells.Any(o => (x + o).InBounds(p.Map) && !(x + o).Fogged(p.Map) && (x + o).Standable(p.Map)),
                 effect = (p, t, c) =>
                 {
                     Map m = p.Map; int n = 0;
-                    foreach (IntVec3 x in GenRadial.RadialCellsAround(t.Cell, WorkSpells.Now.R(1.9f), true).Where(x => x.InBounds(m) && m.designationManager.DesignationAt(x, D("Avir_2Quarry")) != null))
+                    foreach (IntVec3 x in GenRadial.RadialCellsAround(t.Cell, ByMeeting(p, All["Avir_2Quarry"]) ? WorkSpells.Now.R(1.9f) : 0.5f, true).Where(x => x.InBounds(m) && !x.Fogged(m) && m.designationManager.DesignationAt(x, D("Avir_2Quarry")) != null).ToList())
                     {
                         Unmark(m, x, "Avir_2Quarry");
                         Building rock = x.GetEdifice(m);
@@ -404,7 +452,7 @@ namespace Avir.Magic
         private Work2 W => Works2.All.TryGetValue(def.defName, out Work2 w) ? w : null;
         public override PathEndMode PathEndMode => PathEndMode.Touch;
         public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.Undefined);
-        public override bool ShouldSkip(Pawn pawn, bool forced = false) => W == null || Works2.Able(pawn, W.y, W.cost) == null;
+        public override bool ShouldSkip(Pawn pawn, bool forced = false) => W == null || Works2.Able(pawn, W, W.cost) == null;
 
         public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn) => W?.things?.Invoke(pawn) ?? Enumerable.Empty<Thing>();
         public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn)
@@ -418,13 +466,13 @@ namespace Avir.Magic
         public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
         {
             Work2 w = W;
-            return w?.things != null && !t.IsForbidden(pawn) && (w.thingOk == null || w.thingOk(pawn, t)) && pawn.CanReserve(t, 1, -1, null, forced) && Works2.Able(pawn, w.y, w.cost) != null;
+            return w?.things != null && !t.IsForbidden(pawn) && (w.thingOk == null || w.thingOk(pawn, t)) && pawn.CanReserve(t, 1, -1, null, forced) && Works2.Able(pawn, w, w.cost) != null;
         }
 
         public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
         {
             Work2 w = W;
-            if (w == null || (w.des == null && w.cells == null) || c.IsForbidden(pawn) || !pawn.CanReserve(c, 1, -1, null, forced) || Works2.Able(pawn, w.y, w.cost) == null) return false;
+            if (w == null || (w.des == null && w.cells == null) || c.IsForbidden(pawn) || !pawn.CanReserve(c, 1, -1, null, forced) || Works2.Able(pawn, w, w.cost) == null) return false;
             if (w.des != null && pawn.Map.designationManager.DesignationAt(c, w.des) == null) return false;
             return w.cellOk == null || w.cellOk(pawn, c);
         }
@@ -443,7 +491,7 @@ namespace Avir.Magic
         {
             Work2 w = W;
             if (w == null) yield break;
-            RuneKind[] kinds = Works2.Kinds(w.y);
+            RuneKind[] kinds = Works2.KindsFor(pawn, w);
             // a household spell of the three elements works it better, as for any work (WorkSpells)
             WorkCast wc = WorkSpells.Make(Mages.Core(pawn), job.def.defName, kinds, w.cost);
             bool far = kinds.Contains(RuneKind.Earth);
@@ -454,7 +502,7 @@ namespace Avir.Magic
             Toil done = ToilMaker.MakeToil("Arcane2");
             done.initAction = () =>
             {
-                Hediff_ArcaneCore c = Works2.Able(pawn, w.y, wc.cost);
+                Hediff_ArcaneCore c = Works2.Able(pawn, w, wc.cost);
                 if (c == null) return;
                 WorkSpells.Now = wc;
                 bool ok;
@@ -485,21 +533,21 @@ namespace Avir.Magic
 
     public class Designator_2RaiseGeyser : Designator_Arcane2 { protected override string Key => "Avir_2RaiseGeyser"; protected override string Label2 => "Raise a geyser (geyser)"; protected override string Desc2 => "A caster of fire, water and earth calls a steam geyser up here - for a geothermal generator. Costly, slow."; protected override AcceptanceReport Ok(IntVec3 c) => c.Standable(Map) && c.GetEdifice(Map) == null; }
     public class Designator_2SealGeyser : Designator_Arcane2 { protected override string Key => "Avir_2SealGeyser"; protected override string Label2 => "Seal a geyser (geyser)"; protected override string Desc2 => "A caster of fire, water and earth seals the steam geyser here for good."; protected override AcceptanceReport Ok(IntVec3 c) => Map.listerThings.ThingsOfDef(ThingDefOf.SteamGeyser).Any(g => g.OccupiedRect().Contains(c)); }
-    public class Designator_2SmeltItems : Designator_Arcane2 { protected override string Key => "Avir_2SmeltItems"; protected override string Label2 => "Smelt here (lava)"; protected override string Desc2 => "Weapons and apparel left on these cells are smelted down to their metal by a caster of lava (fire, earth; an adept of fire). The mark stays until the cell is empty."; }
-    public class Designator_2LavaCore : Designator_Arcane2 { protected override string Key => "Avir_2LavaCore"; protected override string Label2 => "Seal a lava core (lava)"; protected override string Desc2 => "A caster of lava seals a core of lava in basalt here: a long fuel for any wood-fed forge, smelter or stove (three units of wood each)."; }
+    public class Designator_2SmeltItems : Designator_Arcane2 { protected override string Key => "Avir_2SmeltItems"; protected override string Label2 => "Smelt here (lava)"; protected override string Desc2 => "Weapons and apparel left on these cells are smelted down to their metal by a caster of lava (fire, earth; an adept of fire). The mark stays until the cell is empty."; protected override AcceptanceReport Ok(IntVec3 c) => Works2.HasSmeltable(Map, c); }
+    public class Designator_2LavaCore : Designator_Arcane2 { protected override string Key => "Avir_2LavaCore"; protected override string Label2 => "Seal a lava core (lava)"; protected override string Desc2 => "A caster of lava seals a core of lava in basalt here - on lava or magma itself, or right beside it (a lava pool, a magma spring, the land's own lava): a long fuel for any wood-fed forge, smelter or stove (three units of wood each)."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetEdifice(Map) == null && (Works2.NearLava(Map, c) ? AcceptanceReport.WasAccepted : new AcceptanceReport("A lava core is sealed out of lava: mark lava or magma, or the ground right beside it.")); }
     public class Designator_2LavaPool : Designator_Arcane2 { protected override string Key => "Avir_2LavaPool"; protected override string Label2 => "Lava pool (lava)"; protected override string Desc2 => "A caster of lava turns this ground into shallow lava for seven and a half days - heat for a forge, a trap at the gate. Before it cools the order renews itself (you are told), and a caster keeps it. To end it, mark it with \"Let the lava set\"."; public override bool Visible => base.Visible && LavaPools.Lava != null; protected override AcceptanceReport Ok(IntVec3 c) => LavaPools.CanPour(Map, c) || LavaPools.Held(Map, c); }
     public class Designator_2LavaSet : Designator_Arcane2 { protected override string Key => "Avir_2LavaSet"; protected override string Label2 => "Let the lava set (lava)"; protected override string Desc2 => "A caster of lava lets a held pool go: it sinks into magma, which sets into stone in its own time (now and then basalt). The pool's order stops renewing."; public override bool Visible => base.Visible && LavaPools.Lava != null; protected override AcceptanceReport Ok(IntVec3 c) => LavaPools.Held(Map, c); }
-    public class Designator_2Basalt : Designator_Arcane2 { protected override string Key => "Avir_2Basalt"; protected override string Label2 => "Draw basalt (volcano)"; protected override string Desc2 => "A caster of the volcano (fire, earth; an adept of earth) draws two chunks of basalt up here."; }
-    public class Designator_2Obsidian : Designator_Arcane2 { protected override string Key => "Avir_2Obsidian"; protected override string Label2 => "Make obsidian (obsidian)"; protected override string Desc2 => "A caster of fire, earth and water quenches magma here into obsidian - sharp black glass for blades."; }
+    public class Designator_2Basalt : Designator_Arcane2 { protected override string Key => "Avir_2Basalt"; protected override string Label2 => "Draw basalt (volcano)"; protected override string Desc2 => "A caster of the volcano (fire, earth; an adept of earth) draws two chunks of basalt up here - out of bare stone ground (rough or hewn rock), or beside lava."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetEdifice(Map) == null && (Works2.StoneGround(Map, c) || Works2.NearLava(Map, c) ? AcceptanceReport.WasAccepted : new AcceptanceReport("Basalt is drawn out of stone: mark bare rock ground, or the ground beside lava.")); }
+    public class Designator_2Obsidian : Designator_Arcane2 { protected override string Key => "Avir_2Obsidian"; protected override string Label2 => "Make obsidian (obsidian)"; protected override string Desc2 => "A caster of fire, earth and water quenches magma here into obsidian - sharp black glass for blades."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetEdifice(Map) == null; }
     public class Designator_2Ash : Designator_Arcane2 { protected override string Key => "Avir_2Ash"; protected override string Label2 => "Ash the ground (ash)"; protected override string Desc2 => "A caster of fire, earth and air lets ash fall here: a plain fertiliser, +20% fertility for ten days."; protected override AcceptanceReport Ok(IntVec3 c) => Map.terrainGrid.TerrainAt(c).fertility > 0f; }
     public class Designator_2Charge : Designator_Arcane2 { protected override string Key => "Avir_2Charge"; protected override string Label2 => "Kept ball lightning (ball lightning)"; protected override string Desc2 => "An adept caster of water, air and fire makes a ball lightning stay here. Set it on or beside a power conduit or battery: it charges the batteries fast; else it feeds the energy keepers of the arcane network near it; with nothing to take its charge it swells and in the end breaks loose. Mark it again - a bigger globe. It can be loosed to guard the colony."; protected override AcceptanceReport Ok(IntVec3 c) => c.Standable(Map); }
     public class Designator_2Clear : Designator_Arcane2 { protected override string Key => "Avir_2Clear"; protected override string Label2 => "Clear land (mudflow)"; protected override string Desc2 => "A caster of water, air and earth tears up the trees and bushes here; the wood is piled up."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetPlant(Map) != null; }
-    public class Designator_2Moat : Designator_Arcane2 { protected override string Key => "Avir_2Moat"; protected override string Label2 => "Moat (quagmire)"; protected override string Desc2 => "A caster of the quagmire (water, earth; an adept of water) floods these cells into shallow water for 30 days - a moat."; }
-    public class Designator_2SiltWater : Designator_Arcane2 { protected override string Key => "Avir_2SiltWater"; protected override string Label2 => "Ground to water (silt)"; protected override string Desc2 => "A caster of silt (water, earth; an adept of earth) turns this ground into shallow water for 30 days."; }
+    public class Designator_2Moat : Designator_Arcane2 { protected override string Key => "Avir_2Moat"; protected override string Label2 => "Moat (quagmire)"; protected override string Desc2 => "A caster of the quagmire (water, earth; an adept of water) floods these cells into shallow water for 30 days - a moat."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetEdifice(Map) == null && (!Map.terrainGrid.TerrainAt(c).IsWater || MapComponent_TempTerrain.Of(Map)?.to.ContainsKey(c) == true); }
+    public class Designator_2SiltWater : Designator_Arcane2 { protected override string Key => "Avir_2SiltWater"; protected override string Label2 => "Ground to water (silt)"; protected override string Desc2 => "A caster of silt (water, earth; an adept of earth) turns this ground into shallow water for 30 days."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetEdifice(Map) == null && (!Map.terrainGrid.TerrainAt(c).IsWater || MapComponent_TempTerrain.Of(Map)?.to.ContainsKey(c) == true); }
     public class Designator_2SiltLand : Designator_Arcane2 { protected override string Key => "Avir_2SiltLand"; protected override string Label2 => "Water to ground (silt)"; protected override string Desc2 => "A caster of silt turns this shallow water into ground for 30 days."; protected override AcceptanceReport Ok(IntVec3 c) => Map.terrainGrid.TerrainAt(c).IsWater && Map.terrainGrid.TerrainAt(c).passability != Traversability.Impassable; }
     public class Designator_2SiltDump : Designator_Arcane2 { protected override string Key => "Avir_2SiltDump"; protected override string Label2 => "Silt pit (silt)"; protected override string Desc2 => "What is left on these cells - rubble, slag, rags, corpses - the silt swallows. The mark stays: a pit for refuse."; }
     public class Designator_2MarshGas : Designator_Arcane2 { protected override string Key => "Avir_2MarshGas"; protected override string Label2 => "Draw marsh gas (marsh gas)"; protected override string Desc2 => "A caster of water, earth and fire draws marsh gas into a canister here - twice a day at most. A fuel stronger than chemfuel."; }
-    public class Designator_2Quarry : Designator_Arcane2 { protected override string Key => "Avir_2Quarry"; protected override string Label2 => "Quarry (rockfall)"; protected override string Desc2 => "A caster of the rockfall (earth, air; an adept of earth) brings these rock walls down into chunks, several at once."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetEdifice(Map)?.def.building?.isNaturalRock == true; }
+    public class Designator_2Quarry : Designator_Arcane2 { protected override string Key => "Avir_2Quarry"; protected override string Label2 => "Quarry (earth, rockfall)"; protected override string Desc2 => "A caster of earth brings these rock walls down into chunks, one at a time; a caster of the rockfall (earth, air) - several at once. May be marked through unseen rock, like any mining: a rock is taken once it is seen and has an open side."; public override AcceptanceReport CanDesignateCell(IntVec3 c) => c.InBounds(Map) && Designation != null && Map.designationManager.DesignationAt(c, Designation) == null && (c.Fogged(Map) || c.GetEdifice(Map)?.def.building?.isNaturalRock == true); }
     public class Designator_2DigClay : Designator_Arcane2 { protected override string Key => "Avir_2DigClay"; protected override string Label2 => "Draw clay (clay)"; protected override string Desc2 => "A caster of earth, air and water draws clay out of the ground here - twice a day at most. Medieval Overhaul's clay if it is there."; }
 
     // ================================================================== developer mode
@@ -646,6 +694,12 @@ namespace Avir.Magic
                 cells.RemoveAt(i); des.RemoveAt(i); due.RemoveAt(i);
                 DesignationDef dd = Works2.D(d);
                 if (dd == null || !c.InBounds(map) || map.designationManager.DesignationAt(c, dd) != null) continue;
+                if (d == "Avir_ArcaneGrowth")
+                {   // Hotfix251: a plant that was quickened - its mark is laid again, quietly, if it still grows (it would speak every day otherwise)
+                    Plant gp = c.GetPlant(map);
+                    if (gp != null && gp.LifeStage != PlantLifeStage.Mature) map.designationManager.AddDesignation(new Designation(c, dd));
+                    continue;
+                }
                 var temp = MapComponent_TempTerrain.Of(map);
                 if (temp == null || !temp.to.TryGetValue(c, out TerrainDef held) || map.terrainGrid.TerrainAt(c) != held) continue;   // gone already - nothing to keep
                 map.designationManager.AddDesignation(new Designation(c, dd));

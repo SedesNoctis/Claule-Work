@@ -578,9 +578,9 @@
     <label>lava core</label>
     <description>A fist of lava sealed in a basalt shell. It stays hot for days: any fire that is fed with wood takes it, and one core burns as long as three logs.</description>
     <graphicData>
-      <texPath>Things/Item/Resource/StoneBlocks</texPath>
-      <graphicClass>Graphic_StackCount</graphicClass>
-      <color>(205,92,40)</color>
+      <texPath>Things/Item/Avir/Magic/LavaCore</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.9</drawSize>
     </graphicData>
     <stackLimit>25</stackLimit>
     <statBases>
@@ -597,9 +597,9 @@
     <label>marsh gas</label>
     <description>Bog breath drawn into a canister. Wherever chemfuel feeds a thing it feeds it too, and one canister goes as far as two of chemfuel. Keep it away from fire.</description>
     <graphicData>
-      <texPath>Things/Item/Resource/Chemfuel</texPath>
-      <graphicClass>Graphic_StackCount</graphicClass>
-      <color>(150,170,95)</color>
+      <texPath>Things/Item/Avir/Magic/MarshGas</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.9</drawSize>
     </graphicData>
     <stackLimit>75</stackLimit>
     <statBases>
@@ -653,9 +653,9 @@
     <label>clay</label>
     <description>Wet clay drawn out of the ground. Fired by burning sand, it becomes brick.</description>
     <graphicData>
-      <texPath>Things/Item/Resource/StoneBlocks</texPath>
-      <graphicClass>Graphic_StackCount</graphicClass>
-      <color>(170,110,80)</color>
+      <texPath>Things/Item/Avir/Magic/Clay</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.9</drawSize>
     </graphicData>
     <stackLimit>75</stackLimit>
     <statBases>
@@ -671,7 +671,11 @@
     <defName>Avir_Brick</defName>
     <label>brick</label>
     <description>Clay fired through by burning sand. Lighter than stone blocks and quicker to lay, a little weaker.</description>
-    <graphicData><color>(160,72,52)</color></graphicData>
+    <graphicData>
+      <texPath>Things/Item/Avir/Magic/Brick</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.9</drawSize>
+    </graphicData>
     <statBases>
       <Mass>0.8</Mass>
       <MarketValue>1.2</MarketValue>

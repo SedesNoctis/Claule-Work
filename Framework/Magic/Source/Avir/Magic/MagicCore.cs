@@ -211,6 +211,10 @@ namespace Avir.Magic
             // all the way; a sorcerer's hardly does (their composure goes into holding spells instead)
             hi = Avir ? 0.35f + 0.35f * (1f - Mathf.Exp(-1.3f * c)) + w   // an Avir's safe Arcana is small: greatness comes soon
                : Sorcerer ? 0.65f + 0.1f * Mathf.Clamp01(c) + w : 0.65f + 0.6f * (1f - Mathf.Exp(-1.3f * c)) + w;
+            // the bar itself is the safe store (the author, Fix250): nothing swells while the Arcana is within the reserve -
+            // the only mark inside it is the lower one (hollow). Past the reserve greatness comes; how soon is Pride's business
+            // (an Avir's and a sorcerer's is still the quickest), and composure moves the edge further out.
+            hi = Mathf.Max(1f, hi);
         }
 
         /// <summary>How readily greatness swells past the band: a sorcerer always gives way to it; a mage less and less
@@ -330,12 +334,12 @@ namespace Avir.Magic
                 float under = (lo - f) / Mathf.Max(0.01f, lo);
                 if (hollow == null) hollow = pawn.health.AddHediff(MagicDefOf.Avir_ArcaneHollow);
                 hollow.Severity = Mathf.Clamp01(under);
-                outsideTicks += dt;
+                // (Fix250) an empty core is not a swelling one: hollowness no longer counts towards the outbreak
             }
             else if (hollow != null) pawn.health.RemoveHediff(hollow);
             int gs = great == null || great.ShouldRemove ? -1 : great.CurStageIndex;
             if (gs != lastGreatStage) { lastGreatStage = gs; WorkKept(); }
-            if (f >= lo && f <= hi) outsideTicks = Mathf.Max(0, outsideTicks - dt * 2);
+            if (f <= hi) outsideTicks = Mathf.Max(0, outsideTicks - dt * 2);
             // held above the band too long: it breaks out - outwards, or (a weak hold) into the mind
             if (f > hi && outsideTicks > GenDate.TicksPerDay / 2 && pawn.Spawned && !pawn.InMentalState && !pawn.Downed && Rand.Chance(0.04f))
             {
@@ -479,7 +483,7 @@ namespace Avir.Magic
             core.Band(out float lo, out float hi);
             Texture2D mark = sorc ? Black : Gold;
             GUI.DrawTexture(new Rect(bar.x + bar.width * lo - 1f, bar.y, 2f, bar.height), mark);
-            GUI.DrawTexture(new Rect(bar.x + bar.width * hi - 1f, bar.y, 2f, bar.height), mark);
+            if (hi < 0.999f) GUI.DrawTexture(new Rect(bar.x + bar.width * hi - 1f, bar.y, 2f, bar.height), mark);
             if (core.vent) GUI.DrawTexture(new Rect(bar.x + bar.width * core.target - 1f, bar.y - 3f, 2f, bar.height + 3f), White);
             Text.Anchor = TextAnchor.MiddleCenter;
             Widgets.Label(bar, Mathf.FloorToInt(core.arcana) + " / " + Mathf.FloorToInt(core.Capacity));
@@ -527,7 +531,7 @@ namespace Avir.Magic
             core.Band(out float lo, out float hi);
             Color mk = sorc ? new Color(0.1f, 0.06f, 0.02f, 0.8f) : new Color(1f, 0.85f, 0.4f, 0.85f);
             Widgets.DrawBoxSolid(new Rect(glass.x + glass.width * lo - 1f, glass.y + 2f, 2f, glass.height - 4f), mk);
-            Widgets.DrawBoxSolid(new Rect(glass.x + glass.width * hi - 1f, glass.y + 2f, 2f, glass.height - 4f), mk);
+            if (hi < 0.999f) Widgets.DrawBoxSolid(new Rect(glass.x + glass.width * hi - 1f, glass.y + 2f, 2f, glass.height - 4f), mk);
             if (core.vent) Widgets.DrawBoxSolid(new Rect(glass.x + glass.width * core.target - 1f, glass.y, 2f, glass.height), new Color(1f, 1f, 1f, 0.85f));
             PlaqueArt.Draw(r, art, cuts, Stretch);
             Text.Font = slot.height >= 21f ? GameFont.Small : GameFont.Tiny; Text.Anchor = TextAnchor.MiddleCenter; GUI.color = new Color(0.95f, 0.92f, 0.86f);
@@ -580,7 +584,7 @@ namespace Avir.Magic
             Pawn p = core.pawn;
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("Arcana: " + Mathf.FloorToInt(core.arcana) + " of " + Mathf.FloorToInt(core.Capacity) + " (core level " + core.level + ").");
-            sb.AppendLine("Safe between " + lo.ToStringPercent() + " and " + hi.ToStringPercent() + " (the marks) - wider with composure ("
+            sb.AppendLine("Safe from " + lo.ToStringPercent() + " (the mark - below it the core goes hollow) up to " + hi.ToStringPercent() + " of the reserve; past that greatness swells. Wider with composure ("
                           + core.Composure.ToStringPercent() + ") and with what steadies the " + (core.Sorcerer ? "sorcerer" : "wizard") + ".");
             if (core.vent) sb.AppendLine("Kept at " + core.target.ToStringPercent() + " (the white mark): the excess goes into worn artifacts, then artifacts nearby; with none, it stays in the mage (cast it out).");
             sb.AppendLine("Click the bar to set where it is kept.");
@@ -1225,6 +1229,7 @@ namespace Avir.Magic
     /// <summary>How the Arcana is filled. For now: meditation, a quarter of the core an hour, more where the stream is strong.</summary>
     public static class MagicFill
     {
+        public const float MeditationShare = 0.10f;
         public static void Meditated(Verse.Pawn p, int ticks)
         {
             if (!AvirMagic.On) return;
@@ -1232,15 +1237,16 @@ namespace Avir.Magic
             if (c == null) return;
             int tier = 0;
             if (p.MapHeld != null) { var ext = Avir.Ritualistics.MapComponent_ExternalFlow.Of(p.MapHeld); tier = ext == null ? 0 : Avir.Ritualistics.MapComponent_ExternalFlow.TierIndex(ext.Total); }
-            float add = c.Capacity * 0.25f * (1f + 0.5f * tier) * ticks / (float)RimWorld.GenDate.TicksPerHour;
+            // (Fix250, the author: meditation gave far too much) a tenth of the reserve an hour, more in a stream
+            float add = c.Capacity * MeditationShare * (1f + 0.5f * tier) * ticks / (float)RimWorld.GenDate.TicksPerHour;
             // in or beside a hot spring (Odyssey's, or one warmed by steam): casters of water and fire draw half again as fast (Fix171)
             if (p.Spawned && Arcane.HotSpringWater != null && (MagicWork.Knows(c, RuneKind.Water) || MagicWork.Knows(c, RuneKind.Fire))
                 && GenRadial.RadialCellsAround(p.Position, 2.5f, true).Any(x => x.InBounds(p.Map) && x.GetTerrain(p.Map) == Arcane.HotSpringWater)) add *= 1.5f;
             // past the reserve the core takes it in slowly
-            if (c.arcana >= c.Capacity) add *= 0.5f;
+            if (c.arcana >= c.Capacity) add *= 0.2f;
             // beside a lit sanctuary: three times as fast, drawn from its store
             CompSanctuary s = CompSanctuary.Near(p);
-            if (s != null) add += s.Draw(add * 2f);
+            if (s != null) add += s.Draw(add * 1f);   // beside a lit sanctuary: twice as fast (was three times)
             ArcanaIntake.Take(c, add);
         }
     }

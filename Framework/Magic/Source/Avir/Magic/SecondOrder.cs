@@ -201,7 +201,20 @@ namespace Avir.Magic
         }
 
         /// <summary>A part of a second-order meeting has been cast: its signature, through its runes.</summary>
+        /// <summary>While the meeting of three does its own deed (it may pour what it needs - obsidian quenches magma).</summary>
+        private static bool applying;
+        /// <summary>The pair under a meeting of three leaves nothing of its own on the ground unless the meeting is of its
+        /// kind (the author, Fix250): magma is poured by Magma itself, by Lava and by the Volcano - not by Ash, Obsidian's
+        /// background or any other meeting that merely has fire and earth in it.</summary>
+        public static bool NoMagma => !applying && Now != SecondKind.None && Now != SecondKind.Lava && Now != SecondKind.Volcano && PairOf(Now) == ComboKind.Magma;
+
         public static void Apply(Pawn caster, RitualSchema part, RitualReading r, LocalTargetInfo target, float power)
+        {
+            bool keep = applying; applying = true;
+            try { ApplyNow(caster, part, r, target, power); } finally { applying = keep; }
+        }
+
+        private static void ApplyNow(Pawn caster, RitualSchema part, RitualReading r, LocalTargetInfo target, float power)
         {
             SecondKind y = Now;
             Map map = caster?.Map;

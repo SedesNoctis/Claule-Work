@@ -30,7 +30,8 @@ namespace Avir.Magic
             if (c.Great && LifeMagic.Is(c.element))
             {
                 RuneKind deep = LifeMagic.PairOf(root, c), wide = LifeMagic.AspectOf(root, c);
-                return deep != LifeMagic.None ? LifeMagic.PairName(deep)?.Replace(" ", "") : wide != LifeMagic.None ? LifeMagic.AspectName(wide) : null;
+                LifeMix lm = LifeMagic.MixOf(root, c);
+                return deep != LifeMagic.None ? LifeMagic.PairName(deep)?.Replace(" ", "") : wide != LifeMagic.None ? LifeMagic.AspectName(wide) : lm != LifeMix.None ? lm.ToString() : null;
             }
             if (c.element == null) return null;
             if (SecondOrder.Of(root).TryGetValue(c, out SecondKind y) && y != SecondKind.None) return y.ToString();
@@ -70,6 +71,7 @@ namespace Avir.Magic
                 if (LifeMagic.PairName(e)?.Replace(" ", "") == name) return LifeMagic.PairColor(e);
                 if (LifeMagic.AspectName(e) == name) return LifeMagic.AspectColor(e);
             }
+            if (System.Enum.TryParse(name, out LifeMix lmx) && lmx != LifeMix.None) return LifeMagic.MixColor(lmx);
             return Color.white;
         }
 

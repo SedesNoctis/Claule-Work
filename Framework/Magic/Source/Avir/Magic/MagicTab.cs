@@ -259,8 +259,8 @@ namespace Avir.Magic
             int lv = MageClass.LevelOf(all);
             float from = MageClass.ForLevel(lv), to = MageClass.ForLevel(lv + 1);
             Rect lb = new Rect(r.x, r.y + 60f, r.width, 26f);
-            Widgets.FillableBar(lb, Mathf.Clamp01((all - from) / Mathf.Max(1f, to - from)), SolidColorMaterials.NewSolidColorTexture(new Color(0.78f, 0.6f, 0.22f)),
-                SolidColorMaterials.NewSolidColorTexture(new Color(0.12f, 0.1f, 0.08f, 0.6f)), false);
+            Widgets.FillableBar(lb, Mathf.Clamp01((all - from) / Mathf.Max(1f, to - from)), barLevel ?? (barLevel = SolidColorMaterials.NewSolidColorTexture(new Color(0.78f, 0.6f, 0.22f))),
+                barBack ?? (barBack = SolidColorMaterials.NewSolidColorTexture(new Color(0.12f, 0.1f, 0.08f, 0.6f))), false);
             GUI.color = Color.white; Text.Anchor = TextAnchor.MiddleCenter;
             Widgets.Label(lb, "Core level " + core.level + "   " + all.ToString("0") + " / " + to.ToString("0"));
             Text.Anchor = TextAnchor.UpperLeft;
@@ -368,6 +368,7 @@ namespace Avir.Magic
         /// <summary>The scale is drawn by square root, so the first stages are not squeezed into a sliver.</summary>
         private static float Pos(float xp) => Mathf.Sqrt(Mathf.Max(0f, xp));
 
+        private static Texture2D barSorc, barMage, barBack, barLevel;
         private void DrawMage(Rect r, Hediff_ArcaneCore core)
         {
             bool sorc = core != null && core.Sorcerer;
@@ -384,12 +385,15 @@ namespace Avir.Magic
             if (core == null) { GUI.color = InkSoft; Widgets.Label(new Rect(r.x, r.y + 64f, r.width, 60f), "No arcane core - the gift will grow it back."); return; }
             // the Arcana, large
             Rect bar = new Rect(r.x, r.y + 70f, r.width, 34f);
-            Widgets.FillableBar(bar, Mathf.Clamp01(core.Fill), SolidColorMaterials.NewSolidColorTexture(sorc ? new Color(0.93f, 0.68f, 0.12f) : new Color(0.16f, 0.32f, 0.92f)),
-                SolidColorMaterials.NewSolidColorTexture(new Color(0.12f, 0.1f, 0.08f, 0.6f)), false);
+            // (Fix250) the bar's colours are made once, not every frame
+            barSorc = barSorc ?? SolidColorMaterials.NewSolidColorTexture(new Color(0.93f, 0.68f, 0.12f));
+            barMage = barMage ?? SolidColorMaterials.NewSolidColorTexture(new Color(0.16f, 0.32f, 0.92f));
+            barBack = barBack ?? SolidColorMaterials.NewSolidColorTexture(new Color(0.12f, 0.1f, 0.08f, 0.6f));
+            Widgets.FillableBar(bar, Mathf.Clamp01(core.Fill), sorc ? barSorc : barMage, barBack, false);
             core.Band(out float lo, out float hi);
             Color mk = sorc ? new Color(0.05f, 0.04f, 0.03f) : new Color(1f, 0.84f, 0.35f);
             Widgets.DrawBoxSolid(new Rect(bar.x + bar.width * lo - 1f, bar.y, 2f, bar.height), mk);
-            Widgets.DrawBoxSolid(new Rect(bar.x + bar.width * hi - 1f, bar.y, 2f, bar.height), mk);
+            if (hi < 0.999f) Widgets.DrawBoxSolid(new Rect(bar.x + bar.width * hi - 1f, bar.y, 2f, bar.height), mk);
             if (core.vent) Widgets.DrawBoxSolid(new Rect(bar.x + bar.width * core.target - 1f, bar.y - 4f, 2f, bar.height + 4f), Color.white);
             GUI.color = Color.white; Text.Anchor = TextAnchor.MiddleCenter;
             Widgets.Label(bar, "Arcana " + Mathf.FloorToInt(core.arcana) + " / " + Mathf.FloorToInt(core.Capacity));

@@ -61,8 +61,27 @@ namespace Avir.Magic
         public Dictionary<IntVec3, int> enrichUntil = new Dictionary<IntVec3, int>();
         public MapComponent_ArcaneOrders(Map map) : base(map) { }
 
+        /// <summary>Hotfix250: marks that no longer stand for anything go by themselves - a plant gone or grown (quicken growth),
+        /// a cell emptied of what could be smelted (smelt with lava). They are only ever dropped, never added.</summary>
+        private void SweepMarks()
+        {
+            var dm = map.designationManager;
+            DesignationDef growth = Arcane.Growth;
+            if (growth != null)
+                foreach (IntVec3 c in dm.SpawnedDesignationsOfDef(growth).Select(d => d.target.Cell).ToList())
+                {
+                    Plant pl = c.GetPlant(map);
+                    if (pl == null || pl.LifeStage == PlantLifeStage.Mature) dm.TryRemoveDesignation(c, growth);
+                }
+            DesignationDef smelt = Works2.D("Avir_2SmeltItems");
+            if (smelt != null)
+                foreach (IntVec3 c in dm.SpawnedDesignationsOfDef(smelt).Select(d => d.target.Cell).ToList())
+                    if (!Works2.HasSmeltable(map, c)) dm.TryRemoveDesignation(c, smelt);
+        }
+
         public override void MapComponentTick()
         {
+            if (Find.TickManager.TicksGame % 600 == 0) SweepMarks();
             if (enrichUntil.Count == 0 || Find.TickManager.TicksGame % 2500 != 0) return;
             int now = Find.TickManager.TicksGame;
             foreach (IntVec3 c in enrichUntil.Where(kv => kv.Value <= now).Select(kv => kv.Key).ToList())
@@ -190,11 +209,16 @@ namespace Avir.Magic
         public Designator_ArcaneGrowth()
         {
             defaultLabel = "Quicken growth";
-            defaultDesc = "Mark ground where casters of water or earth are to quicken what grows - once a day for each spot. The mark stays until cancelled.";
+            defaultDesc = "Mark a growing plant where casters of water or earth are to quicken it - once a day for each spot. The mark goes after each use and comes back by itself when the plant can be quickened again; it ends when the plant is grown (or gone).";
             icon = ArcaneIcons.For(Designation?.defName, "UI/Designators/PlantsHarvest");
         }
         protected override DesignationDef Designation => Arcane.Growth;
-        public override AcceptanceReport CanDesignateCell(IntVec3 c) => c.InBounds(Map) && !c.Fogged(Map) && Map.designationManager.DesignationAt(c, Designation) == null && c.GetEdifice(Map) == null;
+        public override AcceptanceReport CanDesignateCell(IntVec3 c)
+        {
+            if (!c.InBounds(Map) || c.Fogged(Map) || Map.designationManager.DesignationAt(c, Designation) != null || c.GetEdifice(Map) != null) return false;
+            Plant pl = c.GetPlant(Map);   // Hotfix250: only where there is something still growing to quicken
+            return pl != null && pl.LifeStage != PlantLifeStage.Mature;
+        }
     }
 
     /// <summary>Where the bog is to enrich the soil, for a while.</summary>
@@ -383,18 +407,26 @@ namespace Avir.Magic
             bool water = k[0] == RuneKind.Water;
             float add = ((water ? 0.15f : 0.1f) + 0.03f * Arcane.Stage(c, k)) * WorkSpells.Now.S;
             int now = Find.TickManager.TicksGame, n = 0;
+            float gained = 0f;
             foreach (IntVec3 cell in GenRadial.RadialCellsAround(t.Cell, WorkSpells.Now.R(water ? 3.9f : 5.9f), true))
             {
                 if (!cell.InBounds(map) || map.designationManager.DesignationAt(cell, Arcane.Growth) == null) continue;
-                if (comp.grownAt.TryGetValue(cell, out int last) && now - last < GrowEvery) continue;
                 Plant pl = cell.GetPlant(map);
-                if (pl == null || pl.LifeStage == PlantLifeStage.Mature) continue;
+                // Hotfix250: nothing left to quicken here (no plant, or grown) - the mark goes, it does not mislead
+                if (pl == null || pl.LifeStage == PlantLifeStage.Mature) { map.designationManager.TryRemoveDesignation(cell, Arcane.Growth); continue; }
+                if (comp.grownAt.TryGetValue(cell, out int last) && now - last < GrowEvery) continue;
+                float before = pl.Growth;
                 pl.Growth = Mathf.Min(1f, pl.Growth + add);
                 if (water && pl.Blighted) pl.Blight?.Destroy();
                 comp.grownAt[cell] = now;
-                if (Rand.Chance(0.4f)) FleckMaker.ThrowDustPuffThick(cell.ToVector3Shifted(), map, 0.6f, new Color(0.4f, 0.8f, 0.4f, 0.5f));
+                gained += pl.Growth - before;
+                FleckMaker.ThrowDustPuffThick(cell.ToVector3Shifted(), map, 0.9f, new Color(0.4f, 0.9f, 0.4f, 0.8f));
+                // Hotfix251: the mark goes after each use and is laid again once this plant can be quickened again (if it still grows)
+                map.designationManager.TryRemoveDesignation(cell, Arcane.Growth);
+                if (pl.Growth < 1f && pl.LifeStage != PlantLifeStage.Mature) RepeatOrders.Of(map)?.Keep(cell, "Avir_ArcaneGrowth", GrowEvery);
                 n++;
             }
+            if (n > 0) MoteMaker.ThrowText(t.Cell.ToVector3Shifted(), map, "Growth +" + Mathf.RoundToInt(100f * gained / n) + "% (" + n + ")", new Color(0.55f, 1f, 0.55f), 2.5f);
             return n > 0;
         }
 

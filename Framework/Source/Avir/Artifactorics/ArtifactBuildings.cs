@@ -132,7 +132,7 @@ namespace Avir.Artifactorics
 
         /// <summary>An Avir building (Apogee, the round table, ritualistics, constellations).</summary>
         public bool IsAvir => parent.TryGetComp<CompConstellation>() != null
-                              || Props.era == "Apogee" || Props.era == "Avir artifactorics" || Props.era == "ritualistics";
+                              || Props.era == "Apogee" || Props.era == "Artifactorics" || Props.era == "ritualistics";
 
         public static bool EssentialHeart(ArtifactState st) =>
             st?.heartMetal != null && (st.heartMetal.defName == "ArtifactMetal_Essentium" || st.heartMetal.defName == "ArtifactMetal_Tisserium");
