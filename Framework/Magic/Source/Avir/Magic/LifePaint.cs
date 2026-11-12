@@ -24,6 +24,12 @@ namespace Avir.Magic
 
         private sealed class Scope : IDisposable { private readonly RuneKind k0; private readonly Pawn b0; public Scope(RuneKind k, Pawn b) { k0 = painting; b0 = by; painting = k; by = b; } public void Dispose() { painting = k0; by = b0; } }
         public static IDisposable Paint(RuneKind deep, Pawn caster) => new Scope(deep, caster);
+        /// <summary>A mixed box of Life paints its small circles' blows with the mix (Fix249): the blow lands at 60%, and
+        /// the body takes what the mix's Withering gives (Fever, Nerve...).</summary>
+        [ThreadStatic] private static LifeMix mixing;
+        public static LifeMix Mix => mixing;
+        private sealed class MixScope : IDisposable { private readonly LifeMix m0; private readonly Pawn b0; public MixScope(LifeMix m, Pawn b) { m0 = mixing; b0 = by; mixing = m; by = b; } public void Dispose() { mixing = m0; by = b0; } }
+        public static IDisposable PaintMix(LifeMix m, Pawn caster) => new MixScope(m, caster);
 
         public static HediffDef Petrified => DefDatabase<HediffDef>.GetNamedSilentFail("Avir_PetrifiedPart");
 
@@ -49,6 +55,12 @@ namespace Avir.Magic
             if (!LifePaint.On || !(__instance is Pawn p) || p.Dead || !p.RaceProps.IsFlesh || dinfo.Def == null || !dinfo.Def.harmsHealth) return true;
             Pawn caster = dinfo.Instigator as Pawn;
             if (caster == null || dinfo.Amount <= 0f) return true;
+            if (LifePaint.Mix != LifeMix.None)
+            {
+                LifeMagic.MixBlow(LifePaint.Mix, caster, p, dinfo.Amount);
+                dinfo.SetAmount(dinfo.Amount * 0.6f);
+                return true;
+            }
             switch (LifePaint.Kind)
             {
                 case RuneKind.Earth:

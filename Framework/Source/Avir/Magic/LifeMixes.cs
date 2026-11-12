@@ -81,6 +81,15 @@ namespace Avir.Magic
             return MixParts(mix).Any(e => Arcane.Stage(c, RuneKind.Life, e) >= 4);
         }
 
+        /// <summary>A blow of a small circle standing in a mixed box (Fix249): it carries the mix, as a Withering would.</summary>
+        public static void MixBlow(LifeMix m, Pawn caster, Pawn p, float dmg)
+        {
+            if (m == LifeMix.None || p == null || p.Dead) return;
+            LifeMix k = mix; RuneKind v = curVerb;
+            mix = m; curVerb = RuneKind.Release;
+            try { MixWither(caster, p, dmg); } finally { mix = k; curVerb = v; }
+        }
+
         /// <summary>What a mixed triple does to one body a Withering reached (the plain withering is then at 60%).</summary>
         private static void MixWither(Pawn caster, Pawn p, float dmg)
         {

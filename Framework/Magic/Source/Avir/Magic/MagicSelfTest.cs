@@ -117,6 +117,24 @@ namespace Avir.Magic
                 Explains("life + " + k + " + " + k, root);
             }
 
+            // 5. the mixed triples (Fix249): two different elements in an unsealed Life box meet as Life's mix, never as a
+            // plain pair (water + air there is Nerve, not a storm); sealed, they meet as themselves
+            foreach (RuneKind a in smalls) foreach (RuneKind b in smalls)
+            {
+                if ((int)a >= (int)b) continue;
+                var box = new SpellCircle { element = R("Life") };
+                box.sections.Add(new RitualRing { runes = new List<RuneDef> { R("Drain") }.Where(x => x != null).ToList(), slots = 1 });
+                box.inner.Add(C(Name(a))); box.inner.Add(C(Name(b)));
+                var root = new SpellCircle { binding = true };
+                root.inner.Add(box);
+                LifeMix mx = LifeMagic.MixOf(root, box);
+                Check("life + " + a + " + " + b + " = mix, no plain pair", mx == LifeMagic.Mix(a, b) && Combos.Pairs(root).Count == 0,
+                    "mix " + mx + ", pairs " + string.Join(",", Combos.Pairs(root).Values));
+                box.sections[0].runes.Add(R("Closing"));
+                Check("sealed life + " + a + " + " + b + " = the plain pair", LifeMagic.MixOf(root, box) == LifeMix.None && Combos.Pairs(root).Values.Contains(Combos.Of(a, b)),
+                    "pairs " + string.Join(",", Combos.Pairs(root).Values));
+            }
+
             var sb = new StringBuilder();
             sb.AppendLine("Magic self-test: " + n + " checks, " + bad.Count + " not as the rules say.");
             foreach (string b in bad) sb.AppendLine("  - " + b);

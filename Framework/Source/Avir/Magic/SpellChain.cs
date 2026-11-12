@@ -211,7 +211,9 @@ namespace Avir.Magic
             // a deep meeting of Life colours its own small circles: their blows come out as the meeting's (Fix197)
             SpellCircle lifeBox = c.root.ParentOf(circle);
             RuneKind deepOf = lifeBox != null && circle.element != null ? LifeMagic.PairOf(c.root, lifeBox) : LifeMagic.None;
+            LifeMix mixOf = lifeBox != null && circle.element != null && !WeaveSpell.SealedGreat(lifeBox) ? LifeMagic.MixOf(c.root, lifeBox) : LifeMix.None;
             using (deepOf != LifeMagic.None && deepOf == circle.element.kind ? LifePaint.Paint(deepOf, caster) : null)
+            using (mixOf != LifeMix.None ? LifePaint.PaintMix(mixOf, caster) : null)
             using (SpellWards.Of(circle.element?.kind, met, true))
             using (shaped ? SpellSculpt.Spare(aid) : null)
             try

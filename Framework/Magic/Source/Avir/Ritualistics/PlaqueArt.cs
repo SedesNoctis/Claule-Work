@@ -11,9 +11,13 @@ namespace Avir.Ritualistics
     {
         /// <summary>cuts: the slice edges across the picture (0 ... width); stretch: which slices may widen.
         /// Returns the scale the picture was drawn at.</summary>
-        public static float Draw(Rect r, Texture2D t, float[] cuts, bool[] stretch)
+        public static float Draw(Rect r, Texture2D t, float[] cuts, bool[] stretch) => Draw(r, t, cuts, stretch, -1f);
+
+        /// <summary>As Draw, but the slices across are scaled by `across` (when given, below the height's own scale): a tall
+        /// plaque grows in height without its ornament eating the width (Fix249 - Arlie's long words).</summary>
+        public static float Draw(Rect r, Texture2D t, float[] cuts, bool[] stretch, float across)
         {
-            float s = r.height / t.height;
+            float s = across > 0f ? Mathf.Min(across, r.height / t.height) : r.height / t.height;
             float fixedW = 0f, freeW = 0f;
             for (int i = 0; i < stretch.Length; i++)
             {

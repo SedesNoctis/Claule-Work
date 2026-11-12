@@ -83,6 +83,13 @@ namespace Avir.Magic
             }
         }
 
+        /// <summary>A small circle standing in a great circle of Life with no Closing in its first section.</summary>
+        public static bool InLife(SpellCircle root, SpellCircle c)
+        {
+            SpellCircle box = root?.ParentOf(c);
+            return box != null && box != root && box.Great && LifeMagic.Is(box.element) && !WeaveSpell.SealedGreat(box);
+        }
+
         private static bool Small(RuneDef e) => e != null && (e.kind == RuneKind.Fire || e.kind == RuneKind.Water || e.kind == RuneKind.Earth || e.kind == RuneKind.Air);
 
         /// <summary>Which circles of a spell have met, and what they made. Side by side in the chain and in the same
@@ -126,6 +133,9 @@ namespace Avir.Magic
             foreach (SpellCircle c in MapComponent_SpellChain.Order(root))
             {
                 if (!Small(c.element)) { cur = null; prev = null; continue; }
+                // inside a great circle of Life that is not sealed, the small circles meet as Life's own meetings (rule ВК-05,
+                // Fix249): water and air there are Nerve, not a storm; fire and water - Fever, not steam
+                if (InLife(root, c)) { cur = null; prev = null; continue; }
                 RuneKind e = c.element.kind;
                 bool joined = cur != null && prev != null && root.ParentOf(prev) == root.ParentOf(c) && !SpellTransmute.Seals(prev, c);
                 prev = c;

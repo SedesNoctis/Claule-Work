@@ -64,7 +64,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Light</defName>
     <label>light</label>
-    <description>Light: radiance and sight. A great element - its circle holds others. It burns the wrong, reveals and blinds. Its spells are not made yet. Price: not decided yet.</description>
+    <description>Light: radiance and sight. A great element - its circle holds others. It strikes at once where it is aimed, burns, reveals and blinds; it feeds itself, and every cast leaves reflectors that send it back again as weaker echoes. With earth inside, the reflectors grow into crystals. Price - defocus: if the hold slips, an echo goes astray, sometimes mirrored past its reflector, and the caster's reflectors break.</description>
     <role>Element</role>
     <kind>Light</kind>
     <glyph>Light</glyph>
@@ -94,7 +94,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Life</defName>
     <label>life</label>
-    <description>Life: moving the strength of one living thing into another - grass drained to mend a wound. Blood is its branch. A great element - its circle holds others: round other circles, it heals the friends the spell touches. Price: not decided yet.</description>
+    <description>Life: moving the strength of one living thing into another - grass drained to mend a wound. Blood is its branch. A great element - its circle holds others: round other circles, it heals the friends the spell touches; the small circles inside it meet as Life's own meetings. Its two sides are Withering, that takes, and Restoration, that gives. Price - by the side: withering (a drained wound, half the store lost) or overgrowth (the place grows over, bark on the caster).</description>
     <role>Element</role>
     <kind>Life</kind>
     <glyph>Life</glyph>
