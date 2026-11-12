@@ -78,6 +78,26 @@ namespace Avir.Magic
             }
             return false;
         }
+        /// <summary>Boggy ground on the cell or beside it: marsh, mud, a mire of ours, shallow still water (Fix252).</summary>
+        public static bool Boggy(Map m, IntVec3 c)
+        {
+            for (int i = 0; i < 9; i++)
+            {
+                IntVec3 x = c + GenAdj.AdjacentCellsAndInside[i];
+                if (!x.InBounds(m)) continue;
+                TerrainDef t = x.GetTerrain(m);
+                if (t != null && (t.defName.Contains("Marsh") || t.defName.Contains("Mud") || t.defName.Contains("Bog") || t.defName.Contains("Swamp"))) return true;
+                if (x.GetThingList(m).Any(q => q is MirePatch)) return true;
+            }
+            return false;
+        }
+        /// <summary>Ground clay can be drawn from: soil, mud, a bank - not sand, not bare rock, not a laid floor (Fix252).</summary>
+        public static bool Clayey(Map m, IntVec3 c)
+        {
+            TerrainDef t = c.GetTerrain(m);
+            return t != null && t.natural && !t.IsWater && !t.layerable && !t.defName.Contains("Sand") && (t.fertility > 0f || t.defName.Contains("Mud") || t.defName.Contains("Gravel"));
+        }
+
         /// <summary>Bare stone underfoot: the land's own rough rock, hewn or smoothed.</summary>
         public static bool StoneGround(Map m, IntVec3 c)
         {
@@ -294,7 +314,7 @@ namespace Avir.Magic
                     return n > 0;
                 } },
             ["Avir_2MarshGas"] = new Work2 { y = SecondKind.MarshGas, cost = 6f, ticks = 300, desName = "Avir_2MarshGas",
-                cellOk = (p, x) => Rested(p.Map, x, "gas", GenDate.TicksPerDay / 2),
+                cellOk = (p, x) => Boggy(p.Map, x) && Rested(p.Map, x, "gas", GenDate.TicksPerDay / 2),
                 effect = (p, t, c) => { Stamp(p.Map, t.Cell, "gas"); Spawn(Def("Avir_MarshGas"), 1 + (WorkSpells.Now.amplify > 0 ? 1 : 0), t.Cell, p.Map); Fx(p.Map, t.Cell, new Color(0.55f, 0.65f, 0.3f, 0.55f)); return true; } },
             ["Avir_2Preserve"] = new Work2 { y = SecondKind.MarshHaze, cost = 6f,
                 things = p => p.Map.listerThings.ThingsInGroup(ThingRequestGroup.HaulableEver).Where(t => t.IsInAnyStorage()).Concat(p.Map.listerThings.ThingsInGroup(ThingRequestGroup.Corpse)),
@@ -340,7 +360,7 @@ namespace Avir.Magic
                     k.SplitOff(n).Destroy(); Spawn(Def("Avir_Brick"), n, at, m); FleckMaker.ThrowFireGlow(at.ToVector3Shifted(), m, 1.2f); return true;
                 } },
             ["Avir_2DigClay"] = new Work2 { y = SecondKind.Clay, cost = 5f, ticks = 300, desName = "Avir_2DigClay",
-                cellOk = (p, x) => Rested(p.Map, x, "clay", GenDate.TicksPerDay / 2),
+                cellOk = (p, x) => Clayey(p.Map, x) && Rested(p.Map, x, "clay", GenDate.TicksPerDay / 2),
                 effect = (p, t, c) => { Stamp(p.Map, t.Cell, "clay"); Spawn(Clay, 10 + 5 * WorkSpells.Now.amplify, t.Cell, p.Map); Fx(p.Map, t.Cell, new Color(0.7f, 0.45f, 0.3f, 0.6f)); return true; } },
         };
 
@@ -402,6 +422,30 @@ namespace Avir.Magic
     {
         private readonly List<KeyValuePair<Room, int>> knots = new List<KeyValuePair<Room, int>>();
         public RoomHeat(Map map) : base(map) { }
+        // Fix252: a heat knot is tied for hours - kept through a save (a room is not saved itself: a cell of it is, and its time)
+        private List<IntVec3> savedCells = new List<IntVec3>(); private List<int> savedUntil = new List<int>();
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                savedCells = new List<IntVec3>(); savedUntil = new List<int>();
+                foreach (var k in knots) { if (k.Key == null || k.Key.Dereferenced || k.Key.CellCount == 0) continue; savedCells.Add(k.Key.Cells.First()); savedUntil.Add(k.Value); }
+            }
+            Scribe_Collections.Look(ref savedCells, "knotCells", LookMode.Value);
+            Scribe_Collections.Look(ref savedUntil, "knotUntil", LookMode.Value);
+        }
+        public override void FinalizeInit()
+        {
+            base.FinalizeInit();
+            if (savedCells == null || savedUntil == null) return;
+            for (int i = 0; i < savedCells.Count && i < savedUntil.Count; i++)
+            {
+                Room r = savedCells[i].InBounds(map) ? savedCells[i].GetRoom(map) : null;
+                if (r != null && !knots.Any(k => k.Key == r)) knots.Add(new KeyValuePair<Room, int>(r, savedUntil[i]));
+            }
+            savedCells = new List<IntVec3>(); savedUntil = new List<int>();
+        }
         public static bool Has(Room r) => r?.Map?.GetComponent<RoomHeat>()?.knots.Any(k => k.Key == r && k.Value > Find.TickManager.TicksGame) == true;
         public static void Add(Map m, Room r, int ticks) => m.GetComponent<RoomHeat>()?.knots.Add(new KeyValuePair<Room, int>(r, Find.TickManager.TicksGame + ticks));
         public override void MapComponentTick()
@@ -546,9 +590,9 @@ namespace Avir.Magic
     public class Designator_2SiltWater : Designator_Arcane2 { protected override string Key => "Avir_2SiltWater"; protected override string Label2 => "Ground to water (silt)"; protected override string Desc2 => "A caster of silt (water, earth; an adept of earth) turns this ground into shallow water for 30 days."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetEdifice(Map) == null && (!Map.terrainGrid.TerrainAt(c).IsWater || MapComponent_TempTerrain.Of(Map)?.to.ContainsKey(c) == true); }
     public class Designator_2SiltLand : Designator_Arcane2 { protected override string Key => "Avir_2SiltLand"; protected override string Label2 => "Water to ground (silt)"; protected override string Desc2 => "A caster of silt turns this shallow water into ground for 30 days."; protected override AcceptanceReport Ok(IntVec3 c) => Map.terrainGrid.TerrainAt(c).IsWater && Map.terrainGrid.TerrainAt(c).passability != Traversability.Impassable; }
     public class Designator_2SiltDump : Designator_Arcane2 { protected override string Key => "Avir_2SiltDump"; protected override string Label2 => "Silt pit (silt)"; protected override string Desc2 => "What is left on these cells - rubble, slag, rags, corpses - the silt swallows. The mark stays: a pit for refuse."; }
-    public class Designator_2MarshGas : Designator_Arcane2 { protected override string Key => "Avir_2MarshGas"; protected override string Label2 => "Draw marsh gas (marsh gas)"; protected override string Desc2 => "A caster of water, earth and fire draws marsh gas into a canister here - twice a day at most. A fuel stronger than chemfuel."; }
+    public class Designator_2MarshGas : Designator_Arcane2 { protected override string Key => "Avir_2MarshGas"; protected override string Label2 => "Draw marsh gas (marsh gas)"; protected override string Desc2 => "A caster of water, earth and fire draws marsh gas into a canister here - out of a bog: marsh, mud or a mire, on the cell or beside it - twice a day at most. A fuel stronger than chemfuel."; protected override AcceptanceReport Ok(IntVec3 c) => Works2.Boggy(Map, c) ? AcceptanceReport.WasAccepted : new AcceptanceReport("Marsh gas rises out of a bog: mark marsh, mud or mire, or the ground beside it."); }
     public class Designator_2Quarry : Designator_Arcane2 { protected override string Key => "Avir_2Quarry"; protected override string Label2 => "Quarry (earth, rockfall)"; protected override string Desc2 => "A caster of earth brings these rock walls down into chunks, one at a time; a caster of the rockfall (earth, air) - several at once. May be marked through unseen rock, like any mining: a rock is taken once it is seen and has an open side."; public override AcceptanceReport CanDesignateCell(IntVec3 c) => c.InBounds(Map) && Designation != null && Map.designationManager.DesignationAt(c, Designation) == null && (c.Fogged(Map) || c.GetEdifice(Map)?.def.building?.isNaturalRock == true); }
-    public class Designator_2DigClay : Designator_Arcane2 { protected override string Key => "Avir_2DigClay"; protected override string Label2 => "Draw clay (clay)"; protected override string Desc2 => "A caster of earth, air and water draws clay out of the ground here - twice a day at most. Medieval Overhaul's clay if it is there."; }
+    public class Designator_2DigClay : Designator_Arcane2 { protected override string Key => "Avir_2DigClay"; protected override string Label2 => "Draw clay (clay)"; protected override string Desc2 => "A caster of earth, air and water draws clay out of the ground here - out of soil, mud or gravel, not sand, rock or a floor - twice a day at most. Medieval Overhaul's clay if it is there."; protected override AcceptanceReport Ok(IntVec3 c) => Works2.Clayey(Map, c) ? AcceptanceReport.WasAccepted : new AcceptanceReport("Clay lies in soil, mud and gravel - not in sand, rock or under a floor."); }
 
     // ================================================================== developer mode
 

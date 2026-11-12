@@ -459,8 +459,20 @@ namespace Avir.Magic
     /// <summary>Sparks sown in plants: a bush bursts when someone walks into it.</summary>
     public class MapComponent_WildSeeds : MapComponent
     {
-        private class S { public Pawn owner; public float power; public bool heart; public int until; }
-        private readonly Dictionary<IntVec3, S> seeds = new Dictionary<IntVec3, S>();
+        private class S : IExposable
+        {
+            public Pawn owner; public float power; public bool heart; public int until;
+            public void ExposeData() { Scribe_References.Look(ref owner, "owner"); Scribe_Values.Look(ref power, "power", 1f); Scribe_Values.Look(ref heart, "heart"); Scribe_Values.Look(ref until, "until"); }
+        }
+        private Dictionary<IntVec3, S> seeds = new Dictionary<IntVec3, S>();
+        private List<IntVec3> seedKeys; private List<S> seedVals;
+        // Fix252: a seed in the ground waits a day - kept through a save
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Collections.Look(ref seeds, "seeds", LookMode.Value, LookMode.Deep, ref seedKeys, ref seedVals);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit && seeds == null) seeds = new Dictionary<IntVec3, S>();
+        }
         public MapComponent_WildSeeds(Map map) : base(map) { }
         public static MapComponent_WildSeeds Of(Map m) => m?.GetComponent<MapComponent_WildSeeds>();
         public void Sow(IntVec3 c, Pawn owner, float power, bool heart) => seeds[c] = new S { owner = owner, power = power, heart = heart, until = Find.TickManager.TicksGame + GenDate.TicksPerDay };
@@ -569,8 +581,19 @@ namespace Avir.Magic
     /// it ends in a paralytic abasia for days. The fog does not know friend or foe - only its own mage is untouched by it.</summary>
     public class MapComponent_PestFogs : MapComponent
     {
-        private class F { public HashSet<IntVec3> cells; public int until; public float power; public Pawn owner; }
-        private readonly List<F> fogs = new List<F>();
+        private class F : IExposable
+        {
+            public HashSet<IntVec3> cells; public int until; public float power; public Pawn owner;
+            public void ExposeData() { Scribe_Collections.Look(ref cells, "cells", LookMode.Value); Scribe_Values.Look(ref until, "until"); Scribe_Values.Look(ref power, "power", 1f); Scribe_References.Look(ref owner, "owner"); }
+        }
+        private List<F> fogs = new List<F>();
+        // Fix252: the fog lies for days - kept through a save
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Collections.Look(ref fogs, "fogs", LookMode.Deep);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit) { if (fogs == null) fogs = new List<F>(); fogs.RemoveAll(f => f == null || f.cells == null); }
+        }
         public MapComponent_PestFogs(Map map) : base(map) { }
         public static MapComponent_PestFogs Of(Map m) => m?.GetComponent<MapComponent_PestFogs>();
         private static HediffDef Poison => DefDatabase<HediffDef>.GetNamedSilentFail("Avir_FertilePoison");

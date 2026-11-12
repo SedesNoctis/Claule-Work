@@ -286,19 +286,24 @@ namespace Avir.Magic
         [HarmonyPatch(typeof(Pawn_PathFollower), nameof(Pawn_PathFollower.StartPath))]
         public static class Patch_Start
         {
-            public static void Prefix(Pawn ___pawn, ref LocalTargetInfo dest, ref PathEndMode peMode)
+            public static bool Prefix(Pawn_PathFollower __instance, Pawn ___pawn, ref LocalTargetInfo dest, ref PathEndMode peMode)
             {
-                if (inside || ___pawn == null || !___pawn.Spawned) return;
+                if (inside || ___pawn == null || !___pawn.Spawned) return true;
+                // already on the way to a gate for this very walk (Fix252): a job that asks for its path again every tick
+                // because the pather is "not going to its target" (a chase, a follow) must not start the walk over each time
+                if (ways.TryGetValue(___pawn.thingIDNumber, out Way cur) && cur.dest == dest && cur.pe == peMode && cur.from != null && cur.from.Spawned
+                    && __instance.Moving && __instance.Destination.Thing == cur.from) return false;
                 ways.Remove(___pawn.thingIDNumber);
-                if (Building_LifeGate.On(___pawn.Map).Count < 2) return;
+                if (Building_LifeGate.On(___pawn.Map).Count < 2) return true;
                 try
                 {
                     Way w = WayFor(___pawn, dest, peMode);
-                    if (w == null) return;
+                    if (w == null) return true;
                     ways[___pawn.thingIDNumber] = w;
                     dest = w.from; peMode = PathEndMode.Touch;
                 }
                 catch (System.Exception e) { Log.ErrorOnce("[Avir] gate way: " + e, 0x6A7E); }
+                return true;
             }
         }
 

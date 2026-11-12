@@ -528,7 +528,14 @@ namespace Avir.Magic
 
         public MapComponent_AirCasts(Map map) : base(map) { }
 
-        public static Cast Of(Pawn p) => p?.Map?.GetComponent<MapComponent_AirCasts>()?.casts.FirstOrDefault(c => c.mage == p);
+        public static Cast Of(Pawn p)
+        {
+            // asked on every pawn's every tick (CastFacing): no list made, no search when no one casts on the move
+            var comp = MapComp<MapComponent_AirCasts>.Of(p?.Map);
+            if (comp == null || comp.casts.Count == 0) return null;
+            for (int i = 0; i < comp.casts.Count; i++) if (comp.casts[i].mage == p) return comp.casts[i];
+            return null;
+        }
 
         public static void Begin(Pawn mage, RitualSchema spell, int slot, LocalTargetInfo target, IntVec3 wallEnd, int duration)
         {

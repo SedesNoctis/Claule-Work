@@ -510,7 +510,14 @@ namespace Avir.Magic
     /// <summary>Ground that will not take fire, and the warm bodies a mage has sensed.</summary>
     public class MapComponent_FireMagic : MapComponent
     {
-        private readonly Dictionary<IntVec3, int> noFire = new Dictionary<IntVec3, int>();
+        private Dictionary<IntVec3, int> noFire = new Dictionary<IntVec3, int>();
+        // Fix252: the ground where fire is held from spreading - kept through a save
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Collections.Look(ref noFire, "noFire", LookMode.Value, LookMode.Value);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit && noFire == null) noFire = new Dictionary<IntVec3, int>();
+        }
         private readonly Dictionary<Pawn, int> sensed = new Dictionary<Pawn, int>();
         private Material mark;
 

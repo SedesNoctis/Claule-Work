@@ -618,7 +618,7 @@ namespace Avir.Magic
         public static int Held(Map map) => All(map).Count(r => !r.Work);
 
         public static IEnumerable<Building_LightReflector> All(Map map) =>
-            map == null ? Enumerable.Empty<Building_LightReflector>() : map.listerThings.AllThings.OfType<Building_LightReflector>().Where(r => r.Spawned && !r.Destroyed);
+            map == null ? Enumerable.Empty<Building_LightReflector>() : map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial).OfType<Building_LightReflector>().Where(r => r.Spawned && !r.Destroyed);
 
         /// <summary>The node a caster casts into: every reflector on the map - their own, their fellows', the foes' too
         /// (the author: reflectors are a game of mirrors - one node for all).</summary>
@@ -955,7 +955,7 @@ namespace Avir.Magic
         private static Material blot;
         public MapComponent_LightZones(Map map) : base(map) { }
 
-        public static MapComponent_LightZones Of(Map m) => m?.GetComponent<MapComponent_LightZones>();
+        public static MapComponent_LightZones Of(Map m) => MapComp<MapComponent_LightZones>.Of(m);
 
         public static void Darken(Map map, IntVec3 at, float r, int ticks)
         {

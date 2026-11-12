@@ -627,7 +627,12 @@
     <defName>Avir_ObsidianChunk</defName>
     <label>obsidian</label>
     <description>Magma quenched so fast it had no time to become stone: black glass with edges that cut. Brittle, but wicked in a trap.</description>
-    <graphicData><color>(30,26,34)</color></graphicData>
+    <graphicData>
+      <texPath>Things/Item/Avir/Magic/ObsidianLump</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>1.0</drawSize>
+      <color>(255,255,255)</color>
+    </graphicData>
     <statBases>
       <Mass>1</Mass>
       <MarketValue>3</MarketValue>

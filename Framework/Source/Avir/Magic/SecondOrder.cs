@@ -84,7 +84,7 @@ namespace Avir.Magic
         {
             switch (y)
             {
-                case SecondKind.Inferno: return "inferno"; case SecondKind.Boil: return "boil"; case SecondKind.Geyser: return "geyser"; case SecondKind.Typhoon: return "A whirl of boiling rain that walks by itself: it draws the foes near it into its wall, soaks them and scalds the soaked half again as hard; what it has passed over stays wet and veiled in steam. Its own runes: Release - it walks on from where it was cast; Hold - the eye of the storm: it stands, inside the eye it is still and shots into it go astray, the ring round it scalds; Lift - whoever it holds when it ends is flung out. A Restoration, a Withering, a Wall find nothing in it to work through.";
+                case SecondKind.Inferno: return "inferno"; case SecondKind.Boil: return "boil"; case SecondKind.Geyser: return "geyser"; case SecondKind.Typhoon: return "typhoon";
                 case SecondKind.Lava: return "lava"; case SecondKind.Volcano: return "volcano"; case SecondKind.Obsidian: return "obsidian"; case SecondKind.Ash: return "ash";
                 case SecondKind.Deluge: return "deluge"; case SecondKind.Hurricane: return "hurricane"; case SecondKind.BallLightning: return "ball lightning"; case SecondKind.Mudflow: return "mudflow";
                 case SecondKind.Swelter: return "swelter"; case SecondKind.Thermal: return "thermal"; case SecondKind.Rainbow: return "rainbow"; case SecondKind.DryWind: return "dry wind";
@@ -101,7 +101,7 @@ namespace Avir.Magic
                 case SecondKind.Inferno: return "Dry heat, no steam: it dries everything in reach, strips the wet and water wards, and cooks those sealed in armour twice as fast (the heat has nowhere to go).";
                 case SecondKind.Boil: return "Boiling water: everything wet in reach boils - the soaked and those standing in water are scalded every second; the dry are spared. Held, it is a cauldron.";
                 case SecondKind.Geyser: return "Boiling mud and steam burst from the ground in turn, throwing whoever stands over them. Beside a natural geyser it is stronger.";
-                case SecondKind.Typhoon: return "A whirl of boiling rain that walks, raining under itself: it soaks first and then the boiling rain bites the soaked half again as hard (its own wound, from above); now and then a jet strikes and throws.";
+                case SecondKind.Typhoon: return "A whirl of boiling rain that walks by itself: it draws the foes near it into its wall, soaks them and scalds the soaked half again as hard; what it has passed over stays wet and veiled in steam. Its own runes: Release - it walks on from where it was cast; Hold - the eye of the storm: it stands, inside the eye it is still and shots into it go astray, the ring round it scalds; Lift - whoever it holds when it ends is flung out. A Restoration, a Withering, a Wall find nothing in it to work through.";
                 case SecondKind.Lava: return "Lava: it runs further and burns harder than magma, and before it is gone it cools into magma, which then goes its own way.";
                 case SecondKind.Volcano: return "Fire inside stone: the ground cracks, and a heartbeat later stones and magma burst up from below - where armour is thinnest. With Lift a basalt pillar rises under the foe and holds them up there until it falls.";
                 case SecondKind.Obsidian: return "Magma quenched: a burst of steam and black glass, sharp and brittle.";
@@ -717,10 +717,26 @@ namespace Avir.Magic
     /// <summary>What second-order meetings leave on the ground for a while, and what they do later.</summary>
     public class SecondFields : MapComponent
     {
-        public class Fld { public SecondKind y; public HashSet<IntVec3> cells; public int until; public Pawn owner; public float power; public Vector3 dir; public float speed; public Vector3 center; public Vector3 mid; public float rad;
+        public class Fld : IExposable { public SecondKind y; public HashSet<IntVec3> cells; public int until; public Pawn owner; public float power; public Vector3 dir; public float speed; public Vector3 center; public Vector3 mid; public float rad;
             /// <summary>Fix251: a deluge that mends / waters; a typhoon that stands as an eye / throws at its end.</summary>
-            public bool heal, grow, eye, lift; }
-        public readonly List<Fld> fields = new List<Fld>();
+            public bool heal, grow, eye, lift;
+            /// <summary>Fix252: a field lasts for hours - it is kept through a save (it used to be gone on loading).</summary>
+            public void ExposeData()
+            {
+                Scribe_Values.Look(ref y, "y"); Scribe_Collections.Look(ref cells, "cells", LookMode.Value);
+                Scribe_Values.Look(ref until, "until"); Scribe_References.Look(ref owner, "owner"); Scribe_Values.Look(ref power, "power", 1f);
+                Scribe_Values.Look(ref dir, "dir"); Scribe_Values.Look(ref speed, "speed"); Scribe_Values.Look(ref center, "center");
+                Scribe_Values.Look(ref heal, "heal"); Scribe_Values.Look(ref grow, "grow"); Scribe_Values.Look(ref eye, "eye"); Scribe_Values.Look(ref lift, "lift");
+                if (Scribe.mode == LoadSaveMode.PostLoadInit && cells == null) cells = new HashSet<IntVec3>();
+            }
+        }
+        public List<Fld> fields = new List<Fld>();
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Collections.Look(ref fields, "fields", LookMode.Deep);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit) { if (fields == null) fields = new List<Fld>(); fields.RemoveAll(f => f == null || f.cells == null); }
+        }
         public const float EyeRadius = 4.4f, EyeCalm = 2f;
         private readonly List<KeyValuePair<int, Action>> later = new List<KeyValuePair<int, Action>>();
         public SecondFields(Map map) : base(map) { }
@@ -1029,7 +1045,7 @@ namespace Avir.Magic
 
         private Vector3 SoundAt(Fld f) => f.speed > 0f ? f.center : f.mid != Vector3.zero ? f.mid : f.cells.FirstOrDefault().ToVector3Shifted();
 
-        public static Fld At(Map m, IntVec3 c, SecondKind y) => m?.GetComponent<SecondFields>()?.fields.FirstOrDefault(f => f.y == y && f.cells.Contains(c));
+        public static Fld At(Map m, IntVec3 c, SecondKind y) => MapComp<SecondFields>.Of(m)?.fields.FirstOrDefault(f => f.y == y && f.cells.Contains(c));
 
         public override void MapComponentTick()
         {
@@ -1349,7 +1365,7 @@ namespace Avir.Magic
         public static void Postfix(Thing caster, LocalTargetInfo target, ref ShotReport __result)
         {
             Map m = caster?.Map;
-            if (m == null || dist == null || !target.IsValid || m.GetComponent<SecondFields>()?.fields.Count == 0) return;
+            if (m == null || dist == null || !target.IsValid || (MapComp<SecondFields>.Of(m)?.fields.Count ?? 0) == 0) return;
             float f = 1f;
             if (SecondFields.At(m, target.Cell, SecondKind.Hurricane) != null) f *= 0.5f;
             if (SecondFields.At(m, target.Cell, SecondKind.Thermal) != null || SecondFields.At(m, caster.Position, SecondKind.Thermal) != null) f *= 0.6f;

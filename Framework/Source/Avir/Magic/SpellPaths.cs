@@ -21,7 +21,7 @@ namespace Avir.Magic
         public Dictionary<IntVec3, string> after = new Dictionary<IntVec3, string>();
         public void Then(IntVec3 c, int ticks, string what) => after[c] = what;
         public MapComponent_TempTerrain(Map map) : base(map) { }
-        public static MapComponent_TempTerrain Of(Map m) => m?.GetComponent<MapComponent_TempTerrain>();
+        public static MapComponent_TempTerrain Of(Map m) => MapComp<MapComponent_TempTerrain>.Of(m);
 
         /// <summary>Heat drying wet ground (a marsh counts as water to the game): the water check is passed over (Fix228).</summary>
         public void SetDry(IntVec3 c, TerrainDef def, int ticks) => Set(c, def, ticks, true);

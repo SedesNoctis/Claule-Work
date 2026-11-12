@@ -90,7 +90,7 @@ namespace Avir.Magic
         public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn)
         {
             var cells = D != null ? pawn.Map.designationManager.SpawnedDesignationsOfDef(D).Select(x => x.target.Cell).ToList() : new List<IntVec3>();
-            cells.AddRange(pawn.Map.listerThings.AllThings.OfType<Building_BathSteam>().Where(s => s.Low).Select(s => s.Position));
+            cells.AddRange(pawn.Map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial).OfType<Building_BathSteam>().Where(s => s.Low).Select(s => s.Position));
             return cells;
         }
         public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
@@ -139,7 +139,7 @@ namespace Avir.Magic
         public override Job TryGiveJob(Pawn pawn)
         {
             if (pawn.Map == null || !pawn.RaceProps.Humanlike) return null;
-            foreach (Room r in pawn.Map.listerThings.AllThings.OfType<Building_BathSteam>().Select(s => s.GetRoom()).Where(LifeBath.Fits).Distinct().InRandomOrder())
+            foreach (Room r in pawn.Map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial).OfType<Building_BathSteam>().Select(s => s.GetRoom()).Where(LifeBath.Fits).Distinct().InRandomOrder())
             {
                 Building seat = r.ContainedAndAdjacentThings.OfType<Building>().Where(b => b.def.building != null && b.def.building.isSittable && b.GetRoom() == r && !b.IsForbidden(pawn)
                     && pawn.CanReserveAndReach(b, PathEndMode.OnCell, Danger.Some)).RandomElementWithFallback();
