@@ -88,8 +88,8 @@ namespace Avir.Magic
                 case SecondKind.Inferno: return "inferno"; case SecondKind.Boil: return "boil"; case SecondKind.Geyser: return "geyser"; case SecondKind.Typhoon: return "typhoon";
                 case SecondKind.Lava: return "lava"; case SecondKind.Volcano: return "volcano"; case SecondKind.Obsidian: return "obsidian"; case SecondKind.Ash: return "ash";
                 case SecondKind.Deluge: return "deluge"; case SecondKind.Hurricane: return "hurricane"; case SecondKind.BallLightning: return "ball lightning"; case SecondKind.Mudflow: return "mudflow";
-                case SecondKind.Swelter: return "swelter"; case SecondKind.Thermal: return "thermal"; case SecondKind.Rainbow: return "rainbow"; case SecondKind.DryWind: return "The enemy of water, and everything dry burns: it dries the soaked, the pools, the mud and the mire, wilts the green, tires and parches the foes - and whoever it dried takes the next fire twice as hard. Its own runes: Hold - a drought lies for hours and the crops in it die; Purge - it takes the wet, the mud, the clay and the silt off one's own and off the ground. A Lift, a Beam, a Restoration, a Step find nothing in it.";
-                case SecondKind.Quag: return "quagmire"; case SecondKind.Silt: return "silt"; case SecondKind.MarshGas: return "marsh gas"; case SecondKind.MarshHaze: return "A marsh haze: it poisons the foes who breathe it and hides one's own inside it; in a closed room it fills the room. Its own runes: Hold - will-o'-the-wisps kindle in it and the foes wander after them; Growth - it creeps on by itself over water, marsh, mud and mire, never onto dry stone or a floor. A Beam, a Lift, a Wall, a Restoration find nothing in it.";
+                case SecondKind.Swelter: return "swelter"; case SecondKind.Thermal: return "thermal"; case SecondKind.Rainbow: return "rainbow"; case SecondKind.DryWind: return "dry wind";
+                case SecondKind.Quag: return "quagmire"; case SecondKind.Silt: return "silt"; case SecondKind.MarshGas: return "marsh gas"; case SecondKind.MarshHaze: return "marsh haze";
                 case SecondKind.Rockfall: return "rockfall"; case SecondKind.Emery: return "emery"; case SecondKind.BurningSand: return "burning sand"; case SecondKind.Clay: return "clay";
             }
             return "";
@@ -114,11 +114,11 @@ namespace Avir.Magic
                 case SecondKind.Swelter: return "Exhausting heat: foes tire fast and suffer the heat; one's own beside the caster do not.";
                 case SecondKind.Thermal: return "A rising warm current: shots through it rise and miss, one's own move lighter in it. Its own runes: Hold - it stands for hours; Purge - it draws gas and smoke up out of the place and out of a closed room it reaches; Growth - every fire near it burns twice as big. A Release, a Beam, a Restoration find nothing in it.";
                 case SecondKind.Rainbow: return "A bow of colour from the caster to the place: the foes under it are dazzled, one's own glad at the sight. Stronger over wet ground or in a deluge; there is no rainbow by night. Its own runes: Hold - the bow stands for hours, and one's own under it aim steadier and do not break. A Withering, a Growth, a Lift, a Wall, a Step find nothing in it.";
-                case SecondKind.DryWind: return "The enemy of water: it dries the soaked, the pools and the mire, and parches the foes.";
+                case SecondKind.DryWind: return "The enemy of water, and everything dry burns: it dries the soaked, the pools, the mud and the mire, wilts the green, tires and parches the foes - and whoever it dried takes the next fire twice as hard. Its own runes: Hold - a drought lies for hours: the crops in it die, and the dead in it dry into mummies that never rot, never stink and have no meat; Purge - it takes the wet, the mud, the clay and the silt off one's own and off the ground. A Lift, a Beam, a Restoration, a Step find nothing in it.";
                 case SecondKind.Quag: return "The bog, deeper and quicker: the heavy sink first.";
                 case SecondKind.Silt: return "Silt chokes mechanisms - turrets jam, machines stall, joints of armour and bionics clog. Held, it sets and holds the caught.";
                 case SecondKind.MarshGas: return "Marsh gas: it does not burn by itself - another spark sets it off. Breathed, it presses on the lungs (not deadly); a gas mask or a sealed suit keeps it out.";
-                case SecondKind.MarshHaze: return "A marsh haze: it poisons the foes who breathe it and hides one's own inside it.";
+                case SecondKind.MarshHaze: return "A marsh haze: it poisons the foes who breathe it and hides one's own inside it; in a closed room it fills the room. Its own runes: Hold - will-o'-the-wisps kindle in it and the foes wander after them; Growth - it creeps on by itself over water, marsh, mud and mire, never onto dry stone or a floor. A Beam, a Lift, a Wall, a Restoration find nothing in it.";
                 case SecondKind.Rockfall: return "Stones from above: a blow to head and shoulders that shakes through armour, and rubble left for cover.";
                 case SecondKind.Emery: return "It wears away: armour and clothes lose their strength. An aura of it hones one's own blades instead.";
                 case SecondKind.BurningSand: return "Hot grains stick and burn until water washes them off.";
@@ -1276,6 +1276,9 @@ namespace Avir.Magic
                         }
                     }
                     // Fix255: a drought held: the crops under it die
+                    // a drought held dries the dead in it into mummies (Fix255)
+                    if (f.y == SecondKind.DryWind && f.held)
+                        for (int k = 0; k < here.Count; k++) if (here[k] is Corpse corpse) GameComponent_Mummies.Dry(corpse, GameComponent_Mummies.PerDroughtTick * Mathf.Max(0.5f, f.power));
                     if (f.y == SecondKind.DryWind && f.held && Rand.Chance(0.05f))
                     {
                         Plant pl = c.GetPlant(map);

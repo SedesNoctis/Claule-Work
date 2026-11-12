@@ -51,6 +51,16 @@ namespace Avir.Magic
             }
             var smalls = new[] { RuneKind.Fire, RuneKind.Water, RuneKind.Earth, RuneKind.Air };
 
+            // 0. every meeting of three keeps a short name of its own, and an explanation that is not its name (Fix255: an
+            // explanation written over the name twice - the typhoon's, then the dry wind's and the marsh haze's - floated
+            // whole paragraphs over the battlefield instead of a word)
+            foreach (SecondKind y in Enum.GetValues(typeof(SecondKind)).Cast<SecondKind>().Where(y => y != SecondKind.None))
+            {
+                string lb = SecondOrder.Label(y), ds = SecondOrder.Text(y);
+                Check("name of " + y, !lb.NullOrEmpty() && lb.Length <= 20 && !lb.Contains(":") && !lb.Contains("."), lb);
+                Check("explanation of " + y, !ds.NullOrEmpty() && ds.Length > 40 && ds != lb, ds.NullOrEmpty() ? "none" : ds.Substring(0, Math.Min(30, ds.Length)));
+            }
+
             // 1. every pair, both ways round
             foreach (RuneKind a in smalls) foreach (RuneKind b in smalls)
             {
