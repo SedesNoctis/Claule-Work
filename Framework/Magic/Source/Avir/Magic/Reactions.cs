@@ -209,6 +209,7 @@ namespace Avir.Magic
         public static void Release(IntVec3 c, Map map, int budget)
         {
             if (ComboDefOf.Avir_GasSteam == null || !c.InBounds(map) || c.Filled(map)) return;
+            if (!SecondOrder.PairLeaves(ComboKind.Steam)) return;   // Fix251: the pair's steam under a meeting of three is a veil only
             if (GenSpawn.Spawn(ComboDefOf.Avir_GasSteam, c, map) is Gas_ScaldingSteam g) g.spreadBudget = budget;
             GasUtility.AddGas(c, map, GasType.BlindSmoke, 1f);
         }

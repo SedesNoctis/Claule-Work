@@ -513,8 +513,8 @@ namespace Avir.Magic
             // under a meeting of three the pair's Growth is that meeting's (Fix227, the author): the ball lightning's
             // Growth swells its globes - no rain creeping out under it; a mudflow's creeps out as mire, not as water
             if (SecondOrder.Background && SecondOrder.Now == SecondKind.BallLightning) return;
-            if (k == ComboKind.Magma && SecondOrder.NoMagma) return;   // Fix250: no magma creeping out from under Ash and the like
             if (SecondOrder.Background && SecondOrder.Now == SecondKind.Mudflow && k == ComboKind.Storm) k = ComboKind.Bog;
+            if (!SecondOrder.PairLeaves(k)) return;   // Fix250-251: nothing of the pair's creeps out from under a meeting that is not of its kind
             var near = cells.SelectMany(c => GenRadial.RadialCellsAround(c, 2f, true)).Where(c => c.InBounds(map)).Distinct().ToList();
             switch (k)
             {
@@ -1060,6 +1060,7 @@ namespace Avir.Magic
         public static void Spread(IntVec3 c, Map map, Pawn owner, float power, int life)
         {
             if (!c.InBounds(map) || !c.Standable(map) || ComboDefOf.Avir_Mire == null) return;
+            if (!SecondOrder.PairLeaves(ComboKind.Bog)) return;   // Fix251: under a meeting of three only the Quagmire leaves the bog's mire
             if (owner != null && owner.Spawned && owner.Position == c) return;   // never under the mage's own feet
             MirePatch old = c.GetThingList(map).OfType<MirePatch>().FirstOrDefault();
             if (old != null) { old.left = Mathf.Max(old.left, life); return; }

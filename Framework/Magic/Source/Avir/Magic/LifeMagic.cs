@@ -443,7 +443,7 @@ namespace Avir.Magic
                 {
                     case RuneKind.Fire: Seed(p, caster, dmg, false, 3); got += dmg * 0.3f; break;          // a living bomb, not a burn
                     case RuneKind.Water: got += Suck(p, dmg); break;                                       // part of its blood
-                    case RuneKind.Earth: Crust(p, dmg * 0.04f); got += dmg * 0.5f; break;                  // stone grows on it
+                    case RuneKind.Earth: Crust(p, dmg * 0.04f, curVerb == RuneKind.Growth ? Mathf.RoundToInt(GenDate.TicksPerHour * 8f * Mathf.Max(0.5f, dmg / 6f)) : 0); got += dmg * 0.5f; break;                  // stone grows on it
                     case RuneKind.Air: got += p == caster ? 0f : Pestilence.TakeFrom(caster, p, dmg) + Drink(p, dmg / 6f); break;   // its sicknesses taken onto the mage (Fix160), the rest drunk
                     default:
                         if (mix != LifeMix.None) { MixWither(caster, p, dmg); p.TakeDamage(new DamageInfo(WitherDmg, dmg * 0.6f, 2f, -1f, caster)); got += dmg; break; }

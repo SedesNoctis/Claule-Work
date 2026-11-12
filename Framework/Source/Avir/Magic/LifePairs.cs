@@ -96,10 +96,16 @@ namespace Avir.Magic
 
         // ================================================================== Emerald: stone remembers life
 
-        public static void Crust(Pawn p, float amount)
+        public static void Crust(Pawn p, float amount) => Crust(p, amount, 0);
+
+        /// <summary>`grow` - ticks for which the stone goes on spreading over the body by itself (Withering with Growth,
+        /// the author, Fix251): it does not fall away then, it creeps on - and the parts already turned to stone take their
+        /// neighbours with them.</summary>
+        public static void Crust(Pawn p, float amount, int grow)
         {
             if (CrustDef == null || p == null || p.Dead || amount <= 0f) return;
             Hediff h = p.health.hediffSet.GetFirstHediffOfDef(CrustDef) ?? p.health.AddHediff(CrustDef);
+            if (grow > 0 && h.TryGetComp<HediffComp_StoneCrust>() is HediffComp_StoneCrust sc) sc.growing = Mathf.Max(sc.growing, grow);
             h.Severity = Mathf.Min(1f, (h.Severity <= 0.011f ? 0f : h.Severity) + amount);
             if (p.Spawned) MapComponent_SpellSprites.Put(p.Map, "Life/StoneCrust", p.DrawPos, 1.5f, 60, -1f, -1f);
         }
@@ -495,7 +501,21 @@ namespace Avir.Magic
             int dt = 250 - check; check = 250;
             Pawn p = parent.pawn;
             if (p == null || p.Dead) return;
-            if (parent.Severity < 0.999f) { statueTicks = 0; severityAdjustment -= 0.3f * dt / GenDate.TicksPerDay; return; }
+            if (parent.Severity < 0.999f)
+            {
+                statueTicks = 0;
+                if (growing > 0)
+                {
+                    // the stone spreads (Fix251): over the whole body, and from part to part where a blow already left stone
+                    growing -= dt;
+                    severityAdjustment += GrowPerDay * dt / GenDate.TicksPerDay;
+                    if (Rand.Chance(0.06f)) SpreadPart(p);
+                    if (p.Spawned && Rand.Chance(0.15f)) MapComponent_SpellSprites.Put(p.Map, "Life/StoneCrust", p.DrawPos, 1.1f, 50, -1f, -1f);
+                }
+                else severityAdjustment -= 0.3f * dt / GenDate.TicksPerDay;
+                return;
+            }
+            growing = 0;
             statueTicks += dt;
             // a statue does not act and does not fall: held still where it is
             if (p.Spawned) { p.stances?.stunner?.StunFor(320, null, false, false); p.pather?.StopDead(); }
@@ -503,7 +523,24 @@ namespace Avir.Magic
             if (p.Spawned && Rand.Chance(0.2f)) MapComponent_SpellSprites.Put(p.Map, "Life/Statue", p.DrawPos, 1.2f, 80);
             if (statueTicks >= GenDate.TicksPerDay * StatueDays) severityAdjustment -= 0.05f;
         }
-        public override void CompExposeData() { Scribe_Values.Look(ref statueTicks, "statueTicks"); }
+        public int growing;
+        public const float GrowPerDay = 1.2f;
+        /// <summary>A part turned to stone takes a neighbour: its parent, or one of its own parts.</summary>
+        private static void SpreadPart(Pawn p)
+        {
+            HediffDef d = LifePaint.Petrified;
+            if (d == null) return;
+            var stone = p.health.hediffSet.hediffs.Where(x => x.def == d && x.Part != null).Select(x => x.Part).ToList();
+            if (stone.Count == 0) return;
+            BodyPartRecord from = stone.RandomElement();
+            var near = new List<BodyPartRecord>();
+            if (from.parent != null) near.Add(from.parent);
+            near.AddRange(from.parts);
+            BodyPartRecord to = near.Where(x => x.depth == BodyPartDepth.Outside && !stone.Contains(x) && !p.health.hediffSet.PartIsMissing(x)).RandomElementWithFallback();
+            if (to != null) LifePaint.Petrify(p, to, 3f, null);
+        }
+        public override string CompLabelInBracketsExtra => growing > 0 ? "spreading" : null;
+        public override void CompExposeData() { Scribe_Values.Look(ref statueTicks, "statueTicks"); Scribe_Values.Look(ref growing, "growing"); }
     }
 
     /// <summary>The stone's colour over the whole body, deeper as the crust thickens.</summary>
@@ -648,6 +685,7 @@ namespace Avir.Magic
     public class EmeraldPlant : Building
     {
         public ThingDef plant;
+        public float size, growth;
         private Graphic cached;
         private static readonly Color Stone = new Color(0.45f, 0.8f, 0.58f);
 
@@ -658,9 +696,13 @@ namespace Avir.Magic
             if (def == null) return 0f;
             IntVec3 at = pl.Position; ThingDef from = pl.def;
             float life = (pl.def.plant.IsTree ? 12f : 4f) * Mathf.Max(0.3f, pl.Growth);
+            float grown = pl.Growth;
             pl.Destroy();
             var e = (EmeraldPlant)ThingMaker.MakeThing(def);
             e.plant = from;
+            // the sculpture is as big as the plant was (the author, Fix251: a tree shrank to a sprig's size)
+            e.growth = grown;
+            e.size = from.plant.visualSizeRange.LerpThroughRange(grown);
             e.SetFaction(Faction.OfPlayer);
             GenSpawn.Spawn(e, at, map);
             FleckMaker.ThrowDustPuffThick(at.ToVector3Shifted(), map, 1.3f, new Color(0.3f, 0.75f, 0.45f, 0.6f));
@@ -673,20 +715,38 @@ namespace Avir.Magic
             if (plant == null || !Spawned) return;
             IntVec3 at = Position; Map map = Map; ThingDef p = plant;
             Destroy();
-            if (at.GetPlant(map) == null) { Plant np = (Plant)GenSpawn.Spawn(p, at, map); np.Growth = 1f; }
+            float g0 = growth;
+            if (at.GetPlant(map) == null) { Plant np = (Plant)GenSpawn.Spawn(p, at, map); np.Growth = g0 > 0f ? g0 : 1f; }
         }
 
         public override Graphic Graphic
         {
             get
             {
-                if (cached == null && plant?.graphicData != null) cached = plant.graphicData.Graphic.GetColoredVersion(ShaderDatabase.Cutout, Stone, Stone);
+                if (cached == null && plant?.graphicData != null)
+                {
+                    float sz = Size;
+                    cached = GraphicDatabase.Get(plant.graphicData.graphicClass, plant.graphicData.texPath, ShaderDatabase.Cutout, new Vector2(sz, sz), Stone, Stone);
+                }
                 return cached ?? base.Graphic;
             }
         }
 
+        /// <summary>How big it is drawn: the plant's own size at the growth it was caught at (an old save's sculpture - full grown).</summary>
+        private float Size => size > 0f ? size : plant?.plant != null ? plant.plant.visualSizeRange.max : 1f;
+
+        // drawn as the plant was: by its own size, and raised as a tall plant is, so the trunk stands on the cell
+        public override void Print(SectionLayer layer) { }
+        protected override void DrawAt(Vector3 drawLoc, bool flip = false)
+        {
+            float sz = Size;
+            Vector3 at = drawLoc;
+            if (sz > 1f) at.z += (sz - 1f) * 0.5f;
+            Graphic.Draw(at, Rot4.North, this);
+        }
+
         public override string LabelNoCount => plant != null ? "emerald " + plant.label : base.LabelNoCount;
 
-        public override void ExposeData() { base.ExposeData(); Scribe_Defs.Look(ref plant, "plant"); }
+        public override void ExposeData() { base.ExposeData(); Scribe_Defs.Look(ref plant, "plant"); Scribe_Values.Look(ref size, "size"); Scribe_Values.Look(ref growth, "growth"); }
     }
 }

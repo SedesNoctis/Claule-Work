@@ -184,6 +184,7 @@ namespace Avir.Magic
         /// <summary>Water left on the ground: the game's own puddle.</summary>
         public static void Puddle(IntVec3 c, Map map)
         {
+            if (!SecondOrder.PairLeaves(ComboKind.Storm)) return;   // Fix251: the storm's pools under a meeting of three - only the Deluge
             // a pool, not a drop: wide and deep enough to be seen
             ThingDef pool = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_SpellPuddle") ?? ThingDefOf.Filth_Water;
             if (pool == null || !c.InBounds(map)) return;

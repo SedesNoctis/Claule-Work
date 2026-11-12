@@ -84,7 +84,7 @@ namespace Avir.Magic
         {
             switch (y)
             {
-                case SecondKind.Inferno: return "inferno"; case SecondKind.Boil: return "boil"; case SecondKind.Geyser: return "geyser"; case SecondKind.Typhoon: return "typhoon";
+                case SecondKind.Inferno: return "inferno"; case SecondKind.Boil: return "boil"; case SecondKind.Geyser: return "geyser"; case SecondKind.Typhoon: return "A whirl of boiling rain that walks by itself: it draws the foes near it into its wall, soaks them and scalds the soaked half again as hard; what it has passed over stays wet and veiled in steam. Its own runes: Release - it walks on from where it was cast; Hold - the eye of the storm: it stands, inside the eye it is still and shots into it go astray, the ring round it scalds; Lift - whoever it holds when it ends is flung out. A Restoration, a Withering, a Wall find nothing in it to work through.";
                 case SecondKind.Lava: return "lava"; case SecondKind.Volcano: return "volcano"; case SecondKind.Obsidian: return "obsidian"; case SecondKind.Ash: return "ash";
                 case SecondKind.Deluge: return "deluge"; case SecondKind.Hurricane: return "hurricane"; case SecondKind.BallLightning: return "ball lightning"; case SecondKind.Mudflow: return "mudflow";
                 case SecondKind.Swelter: return "swelter"; case SecondKind.Thermal: return "thermal"; case SecondKind.Rainbow: return "rainbow"; case SecondKind.DryWind: return "dry wind";
@@ -106,7 +106,7 @@ namespace Avir.Magic
                 case SecondKind.Volcano: return "Fire inside stone: the ground cracks, and a heartbeat later stones and magma burst up from below - where armour is thinnest. With Lift a basalt pillar rises under the foe and holds them up there until it falls.";
                 case SecondKind.Obsidian: return "Magma quenched: a burst of steam and black glass, sharp and brittle.";
                 case SecondKind.Ash: return "A scorching cloud: it blinds and chokes the unsealed, and the ash it lets fall feeds the ground a little (+20% fertility for ten days).";
-                case SecondKind.Deluge: return "Weather on the spot: rain over the place for a while - everything wet, fires out, lightning through the pools.";
+                case SecondKind.Deluge: return "Weather one carries: rain over the place - everything wet, fires out, lightning through the pools. Its own runes: Release - it comes down at once, throws the running off their feet and leaves pools; Hold - it stands for hours and washes the wounds of one's own; Restoration - a mending rain over everyone under it; Growth - it waters what grows. A Lift, a Beam, a Step find nothing in rain to work through.";
                 case SecondKind.Hurricane: return "Wind: it throws everyone, breaks what is light, and knocks shots out of the air - an aura of it shields one's own. Every throw in the spell flies half again as far and strikes harder; every Lift goes 1.6 times higher, and the fall is as much harder. It is unstable: it leaves whirls behind (two; one when held; three with Growth) that wander for a while and spin whoever they catch round - friend or foe, all but the one who made them.";
                 case SecondKind.BallLightning: return "Slow globes that seek the foes and burst in a discharge - metal on the body takes half again as much. Along a beam, one globe rolls and strikes every foe it passes.";
                 case SecondKind.Mudflow: return "A wave of mud: it carries foes away and buries the fallen.";
@@ -206,7 +206,26 @@ namespace Avir.Magic
         /// <summary>The pair under a meeting of three leaves nothing of its own on the ground unless the meeting is of its
         /// kind (the author, Fix250): magma is poured by Magma itself, by Lava and by the Volcano - not by Ash, Obsidian's
         /// background or any other meeting that merely has fire and earth in it.</summary>
-        public static bool NoMagma => !applying && Now != SecondKind.None && Now != SecondKind.Lava && Now != SecondKind.Volcano && PairOf(Now) == ComboKind.Magma;
+        public static bool NoMagma => !PairLeaves(ComboKind.Magma);
+
+        /// <summary>May the pair leave its own lasting thing on the ground now (Fix251, the same rule for every pair: the
+        /// author - "check all the rest")? Outside a meeting of three - always. Under one, the pair is only its background,
+        /// and leaves its thing only where the meeting is of that very kind:
+        ///   magma pools - Lava and the Volcano;  mire - the Quagmire;  rain puddles - the Deluge;
+        ///   scalding steam - none (under a meeting the pair's steam is a veil; the meeting scalds with its own).
+        /// What the meeting itself does (obsidian's quench, the mudflow's mire) is its own deed and is not held back.</summary>
+        public static bool PairLeaves(ComboKind k)
+        {
+            if (applying || Now == SecondKind.None || PairOf(Now) != k) return true;
+            switch (k)
+            {
+                case ComboKind.Magma: return Now == SecondKind.Lava || Now == SecondKind.Volcano;
+                case ComboKind.Bog: return Now == SecondKind.Quag;
+                case ComboKind.Storm: return Now == SecondKind.Deluge;
+                case ComboKind.Steam: return false;
+            }
+            return true;
+        }
 
         public static void Apply(Pawn caster, RitualSchema part, RitualReading r, LocalTargetInfo target, float power)
         {
@@ -228,7 +247,7 @@ namespace Avir.Magic
             // and a mending lets through only the meetings that have a mending of their own (the author, Fix149: a ward
             // spell poured lava round its caster)
             bool acts = ctx.release || ctx.beam || ctx.hold || ctx.growth || ctx.lift || ctx.drain || ctx.purge || ctx.aura || ctx.shape || ctx.enchant;
-            if (!acts && (!ctx.restore || (y != SecondKind.Boil && y != SecondKind.Geyser && y != SecondKind.Mudflow))) return;
+            if (!acts && (!ctx.restore || (y != SecondKind.Boil && y != SecondKind.Geyser && y != SecondKind.Mudflow && y != SecondKind.Deluge))) return;
             ctx.breadth = r.breadth;
             MagicSounds.Play("Second:" + y, ctx.at, map);   // Fix225
             ctx.radius = FireMagic.PointRadius(r) * (ctx.growth ? 1.5f : 1f);
@@ -296,8 +315,22 @@ namespace Avir.Magic
                         break;
                     }
                 case SecondKind.Typhoon:
-                    F(c.map)?.AddMoving(y, c.at, (c.at - by.Position).ToVector3().normalized, c.hold ? 0f : 1f, Ticks(0.12f, c.power), by, c.power);
-                    break;
+                    {
+                        // Fix251 (the author's choice): the one meeting that walks by itself.
+                        //   Release - it walks on from where it was cast, drawing the foes into itself and scalding them in its wall;
+                        //   Hold - the eye of the storm: it stands; inside the eye it is still and safe, the ring round it scalds;
+                        //   Lift - whoever it holds when it ends is flung out of it.
+                        // (Its road by marks - a route - is still to be made.)
+                        SecondFields f = F(c.map);
+                        if (f == null) break;
+                        Vector3 dir = (c.at - by.Position).ToVector3(); dir.y = 0f;
+                        dir = dir.sqrMagnitude < 0.01f ? Vector3.forward : dir.normalized;
+                        f.AddMoving(y, c.at, dir, c.hold ? 0f : 1f, c.hold ? Ticks(0.5f, c.power) : Mathf.RoundToInt(900f * Mathf.Max(0.6f, c.power)), by, c.power);
+                        SecondFields.Fld fl = f.fields[f.fields.Count - 1];
+                        fl.eye = c.hold; fl.lift = c.lift;
+                        if (c.hold) fl.cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(c.at, SecondFields.EyeRadius, true).Where(x => x.InBounds(c.map)));
+                        break;
+                    }
                 case SecondKind.Lava:
                     {
                         var where = c.beam ? FireMagic.Beam(by.Position, c.at + (c.at - by.Position), c.map, c.breadth).Where(x => x.InBounds(c.map) && x != by.Position).ToList()
@@ -358,8 +391,27 @@ namespace Avir.Magic
                     Field(c, y, Ticks(0.5f, c.power));
                     break;
                 case SecondKind.Deluge:
-                    Field(c, y, Ticks(c.hold ? 4f : 2f, c.power));
-                    break;
+                    {
+                        // Fix251 (the author's choice): weather one carries - and each of its own runes makes its own rain.
+                        //   Release - it comes down at once: the running are thrown off their feet, every fire is out, pools lie;
+                        //   Hold - it stands for hours: one's own under it have their wounds washed, the heat and the burns leave;
+                        //   Restoration - a mending rain over the whole place (weaker than Water at a point, but everyone at once);
+                        //   Growth - it waters: what grows under it grows on.
+                        // A Lift, a Beam, a Step, an Enchantment find nothing in rain to work through.
+                        if (c.release)
+                        {
+                            foreach (Pawn p in c.foes) { WaterMagic.Soak(p, c.power); if (p.pather != null && p.pather.MovingNow) MagicFx.Fell(p, c.at, 0, c.map, by, c.power, 150); }
+                            foreach (IntVec3 x in c.cells) { foreach (Thing t in x.GetThingList(c.map).Where(t => t is Fire).ToList()) if (!t.Destroyed) t.Destroy(); if (Rand.Chance(0.35f)) WaterMagic.Puddle(x, c.map); if (Rand.Chance(0.5f)) FleckMaker.Static(x, c.map, FleckDefOf.WaterSplash, 1.3f); }
+                        }
+                        if (c.growth)
+                            foreach (IntVec3 x in c.cells) { Plant pl = x.GetPlant(c.map); if (pl != null && pl.LifeStage == PlantLifeStage.Growing) pl.Growth = Mathf.Min(1f, pl.Growth + 0.08f * c.power); }
+                        int life = Ticks(c.hold ? 4f : c.restore || c.growth ? 2f : 1f, c.power);
+                        Field(c, y, life);
+                        SecondFields.Fld fl = F(c.map)?.fields.LastOrDefault(f => f.y == y && f.owner == by && f.cells.Contains(c.cells.Count > 0 ? c.cells[0] : c.at));
+                        if (fl != null) { fl.heal |= c.restore || c.hold; fl.grow |= c.growth; if (c.restore) fl.power = Mathf.Max(fl.power, c.power * 1.5f); }
+                        if (c.restore) foreach (Pawn p in c.own) RainMend(p, c.power, true);
+                        break;
+                    }
                 case SecondKind.Hurricane:
                     // a lift alone: the bodies are up in it already (the lift itself is stronger under a hurricane); with Release
                     // too the wind flings them as well - the throw waits till they come down
@@ -533,6 +585,31 @@ namespace Avir.Magic
             }
         }
 
+        /// <summary>The deluge's mending (Fix251): the rain washes one's own - open wounds are tended (poorly, but all of them
+        /// in time), the heat and what clings to the skin (burning sand, clay, ash, mire) is washed off; `strong` - the
+        /// Restoration's own rain: it closes a little of the wounds as well.</summary>
+        internal static void RainMend(Pawn p, float power, bool strong)
+        {
+            if (p == null || p.Dead) return;
+            Hediff_Injury open = p.health.hediffSet.hediffs.OfType<Hediff_Injury>().FirstOrDefault(i => i.Bleeding || !i.IsTended());
+            if (open != null && Rand.Chance(strong ? 0.6f : 0.25f)) open.Tended(Mathf.Clamp01((strong ? 0.35f : 0.2f) + 0.1f * power), 1f);
+            if (strong)
+            {
+                Hediff_Injury worst = p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => !i.IsPermanent()).OrderByDescending(i => i.Severity).FirstOrDefault();
+                if (worst != null) worst.Heal(0.5f * power);
+            }
+            Hediff hs = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Heatstroke);
+            if (hs != null) hs.Severity -= 0.03f * power;
+            foreach (string n in Washed)
+            {
+                HediffDef d = H(n);
+                if (d == null) continue;
+                foreach (Hediff h in p.health.hediffSet.hediffs.Where(h => h.def == d).ToList()) { h.Severity -= strong ? 0.3f : 0.1f; if (h.Severity <= 0.01f) p.health.RemoveHediff(h); }
+            }
+            if (strong) { Hediff tox = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.ToxicBuildup); if (tox != null) tox.Severity -= 0.01f * power; }
+        }
+        private static readonly string[] Washed = { "Avir_BurningSand", "Avir_Clayed", "Avir_Ashen", "Avir_Abraded", "Avir_Silted" };
+
         /// <summary>Burning sand sticks where it found bare skin (Fix227, the author: on the whole body it was too weak):
         /// up to 2 + 2×power bare outer parts, each burns on its own until washed; under full armour it gets through the
         /// gaps onto one part, at half.</summary>
@@ -640,8 +717,11 @@ namespace Avir.Magic
     /// <summary>What second-order meetings leave on the ground for a while, and what they do later.</summary>
     public class SecondFields : MapComponent
     {
-        public class Fld { public SecondKind y; public HashSet<IntVec3> cells; public int until; public Pawn owner; public float power; public Vector3 dir; public float speed; public Vector3 center; public Vector3 mid; public float rad; }
+        public class Fld { public SecondKind y; public HashSet<IntVec3> cells; public int until; public Pawn owner; public float power; public Vector3 dir; public float speed; public Vector3 center; public Vector3 mid; public float rad;
+            /// <summary>Fix251: a deluge that mends / waters; a typhoon that stands as an eye / throws at its end.</summary>
+            public bool heal, grow, eye, lift; }
         public readonly List<Fld> fields = new List<Fld>();
+        public const float EyeRadius = 4.4f, EyeCalm = 2f;
         private readonly List<KeyValuePair<int, Action>> later = new List<KeyValuePair<int, Action>>();
         public SecondFields(Map map) : base(map) { }
 
@@ -979,6 +1059,7 @@ namespace Avir.Magic
             {
                 if (f.y == SecondKind.Hurricane && f.speed <= 0f) HurricaneWind(f);
                 else if (f.y == SecondKind.Swelter || f.y == SecondKind.Thermal) HazeLook(f);
+                else if (f.y == SecondKind.Deluge) DelugeLook(f);
             }
             // the whirls blow real wind round themselves in Atmosphere Overhaul's air, four times a second, so it builds up
             if (now % 15 == 0 && AtmosphereBridge.Throws)
@@ -995,9 +1076,34 @@ namespace Avir.Magic
             {
                 if (f.y == SecondKind.Typhoon && f.speed > 0f)
                 {
-                    f.center += f.dir * f.speed;
+                    IntVec3 was = f.center.ToIntVec3();
+                    Vector3 next = f.center + f.dir * f.speed;
+                    // it does not walk through rock or off the map: it stands and spends itself there
+                    if (next.ToIntVec3().InBounds(map) && !next.ToIntVec3().Filled(map)) f.center = next; else f.until = Mathf.Min(f.until, now + 120);
                     IntVec3 c0 = f.center.ToIntVec3();
                     f.cells = new HashSet<IntVec3>(GenRadial.RadialCellsAround(c0, 2.5f, true).Where(x => x.InBounds(map)));
+                    // what it has passed over stays wet and veiled in steam
+                    if (was != c0 && was.InBounds(map)) GasUtility.AddGas(was, map, GasType.BlindSmoke, 90);
+                }
+                if (f.y == SecondKind.Typhoon)
+                {
+                    // it draws the foes near it into itself (Fix251): a walking one - into its wall; an eye - onto its ring
+                    IntVec3 mid = f.center.ToIntVec3();
+                    float reach = (f.eye ? EyeRadius : 2.5f) + 3f;
+                    foreach (Pawn q in map.mapPawns.AllPawnsSpawned.Where(q => !q.Dead && !q.Downed && q.Position.DistanceTo(mid) <= reach && q.Position.DistanceTo(mid) > (f.eye ? EyeRadius - 0.5f : 1.2f) && (f.owner == null || MagicFx.Foe(q, f.owner))).ToList())
+                    {
+                        Vector3 outward = (q.Position - mid).ToVector3(); outward.y = 0f;
+                        if (outward.sqrMagnitude < 0.01f || SecondOrder.Sealed(q) && Rand.Chance(0.5f)) continue;
+                        SpellHurl.Throw(q, q.Position + (outward.normalized * 3f).ToIntVec3(), Rand.Chance(0.5f) ? 2 : 1, map, f.owner, f.power * 0.5f);
+                    }
+                    // Lift: when it ends, whoever is in it is flung out
+                    if (f.lift && f.until - now <= 60)
+                    {
+                        f.lift = false;
+                        foreach (Pawn q in f.cells.SelectMany(x => x.GetThingList(map).OfType<Pawn>()).Distinct().Where(q => !q.Dead && (f.owner == null || MagicFx.Foe(q, f.owner))).ToList())
+                            SpellHurl.Throw(q, mid, Mathf.RoundToInt(5f * Mathf.Max(0.6f, f.power)), map, f.owner, f.power);
+                        FleckMaker.Static(mid, map, FleckDefOf.PsycastAreaEffect, 3f);
+                    }
                 }
                 if (f.y == SecondKind.Typhoon)
                 {
@@ -1034,9 +1140,9 @@ namespace Avir.Magic
                             case SecondKind.Hurricane: break;   // a whirl's spinning is its wind's (MagicWind, or Atmosphere Overhaul's)   // the whirl spares no one but its maker
                             case SecondKind.Inferno: if (foe) HealthUtility.AdjustSeverity(p, HediffDefOf.Heatstroke, 0.02f * f.power * (SecondOrder.Sealed(p) ? 2f : 1f)); break;
                             case SecondKind.Boil: if (foe && (p.health.hediffSet.HasHediff(WaterDefOf.Avir_Soaked) || Reactions.Wet(c, map))) p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 1.5f * f.power * (SecondOrder.Sealed(p) ? 0.4f : 1.4f), 0f, -1f, f.owner)); break;
-                            case SecondKind.Typhoon: if (foe) SecondOrder.BoilingRain(p, f.power, f.owner, map, f.center.ToIntVec3()); break;
+                            case SecondKind.Typhoon: if (foe && !(f.eye && c.DistanceTo(f.center.ToIntVec3()) <= EyeCalm)) SecondOrder.BoilingRain(p, f.power * (f.eye ? 1.5f : 1.2f), f.owner, map, f.center.ToIntVec3()); break;
                             case SecondKind.Ash: if (foe && !SecondOrder.Sealed(p)) MagicFx.Give(p, SecondOrder.H("Avir_Ashen"), 300); break;
-                            case SecondKind.Deluge: WaterMagic.Soak(p, f.power); if (Rand.Chance(0.35f)) FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 1f); break;   // soaked again and again while under it (Fix225)
+                            case SecondKind.Deluge: WaterMagic.Soak(p, f.power); if (Rand.Chance(0.35f)) FleckMaker.Static(p.Position, map, FleckDefOf.WaterSplash, 1f); if (f.heal && !foe) SecondOrder.RainMend(p, f.power, false); break;   // soaked again and again while under it (Fix225)
                             case SecondKind.Swelter:
                                 if (foe) { if (p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Max(0f, p.needs.rest.CurLevel - 0.01f * f.power); HealthUtility.AdjustSeverity(p, HediffDefOf.Heatstroke, 0.006f * f.power * (SecondOrder.Sealed(p) ? 1.5f : 1f)); }
                                 else MagicFx.Give(p, SecondOrder.H("Avir_Updraft"), 120);
@@ -1053,6 +1159,9 @@ namespace Avir.Magic
                         if (Rand.Chance(0.004f)) SpellGround.Muddy(c, map, GenDate.TicksPerDay / 2);
                         if (Rand.Chance(0.003f)) SpellGround.Melt(c, map, GenDate.TicksPerDay);
                         SpellGround.QuenchOnLava(c, map);
+                        if (f.grow) { Plant pl = c.GetPlant(map); if (pl != null && pl.LifeStage == PlantLifeStage.Growing) pl.Growth = Mathf.Min(1f, pl.Growth + 0.0015f * f.power); }
+                        // the rain washes the floor: blood, dirt, ash go (a mending rain - quicker)
+                        if (Rand.Chance(f.heal ? 0.08f : 0.03f)) { Thing filth = here.FirstOrDefault(t => t is Filth && !(t is MirePatch) && t.def != ThingDefOf.Filth_Water); if (filth != null && !filth.Destroyed) filth.Destroy(); }
                     }
                 }
             }
@@ -1082,6 +1191,24 @@ namespace Avir.Magic
         }
         private static bool Whirls(Fld f) => f.y == SecondKind.Hurricane && f.speed > 0f || f.y == SecondKind.Typhoon;
 
+        /// <summary>The deluge on the ground (Fix251, the author: the stretched picture read as a blur): no sheet at all -
+        /// sharp streaks of rain from above (Rain), and here the drops striking: small splashes everywhere, thin rings where
+        /// the ground is wet, a mending rain's drops faintly green.</summary>
+        private void DelugeLook(Fld f)
+        {
+            if (Find.CurrentMap != map || f.cells.Count == 0) return;
+            int n = Mathf.Clamp(f.cells.Count / 10, 2, 14);
+            Color ring = f.heal ? new Color(0.7f, 1f, 0.85f, 0.8f) : new Color(0.75f, 0.88f, 1f, 0.8f);
+            for (int i = 0; i < n; i++)
+            {
+                IntVec3 c = f.cells.RandomElement();
+                if (!c.InBounds(map) || c.Fogged(map)) continue;
+                Vector3 v = c.ToVector3Shifted() + new Vector3(Rand.Range(-0.45f, 0.45f), 0f, Rand.Range(-0.45f, 0.45f));
+                MapComponent_SpellSprites.PutTintedGrowing(map, "Wave/Drop", ring, v, 0.18f, 26, 2.6f);
+                if (Rand.Chance(0.3f)) FleckMaker.Static(v, map, FleckDefOf.WaterSplash, Rand.Range(0.35f, 0.6f));
+            }
+        }
+
         // a typhoon's own rain (Fix190): drops falling under it, drawn by code - each its own place and pace, looping
         private static Material rain;
         private void Rain(Fld f, float t, int now)
@@ -1089,7 +1216,8 @@ namespace Avir.Magic
             if (rain == null) rain = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Wind/Rain", ShaderDatabase.MoteGlow, Color.white);
             var block = new MaterialPropertyBlock();
             float fade = Mathf.Clamp01((f.until - now) / 300f);
-            int drops = f.y == SecondKind.Deluge ? Mathf.Clamp(Mathf.RoundToInt(f.rad * f.rad * 4f), 30, 160) : 46;
+            bool deluge = f.y == SecondKind.Deluge;
+            int drops = deluge ? Mathf.Clamp(Mathf.RoundToInt(f.rad * f.rad * 7f), 60, 320) : 46;
             for (int i = 0; i < drops; i++)
             {
                 float h1 = Mathf.Repeat(i * 0.6180339f, 1f), h2 = Mathf.Repeat(i * 0.3819660f + 0.17f, 1f), h3 = Mathf.Repeat(i * 0.7548776f, 1f);
@@ -1097,8 +1225,8 @@ namespace Avir.Magic
                 float ph = Mathf.Repeat(t * (1.3f + 0.7f * h3) + h3, 1f);
                 Vector3 p = f.mid + new Vector3(Mathf.Cos(ang) * rr - 0.25f * ph, 0f, Mathf.Sin(ang) * rr + 1.1f * (1f - ph) - 0.3f);
                 p.y = AltitudeLayer.MoteOverhead.AltitudeFor();
-                block.SetColor(ShaderPropertyIDs.Color, new Color(0.75f, 0.9f, 1f, 0.55f * Mathf.Sin(ph * Mathf.PI) * fade));
-                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(p, Quaternion.AngleAxis(12f, Vector3.up), new Vector3(0.07f, 1f, 0.5f)), rain, 0, null, 0, block);
+                block.SetColor(ShaderPropertyIDs.Color, f.heal ? new Color(0.72f, 1f, 0.88f, 0.7f * Mathf.Sin(ph * Mathf.PI) * fade) : new Color(0.75f, 0.9f, 1f, (deluge ? 0.75f : 0.55f) * Mathf.Sin(ph * Mathf.PI) * fade));
+                Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(p, Quaternion.AngleAxis(deluge ? 18f : 12f, Vector3.up), deluge ? new Vector3(0.06f, 1f, 0.95f) : new Vector3(0.07f, 1f, 0.5f)), rain, 0, null, 0, block);
             }
         }
 
@@ -1114,7 +1242,11 @@ namespace Avir.Magic
                 if (f.cells == null || f.cells.Count == 0) continue;
                 // a hurricane shows where it rages (Fix185): its edge, as long as it lasts
                 if (f.y == SecondKind.Hurricane && f.speed <= 0f) GenDraw.DrawFieldEdges(f.cells.ToList(), new Color(0.55f, 0.75f, 1f, 0.6f));
-                Material m = FieldMat(f.y) ?? (Whirls(f) ? AuraMat(f.y) : null);
+                Material m = f.y == SecondKind.Deluge ? null : FieldMat(f.y) ?? (Whirls(f) ? AuraMat(f.y) : null);
+                // the deluge: no sheet stretched over the ground (it blurred, Fix251) - the rim of its cloud, and the rain itself
+                if (f.y == SecondKind.Deluge) GenDraw.DrawFieldEdges(f.cells.ToList(), f.heal ? new Color(0.45f, 0.8f, 0.65f, 0.45f) : new Color(0.3f, 0.45f, 0.75f, 0.45f));
+                // the eye of a typhoon: where it is still
+                if (f.y == SecondKind.Typhoon && f.eye) GenDraw.DrawRadiusRing(f.center.ToIntVec3(), EyeCalm, new Color(0.6f, 0.95f, 1f, 0.7f));
                 if (m == null && f.y != SecondKind.Deluge) continue;
                 if (f.rad <= 0f || f.speed > 0f)
                 {
@@ -1221,6 +1353,8 @@ namespace Avir.Magic
             float f = 1f;
             if (SecondFields.At(m, target.Cell, SecondKind.Hurricane) != null) f *= 0.5f;
             if (SecondFields.At(m, target.Cell, SecondKind.Thermal) != null || SecondFields.At(m, caster.Position, SecondKind.Thermal) != null) f *= 0.6f;
+            var eye = SecondFields.At(m, target.Cell, SecondKind.Typhoon);
+            if (eye != null && eye.eye) f *= 0.5f;   // into the eye of a typhoon: through its wall of rain (Fix251)
             var haze = SecondFields.At(m, target.Cell, SecondKind.MarshHaze);
             if (haze != null && target.Thing is Pawn tp && haze.owner != null && !tp.HostileTo(haze.owner)) f *= 0.6f;
             if (f >= 0.999f) return;

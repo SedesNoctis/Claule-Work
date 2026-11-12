@@ -26,7 +26,41 @@ namespace Avir.Magic
         private Material energy;
         public const float PassCost = 3f, FriendCost = 6f, FoeCost = 3f, PullRange = 40f;
 
-        public static IEnumerable<Building_LifeGate> On(Map m) => m == null ? Enumerable.Empty<Building_LifeGate>() : m.listerThings.AllThings.OfType<Building_LifeGate>().Where(g => g.Spawned);
+        /// <summary>The gates standing on each map (Fix251): kept as they are grown and die, not looked for among all things.</summary>
+        private static readonly Dictionary<Map, List<Building_LifeGate>> standing = new Dictionary<Map, List<Building_LifeGate>>();
+        private static readonly List<Building_LifeGate> none = new List<Building_LifeGate>();
+        public static List<Building_LifeGate> On(Map m) => m != null && standing.TryGetValue(m, out var l) ? l : none;
+        /// <summary>The druid may open the gates to foes too (the author, Fix251): a foe that goes through feeds the druid's
+        /// store and comes out withered.</summary>
+        public bool openToFoes;
+
+        public override void SpawnSetup(Map map, bool respawningAfterLoad)
+        {
+            base.SpawnSetup(map, respawningAfterLoad);
+            if (!standing.TryGetValue(map, out var l)) standing[map] = l = new List<Building_LifeGate>();
+            if (!l.Contains(this)) l.Add(this);
+        }
+
+        public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
+        {
+            Map m = Map;
+            if (m != null && standing.TryGetValue(m, out var l)) { l.Remove(this); if (l.Count == 0) standing.Remove(m); }
+            base.DeSpawn(mode);
+        }
+
+        /// <summary>A foe goes through an open gate: its strength feeds the druid's store, it comes out withered and spent.</summary>
+        public void PassFoe(Pawn walker, Building_LifeGate to)
+        {
+            if (walker == null || to == null || !to.Spawned) return;
+            Feed(); to.Feed();
+            Move(walker, to);
+            if (!walker.RaceProps.IsFlesh || walker.Dead) return;
+            Core?.AddTo(LifeMagic.None, FoeGives);
+            if (walker.needs?.rest != null) walker.needs.rest.CurLevel *= 0.6f;
+            MagicFx.Give(walker, DefDatabase<HediffDef>.GetNamedSilentFail("Avir_GateDrained"), GenDate.TicksPerHour * 6);
+            walker.TakeDamage(new DamageInfo(LifeMagic.WitherDmg, FoeWither, 2f, -1f, druid));
+        }
+        public const float FoeGives = 6f, FoeWither = 8f;
 
         public static void Grow(Pawn druid, Map map, IntVec3 at) => Grow(druid, map, at, LifeMagic.Necrotic);
 
@@ -146,7 +180,7 @@ namespace Avir.Magic
         public override string GetInspectString()
         {
             string s = base.GetInspectString();
-            string mine = "Life: " + life.ToStringPercent() + (life < 0.35f ? " (drying - let someone go through)" : "") + "\nGrown by " + (druid?.LabelShort ?? "no one") + (Core != null ? " (store of life " + Core.Store(LifeMagic.None).ToString("0") + ")" : "");
+            string mine = (openToFoes ? "Open to foes. " : "") + "Life: " + life.ToStringPercent() + (life < 0.35f ? " (drying - let someone go through)" : "") + "\nGrown by " + (druid?.LabelShort ?? "no one") + (Core != null ? " (store of life " + Core.Store(LifeMagic.None).ToString("0") + ")" : "");
             return s.NullOrEmpty() ? mine : s + "\n" + mine;
         }
 
@@ -154,6 +188,12 @@ namespace Avir.Magic
         {
             foreach (Gizmo g in base.GetGizmos()) yield return g;
             if (Faction != Faction.OfPlayer) yield break;
+            yield return new Command_Toggle
+            {
+                defaultLabel = "Open to foes", icon = ContentFinder<Texture2D>.Get("UI/Commands/Attack", false) ?? BaseContent.BadTex,
+                defaultDesc = "Let foes use this gate on their own way. Each one that goes through feeds the druid's store of life (" + FoeGives + ") and comes out withered and spent. A foe only takes a gate whose way out is open to foes too.",
+                isActive = () => openToFoes, toggleAction = () => openToFoes = !openToFoes
+            };
             yield return new Command_Action
             {
                 defaultLabel = "Draw a friend through", icon = ContentFinder<Texture2D>.Get("UI/Commands/LaunchShip", false) ?? BaseContent.BadTex,
@@ -174,6 +214,7 @@ namespace Avir.Magic
             Scribe_References.Look(ref druid, "druid");
             Scribe_Values.Look(ref life, "life", 1f);
             Scribe_Values.Look(ref tint, "tint", LifeMagic.Necrotic);
+            Scribe_Values.Look(ref openToFoes, "openToFoes");
         }
     }
 
@@ -192,30 +233,113 @@ namespace Avir.Magic
         }
     }
 
-    [HarmonyPatch(typeof(Pawn), "GetGizmos")]
-    public static class Patch_LifeGateGizmo
+    /// <summary>The gates are part of the way (the author, Fix251): no button - whoever sets out on a long walk reckons the
+    /// way through the gates too, and takes it when it is much the shorter: to the gate nearest them, out of the gate nearest
+    /// where they are going, and on. The druid's own people pass as before (the store pays; empty, the walker pays). Foes
+    /// take only gates opened to them - and pay with their strength.</summary>
+    public static class GateWays
     {
-        public static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> __result, Pawn __instance)
+        public class Way { public Building_LifeGate from, to; public LocalTargetInfo dest; public PathEndMode pe; }
+        private static readonly Dictionary<int, Way> ways = new Dictionary<int, Way>();
+        public const float MinWalk = 25f, MustSave = 0.6f, GateCost = 6f;
+        private static bool inside;
+
+        public static Way Of(Pawn p) => p != null && ways.TryGetValue(p.thingIDNumber, out Way w) ? w : null;
+        public static void Forget(Pawn p) { if (p != null) ways.Remove(p.thingIDNumber); }
+
+        private static bool MayUse(Pawn p, Building_LifeGate g, out bool foe)
         {
-            foreach (Gizmo g in __result) yield return g;
-            Pawn p = __instance;
-            if (p?.Map == null || p.Faction != Faction.OfPlayer || !p.IsColonistPlayerControlled) yield break;
-            var gates = Building_LifeGate.On(p.Map).ToList();
-            if (gates.Count < 2) yield break;
-            yield return new Command_Action
+            foe = false;
+            if (g.Faction == null || p.Faction == null) return false;
+            if (p.Faction == g.Faction) return p.RaceProps.Humanlike || p.RaceProps.Animal && p.playerSettings?.Master != null;
+            if (p.HostFaction == g.Faction && !p.IsPrisoner) return true;   // guests
+            foe = p.HostileTo(g.Faction);
+            return foe && g.openToFoes && !p.RaceProps.IsMechanoid;
+        }
+
+        /// <summary>The way through the gates for this walk, or null when the plain way is as good.</summary>
+        public static Way WayFor(Pawn p, LocalTargetInfo dest, PathEndMode pe)
+        {
+            Map map = p.Map;
+            var gates = Building_LifeGate.On(map);
+            if (gates.Count < 2 || !dest.IsValid || p.Downed || p.Dead) return null;
+            IntVec3 d = dest.Cell, at = p.Position;
+            if (!d.InBounds(map)) return null;
+            float direct = at.DistanceTo(d);
+            if (direct < MinWalk) return null;
+            Building_LifeGate a = null, b = null; float da = float.MaxValue, db = float.MaxValue;
+            for (int i = 0; i < gates.Count; i++)
             {
-                defaultLabel = "Through the living gates",
-                defaultDesc = "Choose the gate to come out of: the colonist goes to the nearest other gate and steps through. The druid's store pays; with it empty, the walker pays - weakened and sleepy for a while.",
-                icon = ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Life_BranchDome", false) ?? BaseContent.BadTex,
-                action = () => Find.Targeter.BeginTargeting(new TargetingParameters { canTargetBuildings = true, canTargetPawns = false, canTargetLocations = false, validator = t => t.Thing is Building_LifeGate },
-                    t =>
-                    {
-                        if (!(t.Thing is Building_LifeGate to)) return;
-                        Building_LifeGate from = Building_LifeGate.On(p.Map).Where(g => g != to && p.CanReach(g, PathEndMode.Touch, Danger.Deadly)).OrderBy(g => g.Position.DistanceToSquared(p.Position)).FirstOrDefault();
-                        if (from == null) { Messages.Message("No other gate within reach.", MessageTypeDefOf.RejectInput, false); return; }
-                        p.jobs.TryTakeOrderedJob(JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("Avir_LifeGateWalk"), from, to), JobTag.Misc);
-                    })
-            };
+                Building_LifeGate g = gates[i];
+                if (!MayUse(p, g, out _)) continue;
+                float x = g.Position.DistanceTo(at), y = g.Position.DistanceTo(d);
+                if (x < da) { da = x; a = g; }
+                if (y < db) { db = y; b = g; }
+            }
+            if (a == null || b == null || a == b) return null;
+            if (da + db + GateCost > direct * MustSave) return null;
+            if (!p.CanReach(a, PathEndMode.Touch, Danger.Deadly)) return null;
+            if (!map.reachability.CanReach(b.Position, dest, pe, TraverseParms.For(p, Danger.Deadly))) return null;
+            return new Way { from = a, to = b, dest = dest, pe = pe };
+        }
+
+        [HarmonyPatch(typeof(Pawn_PathFollower), nameof(Pawn_PathFollower.StartPath))]
+        public static class Patch_Start
+        {
+            public static void Prefix(Pawn ___pawn, ref LocalTargetInfo dest, ref PathEndMode peMode)
+            {
+                if (inside || ___pawn == null || !___pawn.Spawned) return;
+                ways.Remove(___pawn.thingIDNumber);
+                if (Building_LifeGate.On(___pawn.Map).Count < 2) return;
+                try
+                {
+                    Way w = WayFor(___pawn, dest, peMode);
+                    if (w == null) return;
+                    ways[___pawn.thingIDNumber] = w;
+                    dest = w.from; peMode = PathEndMode.Touch;
+                }
+                catch (System.Exception e) { Log.ErrorOnce("[Avir] gate way: " + e, 0x6A7E); }
+            }
+        }
+
+        [HarmonyPatch(typeof(Pawn_PathFollower), "PatherArrived")]
+        public static class Patch_Arrived
+        {
+            public static bool Prefix(Pawn_PathFollower __instance, Pawn ___pawn)
+            {
+                if (___pawn == null || !ways.TryGetValue(___pawn.thingIDNumber, out Way w)) return true;
+                ways.Remove(___pawn.thingIDNumber);
+                if (w.from != null && w.from.Spawned && w.to != null && w.to.Spawned && w.from.Map == ___pawn.Map)
+                {
+                    MayUse(___pawn, w.from, out bool foe);
+                    if (foe) w.from.PassFoe(___pawn, w.to); else w.from.Pass(___pawn, w.to);
+                }
+                if (___pawn.Dead || ___pawn.Downed || !___pawn.Spawned) return true;
+                // on, from the far gate, to where they were going all along
+                inside = true;
+                try { __instance.StartPath(w.dest, w.pe); } finally { inside = false; }
+                return false;
+            }
+        }
+
+        [HarmonyPatch(typeof(Pawn_PathFollower), "PatherFailed")]
+        public static class Patch_Failed { public static void Prefix(Pawn ___pawn) => Forget(___pawn); }
+
+        [LudeonTK.DebugAction("Magic", "Life gates: way of the selected pawn to here (log)", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void DevWay()
+        {
+            Pawn p = Verse.Find.Selector.SingleSelectedThing as Pawn;
+            if (p == null) { Messages.Message("Select one pawn first.", MessageTypeDefOf.RejectInput, false); return; }
+            IntVec3 c = Verse.UI.MouseCell();
+            Way w = WayFor(p, c, PathEndMode.OnCell);
+            Log.Message("[Avir] gate way for " + p.LabelShort + " to " + c + ": " + (w == null ? "the plain way (gates: " + Building_LifeGate.On(p.Map).Count + ", walk " + p.Position.DistanceTo(c).ToString("0") + ")" : "in at " + w.from.Position + ", out at " + w.to.Position));
+        }
+
+        [LudeonTK.DebugAction("Magic", "Life gates: grow a gate here", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void DevGrow()
+        {
+            Map m = Verse.Find.CurrentMap; if (m == null) return;
+            Building_LifeGate.Grow(m.mapPawns.FreeColonistsSpawned.FirstOrDefault(), m, Verse.UI.MouseCell());
         }
     }
 }
