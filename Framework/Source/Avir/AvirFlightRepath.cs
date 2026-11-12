@@ -31,6 +31,14 @@ namespace FlightGene
     {
         private static AccessTools.FieldRef<Pawn_PathFollower, bool> needNewPath;
         private static bool bound;
+        private static AccessTools.FieldRef<Pawn_PathFollower, PathEndMode> peModeOf;
+        private static bool walkBound;
+        private static void EnsureWalkBound()
+        {
+            if (walkBound) return;
+            walkBound = true;
+            try { peModeOf = AccessTools.FieldRefAccess<Pawn_PathFollower, PathEndMode>("peMode"); } catch { peModeOf = null; }
+        }
         private static bool warned;
 
         private static void EnsureBound()
@@ -58,10 +66,26 @@ namespace FlightGene
         public static void Request(Pawn pawn)
         {
             EnsureBound();
-            if (needNewPath == null) return;
-
             Pawn_PathFollower pather = pawn?.pather;
             if (pather == null || !pather.Moving) return;
+            if (needNewPath == null)
+            {
+                // Fix254: RimWorld 1.6 has no needNewPath flag any more (paths are asked for through requests), so
+                // this used to do nothing at all - a pawn that rose in mid-walk kept its walking route round the
+                // lake. The same walk is simply started again from where it is: same destination, same way of
+                // arriving. Its job never notices - the pather is still moving towards the same target.
+                try
+                {
+                    EnsureWalkBound();
+                    LocalTargetInfo dest = pather.Destination;
+                    if (peModeOf != null && dest.IsValid) pather.StartPath(dest, peModeOf(pather));
+                }
+                catch (Exception e)
+                {
+                    if (!warned) { warned = true; Log.Warning("[Avir flight] re-path by restart failed: " + e); }
+                }
+                return;
+            }
 
             try
             {

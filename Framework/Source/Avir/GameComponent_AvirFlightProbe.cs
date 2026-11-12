@@ -40,6 +40,11 @@ namespace FlightGene
         public override void GameComponentTick()
         {
             base.GameComponentTick();
+            // Fix254: a probe is for looking, not for leaving on. It wrote fourteen lines every ten seconds whenever a
+            // colonist with wings stood beside a wall - and the game stops logging altogether after a thousand
+            // messages, so a quarter of an hour of play left the log deaf to every real error after it. It runs now
+            // only when the log is asked to be wordy, in developer mode.
+            if (!Prefs.DevMode || !Prefs.LogVerbose) return;
             if (Find.TickManager.TicksGame % CheckInterval != 0) return;
             if (Find.TickManager.TicksGame - lastReportTick < CooldownTicks) return;
 

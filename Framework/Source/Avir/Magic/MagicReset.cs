@@ -23,7 +23,9 @@ namespace Avir.Magic
         private static readonly Type[] Keys = { typeof(int), typeof(long), typeof(Pawn), typeof(Thing), typeof(Map), typeof(Job), typeof(RitualSchema), typeof(SpellCircle), typeof(IntVec3) };
         private static List<FieldInfo> tables;
 
-        public GameComponent_MagicReset(Game game) { Clear(); }
+        // Fix254: the clearing itself is done for the whole mod by AvirStaticReset, before a game is read - not here, where a
+        // component made in the middle of loading could empty what another had just read.
+        public GameComponent_MagicReset(Game game) { }
 
         public static List<FieldInfo> Tables()
         {
@@ -70,12 +72,6 @@ namespace Avir.Magic
             return n;
         }
 
-        [DebugAction("Magic", "Audit: static tables cleared with each game (log)", allowedGameStates = AllowedGameStates.Playing)]
-        private static void DevList()
-        {
-            Log.Message("[Avir] tables of one game's state (" + Tables().Count + "), cleared when a game is started or loaded:\n" +
-                string.Join("\n", Tables().Select(f => "  " + f.DeclaringType.Name + "." + f.Name + " = " + ((f.GetValue(null) as ICollection)?.Count.ToString() ?? "?"))));
-        }
     }
 }
 

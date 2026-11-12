@@ -21,7 +21,11 @@ namespace Avir
         {
             try
             {
-                MethodInfo target = AccessTools.Method(typeof(LovePartnerRelationUtility), "TryAddCheaterThought");
+                // Fix254: in RimWorld 1.6 the method lives on the romance attempt's worker, not on the love-partner
+                // utility any more - looked for there first, then in its old place (so both versions are served).
+                // It was not found at all before: the patch never applied, and bonded Avir got "cheated on me".
+                MethodInfo target = AccessTools.Method(typeof(InteractionWorker_RomanceAttempt), "TryAddCheaterThought")
+                    ?? AccessTools.Method(typeof(LovePartnerRelationUtility), "TryAddCheaterThought");
                 if (target == null)
                 {
                     Log.Warning("[Avir] TryAddCheaterThought not found; Avir mates may still get CheatedOnMe.");

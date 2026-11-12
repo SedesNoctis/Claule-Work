@@ -37,8 +37,21 @@ namespace Avir.Linarian
                 p.health.RemoveHediff(h);
         }
 
-        public static string InForm(Pawn p) =>
-            (p?.health?.hediffSet?.GetFirstHediffOfDef(LinarianHediffs.Avir_LinarianForm) as Hediff_LinarianForm)?.form;
+        /// <summary>WHO WEARS A FORM NOW, known without walking anyone's hediffs (Fix254). InForm is asked for every pawn
+        /// on the map in every phase of every frame's drawing, on every question of whether a pawn can be seen and
+        /// aimed at, and by the flight rules on every path - and each time it walked that pawn's whole list of
+        /// hediffs to find that there was no form. The form's own hediff says when it comes and goes; everyone else
+        /// leaves on one hash lookup, and with no one in a form at all - on one integer.
+        /// A missing name would leave a beast drawn as a woman, so the name is put in from every side: when the form
+        /// is taken, when a save is read, and on each tick of the form itself.</summary>
+        private static readonly HashSet<int> formed = new HashSet<int>();
+        internal static void NoteForm(Pawn p, bool on) { if (p == null) return; if (on) formed.Add(p.thingIDNumber); else formed.Remove(p.thingIDNumber); }
+
+        public static string InForm(Pawn p)
+        {
+            if (p == null || formed.Count == 0 || !formed.Contains(p.thingIDNumber)) return null;
+            return (p.health?.hediffSet?.GetFirstHediffOfDef(LinarianHediffs.Avir_LinarianForm) as Hediff_LinarianForm)?.form;
+        }
 
         public static void SetForm(Pawn p, string form)
         {
@@ -146,7 +159,12 @@ namespace Avir.Linarian
         {
             base.ExposeData();
             Scribe_Values.Look(ref form, "form");
+            if (Scribe.mode == LoadSaveMode.PostLoadInit) LinarianVeil.NoteForm(pawn, true);
         }
+
+        public override void PostAdd(DamageInfo? dinfo) { base.PostAdd(dinfo); LinarianVeil.NoteForm(pawn, true); }
+        public override void PostRemoved() { base.PostRemoved(); LinarianVeil.NoteForm(pawn, false); }
+        public override void PostTick() { base.PostTick(); LinarianVeil.NoteForm(pawn, true); }
     }
 
     /// <summary>In a beast's form she is no one's target: a beautiful beast, nothing more - until the beast bites. One

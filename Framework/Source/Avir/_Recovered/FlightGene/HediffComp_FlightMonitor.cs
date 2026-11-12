@@ -56,6 +56,15 @@ public class HediffComp_FlightMonitor : HediffComp
 		AvirFlightRegistry.Register(base.Pawn);
 	}
 
+	// Fix254: a flyer killed in the air stays in the registry no longer. A dead pawn's hediffs do not tick and are not
+	// removed, so nothing ever took it out - and with one stale name in it the registry's whole short cut ("nobody is
+	// flying": one integer read on every step of every pawn) was off for the rest of the session.
+	public override void Notify_PawnDied(DamageInfo? dinfo, Hediff culprit = null)
+	{
+		base.Notify_PawnDied(dinfo, culprit);
+		AvirFlightRegistry.Unregister(base.Pawn);
+	}
+
 	public override void CompPostPostRemoved()
 	{
 		base.CompPostPostRemoved();

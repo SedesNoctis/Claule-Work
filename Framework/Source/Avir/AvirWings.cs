@@ -263,6 +263,9 @@ namespace Avir
         public static void Postfix(Pawn __instance, int delta)
         {
             if (!__instance.IsHashIntervalTick(15, delta) || __instance.genes == null || !__instance.Spawned) return;
+            // Fix254: who never carried the wings leaves on one hash lookup - this runs for every pawn on the map four
+            // times a second, and used to walk each one's list of genes to learn it had none.
+            if (!FlightGene.AvirFlightCarriers.MayCarry(__instance)) return;
             if (wingGene == null) wingGene = DefDatabase<GeneDef>.GetNamedSilentFail("Flight_Gene");
             if (wingGene == null || !__instance.genes.HasActiveGene(wingGene)) return;
             WingPatterns.Check(__instance);

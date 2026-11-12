@@ -501,6 +501,19 @@ namespace Avir.Spire
     {
         public override AcceptanceReport AllowsPlacing(BuildableDef checkingDef, IntVec3 loc, Rot4 rot, Map map, Thing thingToIgnore = null, Thing thing = null)
         {
+            // Fix254: asked on every frame while the spire is being placed - only the spire itself, its blueprints and its
+            // frames are looked at now, not every thing on the map.
+            if (checkingDef is ThingDef td)
+            {
+                foreach (ThingDef d in new[] { td, td.blueprintDef, td.frameDef })
+                {
+                    if (d == null) continue;
+                    List<Thing> list = map.listerThings.ThingsOfDef(d);
+                    for (int i = 0; i < list.Count; i++)
+                        if (list[i] != thingToIgnore && list[i] != thing) return "There can be only one spire on a map.";
+                }
+                return true;
+            }
             foreach (Thing t in map.listerThings.AllThings)
             {
                 if (t == thingToIgnore || t == thing) continue;

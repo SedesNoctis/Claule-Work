@@ -314,6 +314,12 @@ namespace FlightGene
                 // this pawn out of the air, using the flight button.
                 if (pawn.Drafted) return false;
 
+                // Fix254: A FLIGHT THE PLAYER RAISED BY HAND IS THE PLAYER'S TO END. This used to bring down ANY
+                // flyer standing still on good ground - so the flight ability lifted an undrafted pawn for two
+                // seconds and no more. The flight's own monitor already kept this rule (it only auto-lands what
+                // auto-rose); the sweep here did not. Exhaustion, a beast's form, a broken wing still end it.
+                if (!RoseByItself(pawn)) return false;
+
                 // Never come down somewhere it cannot stand. This outranks every reason below.
                 if (AvirFlightRules.CannotStandAt(pawn.Map, pawn.Position)) return false;
 
@@ -355,6 +361,14 @@ namespace FlightGene
         /// cell list every time this is asked. Twenty cells is far enough ahead to cover the pawn's
         /// stopping distance several times over, and the question is asked again as it advances.
         /// </summary>
+        private static bool RoseByItself(Pawn pawn)
+        {
+            HediffDef def = AvirFlightUtility.FlightHediff;
+            if (def == null) return true;
+            HediffComp_FlightMonitor mon = (pawn.health?.hediffSet?.GetFirstHediffOfDef(def) as HediffWithComps)?.GetComp<HediffComp_FlightMonitor>();
+            return mon == null || mon.autoTriggered;
+        }
+
         private static bool RouteStillNeedsWings(Pawn pawn, Pawn_PathFollower pather)
         {
             return RouteNeedsWings(pawn, pather, LandingLookAhead);

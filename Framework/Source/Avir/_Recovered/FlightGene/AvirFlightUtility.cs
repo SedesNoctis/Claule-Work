@@ -139,6 +139,12 @@ public static class AvirFlightUtility
 		{
 			return false;
 		}
+		// Fix254: who never carried the gene is answered by one hash lookup (the sweeps over every pawn of every map,
+		// the reachability gate and the path hooks all come through here).
+		if (!AvirFlightCarriers.MayCarry(pawn))
+		{
+			return false;
+		}
 		int num = Find.TickManager?.TicksGame ?? 0;
 		CarrierBox value = carrierTable.GetValue(pawn, (Pawn _) => new CarrierBox());
 		if (!value.everChecked || num - value.checkedAtTick >= 2500)
@@ -182,7 +188,9 @@ public static class AvirFlightUtility
 		{
 			return int.MaxValue;
 		}
-		return Find.TickManager.TicksGame - value;
+		int since = Find.TickManager.TicksGame - value;
+		// a landing noted in a later hour than now (another save's) is no landing of this game
+		return since < 0 ? int.MaxValue : since;
 	}
 
 	public static bool GroundedByForm(Pawn pawn)

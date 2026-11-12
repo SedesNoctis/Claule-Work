@@ -24,6 +24,9 @@ namespace Avir
         public static void Noted(Pawn p, Job j)
         {
             if (!Bare(j) || !Concerned(p)) return;
+            // Fix254: the stack is taken only in developer mode - it is costly, and this runs on every bare wait
+            // every colonist starts; the letting-go itself (Tick) needs only the time.
+            if (!Prefs.DevMode) { waits[p.thingIDNumber] = new Seen { since = Find.TickManager.TicksGame, origin = "(not recorded: developer mode was off)" }; return; }
             string st = new System.Diagnostics.StackTrace(2, false).ToString();
             var lines = st.Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0 && !l.Contains("Harmony") && !l.Contains("DMD<")).Take(8);
             waits[p.thingIDNumber] = new Seen { since = Find.TickManager.TicksGame, origin = string.Join(" <- ", lines) };

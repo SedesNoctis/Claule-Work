@@ -93,11 +93,16 @@ namespace FlightGene
                 allocated = true;
             }
 
-            for (int i = 0; i < count; i++)
+            AvirFlightRules.BeginSweep();   // Fix254: each room judged once for the whole sweep
+            try
             {
-                IntVec3 c = map.cellIndices.IndexToCell(i);
-                grid[i] = Patch_AvirPhasingGate.ForbiddenCell(map, c) ? Impassable : (ushort)0;
+                for (int i = 0; i < count; i++)
+                {
+                    IntVec3 c = map.cellIndices.IndexToCell(i);
+                    grid[i] = Patch_AvirPhasingGate.ForbiddenCell(map, c) ? Impassable : (ushort)0;
+                }
             }
+            finally { AvirFlightRules.EndSweep(); }
         }
 
         public void Dispose()

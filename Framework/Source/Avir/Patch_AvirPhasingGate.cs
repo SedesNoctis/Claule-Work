@@ -201,6 +201,11 @@ namespace FlightGene
             out int __state)
         {
             __state = 0;
+            // Fix254: everyone who has never carried the gene leaves here, on one hash lookup. This prefix sits on
+            // every reachability question of every pawn on the map; the test below walks the destination's room
+            // region by region, and used to run for humans, animals and mechs alike before the gene was ever asked
+            // about. Nothing below applies to a pawn without the gene, so the answer is the same - only sooner.
+            if (!AvirFlightCarriers.MayCarry(traverseParams.pawn)) return;
 
             // A SOLID CELL IS NEVER A PLACE TO END UP.
             //
@@ -419,6 +424,9 @@ namespace FlightGene
         /// </summary>
         private static void Explain(Map map, IntVec3 c, string verdict)
         {
+            // Fix254: a line for the log only when the log is asked to be wordy. It used to write one every four
+            // seconds of flight for ever - and the game stops logging altogether after a thousand messages.
+            if (!Prefs.LogVerbose) return;
             int now = Find.TickManager?.TicksGame ?? 0;
             if (now - lastExplainTick < 240) return;
             lastExplainTick = now;

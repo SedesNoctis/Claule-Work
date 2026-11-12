@@ -506,7 +506,7 @@ namespace Avir.Magic
                     break;
                 case SecondKind.DryWind:
                     foreach (Pawn p in c.foes.Concat(c.own).Distinct()) Dry(p);
-                    foreach (Pawn p in c.foes) if (!Sealed(p)) MagicFx.Give(p, H("Avir_Parched"), Ticks(0.5f, c.power));
+                    foreach (Pawn p in c.foes) if (!Sealed(p)) MagicFx.Give(p, H("Avir_DryParched"), Ticks(0.5f, c.power));   // Fix254: its own def - it shared a name with Water's parching (a duplicate; the dry wind laid Water's at full depth, with no end)
                     foreach (IntVec3 x in c.cells) foreach (Thing t in Reactions.Pools(x, c.map).ToList()) t.Destroy();
                     break;
                 case SecondKind.Quag:

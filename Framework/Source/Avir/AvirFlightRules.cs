@@ -47,6 +47,40 @@ namespace FlightGene
         }
 
         /// <summary>
+        /// WHILE THE WHOLE MAP IS BEING SWEPT (the route-block grid, rebuilt every ten seconds of flight), a room's
+        /// answer is kept: every roofed cell of a room used to walk that room's regions and their links afresh, so a
+        /// mountain base of a few thousand roofed cells in one big room cost thousands of full walks per rebuild.
+        /// Outside a sweep this is null and nothing is kept - a single question always gets a fresh answer.
+        /// </summary>
+        [System.ThreadStatic] private static Dictionary<Room, bool> roomSweep;
+        public static void BeginSweep() { roomSweep = new Dictionary<Room, bool>(); }
+        public static void EndSweep() { roomSweep = null; }
+
+        /// <summary>No hole in the roof and no link out of the room: nobody has opened it yet.</summary>
+        private static bool RoomHasNoWayIn(Room room)
+        {
+            if (room.OpenRoofCount > 0) return false;
+
+            foreach (Region reg in room.Regions)
+            {
+                List<RegionLink> links = reg.links;
+                if (links == null) continue;
+
+                for (int i = 0; i < links.Count; i++)
+                {
+                    Region other = links[i].GetOtherRegion(reg);
+                    if (other == null) continue;
+
+                    // A link leading anywhere outside this room is an entrance: a doorway, a
+                    // door region, or a plain gap in the wall. Any one of them is enough.
+                    if (other.Room != room) return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// An interior nobody has opened. Kept exactly as the gate had it - that logic was correct
         /// and had simply never been reached, because AvirFlightUtility.CarriesFlightGene was
         /// returning false for every pawn in the game.
@@ -89,25 +123,11 @@ namespace FlightGene
                 //
                 // Doors count even when closed and even when locked. A closed door is an entrance
                 // that happens to be shut; the vault this rule exists for has no door at all.
-                if (room.OpenRoofCount > 0) return false;
-
-                foreach (Region reg in room.Regions)
-                {
-                    List<RegionLink> links = reg.links;
-                    if (links == null) continue;
-
-                    for (int i = 0; i < links.Count; i++)
-                    {
-                        Region other = links[i].GetOtherRegion(reg);
-                        if (other == null) continue;
-
-                        // A link leading anywhere outside this room is an entrance: a doorway, a
-                        // door region, or a plain gap in the wall. Any one of them is enough.
-                        if (other.Room != room) return false;
-                    }
-                }
-
-                return true;
+                // Fix254: one room is asked about once per sweep, not once per cell (see RoomSweep).
+                if (roomSweep != null && roomSweep.TryGetValue(room, out bool known)) return known;
+                bool sealedRoom = RoomHasNoWayIn(room);
+                if (roomSweep != null) roomSweep[room] = sealedRoom;
+                return sealedRoom;
             }
 
             // Roofed and belonging to no room. Two different things land here.
