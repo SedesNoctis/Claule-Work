@@ -95,7 +95,9 @@ namespace Avir.Magic
         public static bool Clayey(Map m, IntVec3 c)
         {
             TerrainDef t = c.GetTerrain(m);
-            return t != null && t.natural && !t.IsWater && !t.layerable && !t.defName.Contains("Sand") && (t.fertility > 0f || t.defName.Contains("Mud") || t.defName.Contains("Gravel"));
+            // as Medieval Overhaul's digging spot: ground a spade goes into (Diggable); and not sand, which holds no clay (Fix260)
+            return t != null && t.natural && !t.IsWater && !t.layerable && !t.defName.Contains("Sand")
+                && (t.affordances?.Any(a => a.defName == "Diggable") == true || t.defName.Contains("Mud"));
         }
 
         /// <summary>Bare stone underfoot: the land's own rough rock, hewn or smoothed.</summary>
@@ -115,10 +117,11 @@ namespace Avir.Magic
         private static void Spawn(ThingDef def, int count, IntVec3 at, Map map) { if (def == null) return; Thing t = ThingMaker.MakeThing(def); t.stackCount = Mathf.Min(count, def.stackLimit); GenPlace.TryPlaceThing(t, at, map, ThingPlaceMode.Near); }
         private static void Fx(Map m, IntVec3 c, Color col, float s = 1.2f) => FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted(), m, s, col);
 
-        /// <summary>Clay: Medieval Overhaul's, if it is there; else our own.</summary>
-        public static ThingDef Clay => clay ?? (clay = DefDatabase<ThingDef>.AllDefsListForReading.FirstOrDefault(d => d.category == ThingCategory.Item && d.defName.IndexOf("Clay", StringComparison.OrdinalIgnoreCase) >= 0
-                                                    && d.modContentPack?.PackageId?.IndexOf("medieval", StringComparison.OrdinalIgnoreCase) >= 0)
-                                                ?? DefDatabase<ThingDef>.GetNamedSilentFail("Avir_Clay"));
+        /// <summary>Clay: Medieval Overhaul's (DankPyon_Clay - not its chunks or blocks), if it is there; else our own (Fix260).</summary>
+        public static ThingDef Clay => clay ?? (clay = Def("DankPyon_Clay") ?? Def("Avir_Clay"));
+        /// <summary>Fired clay: Medieval Overhaul's clay blocks - what its kiln makes of clay, one for one - else our brick (Fix260).</summary>
+        public static ThingDef Brick => brick ?? (brick = Def("DankPyon_BlocksClay") ?? Def("Avir_Brick"));
+        private static ThingDef brick;
         private static ThingDef clay;
         public static ThingDef Def(string n) => DefDatabase<ThingDef>.GetNamedSilentFail(n);
 
@@ -357,11 +360,11 @@ namespace Avir.Magic
                 {
                     Thing k = t.Thing; if (k == null || k.Destroyed || k.stackCount < 10) return false;
                     int n = Mathf.Min(k.stackCount, 25 + 25 * WorkSpells.Now.breadth); IntVec3 at = k.Position; Map m = k.Map;
-                    k.SplitOff(n).Destroy(); Spawn(Def("Avir_Brick"), n, at, m); FleckMaker.ThrowFireGlow(at.ToVector3Shifted(), m, 1.2f); return true;
+                    k.SplitOff(n).Destroy(); Spawn(Brick, n, at, m); FleckMaker.ThrowFireGlow(at.ToVector3Shifted(), m, 1.2f); return true;
                 } },
             ["Avir_2DigClay"] = new Work2 { y = SecondKind.Clay, cost = 5f, ticks = 300, desName = "Avir_2DigClay",
                 cellOk = (p, x) => Clayey(p.Map, x) && Rested(p.Map, x, "clay", GenDate.TicksPerDay / 2),
-                effect = (p, t, c) => { Stamp(p.Map, t.Cell, "clay"); Spawn(Clay, 10 + 5 * WorkSpells.Now.amplify, t.Cell, p.Map); Fx(p.Map, t.Cell, new Color(0.7f, 0.45f, 0.3f, 0.6f)); return true; } },
+                effect = (p, t, c) => { Stamp(p.Map, t.Cell, "clay"); Spawn(Clay, 20 + 10 * WorkSpells.Now.amplify, t.Cell, p.Map); Fx(p.Map, t.Cell, new Color(0.7f, 0.45f, 0.3f, 0.6f)); return true; } },
         };
 
         private static bool TempTo(Map m, IntVec3 at, string des, TerrainDef to, int days)
@@ -611,7 +614,7 @@ namespace Avir.Magic
     public class Designator_2SiltDump : Designator_Arcane2 { protected override string Key => "Avir_2SiltDump"; protected override string Label2 => "Silt pit (silt)"; protected override string Desc2 => "What is left on these cells - rubble, slag, rags, corpses - the silt swallows. The mark stays: a pit for refuse."; }
     public class Designator_2MarshGas : Designator_Arcane2 { protected override string Key => "Avir_2MarshGas"; protected override string Label2 => "Draw marsh gas (marsh gas)"; protected override string Desc2 => "A caster of water, earth and fire draws marsh gas into a canister here - out of a bog: marsh, mud or a mire, on the cell or beside it - twice a day at most. A fuel stronger than chemfuel."; protected override AcceptanceReport Ok(IntVec3 c) => Works2.Boggy(Map, c) ? AcceptanceReport.WasAccepted : new AcceptanceReport("Marsh gas rises out of a bog: mark marsh, mud or mire, or the ground beside it."); }
     public class Designator_2Quarry : Designator_Arcane2 { protected override string Key => "Avir_2Quarry"; protected override string Label2 => "Quarry (earth, rockfall)"; protected override string Desc2 => "A caster of earth brings these rock walls down into chunks, one at a time; a caster of the rockfall (earth, air) - several at once. May be marked through unseen rock, like any mining: a rock is taken once it is seen and has an open side."; public override AcceptanceReport CanDesignateCell(IntVec3 c) => c.InBounds(Map) && Designation != null && Map.designationManager.DesignationAt(c, Designation) == null && (c.Fogged(Map) || c.GetEdifice(Map)?.def.building?.isNaturalRock == true); }
-    public class Designator_2DigClay : Designator_Arcane2 { protected override string Key => "Avir_2DigClay"; protected override string Label2 => "Draw clay (clay)"; protected override string Desc2 => "A caster of earth, air and water draws clay out of the ground here - out of soil, mud or gravel, not sand, rock or a floor - twice a day at most. Medieval Overhaul's clay if it is there."; protected override AcceptanceReport Ok(IntVec3 c) => Works2.Clayey(Map, c) ? AcceptanceReport.WasAccepted : new AcceptanceReport("Clay lies in soil, mud and gravel - not in sand, rock or under a floor."); }
+    public class Designator_2DigClay : Designator_Arcane2 { protected override string Key => "Avir_2DigClay"; protected override string Label2 => "Draw clay (clay)"; protected override string Desc2 => "A caster of earth, air and water draws clay out of the ground here - out of any ground a spade goes into (soil, mud, gravel) - not sand, rock or a floor - twice a day at most, twenty at a time. Medieval Overhaul's clay if it is there."; protected override AcceptanceReport Ok(IntVec3 c) => Works2.Clayey(Map, c) ? AcceptanceReport.WasAccepted : new AcceptanceReport("Clay lies in soil, mud and gravel - not in sand, rock or under a floor."); }
 
     // ================================================================== developer mode
 

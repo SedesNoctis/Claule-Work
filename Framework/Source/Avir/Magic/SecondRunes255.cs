@@ -61,7 +61,7 @@ namespace Avir.Magic
             baked += heat;
             if (Rand.Chance(0.3f)) FleckMaker.ThrowSmoke(DrawPos, Map, 0.7f);
             if (baked < BakedThrough) return;
-            ThingDef brick = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_Brick");
+            ThingDef brick = Works2.Brick;   // Medieval Overhaul's clay blocks if it is there (Fix260)
             Map m = Map; IntVec3 at = Position; Faction f = Faction;
             Destroy(DestroyMode.Vanish);
             if (brick == null || ThingDefOf.Wall == null) return;
