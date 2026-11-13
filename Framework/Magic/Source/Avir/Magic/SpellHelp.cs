@@ -153,7 +153,7 @@ namespace Avir.Magic
                 if (thread != null) e0.Add("The Thread", thread);
                 // Fix247 (the author: a beam with no verb was shown as an open blow - there is no blow): only a circle that
                 // strikes - a verb, or a wall of its own (a bare Shape still stands and works)
-                if (nShaped == 0 && nAid == 0 && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb || x.kind == RuneKind.Shape)))
+                if (nShaped == 0 && nAid == 0 && s.weave != null && s.weave.Working.Any(k => k.OwnRunes.Any(x => x.role == RuneRole.Verb && x.kind != RuneKind.Restore || x.kind == RuneKind.Shape)))
                     e0.Add("Strikes everyone", "Without two Barriers in the outermost section of a circle, its blow strikes whoever stands in it - friend or foe; only a ward keeps them.");
                 e0.details = Details(s);
                 if (SpellCasting.OfAir(s)) e0.Add("Momentum", "A spell of the air: cast on the move. Cast another of the air within " + AvirMod.Settings.airMomentumSeconds.ToString("0") + " seconds and it comes "
@@ -260,6 +260,7 @@ namespace Avir.Magic
             var e = new SpellEffect();
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            SpellHeal.AsVerb(verbs, forms);   // Fix258
             RuneDef form = forms.FirstOrDefault();
             float radius = FireMagic.PointRadius(r);
             string what = Verbs(verbs, Verb);
@@ -305,6 +306,7 @@ namespace Avir.Magic
             var e = new SpellEffect();
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            SpellHeal.AsVerb(verbs, forms);   // Fix258
             RuneDef form = forms.FirstOrDefault();
             float radius = FireMagic.PointRadius(r);
             string what = Verbs(verbs, WaterVerb);
@@ -339,6 +341,7 @@ namespace Avir.Magic
             var e = new SpellEffect();
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            SpellHeal.AsVerb(verbs, forms);   // Fix258
             RuneDef form = forms.FirstOrDefault();
             float radius = FireMagic.PointRadius(r) + 1.5f;   // earth is unwieldy and wide for it, as by one Breadth
             e.Add("Unwieldy", "Earth strikes the place it was aimed at, not the one aimed at: if the foe walks away before the cast, the stone falls where they stood. It is wide for it - as by one Breadth.");
@@ -382,6 +385,7 @@ namespace Avir.Magic
                 case RuneKind.Lift: return "bursts up in stone spikes that toss everyone there into the air";
                 case RuneKind.Growth: return "grows rich, and the plants grow faster";
                 case RuneKind.Purge: return "smothers fires and swallows filth";
+                case RuneKind.Restore: return "mends friends there";
                 default: return v.label;
             }
         }
@@ -391,6 +395,7 @@ namespace Avir.Magic
             var e = new SpellEffect();
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            SpellHeal.AsVerb(verbs, forms);   // Fix258
             RuneDef form = forms.FirstOrDefault();
             float radius = FireMagic.PointRadius(r);
             string what = Verbs(verbs, AirVerb);
@@ -437,6 +442,7 @@ namespace Avir.Magic
                 case RuneKind.Lift: return "rises in an updraft that throws everyone there high - the fall breaks bones";
                 case RuneKind.Growth: return "spreads wide, pushing everyone there further round";
                 case RuneKind.Purge: return "clears the air: small flames blown out, every gas (smoke, toxic gas) blown away, and friends breathe out what gas they took in";
+                case RuneKind.Restore: return "mends friends there";
                 default: return v.label;
             }
         }
@@ -451,6 +457,7 @@ namespace Avir.Magic
                 case RuneKind.Lift: return "rises as a geyser that throws everyone there up - and they fall hard";
                 case RuneKind.Growth: return "spreads, and the plants drink";
                 case RuneKind.Purge: return "washes away fire and filth, and anaesthetic and poisons out of friends";
+                case RuneKind.Restore: return "mends friends there";
                 default: return v.label;
             }
         }
@@ -465,6 +472,7 @@ namespace Avir.Magic
                 case RuneKind.Lift: return "raises tall flames";
                 case RuneKind.Growth: return "spreads fire further and faster";
                 case RuneKind.Purge: return "puts fire out and burns away infection";
+                case RuneKind.Restore: return "mends friends there";
                 default: return v.label;
             }
         }

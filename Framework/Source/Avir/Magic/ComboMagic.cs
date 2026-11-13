@@ -275,6 +275,7 @@ namespace Avir.Magic
                     foreach (Thing pool in Reactions.Pools(c, map).Where(t => !(t is MirePatch)).ToList()) { pool.Destroy(); Gas_ScaldingSteam.Release(c, map, 1); }
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            SpellHeal.AsVerb(verbs, forms);   // Fix258
             float radius = FireMagic.PointRadius(r);
             HediffDef ward = ComboDefOf.Ward(k);
             SpellWards.Note(caster.LabelShort + " casts " + k + ": barrier (wide) " + r.barrier + ", on the caster " + SpellMods.WardOnMage + ", runes " + string.Join(", ", s.rings.SelectMany(g => g.runes).Where(x => x != null).Select(x => x.defName.Replace("Avir_Rune_", ""))));
@@ -365,7 +366,7 @@ namespace Avir.Magic
         internal static void Apply(ComboKind k, Pawn caster, Map map, List<RuneDef> verbs, List<IntVec3> cells, IntVec3 from, float power, RitualReading r)
         {
             if (cells.Count == 0) return;
-            if (verbs.Count > 0) Reactions.Touch(Reactions.Of(k), cells, map, caster, power);
+            if (verbs.Count > 0 && !SpellHeal.OnlyHeals(verbs)) Reactions.Touch(Reactions.Of(k), cells, map, caster, power);
             foreach (RuneDef v in verbs)
             {
                 RitualReading rv = SpellMods.Verb(r, v);
@@ -380,6 +381,7 @@ namespace Avir.Magic
                 }
                 switch (v.kind)
                 {
+                    case RuneKind.Restore: Restore(k, caster, map, cells, power * SpellHeal.WidthShare(rv.breadth)); break;   // Fix258: carried by its form
                     case RuneKind.Release: Release(k, caster, map, cells, from, power * amp, rv); break;
                     case RuneKind.Hold:
                         MapComponent_ComboFields.Raise(map, k, caster, Center(cells), Spread(cells), power, Mathf.RoundToInt(1500f * power * (1 + rv.anchor)), false);
@@ -1256,6 +1258,8 @@ namespace Avir.Magic
                 case RuneKind.Hold:
                     return k == ComboKind.Magma ? "lies as a field of magma that burns and slows whoever crosses it" : k == ComboKind.Bog ? "lies as a mire that draws everyone there under" : k == ComboKind.Storm ? "hangs as a storm that keeps striking"
                          : k == ComboKind.Steam ? "hangs as a scalding cloud that slows whoever crosses it" : k == ComboKind.Haze ? "hangs as a shimmer no one can aim through" : "hangs as a cloud of dust";
+                case RuneKind.Restore:
+                    return "mends friends there in its own way";
                 case RuneKind.Drain:
                     return k == ComboKind.Storm ? "draws the charge out of machines (EMP)" : k == ComboKind.Magma ? "draws the heat out: the magma sets at once" : k == ComboKind.Bog || k == ComboKind.Dust ? "drinks the water out of everyone there" : "draws the heat out of fires and everyone there";
                 case RuneKind.Lift:
@@ -1288,8 +1292,10 @@ namespace Avir.Magic
         {
             var e = new SpellEffect();
             RitualReading r = RitualEvaluator.Read(s);
-            var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).Select(v => v.kind).Distinct().ToList();
+            var vr = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            SpellHeal.AsVerb(vr, forms);   // Fix258: a lone restoring verb reads as the healing at the point
+            var verbs = vr.Select(v => v.kind).Distinct().ToList();
             string what = string.Join(", ", verbs.Select(v => Verb(k, v)).Where(x => x.Length > 0));
             string name = Combos.Label(k).CapitalizeFirst();
             RuneDef form = forms.FirstOrDefault();

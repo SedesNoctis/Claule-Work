@@ -145,6 +145,21 @@ namespace Avir.Magic
                     "pairs " + string.Join(",", Combos.Pairs(root).Values));
             }
 
+            // 6. healing grammar (Fix258): Restoration is a verb; alone it heals at the point by the element,
+            // beside a form it stays a verb of its own, and it never stands for "strike"
+            RuneDef heal = R("Restore"), rel = R("Release"), beam = R("Beam");
+            Check("restoring is a verb", heal != null && heal.role == RuneRole.Verb, heal == null ? "no rune" : heal.role.ToString());
+            if (heal != null && rel != null && beam != null)
+            {
+                var v1 = new List<RuneDef> { heal }; var f1 = new List<RuneDef>();
+                SpellHeal.AsVerb(v1, f1);
+                Check("lone restoring heals at the point", v1.Count == 0 && f1.Count == 1 && f1[0] == heal, v1.Count + " verbs, " + f1.Count + " forms");
+                var v2 = new List<RuneDef> { heal, rel }; var f2 = new List<RuneDef> { beam };
+                SpellHeal.AsVerb(v2, f2);
+                Check("restoring beside a form stays a verb", v2.Contains(heal) && f2.Count == 1, v2.Count + " verbs, " + f2.Count + " forms");
+                Check("only heals", SpellHeal.OnlyHeals(new List<RuneDef> { heal }) && !SpellHeal.OnlyHeals(new List<RuneDef> { heal, rel }), "");
+            }
+
             var sb = new StringBuilder();
             sb.AppendLine("Magic self-test: " + n + " checks, " + bad.Count + " not as the rules say.");
             foreach (string b in bad) sb.AppendLine("  - " + b);

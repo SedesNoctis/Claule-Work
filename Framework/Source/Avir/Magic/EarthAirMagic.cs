@@ -30,6 +30,7 @@ namespace Avir.Magic
             power *= EarthStone.Gather(map, at, ComboKind.None);
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            SpellHeal.AsVerb(verbs, forms);   // Fix258
             float radius = FireMagic.PointRadius(r);
             if (r.barrier > 0) MagicFx.Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power, EarthAirDefOf.Avir_EarthWard, "Avir_Rune_Earth", r.amplify);
             MagicFx.WardMage(caster, power, EarthAirDefOf.Avir_EarthWard, "Avir_Rune_Earth", r.amplify);
@@ -81,14 +82,7 @@ namespace Avir.Magic
                         // earth makes whole the things in its reach, too: tools, walls, furniture
                     {
                         float rp = power * SpellHeal.WidthShare(rf.breadth);
-                        SpellRestore.Repair(map, FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)), rp);
-                        foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)), map))
-                        {
-                            if (p.HostileTo(caster)) continue;
-                            foreach (Hediff_Injury inj in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => !i.IsTended()).Take(6).ToList()) inj.Tended(Mathf.Clamp01(0.4f + 0.15f * rp), 1f);
-                            MagicFx.Give(p, EarthAirDefOf.Avir_StoneSkin, Mathf.RoundToInt(GenDate.TicksPerHour * rp));
-                            FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 1.2f, MagicFx.EarthDust);
-                        }
+                        SplintCells(caster, map, FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)).ToList(), rp);
                         { var hv = SpellHeal.Carried(s, forms, verbs); if (hv.Count > 0) Apply(caster, map, hv, FireMagic.Point(at, map, fradius), at, power, rf); }
                         break;
                     }
@@ -100,6 +94,20 @@ namespace Avir.Magic
             }
         }
 
+        /// <summary>Earth's mending on these cells (Fix258: a verb, carried by any form): what is broken is made whole, the
+        /// wounds of friends bound in stone like splints, a stone skin for an hour.</summary>
+        internal static void SplintCells(Pawn caster, Map map, List<IntVec3> cells, float rp)
+        {
+            SpellRestore.Repair(map, cells, rp);
+            foreach (Pawn p in MagicFx.PawnsIn(cells, map))
+            {
+                if (p.HostileTo(caster)) continue;
+                foreach (Hediff_Injury inj in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => !i.IsTended()).Take(6).ToList()) inj.Tended(Mathf.Clamp01(0.4f + 0.15f * rp), 1f);
+                MagicFx.Give(p, EarthAirDefOf.Avir_StoneSkin, Mathf.RoundToInt(GenDate.TicksPerHour * rp));
+                FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 1.2f, MagicFx.EarthDust);
+            }
+        }
+
         internal static void Apply(Pawn caster, Map map, List<RuneDef> verbs, List<IntVec3> cells, IntVec3 from, float power, RitualReading r)
         {
             if (cells.Count == 0) return;
@@ -108,6 +116,7 @@ namespace Avir.Magic
                 RitualReading rv = SpellMods.Verb(r, v);
                 switch (v.kind)
                 {
+                    case RuneKind.Restore: SplintCells(caster, map, cells, power * SpellHeal.WidthShare(rv.breadth)); break;   // Fix258: carried by its form
                     case RuneKind.Release:
                         // a tremor: blunt blows, the ground knocks them off their feet
                         foreach (Pawn p in MagicFx.PawnsIn(cells, map))
@@ -219,6 +228,7 @@ namespace Avir.Magic
             IntVec3 at = target.Cell;
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            SpellHeal.AsVerb(verbs, forms);   // Fix258
             float radius = FireMagic.PointRadius(r);
             if (r.barrier > 0) MagicFx.Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power, EarthAirDefOf.Avir_AirWard, "Avir_Rune_Air", r.amplify);
             MagicFx.WardMage(caster, power, EarthAirDefOf.Avir_AirWard, "Avir_Rune_Air", r.amplify);
@@ -261,17 +271,7 @@ namespace Avir.Magic
                     case RuneKind.Restore:
                         // a second wind: breath back, tiredness lifted - the wider, the thinner
                         float ap = power * SpellHeal.WidthShare(rf.breadth);
-                        foreach (Pawn p in MagicFx.PawnsIn(FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)), map))
-                        {
-                            if (p.HostileTo(caster)) continue;
-                            if (p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Min(1f, p.needs.rest.CurLevel + 0.25f * ap);
-                            foreach (Hediff h in p.health.hediffSet.hediffs.Where(x => x.def == EarthAirDefOf.Avir_Breathless || x.def == EarthAirDefOf.Avir_Winded).ToList()) p.health.RemoveHediff(h);
-                            Hediff tox = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.ToxicBuildup);
-                            if (tox != null) { tox.Severity -= 0.1f * ap; if (tox.Severity <= 0f) p.health.RemoveHediff(tox); }
-                            // air's gift: the chest opens, the head clears
-                            SpellRestore.Gift(p, SpellRestore.SecondWind, ap);
-                            FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 1.2f, MagicFx.AirDust);
-                        }
+                        AirMagic.SecondWindCells(caster, map, FireMagic.Point(at, map, Mathf.Max(0.9f, fradius - 1f)).ToList(), ap);
                         { var hv = SpellHeal.Carried(s, forms, verbs); if (hv.Count > 0) Apply(caster, map, hv, FireMagic.Point(at, map, fradius), at, power, rf); }
                         break;
                     case RuneKind.Enchant: MagicFx.Enchant(caster, at, map, power, EarthAirDefOf.Avir_AirEnchant); break;
@@ -324,12 +324,29 @@ namespace Avir.Magic
             }
         }
 
+        /// <summary>Air's mending on these cells (Fix258: a verb, carried by any form): a second wind - tiredness lifted, the
+        /// breath back, poison in the blood thinned.</summary>
+        internal static void SecondWindCells(Pawn caster, Map map, List<IntVec3> cells, float ap)
+        {
+            foreach (Pawn p in MagicFx.PawnsIn(cells, map))
+            {
+                if (p.HostileTo(caster)) continue;
+                if (p.needs?.rest != null) p.needs.rest.CurLevel = Mathf.Min(1f, p.needs.rest.CurLevel + 0.25f * ap);
+                foreach (Hediff h in p.health.hediffSet.hediffs.Where(x => x.def == EarthAirDefOf.Avir_Breathless || x.def == EarthAirDefOf.Avir_Winded).ToList()) p.health.RemoveHediff(h);
+                Hediff tox = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.ToxicBuildup);
+                if (tox != null) { tox.Severity -= 0.1f * ap; if (tox.Severity <= 0f) p.health.RemoveHediff(tox); }
+                // air's gift: the chest opens, the head clears
+                SpellRestore.Gift(p, SpellRestore.SecondWind, ap);
+                FleckMaker.ThrowDustPuffThick(p.DrawPos, map, 1.2f, MagicFx.AirDust);
+            }
+        }
+
         internal static void Apply(Pawn caster, Map map, List<RuneDef> verbs, List<IntVec3> cells, IntVec3 from, float power, RitualReading r)
         {
             if (cells.Count == 0) return;
             // the wind of the spell is wind (Fix173): ours carries things off, staggers and fells - a line blows along it,
             // anything else out from its middle; Amplify and the caster's power make it stronger, Hold makes it last
-            if (!AtmosphereBridge.Throws)
+            if (!AtmosphereBridge.Throws && !SpellHeal.OnlyHeals(verbs))   // Fix258: a second wind carried along is no gust
             {
                 float st = MapComponent_MagicWind.AirStrength(power, r.amplify, map);
                 bool hold = verbs.Any(x => x.kind == RuneKind.Hold);
@@ -339,13 +356,14 @@ namespace Avir.Magic
                 bool line = along.sqrMagnitude > 4f && span > 3f && cells.Count < span * 4f;
                 MapComponent_MagicWind.Blow(map, line ? MapComponent_MagicWind.Shape.Front : MapComponent_MagicWind.Shape.Out, line ? mid : mid, span, st, hold ? 300 : 40, caster, along);
             }
-            if (AtmosphereBridge.On)
+            if (AtmosphereBridge.On && !SpellHeal.OnlyHeals(verbs))
                 foreach (IntVec3 c in cells) { Vector3 o = c.ToVector3Shifted() - from.ToVector3Shifted(); if (o.sqrMagnitude > 0.1f) AtmosphereBridge.Wind(map, c, new Vector2(o.x, o.z).normalized * Mathf.Min(AtmosphereBridge.MaxPush, MapComponent_MagicWind.AirStrength(power, r.amplify, map) * 0.4f)); }
             foreach (RuneDef v in verbs)
             {
                 RitualReading rv = SpellMods.Verb(r, v);
                 switch (v.kind)
                 {
+                    case RuneKind.Restore: SecondWindCells(caster, map, cells, power * SpellHeal.WidthShare(rv.breadth)); break;   // Fix258: carried by its form
                     case RuneKind.Release:
                         // a gust: foes thrown back hard; and the wind feeds whatever fire it meets
                         foreach (Pawn p in MagicFx.PawnsIn(cells, map))

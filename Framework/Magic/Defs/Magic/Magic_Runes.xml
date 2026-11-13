@@ -181,8 +181,8 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Restore</defName>
     <label>restoring</label>
-    <description>A form: returning a thing or a body towards how it was - mending, cleansing, undoing.</description>
-    <role>Form</role>
+    <description>A verb: mends what is hurt. Alone in an element's circle it heals friends at the point, each element in its own way - fire sears wounds shut, water washes and binds them, earth splints them in stone, air gives back breath. Beside Thread it turns the spell into healing carried along; beside other verbs it acts on its own, and the barriers decide whom it spares.</description>
+    <role>Verb</role>
     <kind>Restore</kind>
     <glyph>Restore</glyph>
     <instability>0.15</instability>

@@ -35,6 +35,7 @@ namespace Avir.Magic
             IntVec3 at = target.Cell;
             var verbs = r.verbs.Where(v => v.role == RuneRole.Verb).ToList();
             var forms = r.verbs.Where(v => v.role == RuneRole.Form).ToList();
+            SpellHeal.AsVerb(verbs, forms);   // Fix258
             float radius = FireMagic.PointRadius(r);
             if (r.barrier > 0) Ward(caster, forms.Any(f => f.kind == RuneKind.Aura) ? caster.Position : at, map, Mathf.Max(0.9f, radius - 1f), power, r.amplify);
             MagicFx.WardMage(caster, power, WaterDefOf.Avir_WaterWard, "Avir_Rune_Water", r.amplify);
@@ -102,12 +103,13 @@ namespace Avir.Magic
         internal static void Apply(Pawn caster, Map map, List<RuneDef> verbs, List<IntVec3> cells, IntVec3 from, float power, RitualReading r)
         {
             if (cells.Count == 0) return;
-            if (verbs.Count > 0) Reactions.Touch(Brings.Water, cells, map, caster, power);
+            if (verbs.Count > 0 && !SpellHeal.OnlyHeals(verbs)) Reactions.Touch(Brings.Water, cells, map, caster, power);
             foreach (RuneDef v in verbs)
             {
                 RitualReading rv = SpellMods.Verb(r, v);
                 switch (v.kind)
                 {
+                    case RuneKind.Restore: WashCells(caster, cells, map, power * SpellHeal.WidthShare(rv.breadth)); break;   // Fix258: carried by its form
                     case RuneKind.Release:
                         foreach (IntVec3 c in cells) FireMagic.Extinguish(c, map);
                         foreach (Pawn p in PawnsIn(cells, map))
@@ -254,10 +256,12 @@ namespace Avir.Magic
         }
 
         /// <summary>Wounds of friends washed and bound: bleeding stops; a cleaner tending than fire's.</summary>
-        private static void Wash(Pawn caster, IntVec3 at, Map map, float radius, float power)
+        private static void Wash(Pawn caster, IntVec3 at, Map map, float radius, float power) => WashCells(caster, FireMagic.Point(at, map, radius).ToList(), map, power);
+
+        internal static void WashCells(Pawn caster, List<IntVec3> cells, Map map, float power)
         {
             float q = Mathf.Clamp01(0.45f + 0.15f * power);
-            foreach (Pawn p in FireMagic.Point(at, map, radius).SelectMany(c => c.GetThingList(map).OfType<Pawn>()).Distinct().ToList())
+            foreach (Pawn p in cells.Where(c => c.InBounds(map)).SelectMany(c => c.GetThingList(map).OfType<Pawn>()).Distinct().ToList())
             {
                 if (p.Dead || p.HostileTo(caster)) continue;
                 foreach (Hediff_Injury inj in p.health.hediffSet.hediffs.OfType<Hediff_Injury>().Where(i => i.Bleeding || !i.IsTended()).Take(6).ToList())

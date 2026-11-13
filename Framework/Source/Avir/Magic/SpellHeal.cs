@@ -51,8 +51,8 @@ namespace Avir.Magic
             for (int i = 0; i < seq.Count; i++)
             {
                 RuneDef x = seq[i];
-                if (x.role == RuneRole.Form && x.kind == RuneKind.Restore && verb != null && i > 0 && seq[i - 1].kind == RuneKind.Thread) bound.Add(verb);
-                if (x.role == RuneRole.Verb) verb = x; else if (x.role == RuneRole.Form) verb = null;
+                if (x.kind == RuneKind.Restore && verb != null && i > 0 && seq[i - 1].kind == RuneKind.Thread) bound.Add(verb);
+                if (x.role == RuneRole.Verb && x.kind != RuneKind.Restore) verb = x; else if (x.role == RuneRole.Form) verb = null;   // Fix258: Restoration is a verb, but never the one tied
             }
             return bound;
         }
@@ -68,9 +68,9 @@ namespace Avir.Magic
             for (int i = 0; i < seq.Count; i++)
             {
                 RuneDef x = seq[i];
-                if (x.role == RuneRole.Form && x.kind == RuneKind.Restore && verbAt >= 0 && i > 0 && seq[i - 1].kind == RuneKind.Thread)
+                if (x.kind == RuneKind.Restore && verbAt >= 0 && i > 0 && seq[i - 1].kind == RuneKind.Thread)
                 { List<bool> l = copies[seq[verbAt].kind]; l[l.Count - 1] = true; }
-                if (x.role == RuneRole.Verb)
+                if (x.role == RuneRole.Verb && x.kind != RuneKind.Restore)
                 {
                     verbAt = i;
                     if (!copies.TryGetValue(x.kind, out List<bool> l)) copies[x.kind] = l = new List<bool>();
@@ -205,6 +205,23 @@ namespace Avir.Magic
             // Growth and Purge stay Restoration's helpers unless tied
             return verbs.Where(v => (v.kind != RuneKind.Growth && v.kind != RuneKind.Purge) || b.Contains(v)).ToList();
         }
+
+        /// <summary>RESTORATION IS A VERB (Fix258, the author): what heals, as Withering takes - not a form beside the Beam
+        /// and the Wall. Written alone (no form in the part) it does what it always did: it heals at the point, the
+        /// element's own way, and Growth and Purge beside it are its helpers - so it is handed on there as the one "form"
+        /// the element's mending reads. With a form it is carried by the form as any verb is: along the beam, round the
+        /// caster, along the wall, on the way and where the caster comes out - each element's Apply heals the friends on the
+        /// form's cells. The healing turn (verb + Thread + Restoration) is kept as it was.</summary>
+        public static void AsVerb(List<RuneDef> verbs, List<RuneDef> forms)
+        {
+            if (verbs == null || forms == null) return;
+            RuneDef heal = verbs.FirstOrDefault(v => v.kind == RuneKind.Restore);
+            if (heal == null || forms.Count > 0) return;
+            verbs.RemoveAll(v => v.kind == RuneKind.Restore);
+            forms.Add(heal);
+        }
+        /// <summary>Only healing among these verbs: the element's touch on the ground (fire lit, water spilt, wind) stays out.</summary>
+        public static bool OnlyHeals(List<RuneDef> verbs) => verbs.Count > 0 && verbs.All(v => v.kind == RuneKind.Restore);
 
         public static bool Living(Pawn p) => p != null && !p.Dead && p.RaceProps.IsFlesh;
 
