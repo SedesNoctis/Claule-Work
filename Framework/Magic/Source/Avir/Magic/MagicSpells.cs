@@ -106,6 +106,17 @@ namespace Avir.Magic
         public static int Cooldown(RitualSchema s) => 0;
         public static float Range(RitualSchema s) => (s.weave != null && WeaveSpell.Burrows(s.weave) ? 30f + 10f * WeaveSpell.Reach(s.weave) : 16f + 10f * (s.weave != null ? WeaveSpell.Reach(s.weave) : RitualEvaluator.Read(s).reach))
                                                      + (s.weave != null && LightMagic.AnyCrystal(s.weave) ? LightMagic.CrystalReach : 0f);
+        /// <summary>THE MAGE STRIKES ONLY WHAT IT SEES (the author, Fix261): a point behind a wall cannot be chosen - before, it
+        /// could, and every spell that does not fly (Light, Life, points, walls, auras) struck there through the stone; only
+        /// the flying ball and beam were stopped by the wall itself. Seen from where the spell leaves (the mage, or the
+        /// place it leapt from). Not asked of a spell that goes underground (Burrows) or one that senses (Sense).</summary>
+        public static bool Sees(RitualSchema s, IntVec3 from, IntVec3 at, Map map)
+        {
+            if (map == null || !at.InBounds(map) || from == at) return true;
+            if (s?.weave != null && WeaveSpell.Burrows(s.weave)) return true;
+            if (s != null && (s.weave != null ? s.weave.All().SelectMany(c => c.OwnRunes) : RitualEvaluator.Read(s).verbs).Any(x => x != null && x.kind == RuneKind.Sense)) return true;
+            return GenSight.LineOfSight(from, at, map, true);
+        }
         public static float Power(RitualSchema s) => RitualCircles.PowerFactor(s.size) * (1f + 0.3f * RitualEvaluator.Read(s).amplify);
         public static RuneDef Element(RitualSchema s) => s.weave != null ? (s.weave.element ?? s.weave.All().Select(c => c.element).FirstOrDefault(e => e != null)) : RitualEvaluator.Read(s).elements.FirstOrDefault();
 
@@ -462,10 +473,11 @@ namespace Avir.Magic
             {
                 if (!mage.Spawned) return;
                 if (t.Cell.DistanceTo(mage.Position) > range) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
+                if (!Spells.Sees(spell, mage.Position, t.Cell, mage.Map)) { Messages.Message("The mage cannot see there.", MessageTypeDefOf.RejectInput, false); return; }
                 // a beam on a route (Fix234): its further marks first
                 if (SpellRoute.Marks(spell, out _) > 1) { LocalTargetInfo first = t; SpellRoute.Deferred = () => SpellRoute.Aim(mage, spell, first, () => Then(first, IntVec3.Invalid)); return; }
                 Then(t, IntVec3.Invalid);
-            }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, null, null, true, null,
+            }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range && Spells.Sees(spell, mage.Position, t.Cell, mage.Map), mage, null, null, true, null,
             t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
         }
 
@@ -489,7 +501,7 @@ namespace Avir.Magic
                     if (places.Count < need) { Ask(t.Cell); return; }
                     SpellHops.Set(mage, places);
                     SpellCasting.Order(mage, spell, slot, target, wallEnd);
-                }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(from) <= range, mage, null, null, true, null,
+                }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(from) <= range && Spells.Sees(spell, from, t.Cell, mage.Map), mage, null, null, true, null,
                 t =>
                 {
                     GenDraw.DrawRadiusRing(from, Mathf.Min(range, GenRadial.MaxRadialPatternRadius - 1f));
@@ -518,9 +530,9 @@ namespace Avir.Magic
                     if (!mage.Spawned) return;
                     if (end.Cell.DistanceTo(mage.Position) > range) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
                     Then(start.Cell, end.Cell);
-                }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, () => SpellPreview.WallStart = IntVec3.Invalid, null, true, null,
+                }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range && Spells.Sees(spell, mage.Position, t.Cell, mage.Map), mage, () => SpellPreview.WallStart = IntVec3.Invalid, null, true, null,
                 t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
-            }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range, mage, null, null, true, null,
+            }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range && Spells.Sees(spell, mage.Position, t.Cell, mage.Map), mage, null, null, true, null,
             t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
         }
 
