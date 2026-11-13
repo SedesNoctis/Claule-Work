@@ -518,7 +518,7 @@ namespace Avir.Magic
 
         // ================================================================== middle: the circles
 
-        private class Node
+        internal class Node
         {
             public SpellCircle c;
             public float R, core;             // outer radius; for a small circle its centre plate, for a great one the space it holds
@@ -526,14 +526,14 @@ namespace Avir.Magic
             public List<Vector2> at = new List<Vector2>();
         }
 
-        private const float Core = 34f, Band = 40f, GreatBand = 46f, Inside = 0.90f, Heart = 46f;
+        internal const float Core = 34f, Band = 40f, GreatBand = 46f, Inside = 0.90f, Heart = 46f;
         /// <summary>A great circle wears the Linarian ring outside its rim, in its own colour: so much further out it reaches.</summary>
-        private const float Halo = 1.70f, HaloOuter = 1.57f;
-        private static float Outer(Node k) => k.c.Great ? k.R * HaloOuter : k.R;
+        internal const float Halo = 1.70f, HaloOuter = 1.57f;
+        internal static float Outer(Node k) => k.c.Great ? k.R * HaloOuter : k.R;
         private static Texture2D linarian;
-        private static Texture2D Linarian => Tex(ref linarian, "UI/Avir/Herald/PathRing");
+        internal static Texture2D Linarian => Tex(ref linarian, "UI/Avir/Herald/PathRing");
 
-        private static Node Measure(SpellCircle c)
+        internal static Node Measure(SpellCircle c)
         {
             var n = new Node { c = c };
             foreach (SpellCircle k in c.inner) n.kids.Add(Measure(k));
@@ -612,6 +612,20 @@ namespace Avir.Magic
         private static readonly Color BindingColor = new Color(0.92f, 0.84f, 0.66f);
         /// <summary>Circles whose elements met: both wear the colour of what they made.</summary>
         private static readonly Dictionary<SpellCircle, ComboKind> met = new Dictionary<SpellCircle, ComboKind>();
+        /// <summary>The colours of every circle of a spell, as the editor paints them (Fix266: the circle drawn under a
+        /// caster is the editor's circle, so it takes the same colours).</summary>
+        internal static Dictionary<SpellCircle, Color> Colors(SpellCircle root)
+        {
+            var res = new Dictionary<SpellCircle, Color>();
+            if (root == null) return res;
+            met.Clear(); foreach (var kv in Combos.Pairs(root)) met[kv.Key] = kv.Value;
+            seconds.Clear(); foreach (var kv in SecondOrder.Of(root)) seconds[kv.Key] = kv.Value;
+            rootNow = root;
+            void Walk(SpellCircle c) { res[c] = ColorOf(c); foreach (SpellCircle k in c.inner) Walk(k); }
+            Walk(root);
+            return res;
+        }
+
         private static Color ColorOf(SpellCircle c)
         {
             if (c.binding) return BindingColor;
@@ -852,7 +866,7 @@ namespace Avir.Magic
         }
 
         /// <summary>Turns a great circle's runes so none sits on the four stars of the rim, nor on the seal at the top.</summary>
-        private static float ClearOffset(int per)
+        internal static float ClearOffset(int per)
         {
             float best = -1f, bo = 0f;
             for (int o = 0; o <= 360 / per; o += 3)

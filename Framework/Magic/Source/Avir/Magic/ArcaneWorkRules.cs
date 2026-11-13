@@ -38,7 +38,7 @@ namespace Avir.Magic
         private static readonly List<Group> detailed = new List<Group>
         {
             G("Fire", "Fire", "firefight", "Putting out fires by water (or smothering them by the wind), from a few cells off.", new[] { "Avir_ArcaneFirefight" }, "Firefighter"),
-            G("Tend", "Tend", "tend", "Tending the wounded by water: no medicine needed.", new[] { "Avir_MagicTend" }, "Doctor", "FSFNurse"),
+            G("Tend", "Tend", "tend", "Tending the wounded by any magic that heals - water, Life, Light; a healer of the White Flame (Light and Fire) lays a seal that mends the wounds slowly through the day. No medicine needed.", new[] { "Avir_MagicTend" }, "Doctor", "FSFNurse"),
             G("Heal", "Tend", "heal", "Healing by Life out of its store, each kind of healing with its own after-gift; a healer of Pestilence takes the sicknesses onto himself.", new[] { "Avir_LifeHeal", "Avir_LifeCure" }, "Doctor", "FSFNurse"),
             G("Soothe", "Soothe", "soothe", "Easing the others by Life: a quiet touch for the tired and the low (only magic does this).", new[] { "Avir_LifeSoothe", "Avir_LifeCare", "Avir_LifeBathSteam" }),
             G("Animals", "Animals", "animals", "Gathering from the animals at a touch of Life - milk, wool and the like, whatever the hand.", new[] { "Avir_LifeGather" }, "Handling"),
@@ -59,6 +59,7 @@ namespace Avir.Magic
             G("Warm", "Warm", "warmth", "Warming rooms by haze, tying heat knots, airing the rooms (only magic does this).", new[] { "Avir_ArcaneWarm", "Avir_2HeatRoom", "Avir_2Vent" }),
             G("Power", "Power", "power", "Charging batteries, driving the wind turbines (only magic does this).", new[] { "Avir_ArcaneCharge", "Avir_2Charge", "Avir_2Wind" }),
             G("Stores", "Stores", "stores", "Drying and preserving the stores (only magic does this).", new[] { "Avir_2Dry", "Avir_2Preserve" }),
+            G("Weather", "Land", "weather", "Calling the weather at the altar: rain, fog, the wind raised or stilled, the clouds driven off (only magic does this).", new[] { "Avir_WeatherAltar" }),
             G("Land", "Land", "land", "The arcane orders on land and water: stone and water, moats, silt, geysers, lava cores, marsh gas, rainbows, light and sun crystals (only magic does this).", new[] { "Avir_ArcaneWater", "Avir_ArcaneHotSpring", "Avir_ArcaneStone", "Avir_2Moat", "Avir_2SiltWater", "Avir_2SiltLand", "Avir_2SiltDump", "Avir_2RaiseGeyser", "Avir_2SealGeyser", "Avir_2LavaCore", "Avir_2LavaPool", "Avir_2LavaSet", "Avir_2MarshGas", "Avir_2Rainbow", "Avir_LightCrystal" }),
         };
         private static List<Group> merged;
@@ -259,7 +260,7 @@ namespace Avir.Magic
 
         /// <summary>The school a work giver belongs to (the second order apart).</summary>
         public static string SchoolOf(string giver) { RuneKind[] ks = KindsOf(giver); return ks == null ? null : Works2.All.ContainsKey(giver) ? "Second" : School(ks); }
-        public static IEnumerable<string> SchoolsOf(string giver) => giver == "Avir_ArcaneGrowth" ? new[] { "Water", "Earth" } : new[] { SchoolOf(giver) };
+        public static IEnumerable<string> SchoolsOf(string giver) => giver == "Avir_ArcaneGrowth" ? new[] { "Water", "Earth" } : giver == "Avir_MagicTend" ? new[] { "Water", "Life", "Light" } : new[] { SchoolOf(giver) };
 
         /// <summary>What each work gives - why it is worth the Arcana (the author asked: why steam, if water washes too?).</summary>
         public static readonly Dictionary<string, string> Gives = new Dictionary<string, string>
@@ -267,7 +268,8 @@ namespace Avir.Magic
             ["Avir_ArcaneFish"] = "fish drawn out of the fishing zones from the shore - a bubble of water brings a few at once, the wind one from farther off",
             ["Avir_ArcaneHunt"] = "the marked animals hunted with the battle charm from range - no gun, no closing in",
             ["Avir_ArcaneFirefight"] = "every fire in a radius goes out at once, from a few cells off - no walking into the flames",
-            ["Avir_MagicTend"] = "tends wounds with no medicine at all; the better the stage, the better the tending",
+            ["Avir_WeatherAltar"] = "talks the sky round at the weather altar - rain, fog, wind raised or stilled, a clear sky - for about eight hours",
+            ["Avir_MagicTend"] = "tends wounds with no medicine at all, by any magic that heals; the better the stage, the better the tending; the White Flame's seal mends slowly afterwards",
             ["Avir_LifeHeal"] = "heals the wounded out of the store of life; what it leaves after depends on the healer (Life, Warmth, Sap, Frame, Breath, Wild Flame, Blood, Emerald, Pestilence)",
             ["Avir_LifeCure"] = "a healer of Pestilence takes the sicknesses of the sick onto himself, as fuel",
             ["Avir_LifeCrops"] = "quickens the growing patch, once a day each; a caster of Decay takes the blight off too",
@@ -288,8 +290,8 @@ namespace Avir.Magic
             ["Avir_2RaiseGeyser"] = "calls a steam geyser up where marked - for a geothermal generator",
             ["Avir_2SealGeyser"] = "seals a steam geyser for good",
             ["Avir_2SiltDump"] = "the silt swallows what is left on the marked cells - rubble, slag, rags, corpses: a pit for refuse",
-            ["Avir_2SiltLand"] = "turns marked shallow water into ground for thirty days",
-            ["Avir_2SiltWater"] = "turns marked ground into shallow water for thirty days",
+            ["Avir_2SiltLand"] = "turns marked shallow water into ground for fifteen days",
+            ["Avir_2SiltWater"] = "turns marked ground into shallow water for fifteen days",
             ["Avir_MagicSmooth"] = "smooths floors and walls from afar, much quicker than by hand",
             ["Avir_ArcaneGrowth"] = "quickens the growth of the marked plants (by water or earth)",
             ["Avir_ArcaneEnrich"] = "turns poor ground into rich arcane soil for fifteen days",
@@ -382,6 +384,10 @@ namespace Avir.Magic
             if (giver == "Avir_ArcaneFish") return c != null && !MagicWork.Knows(c, RuneKind.Water) && MagicWork.Knows(c, RuneKind.Air) ? new[] { RuneKind.Air } : new[] { RuneKind.Water };
             if (giver == "Avir_ArcaneHunt") { RuneKind? e = c != null ? CombatCharms.ElementOf(c) : null; return e != null ? new[] { e.Value } : new[] { RuneKind.Fire }; }
             if (giver == "Avir_ArcaneGrowth") return (c != null ? ArcaneWorks.Grower(c) : null) ?? new[] { RuneKind.Water };
+            // tending is for every school whose magic heals - water, Life, Light - whichever the caster knows best (the author, Fix266)
+            // the weather altar: air for the wind, water for rain - whichever the caster knows (the call itself says the rest)
+            if (giver == "Avir_WeatherAltar") return new[] { c != null && !MagicWork.Knows(c, RuneKind.Air) && MagicWork.Knows(c, RuneKind.Water) ? RuneKind.Water : RuneKind.Air };
+            if (giver == "Avir_MagicTend") return new[] { (c != null ? MagicHealers.School(c) : null) ?? RuneKind.Water };
             switch (giver)
             {
                 case "Avir_MagicClean": case "Avir_MagicTend": case "Avir_ArcaneFirefight": return new[] { RuneKind.Water };

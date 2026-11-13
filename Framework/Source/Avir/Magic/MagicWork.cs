@@ -249,24 +249,76 @@ namespace Avir.Magic
         }
     }
 
-    // ------------------------------------------------------------------ water: tending the wounded
+    // ------------------------------------------------------------------ tending the wounded by any magic that heals
+
+    /// <summary>Who tends by magic (the author, Fix266: "every school that can heal gets the healers' work, whatever the
+    /// meeting"): water, Life and Light - the one the caster knows best. A caster of Light who knows Fire too is a healer of
+    /// the White Flame: the tending lays a seal that mends the wounds slowly through the day (and flares once if hurt).</summary>
+    public static class MagicHealers
+    {
+        public static readonly RuneKind[] Schools = { RuneKind.Water, RuneKind.Life, RuneKind.Light };
+
+        public static RuneKind? School(Hediff_ArcaneCore c)
+        {
+            if (c == null) return null;
+            RuneKind? best = null; int stage = -1;
+            foreach (RuneKind k in Schools)
+            {
+                if (!MagicWork.Knows(c, k)) continue;
+                int st = MageClass.Stage(MageClass.XpIn(c, k));
+                if (st > stage) { stage = st; best = k; }
+            }
+            return best;
+        }
+
+        public static Hediff_ArcaneCore Able(Pawn p, float cost, out RuneKind school)
+        {
+            school = RuneKind.Water;
+            Hediff_ArcaneCore c = Mages.Core(p);
+            RuneKind? k = School(c);
+            if (k == null) return null;
+            school = k.Value;
+            return MagicWork.Able(p, k.Value, cost);
+        }
+
+        public static bool WhiteFlame(Hediff_ArcaneCore c, RuneKind school) => school == RuneKind.Light && MagicWork.Knows(c, RuneKind.Fire);
+
+        public static Color Tint(RuneKind k, bool white) => white ? new Color(1f, 0.97f, 0.82f, 0.55f) : k == RuneKind.Life ? new Color(0.45f, 0.85f, 0.45f, 0.5f) : k == RuneKind.Light ? new Color(1f, 0.92f, 0.6f, 0.5f) : new Color(0.5f, 0.7f, 1f, 0.5f);
+
+        public static HediffDef Mend => DefDatabase<HediffDef>.GetNamedSilentFail("Avir_WhiteFlameMend");
+
+        [LudeonTK.DebugAction("Magic", "Healers: which school tends (log)", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void DevSchool(Pawn p)
+        {
+            Hediff_ArcaneCore c = Mages.Core(p); RuneKind? k = School(c);
+            Messages.Message(p.LabelShort + ": " + (k == null ? "cannot tend by magic (no water, Life or Light)" : "tends by " + k + (WhiteFlame(c, k.Value) ? " - a healer of the White Flame" : "") + ", quality " + WorkGiver_MagicTend.Quality(c, k.Value).ToStringPercent()), MessageTypeDefOf.NeutralEvent, false);
+        }
+
+        [LudeonTK.DebugAction("Magic", "Healers: White Flame seal on pawn (full quality)", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void DevMend(Pawn p)
+        {
+            if (Mend == null) return;
+            Hediff m = p.health.hediffSet.GetFirstHediffOfDef(Mend) ?? p.health.AddHediff(Mend);
+            m.Severity = 0.95f;
+        }
+    }
 
     public class WorkGiver_MagicTend : WorkGiver_Scanner
     {
         public const float Cost = 4f, Xp = 8f;
         public override PathEndMode PathEndMode => PathEndMode.Touch;
         public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.Pawn);
-        public override bool ShouldSkip(Pawn pawn, bool forced = false) => MagicWork.Able(pawn, RuneKind.Water, Cost) == null;
+        public override bool ShouldSkip(Pawn pawn, bool forced = false) => MagicHealers.Able(pawn, Cost, out _) == null;
 
         public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false) =>
             t is Pawn patient && patient != pawn && !patient.Dead && patient.RaceProps.IsFlesh && HealthAIUtility.ShouldBeTendedNowByPlayer(patient)
             && WorkGiver_Tend.GoodLayingStatusForTend(patient, pawn) && !patient.IsForbidden(pawn) && pawn.CanReserve(patient, 1, -1, null, forced)
-            && MagicWork.Able(pawn, RuneKind.Water, Cost) != null;
+            && MagicHealers.Able(pawn, Cost, out _) != null;
 
         public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false) => JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("Avir_MagicTend"), t);
 
-        /// <summary>How well water tends: by the caster's mastery - a novice 30%, each stage +12% (a grandmaster 90%).</summary>
-        public static float Quality(Hediff_ArcaneCore c) => Mathf.Clamp(0.3f + 0.12f * MageClass.Stage(MageClass.XpIn(c, RuneKind.Water)), 0.2f, 0.95f);
+        /// <summary>How well magic tends: by the caster's mastery in the healing school - a novice 30%, each stage +12% (a grandmaster 90%).</summary>
+        public static float Quality(Hediff_ArcaneCore c, RuneKind k = RuneKind.Water) => Mathf.Clamp(0.3f + 0.12f * MageClass.Stage(MageClass.XpIn(c, k)), 0.2f, 0.95f);
     }
 
     public class JobDriver_MagicTend : JobDriver
@@ -277,26 +329,60 @@ namespace Avir.Magic
         protected override IEnumerable<Toil> MakeNewToils()
         {
             this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
-            WorkCast wc = WorkSpells.Make(Mages.Core(pawn), "Avir_MagicTend", new[] { RuneKind.Water }, WorkGiver_MagicTend.Cost);
+            Hediff_ArcaneCore core = Mages.Core(pawn);
+            RuneKind school = MagicHealers.School(core) ?? RuneKind.Water;
+            bool white = MagicHealers.WhiteFlame(core, school);
+            RuneKind[] kinds = white ? new[] { RuneKind.Light, RuneKind.Fire } : new[] { school };
+            WorkCast wc = WorkSpells.Make(core, "Avir_MagicTend", kinds, WorkGiver_MagicTend.Cost);
             yield return WorkSpells.GoTo(this, false, 0f);
-            yield return ArcaneChannel.Channel(this, wc.FromBook ? 225 : 300, wc.spell ?? WorkSpells.Charm("Avir_MagicTend", new[] { RuneKind.Water }), false, new Color(0.5f, 0.7f, 1f, 0.5f));
+            yield return ArcaneChannel.Channel(this, wc.FromBook ? 225 : 300, wc.spell ?? WorkSpells.Charm("Avir_MagicTend", kinds), false, MagicHealers.Tint(school, white));
             Toil done = ToilMaker.MakeToil("MagicTend");
             done.initAction = () =>
             {
                 Pawn patient = TargetA.Thing as Pawn;
-                Hediff_ArcaneCore c = MagicWork.Able(pawn, RuneKind.Water, wc.cost);
+                Hediff_ArcaneCore c = MagicWork.Able(pawn, school, wc.cost);
                 if (patient == null || c == null) return;
                 tend.Clear(); order.Clear();
                 TendUtility.GetOptimalHediffsToTendWithSingleTreatment(patient, false, tend, null);
                 // a household spell of mending tends better: +10% for each Amplify (never past 98%)
-                float q = Mathf.Min(0.98f, WorkGiver_MagicTend.Quality(c) * (1f + 0.1f * wc.amplify));
+                float q = Mathf.Min(0.98f, WorkGiver_MagicTend.Quality(c, school) * (1f + 0.1f * wc.amplify));
                 for (int i = 0; i < tend.Count; i++) tend[i].Tended(Mathf.Clamp01(q * Rand.Range(0.9f, 1.1f)), 1f, i);
                 Desiccation.Undo(patient, 0.15f * q);   // magic healing of any kind turns the drying back (Fix200)
+                if (white && MagicHealers.Mend != null)
+                {
+                    // the White Flame: not burning the sickness out but a seal laid on the wounds - they mend slowly through the day
+                    Hediff m = patient.health.hediffSet.GetFirstHediffOfDef(MagicHealers.Mend) ?? patient.health.AddHediff(MagicHealers.Mend);
+                    m.Severity = Mathf.Max(m.Severity, q);
+                    if (m.TryGetComp<HediffComp_Disappears>() is HediffComp_Disappears d) d.ticksToDisappear = GenDate.TicksPerDay;
+                    if (LightZenith.Seal != null)
+                    {
+                        Hediff s = patient.health.hediffSet.GetFirstHediffOfDef(LightZenith.Seal) ?? patient.health.AddHediff(LightZenith.Seal);
+                        s.Severity = Mathf.Min(LightZenith.MaxSeals, Mathf.Max(1f, Mathf.Floor(s.Severity)));
+                    }
+                    if (patient.Spawned) MapComponent_SpellSprites.PutTinted(patient.Map, "Light/Flare_Night", LightZenith.ZenithColor, patient.DrawPos, 1.4f, 40);
+                }
                 FleckMaker.ThrowMetaIcon(patient.Position, patient.Map, FleckDefOf.HealingCross);
-                MagicWork.Done(c, RuneKind.Water, wc.cost, WorkGiver_MagicTend.Xp * (wc.FromBook ? 1.5f : 1f));
+                if (white) { MagicWork.Done(c, RuneKind.Light, wc.cost, WorkGiver_MagicTend.Xp * 0.6f * (wc.FromBook ? 1.5f : 1f)); MageClass.Gain(c, RuneKind.Fire, WorkGiver_MagicTend.Xp * 0.4f); }
+                else MagicWork.Done(c, school, wc.cost, WorkGiver_MagicTend.Xp * (wc.FromBook ? 1.5f : 1f));
             };
             done.defaultCompleteMode = ToilCompleteMode.Instant;
             yield return done;
+        }
+    }
+
+    /// <summary>The White Flame's seal on tended wounds: they mend slowly through the day, as a good doctor's care would
+    /// hasten them - by the healer's quality.</summary>
+    public class HediffCompProperties_WhiteFlameMend : HediffCompProperties
+    {
+        public HediffCompProperties_WhiteFlameMend() { compClass = typeof(HediffComp_WhiteFlameMend); }
+    }
+
+    public class HediffComp_WhiteFlameMend : HediffComp
+    {
+        public override void CompPostTick(ref float severityAdjustment)
+        {
+            if (!Pawn.IsHashIntervalTick(250) || Pawn.Dead) return;
+            LifeMagic.HealInjuries(Pawn, 0.18f * parent.Severity);
         }
     }
 

@@ -400,10 +400,26 @@ namespace Avir.Magic
     {
         public MapComponent_SpellCircles(Map map) : base(map) { }
 
+        // the developer's look at a spell's circle without casting it (Fix266)
+        public static Pawn ShowPawn; public static RitualSchema ShowSpell; public static float ShowUntil; private static int showNext;
+
+        [LudeonTK.DebugAction("Magic", "Spell circle: show under the mage (next spell of the book, 15 s)", actionType = LudeonTK.DebugActionType.ToolMapForPawns, allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void DevShow(Pawn p)
+        {
+            var book = Mages.Core(p)?.Book;
+            if (book == null || book.spells.Count == 0) { Messages.Message(p.LabelShort + " has no spells in the book.", MessageTypeDefOf.RejectInput, false); return; }
+            if (ShowPawn != p) showNext = 0;
+            ShowPawn = p; ShowSpell = book.spells[showNext % book.spells.Count]; showNext++;
+            ShowUntil = Time.realtimeSinceStartup + 15f;
+            Messages.Message("Spell circle of " + ShowSpell.name + " under " + p.LabelShort + " for 15 seconds (" + showNext + "/" + book.spells.Count + ").", MessageTypeDefOf.NeutralEvent, false);
+        }
+
         public override void MapComponentUpdate()
         {
             if (!AvirMagic.On) return;
             ArcaneChannel.Draw(map);
+            if (ShowPawn != null && ShowPawn.Map == map && ShowSpell != null && Time.realtimeSinceStartup < ShowUntil)
+                SpellSigil.Draw(ShowPawn.DrawPos, ShowSpell, 1f, 1.6f + 0.6f * (int)ShowSpell.size);
             if (JobDriver_CastSpell.Casting.Count == 0) return;
             foreach (JobDriver_CastSpell d in JobDriver_CastSpell.Casting)
             {
@@ -421,10 +437,143 @@ namespace Avir.Magic
         }
     }
 
-    /// <summary>A spell's circle in the world: rings and its runes, glowing in the spell's colour.</summary>
+    /// <summary>A spell's circle in the world, drawn whole under its caster (Fix266, the author: "fully drawn when cast"):
+    /// the same circle as in the editor - the binding and its heart, great circles with their seals and halos, the small
+    /// circles inside them, every section and every rune in its place, each circle in its own colour - glowing on the
+    /// ground and slowly turning, brighter as the cast goes on. A spell of the old kind (rings only) keeps the plain sign.</summary>
     public static class SpellSigil
     {
+        private class Laid { public Dialog_SpellEditor.Node root; public Dictionary<SpellCircle, Color> colors; public float outer; public int sig; }
+        private static readonly Dictionary<RitualSchema, Laid> cache = new Dictionary<RitualSchema, Laid>();
+
+        /// <summary>A cheap fingerprint of the spell's shape: rewritten in the editor - laid out again.</summary>
+        private static int Sig(SpellCircle c)
+        {
+            int h = c.inner.Count * 31 + c.sections.Count * 7 + (c.element?.shortHash ?? 0);
+            foreach (var r in c.sections) foreach (var x in r.runes) h = h * 17 + (x?.shortHash ?? 1);
+            foreach (SpellCircle k in c.inner) h = h * 13 + Sig(k);
+            return h;
+        }
+
+        private static Laid Lay(RitualSchema s)
+        {
+            int sig = Sig(s.weave);
+            if (cache.TryGetValue(s, out Laid l) && l.sig == sig) return l;
+            if (cache.Count > 64) cache.Clear();
+            var root = Dialog_SpellEditor.Measure(s.weave);
+            l = new Laid { root = root, colors = Dialog_SpellEditor.Colors(s.weave), outer = Dialog_SpellEditor.Outer(root) * 1.06f, sig = sig };
+            cache[s] = l;
+            return l;
+        }
+
+        /// <summary>How many circles the spell holds (a larger weave is drawn wider on the ground).</summary>
+        private static int Count(SpellCircle c) { int n = c.binding ? 0 : 1; foreach (SpellCircle k in c.inner) n += Count(k); return n; }
+
         public static void Draw(Vector3 at, RitualSchema s, float alpha, float radius)
+        {
+            if (s?.weave == null) { Plain(at, s, alpha, radius); return; }
+            Laid l = Lay(s);
+            float wide = radius * Mathf.Clamp(1f + 0.22f * (Count(s.weave) - 1), 1f, 2.6f);
+            float k = wide / Mathf.Max(1f, l.outer);
+            at.y = AltitudeLayer.MoteLow.AltitudeFor();
+            float turn = Time.realtimeSinceStartup * 6f % 360f;
+            Node(l, l.root, at, Quaternion.AngleAxis(turn, Vector3.up), Vector2.zero, k, alpha);
+        }
+
+        // the editor's plane is y-down; the world's ground is x across, z up the screen
+        private static Vector3 P(Vector3 at, Quaternion rot, Vector2 v, float lift) { Vector3 w = rot * new Vector3(v.x, 0f, -v.y); return new Vector3(at.x + w.x, at.y + lift, at.z + w.z); }
+
+        private static Color Glow(Color c, float a) => new Color(Mathf.Min(1f, c.r * 1.15f + 0.1f), Mathf.Min(1f, c.g * 1.15f + 0.1f), Mathf.Min(1f, c.b * 1.15f + 0.1f), a);
+
+        private static void Disc(Texture2D t, Vector3 p, Quaternion rot, float r, Color col)
+        {
+            if (t == null || r <= 0.001f || col.a <= 0.003f) return;
+            Material m = MaterialPool.MatFrom(t, ShaderDatabase.MoteGlow, col);
+            Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(p, rot, new Vector3(r * 2f, 1f, r * 2f)), m, 0);
+        }
+
+        private static void Line(Vector3 a, Vector3 b, float w, Color col)
+        {
+            Vector3 d = b - a; d.y = 0f;
+            float len = d.magnitude;
+            if (len < 0.01f) return;
+            Material m = MaterialPool.MatFrom(BaseContent.WhiteTex, ShaderDatabase.MoteGlow, col);
+            Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS((a + b) / 2f, Quaternion.LookRotation(d / len), new Vector3(w, 1f, len)), m, 0);
+        }
+
+        private static void Rune(Texture2D t, Vector3 p, float r, Color col)
+        {
+            // runes stand upright to the viewer, whatever way the circle has turned
+            Disc(t, p, Quaternion.identity, r, col);
+        }
+
+        private static void Node(Laid l, Dialog_SpellEditor.Node n, Vector3 at, Quaternion rot, Vector2 c, float k, float a)
+        {
+            Color col = l.colors.TryGetValue(n.c, out Color cc) ? cc : Color.white;
+            Vector3 pc = P(at, rot, c, 0f);
+            float R = n.R * k;
+            if (n.c.binding && n.kids.Count == 1) { Node(l, n.kids[0], at, rot, c, k, a); return; }
+            if (n.c.binding)
+            {
+                Disc(Dialog_SpellEditor.Linarian, pc, rot, R * 1.14f, Glow(col, a * 0.5f));
+                Disc(RitualTex.Rim, pc, rot, R / 0.94f, Glow(col, a * 0.9f));
+                float orbit = n.kids.Count > 0 ? n.at[0].magnitude * k : Dialog_SpellEditor.Heart * k * 3f;
+                Disc(Dialog_SpellEditor.Linarian, pc, rot, orbit, Glow(col, a * 0.45f));
+                Disc(Dialog_SpellEditor.Linarian, pc, rot, orbit * 0.55f, Glow(col, a * 0.35f));
+                float hr = Dialog_SpellEditor.Heart * k;
+                Color th = new Color(0.92f, 0.86f, 1f, a * 0.55f);
+                for (int i = 0; i < n.kids.Count; i++)
+                {
+                    Vector2 d = n.at[i]; float len = d.magnitude; if (len < 0.01f) continue;
+                    Vector2 u = d / len;
+                    Line(P(at, rot, c + u * Dialog_SpellEditor.Heart * 0.8f, 0.0005f), P(at, rot, c + d - u * n.kids[i].R, 0.0005f), Mathf.Max(0.03f, 2f * k), th);
+                }
+                Disc(Dialog_SpellEditor.Linarian, pc, rot, hr * 1.35f, new Color(1f, 0.84f, 0.55f, a * 0.95f));
+                Disc(RitualTex.Rim, pc, rot, hr * 0.95f, new Color(1f, 0.84f, 0.55f, a * 0.9f));
+                Texture2D star = ContentFinder<Texture2D>.Get("UI/Avir/Herald/Star_Lit", false);
+                if (star != null) Disc(star, P(at, rot, c, 0.001f), Quaternion.identity, hr * 0.7f, new Color(1f, 1f, 1f, a));
+                for (int i = 0; i < n.kids.Count; i++) Node(l, n.kids[i], at, rot, c + n.at[i], k, a);
+                return;
+            }
+            if (n.c.Great) Disc(Dialog_SpellEditor.Linarian, pc, rot, R * Dialog_SpellEditor.Halo, Glow(col, a * 0.85f));
+            Disc(RitualTex.Disc, pc, rot, R * 1.02f, new Color(col.r, col.g, col.b, a * 0.08f));
+            Disc(RitualTex.Rim, pc, rot, R / 0.94f, Glow(col, a));
+            float plate = Dialog_SpellEditor.Core * 0.78f * k;
+            if (n.kids.Count > 0 || n.c.Great)
+            {
+                for (int i = 0; i < n.kids.Count; i++) Node(l, n.kids[i], at, rot, c + n.at[i], k, a);
+                // the great element as a seal on the top of its rim (a meeting's own rune, if drawn)
+                Texture2D seal = MeetingGlyphs.For(rootOf(l), n.c, false) ?? n.c.element?.Glow;
+                Rune(seal, P(at, rot, c + new Vector2(0f, -n.R), 0.002f), Mathf.Clamp(Dialog_SpellEditor.GreatBand * 0.42f * k, 0.12f, 1.2f), Glow(col, a));
+            }
+            else if (n.c.element != null)
+                Rune(MeetingGlyphs.For(rootOf(l), n.c, false) ?? n.c.element.Glow, P(at, rot, c, 0.002f), plate * 0.8f, Glow(n.c.element.color, a));
+            float inner = n.core, band = n.kids.Count > 0 ? Dialog_SpellEditor.GreatBand : Dialog_SpellEditor.Band;
+            Color ring = Glow(Color.Lerp(col, Color.white, 0.2f), a * 0.75f);
+            for (int i = 0; i < n.c.sections.Count; i++)
+            {
+                float rin = inner + i * band, rout = inner + (i + 1) * band;
+                Disc(RitualTex.Ring, pc, rot, rin * k, ring);
+                RitualRing rr = n.c.sections[i];
+                int per = rr.Slots;
+                float mid = (rin + rout) / 2f;
+                float pr = Mathf.Min((rout - rin) * 0.36f, Mathf.PI * mid / per * 0.38f) * k;
+                float off = n.kids.Count > 0 ? Dialog_SpellEditor.ClearOffset(per) : i * 25f;
+                for (int j = 0; j < per && j < rr.runes.Count; j++)
+                {
+                    RuneDef rd = rr.runes[j];
+                    if (rd == null) continue;
+                    float ang = (-90f + off + j * 360f / per) * Mathf.Deg2Rad;
+                    Vector2 q = c + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * mid;
+                    Rune(rd.Glow, P(at, rot, q, 0.002f), pr, Glow(rd.role == RuneRole.Element ? rd.color : col, a));
+                }
+            }
+        }
+
+        private static SpellCircle rootOf(Laid l) => l.root.c;
+
+        /// <summary>The plain sign of a spell of the old kind: rings and its runes, glowing in the spell's colour.</summary>
+        private static void Plain(Vector3 at, RitualSchema s, float alpha, float radius)
         {
             Color c = Spells.ColorOf(s);
             Color col = new Color(Mathf.Min(1f, c.r * 1.2f + 0.1f), Mathf.Min(1f, c.g * 1.2f + 0.1f), Mathf.Min(1f, c.b * 1.2f + 0.1f), alpha);

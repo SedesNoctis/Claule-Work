@@ -668,6 +668,23 @@
     </comps>
   </HediffDef>
   <HediffDef>
+    <defName>Avir_WhiteFlameMend</defName>
+    <label>seal of the White Flame</label>
+    <description>A healer of the White Flame tended these wounds and laid a seal on them: not fire that burns the sickness out, but a slow light under the skin. The wounds mend through the day, the better the healer, the quicker.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.97, 0.82)</defaultLabelColor>
+    <isBad>false</isBad>
+    <initialSeverity>0.5</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>60000~60000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_WhiteFlameMend" />
+    </comps>
+  </HediffDef>
+  <HediffDef>
     <defName>Avir_ZenithVigor</defName>
     <label>strength of the Zenith</label>
     <description>Light and fire poured into the body: tiredness lifts, the body moves and works quicker, the mind is clear.</description>

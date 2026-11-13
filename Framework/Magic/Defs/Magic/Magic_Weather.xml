@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- the weather altar (the author): a caster stands here an hour and talks the sky round; it holds about eight hours -->
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_WeatherAltar</defName>
+    <thingClass>Avir.Magic.Building_WeatherAltar</thingClass>
+    <label>weather altar</label>
+    <description>A sphere of carved stone on a low round plinth, its grooves turned to the four winds. A caster who stands before it and talks long enough to the sky can bring rain or fog, raise the wind or still it, drive the clouds off. It takes about an hour; the sky holds about eight. What is to be called is chosen at the altar.</description>
+    <graphicData>
+      <texPath>Things/Building/Magic/WeatherAltar</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>(3,3)</drawSize>
+    </graphicData>
+    <size>(3,3)</size>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>PassThroughOnly</passability>
+    <fillPercent>0.5</fillPercent>
+    <pathCost>50</pathCost>
+    <hasInteractionCell>true</hasInteractionCell>
+    <interactionCellOffset>(0,0,-2)</interactionCellOffset>
+    <useHitPoints>true</useHitPoints>
+    <statBases>
+      <MaxHitPoints>400</MaxHitPoints>
+      <WorkToBuild>6000</WorkToBuild>
+      <Beauty>6</Beauty>
+      <Flammability>0</Flammability>
+    </statBases>
+    <costList>
+      <Steel>25</Steel>
+    </costList>
+    <costStuffCount>120</costStuffCount>
+    <stuffCategories><li>Stony</li></stuffCategories>
+    <designationCategory>Avir_Arcana</designationCategory>
+    <researchPrerequisites><li>Avir_Ritualism_Standard</li></researchPrerequisites>
+    <placeWorkers><li>Avir.Magic.PlaceWorker_MagicOn</li></placeWorkers>
+    <building><ai_chillDestination>false</ai_chillDestination></building>
+    <canOverlapZones>false</canOverlapZones>
+  </ThingDef>
+
+  <WorkGiverDef>
+    <defName>Avir_WeatherAltar</defName>
+    <label>call the weather at the altar</label>
+    <giverClass>Avir.Magic.WorkGiver_WeatherAltar</giverClass>
+    <workType>Avir_MagicWork</workType>
+    <verb>call the weather at</verb>
+    <gerund>calling the weather at</gerund>
+    <priorityInType>20</priorityInType>
+    <requiredCapacities><li>Manipulation</li></requiredCapacities>
+  </WorkGiverDef>
+
+  <JobDef>
+    <defName>Avir_WeatherCall</defName>
+    <driverClass>Avir.Magic.JobDriver_WeatherCall</driverClass>
+    <reportString>talking the sky round at TargetA.</reportString>
+  </JobDef>
+
+</Defs>

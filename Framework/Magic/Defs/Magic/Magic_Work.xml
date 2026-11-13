@@ -93,7 +93,7 @@
   </JobDef>
   <WorkGiverDef>
     <defName>Avir_MagicTend</defName>
-    <label>tend the wounded by water</label>
+    <label>tend the wounded by magic</label>
     <giverClass>Avir.Magic.WorkGiver_MagicTend</giverClass>
     <workType>Avir_MagicWork</workType>
     <verb>tend</verb>
@@ -114,7 +114,7 @@
   <JobDef>
     <defName>Avir_MagicTend</defName>
     <driverClass>Avir.Magic.JobDriver_MagicTend</driverClass>
-    <reportString>tending TargetA by water.</reportString>
+    <reportString>tending TargetA by magic.</reportString>
   </JobDef>
   <JobDef>
     <defName>Avir_MagicSmooth</defName>
@@ -288,38 +288,26 @@
     <specialDesignatorClasses>
       <li>Designator_Cancel</li>
       <li>Avir.Magic.Designator_RaiseRock</li>
-      <li>Avir.Magic.Designator_ArcaneDrill</li>
+      <li>Avir.Magic.Designator_OrderExtract</li>
+      <li>Avir.Magic.Designator_OrderWater</li>
+      <li>Avir.Magic.Designator_OrderLand</li>
+      <li>Avir.Magic.Designator_OrderFertile</li>
+      <li>Avir.Magic.Designator_OrderLava</li>
+      <li>Avir.Magic.Designator_OrderGlowWater</li>
       <li>Avir.Magic.Designator_ArcaneSmooth</li>
-      <li>Avir.Magic.Designator_ArcaneGrowth</li>
-      <li>Avir.Magic.Designator_ArcaneEnrich</li>
-      <li>Avir.Magic.Designator_ArcaneWater</li>
       <li>Avir.Magic.Designator_ArcaneHotSpring</li>
-      <li>Avir.Magic.Designator_ArcaneStone</li>
       <li>Avir.Magic.Designator_2RaiseGeyser</li>
       <li>Avir.Magic.Designator_2SealGeyser</li>
       <li>Avir.Magic.Designator_2SmeltItems</li>
-      <li>Avir.Magic.Designator_2LavaCore</li>
       <li>Avir.Magic.Designator_LifeEmerald</li>
       <li>Avir.Magic.Designator_LifeBathSteam</li>
       <li>Avir.Magic.Designator_LightCrystalStore</li>
       <li>Avir.Magic.Designator_LightCrystalSun</li>
-      <li>Avir.Magic.Designator_GlowWaterStill</li>
-      <li>Avir.Magic.Designator_GlowFlask</li>
       <li>Avir.Magic.Designator_LifeLightGarden</li>
-      <li>Avir.Magic.Designator_2LavaPool</li>
-      <li>Avir.Magic.Designator_2LavaSet</li>
-      <li>Avir.Magic.Designator_2Basalt</li>
       <li>Avir.Magic.Designator_2Obsidian</li>
-      <li>Avir.Magic.Designator_2Ash</li>
       <li>Avir.Magic.Designator_2Clear</li>
       <li>Avir.Magic.Designator_2Charge</li>
-      <li>Avir.Magic.Designator_2Moat</li>
-      <li>Avir.Magic.Designator_2SiltWater</li>
-      <li>Avir.Magic.Designator_2SiltLand</li>
       <li>Avir.Magic.Designator_2SiltDump</li>
-      <li>Avir.Magic.Designator_2MarshGas</li>
-      <li>Avir.Magic.Designator_2Quarry</li>
-      <li>Avir.Magic.Designator_2DigClay</li>
     </specialDesignatorClasses>
   </DesignationCategoryDef>
   <WorkGiverDef>
