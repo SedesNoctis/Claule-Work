@@ -43,7 +43,7 @@ doc.add_paragraph('Один лист — одна страница. На каж�
 for b in ['Новый чат: сначала один раз отправь «Настройку чата» (следующая страница), потом листы по одному.',
           'Вышло грязно — допиши в том же чате: «cleaner shapes, smoother gradients, fewer particles». Вышло блёкло — «more light and depth, stronger glow and contrast, keep the clean shapes».',
           'Дал белый фон там, где нужен чёрный — «Redo exactly the same on a solid pure black background».',
-          'Чёрный фон — для того, что светится. Прозрачный (или ровная маджента #FF00FF) — для вещества, предметов, построек.',
+          'Чёрный фон — для того, что светится. Прозрачный — для вещества, предметов, построек: в конце промпта уже стоит «Transparent Background», ChatGPT этого хватает.',
           'Готовые листы присылай мне как есть — режу и раскладываю сам.']:
     doc.add_paragraph(b,style='List Bullet')
 

@@ -125,13 +125,14 @@ namespace Avir.Magic
                 else if (!seen) why = "The mage cannot see there.";
                 return why == null;
             }
-            bool mirror = LightMagic.AnyMirror(root);
+            bool mirror = LightMagic.AnyMirror(root), glint = LightMagic.AnyGlint(root);
             if (inReach && seen && (!mirror || Flasks(mage) > 0)) return true;
             IntVec3 me = mage.Position;
             Building_LightReflector best = null; float bd = float.MaxValue;
             foreach (Building_LightReflector r in Building_LightReflector.All(map))
             {
-                if (mirror ? !r.IsWater : r.Position.DistanceTo(me) > range) continue;
+                // the Mirror: only water, anywhere; the Glint: its own mirages anywhere too (the author: they are reflectors)
+                if (mirror ? !r.IsWater : r.Position.DistanceTo(me) > range && !(glint && r.IsMirage && r.caster == mage)) continue;
                 float d = r.Position.DistanceTo(at);
                 if (d > range || d >= bd || !GenSight.LineOfSight(r.Position, at, map, true)) continue;
                 best = r; bd = d;

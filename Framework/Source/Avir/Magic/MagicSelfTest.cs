@@ -175,6 +175,8 @@ namespace Avir.Magic
                 Check("Mirror's water makes no steam", Combos.Pairs(r1).Count == 0, string.Join(",", Combos.Pairs(r1).Values));
                 var b2 = LightBox("Earth", "Water"); var r2 = new SpellCircle { binding = true }; r2.inner.Add(b2);
                 Check("light + earth + water = Crystal (the first decides)", LightMagic.Crystal(b2) && !LightMagic.Mirror(b2), "form " + LightMagic.FormCircle(b2)?.element?.defName);
+                var b3 = LightBox("Fire"); Check("light + fire = Zenith", LightMagic.Zenith(b3), "form " + LightMagic.FormCircle(b3)?.element?.defName);
+                var b4 = LightBox("Air"); Check("light + air = Glint", LightMagic.Glint(b4), "form " + LightMagic.FormCircle(b4)?.element?.defName);
             }
 
             var sb = new StringBuilder();

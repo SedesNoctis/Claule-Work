@@ -558,4 +558,137 @@
     <targetType>Cell</targetType>
     <designateCancelable>true</designateCancelable>
   </DesignationDef>
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_GlintMirage</defName>
+    <label>mirage</label>
+    <description>A mirage left by a mage of the Glint - light and wind folded into the shape of a figure. A reflector whose echo loses little, and a way: its mage steps out of it when sent far, and slips into it when struck close. Eight at most to a mage; it can be broken.</description>
+    <thingClass>Avir.Magic.Building_LightReflector</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Light/Reflector_Night</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.4,1.4)</drawSize>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <passability>Standable</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <selectable>true</selectable>
+    <useHitPoints>true</useHitPoints>
+    <drawerType>RealtimeOnly</drawerType>
+    <blockLight>false</blockLight>
+    <statBases><MaxHitPoints>30</MaxHitPoints>
+      <Flammability>0</Flammability>
+    </statBases>
+    <size>(1,1)</size>
+    <building>
+      <isEdifice>false</isEdifice>
+      <isInert>true</isInert>
+      <claimable>false</claimable>
+      <deconstructible>false</deconstructible>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+    </building>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>3</glowRadius>
+        <glowColor>(215,225,255,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_WhiteFlameMark</defName>
+    <label>white flame</label>
+    <description>White flame burning on a body: wherever it goes, the echoes of Light come out of it.</description>
+    <thingClass>Avir.Magic.Building_LightReflector</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Light/Reflector</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.4,1.4)</drawSize>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <passability>Standable</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <selectable>false</selectable>
+    <useHitPoints>false</useHitPoints>
+    <drawerType>RealtimeOnly</drawerType>
+    <blockLight>false</blockLight>
+    <statBases>
+      <Flammability>0</Flammability>
+    </statBases>
+    <size>(1,1)</size>
+    <building>
+      <isEdifice>false</isEdifice>
+      <isInert>true</isInert>
+      <claimable>false</claimable>
+      <deconstructible>false</deconstructible>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+    </building>
+  </ThingDef>
+  <HediffDef>
+    <defName>Avir_WhiteFlame</defName>
+    <label>white flame</label>
+    <description>White flame of the Zenith clinging to the body - it takes hold of anything, metal and machines too, and water does not put it out. It sears and flickers, dazzling, marks the one burning (easier to strike in close), and the Light's echoes come out of it wherever it goes. It burns down by itself.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.97, 0.82)</defaultLabelColor>
+    <isBad>true</isBad>
+    <initialSeverity>0.5</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>1200~1500</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_WhiteFlame" />
+    </comps>
+    <stages>
+      <li>
+        <statOffsets><MeleeDodgeChance>-0.15</MeleeDodgeChance></statOffsets>
+      </li>
+    </stages>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_ZenithSeal</defName>
+    <label>seal of the Zenith</label>
+    <description>Seals of light laid on the body. Each flares once when its bearer is hurt and heals at once. They fade in a day.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.97, 0.82)</defaultLabelColor>
+    <isBad>false</isBad>
+    <initialSeverity>1</initialSeverity>
+    <maxSeverity>6</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>60000~60000</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+      <li Class="Avir.Magic.HediffCompProperties_ZenithSeal" />
+    </comps>
+  </HediffDef>
+  <HediffDef>
+    <defName>Avir_ZenithVigor</defName>
+    <label>strength of the Zenith</label>
+    <description>Light and fire poured into the body: tiredness lifts, the body moves and works quicker, the mind is clear.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(1, 0.97, 0.82)</defaultLabelColor>
+    <isBad>false</isBad>
+    <comps>
+      <li Class="HediffCompProperties_Disappears">
+        <disappearsAfterTicks>7500~7500</disappearsAfterTicks>
+        <showRemainingTime>true</showRemainingTime>
+      </li>
+    </comps>
+    <stages>
+      <li>
+        <restFallFactor>0.35</restFallFactor>
+        <capMods>
+          <li><capacity>Moving</capacity><offset>0.12</offset></li>
+          <li><capacity>Manipulation</capacity><offset>0.08</offset></li>
+          <li><capacity>Consciousness</capacity><offset>0.06</offset></li>
+        </capMods>
+      </li>
+    </stages>
+  </HediffDef>
 </Defs>

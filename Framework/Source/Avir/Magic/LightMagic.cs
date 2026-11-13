@@ -72,13 +72,21 @@ namespace Avir.Magic
         /// stay themselves and echo. Before, Earth was looked for anywhere inside; now the first in order decides.</summary>
         public static SpellCircle FormCircle(SpellCircle box) => box != null && box.Great && Is(box.element) && !Sealed(box)
             ? box.inner.FirstOrDefault(k => !k.Great && k.element != null && HasForm(k.element.kind)) : null;
-        public static bool HasForm(RuneKind k) => k == RuneKind.Earth || k == RuneKind.Water;
+        public static bool HasForm(RuneKind k) => k == RuneKind.Earth || k == RuneKind.Water || k == RuneKind.Fire || k == RuneKind.Air;
         public static bool Crystal(SpellCircle box) => FormCircle(box)?.element.kind == RuneKind.Earth;
         /// <summary>Light meeting Water - the Mirror (the author, Fix261-262): the mage casts only from shining water.</summary>
         public static bool Mirror(SpellCircle box) => FormCircle(box)?.element.kind == RuneKind.Water;
         public static bool AnyMirror(SpellCircle root) => Circles(root).Any(Mirror);
         public static bool InMirror(SpellCircle root, SpellCircle c) => c != null && Mirror(c.Great ? c : BoxOf(root, c));
         public static SpellCircle Absorbed(SpellCircle box) => FormCircle(box);
+        /// <summary>Light meeting Fire - the Zenith (the author, Fix263): energy - the strongest quick healing, strength, seals; white flame.</summary>
+        public static bool Zenith(SpellCircle box) => FormCircle(box)?.element.kind == RuneKind.Fire;
+        public static bool AnyZenith(SpellCircle root) => Circles(root).Any(Zenith);
+        public static bool InZenith(SpellCircle root, SpellCircle c) => c != null && Zenith(c.Great ? c : BoxOf(root, c));
+        /// <summary>Light meeting Air - the Glint (the author, Fix263): mirages that are reflectors and ways for the mage.</summary>
+        public static bool Glint(SpellCircle box) => FormCircle(box)?.element.kind == RuneKind.Air;
+        public static bool AnyGlint(SpellCircle root) => Circles(root).Any(Glint);
+        public static bool InGlint(SpellCircle root, SpellCircle c) => c != null && Glint(c.Great ? c : BoxOf(root, c));
         public static bool AnyCrystal(SpellCircle root) => Circles(root).Any(Crystal);
         /// <summary>Does this circle act within a Crystal (its own great circle of Light, or the one round it)?</summary>
         public static bool InCrystal(SpellCircle root, SpellCircle c) => c != null && Crystal(c.Great ? c : BoxOf(root, c));
@@ -120,7 +128,7 @@ namespace Avir.Magic
         /// <summary>The Crystal keeps Earth's longer reach (the author, Fix217) - not its stone underfoot.</summary>
         public const float CrystalReach = 8f;
         /// <summary>The colour of a form of Light in the editor and on the spell (Fix262).</summary>
-        public static Color FormColor(SpellCircle box) => Mirror(box) ? LightMirror.MirrorColor : CrystalColor;
+        public static Color FormColor(SpellCircle box) => Mirror(box) ? LightMirror.MirrorColor : Zenith(box) ? LightZenith.ZenithColor : Glint(box) ? LightGlint.GlintColor : CrystalColor;
 
         // ------------------------------------------------------------------ one circle of Light
 
@@ -134,6 +142,8 @@ namespace Avir.Magic
             using (SpellWards.Of(RuneKind.Light, ComboKind.None, true)) CastOwn(caster, g, from, at, power, map, crystal);
             if (crystal && !Echoing) Grow(caster, g, from, at, power, map);
             if (InMirror(root, g)) LightMirror.OnCircle(caster, root, g, from, at, power, map, Radius(g));
+            if (InZenith(root, g)) LightZenith.OnCircle(caster, root, g, from, at, power, map, Radius(g));
+            if (InGlint(root, g)) LightGlint.OnCircle(caster, root, g, from, at, power, map, Radius(g));
         }
 
         private static void CastOwn(Pawn caster, SpellCircle g, IntVec3 from, IntVec3 at, float power, Map map, bool crystal)
@@ -534,6 +544,7 @@ namespace Avir.Magic
             var refl = Building_LightReflector.Node(caster, map).Where(x => (castBorn < 0 || x.born < castBorn) && x.Position.DistanceTo(aim) <= range && GenSight.LineOfSight(x.Position, aim, map, true)).InRandomOrder().ToList();
             ThingDef kind = DefDatabase<ThingDef>.GetNamedSilentFail(crystal ? "Avir_LightCrystal" : "Avir_LightReflector");
             for (int i = 0; i < n; i++) Building_LightReflector.Raise(caster, map, aim, dist, kind);
+            if (AnyGlint(root) && !Echoing) LightGlint.Raise(caster, map, aim, dist);   // the Glint's mirages: one at the point, one as a reflector stands
             if (refl.Count == 0) return;
             MapComponent_LightEchoes.Queue(caster, root, links, refl, aim, power, map);
         }
@@ -608,13 +619,14 @@ namespace Avir.Magic
         Thing IAttackTarget.Thing => this;
         public LocalTargetInfo TargetCurrentlyAimingAt => LocalTargetInfo.Invalid;
         public float TargetPriorityFactor => 0.6f;
-        public bool ThreatDisabled(IAttackTargetSearcher disabledFor) => !Spawned || IsWater;   // nobody shoots at a pool
+        public bool ThreatDisabled(IAttackTargetSearcher disabledFor) => !Spawned || IsWater || IsWalker;   // nobody shoots at a pool
 
         /// <summary>When it is free to send the next shot: the casts of a node go one after another (the author).</summary>
         public int busyUntil;
         /// <summary>When it stood up.</summary>
         public int born;
-        public override void SpawnSetup(Map map, bool respawningAfterLoad) { base.SpawnSetup(map, respawningAfterLoad); if (!respawningAfterLoad) born = Find.TickManager.TicksGame; }
+        public override void SpawnSetup(Map map, bool respawningAfterLoad) { base.SpawnSetup(map, respawningAfterLoad); if (!respawningAfterLoad) born = Find.TickManager.TicksGame; if (IsMirage) LightGlint.Live++; }
+        public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish) { if (IsMirage) LightGlint.Live--; base.DeSpawn(mode); }
 
         // its kind, by its def (Fix217)
         public bool IsCrystal => def.defName.StartsWith("Avir_LightCrystal");
@@ -625,13 +637,18 @@ namespace Avir.Magic
         public bool IsWater => def.defName.StartsWith("Avir_GlowWater");
         /// <summary>Still shining water - the work's, it does not fade.</summary>
         public bool Still => def.defName == "Avir_GlowWaterStill";
+        /// <summary>A mirage of the Glint (Fix263): a reflector and a way for its mage.</summary>
+        public bool IsMirage => def.defName == "Avir_GlintMirage";
+        /// <summary>White flame on a body (Fix263): a walking reflector - it goes where the burning one goes.</summary>
+        public bool IsWalker => def.defName == "Avir_WhiteFlameMark";
+        public Pawn follows;
         /// <summary>How much weaker each echo is: a plain reflector halves it, a crystal keeps three quarters (the author).</summary>
-        public float Decay => IsCrystal ? 0.75f : IsWater ? 0.4f : 0.5f;   // water weakens the echo (the author)
+        public float Decay => IsCrystal || IsMirage ? 0.75f : IsWater ? 0.4f : 0.5f;   // mirages: no great loss (the author)   // water weakens the echo (the author)
         /// <summary>Faceted: a crystal may send its circle twice (the author: not every time, not all).</summary>
         public bool Faceted => IsCrystal && !Work && !Unstable;
 
         /// <summary>The reflectors that weigh on the hold - all but the works' crystals.</summary>
-        public static int Held(Map map) => All(map).Count(r => !r.Work && !r.IsWater);   // shining water lies there by itself: no weight on the hold
+        public static int Held(Map map) => All(map).Count(r => !r.Work && !r.IsWater && !r.IsMirage);   // shining water lies there by itself: no weight on the hold
 
         public static IEnumerable<Building_LightReflector> All(Map map) =>
             map == null ? Enumerable.Empty<Building_LightReflector>() : map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial).OfType<Building_LightReflector>().Where(r => r.Spawned && !r.Destroyed);
@@ -710,6 +727,7 @@ namespace Avir.Magic
         protected override void TickInterval(int delta)
         {
             base.TickInterval(delta);
+            if (IsWalker && this.IsHashIntervalTick(10, delta)) { if (!LightZenith.Follow(this)) return; }
             if (!this.IsHashIntervalTick(250, delta)) return;
             if (dies > 0 && Find.TickManager.TicksGame >= dies) { LightMagic.Glint(Map, DrawPos, 1f, false); Destroy(DestroyMode.Vanish); return; }
             if (IsWater && !LightMirror.Water(Position, Map)) { Destroy(DestroyMode.Vanish); return; }   // the water dried or was taken away
@@ -739,6 +757,8 @@ namespace Avir.Magic
         protected override void DrawAt(Vector3 drawLoc, bool flip = false)
         {
             if (IsWater) { LightMirror.DrawWater(this, drawLoc); return; }
+            if (IsWalker) return;   // the flame on the body is its look
+            if (IsMirage) { LightGlint.DrawMirage(this, drawLoc); return; }
             if (IsCrystal || !LightMagic.Night(Map)) { base.DrawAt(drawLoc, flip); return; }
             if (nightMat == null) nightMat = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Light/Reflector_Night", ShaderDatabase.Transparent);
             float s = def.graphicData.drawSize.x;
@@ -760,6 +780,7 @@ namespace Avir.Magic
             Scribe_References.Look(ref caster, "caster");
             Scribe_Values.Look(ref dies, "dies", -1);
             Scribe_Values.Look(ref born, "born");
+            Scribe_References.Look(ref follows, "follows");
         }
     }
 
