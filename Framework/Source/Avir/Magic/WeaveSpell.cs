@@ -203,6 +203,7 @@ namespace Avir.Magic
                 {
                     if (g.inner.Any(x => x.element != null))
                         parts.Add(LightMagic.Sealed(g) ? "Light sealed round its elements: they work as themselves, and every reflector echoes them"
+                                  : LightMagic.Mirror(g) ? "Mirror - Light meeting Water: the mage casts only through shining water - any on the map that sees the point - or from itself with a flask of it; every water its light touches shines for sixteen hours; Release in the Water lays new water where it strikes, a Beam a pool at its end"
                                   : LightMagic.Crystal(g) ? "Crystal - Light meeting Earth: the reflectors are crystals, the forms grow crystals, the other circles inside work as themselves and echo"
                                   : "Light round its elements: they work as they are, and every reflector echoes them (a Closing in Light's first section keeps them apart from Light - their strength is then their own)");
                 }

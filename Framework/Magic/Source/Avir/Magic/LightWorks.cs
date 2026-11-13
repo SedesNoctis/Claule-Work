@@ -58,10 +58,13 @@ namespace Avir.Magic
     /// <summary>Raising the crystals where marked, and renewing those running low.</summary>
     public class WorkGiver_LightCrystal : WorkGiver_Scanner
     {
-        private static readonly string[] Keys = { "Avir_LightCrystalStore", "Avir_LightCrystalSun" };
+        private static readonly string[] Keys = { "Avir_LightCrystalStore", "Avir_LightCrystalSun", "Avir_GlowWaterStill", "Avir_GlowFlask" };
+        /// <summary>The Mirror's works (Fix262) go to a mage of Light and Water; the crystals to Light and Earth.</summary>
+        public static bool OfMirror(string key) => key == "Avir_GlowWaterStill" || key == "Avir_GlowFlask";
+        public static Hediff_ArcaneCore AbleFor(Pawn p, string key) => key == null ? null : OfMirror(key) ? MirrorWorks.Able(p) : LightWorks.Able(p);
         public override PathEndMode PathEndMode => PathEndMode.Touch;
         public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.Undefined);
-        public override bool ShouldSkip(Pawn pawn, bool forced = false) => LightWorks.Able(pawn) == null;
+        public override bool ShouldSkip(Pawn pawn, bool forced = false) => LightWorks.Able(pawn) == null && MirrorWorks.Able(pawn) == null;
         public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn)
         {
             var cells = new List<IntVec3>();
@@ -78,7 +81,8 @@ namespace Avir.Magic
         {
             bool marked = KeyAt(pawn.Map, c) != null;
             bool low = c.GetFirstThing<Building_LightReflector>(pawn.Map) is Building_LightReflector r && LightWorks.Low(r);
-            return (marked || low) && !c.IsForbidden(pawn) && pawn.CanReserve(c, 1, -1, null, forced) && LightWorks.Able(pawn) != null;
+            string key = KeyAt(pawn.Map, c);
+            return (marked || low) && !c.IsForbidden(pawn) && pawn.CanReserve(c, 1, -1, null, forced) && (marked ? AbleFor(pawn, key) : LightWorks.Able(pawn)) != null;
         }
         public override Job JobOnCell(Pawn pawn, IntVec3 c, bool forced = false) => JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("Avir_LightCrystal"), c);
     }
@@ -88,12 +92,33 @@ namespace Avir.Magic
         public override bool TryMakePreToilReservations(bool errorOnFailed) => pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
         protected override IEnumerable<Toil> MakeNewToils()
         {
+            string key0 = WorkGiver_LightCrystal.KeyAt(pawn.Map, TargetA.Cell);
+            bool mirror = WorkGiver_LightCrystal.OfMirror(key0);
             yield return WorkSpells.GoTo(this, false, 0f);
-            yield return ArcaneChannel.Channel(this, 360, WorkSpells.Charm("Avir_LightCrystal", new[] { RuneKind.Light, RuneKind.Earth }), false, new Color(0.85f, 0.95f, 1f, 0.5f));
+            yield return ArcaneChannel.Channel(this, 360, WorkSpells.Charm("Avir_LightCrystal", mirror ? new[] { RuneKind.Light, RuneKind.Water } : new[] { RuneKind.Light, RuneKind.Earth }), false,
+                mirror ? new Color(0.62f, 0.88f, 1f, 0.5f) : new Color(0.85f, 0.95f, 1f, 0.5f));
             Toil done = ToilMaker.MakeToil("LightCrystal");
             done.initAction = () =>
             {
                 Map map = pawn.Map; IntVec3 c = TargetA.Cell;
+                if (mirror)
+                {
+                    // the Mirror's works (Fix262): still shining water; flasks filled at it
+                    Hediff_ArcaneCore mc = MirrorWorks.Able(pawn);
+                    if (mc == null || key0 == null) return;
+                    map.designationManager.TryRemoveDesignation(c, DefDatabase<DesignationDef>.GetNamedSilentFail(key0));
+                    if (key0 == "Avir_GlowWaterStill") { if (LightMirror.Light(pawn, map, c, true) == null) return; }
+                    else
+                    {
+                        if (LightMirror.At(c, map)?.Still != true || LightMirror.FlaskDef == null) return;
+                        Thing f = ThingMaker.MakeThing(LightMirror.FlaskDef); f.stackCount = MirrorWorks.FlasksPerWork;
+                        GenPlace.TryPlaceThing(f, pawn.Position, map, ThingPlaceMode.Near);
+                    }
+                    LightMagic.Glint(map, c.ToVector3Shifted(), 1.6f, false);
+                    MagicWork.Done(mc, RuneKind.Light, LightWorks.Arcana, LightWorks.Xp);
+                    MageClass.Gain(mc, RuneKind.Water, LightWorks.Xp * 0.5f);
+                    return;
+                }
                 Hediff_ArcaneCore core = LightWorks.Able(pawn);
                 if (core == null) return;
                 if (c.GetFirstThing<Building_LightReflector>(map) is Building_LightReflector old && old.Work) old.dies = Find.TickManager.TicksGame + GenDate.TicksPerDay * 5;   // renewed

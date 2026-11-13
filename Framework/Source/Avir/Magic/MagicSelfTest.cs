@@ -160,6 +160,23 @@ namespace Avir.Magic
                 Check("only heals", SpellHeal.OnlyHeals(new List<RuneDef> { heal }) && !SpellHeal.OnlyHeals(new List<RuneDef> { heal, rel }), "");
             }
 
+            // 7. the pure forms of Light (Fix262): the first small circle of a form's element goes into Light; it meets no one
+            if (R("Light") != null)
+            {
+                SpellCircle LightBox(params string[] inner)
+                {
+                    var box = new SpellCircle { element = R("Light") };
+                    box.sections.Add(new RitualRing { runes = new List<RuneDef> { R("Release") }.Where(x => x != null).ToList(), slots = 1 });
+                    foreach (string i in inner) box.inner.Add(C(i));
+                    return box;
+                }
+                var b1 = LightBox("Water", "Fire"); var r1 = new SpellCircle { binding = true }; r1.inner.Add(b1);
+                Check("light + water = Mirror", LightMagic.Mirror(b1) && !LightMagic.Crystal(b1), "form " + LightMagic.FormCircle(b1)?.element?.defName);
+                Check("Mirror's water makes no steam", Combos.Pairs(r1).Count == 0, string.Join(",", Combos.Pairs(r1).Values));
+                var b2 = LightBox("Earth", "Water"); var r2 = new SpellCircle { binding = true }; r2.inner.Add(b2);
+                Check("light + earth + water = Crystal (the first decides)", LightMagic.Crystal(b2) && !LightMagic.Mirror(b2), "form " + LightMagic.FormCircle(b2)?.element?.defName);
+            }
+
             var sb = new StringBuilder();
             sb.AppendLine("Magic self-test: " + n + " checks, " + bad.Count + " not as the rules say.");
             foreach (string b in bad) sb.AppendLine("  - " + b);

@@ -451,4 +451,111 @@
     <driverClass>Avir.Magic.JobDriver_LightCrystal</driverClass>
     <reportString>raising a crystal of light.</reportString>
   </JobDef>
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_GlowWater</defName>
+    <label>shining water</label>
+    <description>Water lit by a cast of Light. It shines for about sixteen hours and lights the ground a little. A mage of the Mirror strikes out of it from anywhere on the map; for every mage of Light it is a reflector that answers weaker than a shard.</description>
+    <thingClass>Avir.Magic.Building_LightReflector</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Light/GlowWater</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.2,1.2)</drawSize>
+    </graphicData>
+    <altitudeLayer>Filth</altitudeLayer>
+    <passability>Standable</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <selectable>true</selectable>
+    <useHitPoints>false</useHitPoints>
+    <drawerType>RealtimeOnly</drawerType>
+    <blockLight>false</blockLight>
+    <statBases>
+      <Flammability>0</Flammability>
+    </statBases>
+    <size>(1,1)</size>
+    <building>
+      <isEdifice>false</isEdifice>
+      <isInert>true</isInert>
+      <claimable>false</claimable>
+      <deconstructible>false</deconstructible>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+    </building>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>3.5</glowRadius>
+        <glowColor>(200,228,255,0)</glowColor>
+      </li>
+    </comps>
+  </ThingDef>
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_GlowWaterStill</defName>
+    <label>still shining water</label>
+    <description>Water a mage of the Mirror made to shine for good: it never fades, lights the ground round it like a lamp at all hours with no power, and flasks of shining water are filled at it. A reflector and a way out for the Mirror, answering every spell of Light at a steady share.</description>
+    <thingClass>Avir.Magic.Building_LightReflector</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Light/GlowWater</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1.2,1.2)</drawSize>
+    </graphicData>
+    <altitudeLayer>Filth</altitudeLayer>
+    <passability>Standable</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <selectable>true</selectable>
+    <useHitPoints>false</useHitPoints>
+    <drawerType>RealtimeOnly</drawerType>
+    <blockLight>false</blockLight>
+    <statBases>
+      <Flammability>0</Flammability>
+    </statBases>
+    <size>(1,1)</size>
+    <building>
+      <isEdifice>false</isEdifice>
+      <isInert>true</isInert>
+      <claimable>false</claimable>
+      <deconstructible>true</deconstructible>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+    </building>
+    <comps>
+      <li Class="CompProperties_Glower">
+        <glowRadius>7</glowRadius>
+        <glowColor>(200,228,255,0)</glowColor><colorPickerEnabled>true</colorPickerEnabled>
+      </li>
+    </comps>
+  </ThingDef>
+  <ThingDef ParentName="ResourceBase">
+    <defName>Avir_GlowFlask</defName>
+    <label>flask of shining water</label>
+    <description>Shining water stoppered in a flask. A mage of the Mirror who carries one may cast from itself - one flask a cast. Anyone may throw one: where it breaks, a pool of shining water lies for about sixteen hours.</description>
+    <graphicData>
+      <texPath>Things/Item/Avir/Magic/GlowFlask</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>0.8</drawSize>
+    </graphicData>
+    <stackLimit>10</stackLimit>
+    <statBases>
+      <MaxHitPoints>30</MaxHitPoints>
+      <Mass>0.3</Mass>
+      <MarketValue>20</MarketValue>
+      <Flammability>0</Flammability>
+      <DeteriorationRate>0</DeteriorationRate>
+    </statBases>
+    <thingCategories><li>ResourcesRaw</li></thingCategories>
+  </ThingDef>
+  <DesignationDef>
+    <defName>Avir_GlowWaterStill</defName>
+    <texturePath>Designations/HarvestPlant</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+  <DesignationDef>
+    <defName>Avir_GlowFlask</defName>
+    <texturePath>Designations/HarvestPlant</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
 </Defs>

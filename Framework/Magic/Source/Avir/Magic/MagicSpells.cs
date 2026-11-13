@@ -127,6 +127,7 @@ namespace Avir.Magic
             SpellCircle first = MapComponent_SpellChain.Order(s.weave).FirstOrDefault();
             // a meeting of the second order, or Life with its partner, gives the whole spell its colour
             if (first != null && SecondOrder.Of(s.weave).TryGetValue(first, out SecondKind y)) return SecondOrder.ColorOf(y, SecondOrder.PairOf(y), SecondOrder.Third(y));
+            if (LightMagic.AnyMirror(s.weave)) return LightMirror.MirrorColor;
             if (LightMagic.AnyCrystal(s.weave)) return LightMagic.CrystalColor;
             SpellCircle box = LifeMagic.Circles(s.weave).FirstOrDefault();
             if (box != null) { RuneKind lp = LifeMagic.PairOf(s.weave, box); RuneKind la = LifeMagic.AspectOf(s.weave, box); return lp != LifeMagic.None ? LifeMagic.PairColor(lp) : la != LifeMagic.None ? LifeMagic.AspectColor(la) : LifeMagic.MixOf(s.weave, box) != LifeMix.None ? LifeMagic.MixColor(LifeMagic.MixOf(s.weave, box)) : box.element.color; }
@@ -472,12 +473,11 @@ namespace Avir.Magic
             Find.Targeter.BeginTargeting(parms, t =>
             {
                 if (!mage.Spawned) return;
-                if (t.Cell.DistanceTo(mage.Position) > range) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
-                if (!Spells.Sees(spell, mage.Position, t.Cell, mage.Map)) { Messages.Message("The mage cannot see there.", MessageTypeDefOf.RejectInput, false); return; }
+                if (!LightMirror.Aim(mage, spell, t.Cell, out _, out string why)) { Messages.Message(why, MessageTypeDefOf.RejectInput, false); return; }   // Fix262: Light through reflections
                 // a beam on a route (Fix234): its further marks first
                 if (SpellRoute.Marks(spell, out _) > 1) { LocalTargetInfo first = t; SpellRoute.Deferred = () => SpellRoute.Aim(mage, spell, first, () => Then(first, IntVec3.Invalid)); return; }
                 Then(t, IntVec3.Invalid);
-            }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range && Spells.Sees(spell, mage.Position, t.Cell, mage.Map), mage, null, null, true, null,
+            }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && LightMirror.Aim(mage, spell, t.Cell, out _, out _), mage, null, null, true, null,
             t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
         }
 
@@ -530,9 +530,9 @@ namespace Avir.Magic
                     if (!mage.Spawned) return;
                     if (end.Cell.DistanceTo(mage.Position) > range) { Messages.Message("Too far for this spell.", MessageTypeDefOf.RejectInput, false); return; }
                     Then(start.Cell, end.Cell);
-                }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range && Spells.Sees(spell, mage.Position, t.Cell, mage.Map), mage, () => SpellPreview.WallStart = IntVec3.Invalid, null, true, null,
+                }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && LightMirror.Aim(mage, spell, t.Cell, out _, out _), mage, () => SpellPreview.WallStart = IntVec3.Invalid, null, true, null,
                 t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
-            }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && t.Cell.DistanceTo(mage.Position) <= range && Spells.Sees(spell, mage.Position, t.Cell, mage.Map), mage, null, null, true, null,
+            }, null, t => mage.Spawned && t.IsValid && t.Cell.InBounds(mage.Map) && LightMirror.Aim(mage, spell, t.Cell, out _, out _), mage, null, null, true, null,
             t => SpellPreview.Draw(mage, spell, Verse.UI.MouseCell()));
         }
 

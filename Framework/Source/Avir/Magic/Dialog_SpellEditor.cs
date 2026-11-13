@@ -632,9 +632,9 @@ namespace Avir.Magic
                 if (c.element == null) return lc;
                 if (bp != LifeMagic.None && c.element.kind == bp) return Color.Lerp(c.element.color, lc, 0.5f);
             }
-            if (c.Great && LightMagic.Crystal(c)) return LightMagic.CrystalColor;
-            if (!c.Great && rootNow?.ParentOf(c) is SpellCircle cb && LightMagic.Absorbed(cb) == c) return LightMagic.CrystalColor;
-            if (c.element == null && !c.Great && rootNow?.ParentOf(c) is SpellCircle gb && gb.Great && gb.element != null) return LightMagic.Crystal(gb) ? LightMagic.CrystalColor : gb.element.color;
+            if (c.Great && LightMagic.FormCircle(c) != null) return LightMagic.FormColor(c);
+            if (!c.Great && rootNow?.ParentOf(c) is SpellCircle cb && LightMagic.Absorbed(cb) == c) return LightMagic.FormColor(cb);
+            if (c.element == null && !c.Great && rootNow?.ParentOf(c) is SpellCircle gb && gb.Great && gb.element != null) return LightMagic.FormCircle(gb) != null ? LightMagic.FormColor(gb) : gb.element.color;
             return c.element?.color ?? new Color(0.85f, 0.78f, 0.62f);
         }
         private static readonly Dictionary<SpellCircle, SecondKind> seconds = new Dictionary<SpellCircle, SecondKind>();
@@ -1268,6 +1268,7 @@ namespace Avir.Magic
             {
                 var inner = sel.inner.Where(k => !k.Great && k.element != null).ToList();
                 if (LightMagic.Crystal(sel)) return "Shine bright like a diamond! And be the reason of someone else's blindness.";
+                if (LightMagic.Mirror(sel)) return "Every puddle is a window now. Mind you, windows look both ways.";
                 if (inner.Count > 0 && !LightMagic.Sealed(sel)) return "Everything you put in Light, every shard throws back. Mind where the shards stand - and where you do.";
                 if (inner.Any(k => k.element.kind == RuneKind.Earth)) return "Earth kept apart from Light: stone stays stone, and every shard throws it back. No Crystal here - take the Closing away for that.";
                 if (inner.Any(k => k.element.kind == RuneKind.Fire)) return "Fire sealed in Light, and every shard throws it back. The field burns twice. Now we're talking.";

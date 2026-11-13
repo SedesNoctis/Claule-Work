@@ -67,9 +67,18 @@ namespace Avir.Magic
         /// <summary>Light meeting Earth - the Crystal (the author, Fix217): a great circle of Light, not sealed, with a small circle
         /// of Earth inside. The first such Earth goes into the Light and makes it Crystal; the other circles stay themselves
         /// (Light + Earth + Earth + Fire = Crystal + magma) and echo.</summary>
-        public static bool Crystal(SpellCircle box) => box != null && box.Great && Is(box.element) && !Sealed(box)
-                                                       && box.inner.Any(k => !k.Great && k.element != null && k.element.kind == RuneKind.Earth);
-        public static SpellCircle Absorbed(SpellCircle box) => Crystal(box) ? box.inner.First(k => !k.Great && k.element != null && k.element.kind == RuneKind.Earth) : null;
+        /// <summary>THE PURE FORMS OF LIGHT (Fix262): a great circle of Light, not sealed, takes into itself the FIRST small circle
+        /// of an element that has a form of Light - Earth (Crystal), Water (Mirror) - and becomes that form; the other circles
+        /// stay themselves and echo. Before, Earth was looked for anywhere inside; now the first in order decides.</summary>
+        public static SpellCircle FormCircle(SpellCircle box) => box != null && box.Great && Is(box.element) && !Sealed(box)
+            ? box.inner.FirstOrDefault(k => !k.Great && k.element != null && HasForm(k.element.kind)) : null;
+        public static bool HasForm(RuneKind k) => k == RuneKind.Earth || k == RuneKind.Water;
+        public static bool Crystal(SpellCircle box) => FormCircle(box)?.element.kind == RuneKind.Earth;
+        /// <summary>Light meeting Water - the Mirror (the author, Fix261-262): the mage casts only from shining water.</summary>
+        public static bool Mirror(SpellCircle box) => FormCircle(box)?.element.kind == RuneKind.Water;
+        public static bool AnyMirror(SpellCircle root) => Circles(root).Any(Mirror);
+        public static bool InMirror(SpellCircle root, SpellCircle c) => c != null && Mirror(c.Great ? c : BoxOf(root, c));
+        public static SpellCircle Absorbed(SpellCircle box) => FormCircle(box);
         public static bool AnyCrystal(SpellCircle root) => Circles(root).Any(Crystal);
         /// <summary>Does this circle act within a Crystal (its own great circle of Light, or the one round it)?</summary>
         public static bool InCrystal(SpellCircle root, SpellCircle c) => c != null && Crystal(c.Great ? c : BoxOf(root, c));
@@ -110,6 +119,8 @@ namespace Avir.Magic
         public static float Range(SpellCircle root) => 16f + 10f * WeaveSpell.Reach(root) + (AnyCrystal(root) ? CrystalReach : 0f);
         /// <summary>The Crystal keeps Earth's longer reach (the author, Fix217) - not its stone underfoot.</summary>
         public const float CrystalReach = 8f;
+        /// <summary>The colour of a form of Light in the editor and on the spell (Fix262).</summary>
+        public static Color FormColor(SpellCircle box) => Mirror(box) ? LightMirror.MirrorColor : CrystalColor;
 
         // ------------------------------------------------------------------ one circle of Light
 
@@ -122,6 +133,7 @@ namespace Avir.Magic
             MagicSounds.Play("El:Light", at, map);   // Fix225
             using (SpellWards.Of(RuneKind.Light, ComboKind.None, true)) CastOwn(caster, g, from, at, power, map, crystal);
             if (crystal && !Echoing) Grow(caster, g, from, at, power, map);
+            if (InMirror(root, g)) LightMirror.OnCircle(caster, root, g, from, at, power, map, Radius(g));
         }
 
         private static void CastOwn(Pawn caster, SpellCircle g, IntVec3 from, IntVec3 at, float power, Map map, bool crystal)
@@ -596,7 +608,7 @@ namespace Avir.Magic
         Thing IAttackTarget.Thing => this;
         public LocalTargetInfo TargetCurrentlyAimingAt => LocalTargetInfo.Invalid;
         public float TargetPriorityFactor => 0.6f;
-        public bool ThreatDisabled(IAttackTargetSearcher disabledFor) => !Spawned;
+        public bool ThreatDisabled(IAttackTargetSearcher disabledFor) => !Spawned || IsWater;   // nobody shoots at a pool
 
         /// <summary>When it is free to send the next shot: the casts of a node go one after another (the author).</summary>
         public int busyUntil;
@@ -607,15 +619,19 @@ namespace Avir.Magic
         // its kind, by its def (Fix217)
         public bool IsCrystal => def.defName.StartsWith("Avir_LightCrystal");
         public bool Unstable => def.defName == "Avir_LightCrystalUnstable";
-        public bool Work => def.defName == "Avir_LightCrystalStore" || def.defName == "Avir_LightCrystalSun";
+        public bool Work => def.defName == "Avir_LightCrystalStore" || def.defName == "Avir_LightCrystalSun" || def.defName == "Avir_GlowWaterStill";
         public bool Sun => def.defName == "Avir_LightCrystalSun";
+        /// <summary>Shining water (the Mirror, Fix262): water a cast of Light has lit - a reflector lying on the water.</summary>
+        public bool IsWater => def.defName.StartsWith("Avir_GlowWater");
+        /// <summary>Still shining water - the work's, it does not fade.</summary>
+        public bool Still => def.defName == "Avir_GlowWaterStill";
         /// <summary>How much weaker each echo is: a plain reflector halves it, a crystal keeps three quarters (the author).</summary>
-        public float Decay => IsCrystal ? 0.75f : 0.5f;
+        public float Decay => IsCrystal ? 0.75f : IsWater ? 0.4f : 0.5f;   // water weakens the echo (the author)
         /// <summary>Faceted: a crystal may send its circle twice (the author: not every time, not all).</summary>
         public bool Faceted => IsCrystal && !Work && !Unstable;
 
         /// <summary>The reflectors that weigh on the hold - all but the works' crystals.</summary>
-        public static int Held(Map map) => All(map).Count(r => !r.Work);
+        public static int Held(Map map) => All(map).Count(r => !r.Work && !r.IsWater);   // shining water lies there by itself: no weight on the hold
 
         public static IEnumerable<Building_LightReflector> All(Map map) =>
             map == null ? Enumerable.Empty<Building_LightReflector>() : map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial).OfType<Building_LightReflector>().Where(r => r.Spawned && !r.Destroyed);
@@ -684,6 +700,7 @@ namespace Avir.Magic
             {
                 if (r.Map == null) continue;
                 if (flash) LightMagic.Flash(caster, r.Position, 2f, 0.2f, false, false, false, r.Map);
+                if (r.IsWater) { if (!r.Still) { LightMagic.Glint(r.Map, r.DrawPos, 1f, false); r.Destroy(DestroyMode.Vanish); } continue; }   // the water only goes dark
                 if (r.IsCrystal) { LightMagic.Shards(r, caster); r.Destroy(DestroyMode.Vanish); continue; }
                 MapComponent_SpellSprites.PutTinted(r.Map, LightMagic.Night(r.Map) ? "Light/Shatter_Night" : "Light/Shatter", Color.white, r.DrawPos, 2.2f, 35);
                 r.Destroy(DestroyMode.KillFinalize);
@@ -695,6 +712,7 @@ namespace Avir.Magic
             base.TickInterval(delta);
             if (!this.IsHashIntervalTick(250, delta)) return;
             if (dies > 0 && Find.TickManager.TicksGame >= dies) { LightMagic.Glint(Map, DrawPos, 1f, false); Destroy(DestroyMode.Vanish); return; }
+            if (IsWater && !LightMirror.Water(Position, Map)) { Destroy(DestroyMode.Vanish); return; }   // the water dried or was taken away
             if (Work) { WorkTick(); return; }
             if (caster == null || caster.Dead || caster.Destroyed) { Destroy(DestroyMode.Vanish); return; }
             bool night = LightMagic.Night(Map);
@@ -720,6 +738,7 @@ namespace Avir.Magic
         /// <summary>By night the shard is silver.</summary>
         protected override void DrawAt(Vector3 drawLoc, bool flip = false)
         {
+            if (IsWater) { LightMirror.DrawWater(this, drawLoc); return; }
             if (IsCrystal || !LightMagic.Night(Map)) { base.DrawAt(drawLoc, flip); return; }
             if (nightMat == null) nightMat = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Light/Reflector_Night", ShaderDatabase.Transparent);
             float s = def.graphicData.drawSize.x;

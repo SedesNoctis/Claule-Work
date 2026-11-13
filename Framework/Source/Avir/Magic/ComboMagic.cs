@@ -136,6 +136,8 @@ namespace Avir.Magic
                 // inside a great circle of Life that is not sealed, the small circles meet as Life's own meetings (rule ВК-05,
                 // Fix249): water and air there are Nerve, not a storm; fire and water - Fever, not steam
                 if (InLife(root, c)) { cur = null; prev = null; continue; }
+                // the circle a form of Light took into itself (Crystal's Earth, Mirror's Water) is Light now: it meets no one (Fix262)
+                if (LightMagic.Absorbed(root.ParentOf(c)) == c) { cur = null; prev = null; continue; }
                 RuneKind e = c.element.kind;
                 bool joined = cur != null && prev != null && root.ParentOf(prev) == root.ParentOf(c) && !SpellTransmute.Seals(prev, c);
                 prev = c;

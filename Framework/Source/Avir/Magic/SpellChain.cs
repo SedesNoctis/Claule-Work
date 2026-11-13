@@ -47,6 +47,8 @@ namespace Avir.Magic
             public IntVec3 origin = IntVec3.Invalid;
             /// <summary>The point the spell was let go at: Light's reflectors send their echoes back into it.</summary>
             public IntVec3 aim = IntVec3.Invalid;
+            /// <summary>The reflector a spell of Light comes out of, when the mage strikes through reflections (Fix262).</summary>
+            public IntVec3 relay = IntVec3.Invalid;
             /// <summary>The further places named for Reach and Thread, in order, and how many are used.</summary>
             public List<IntVec3> hops = new List<IntVec3>();
             public int hopNext;
@@ -70,6 +72,7 @@ namespace Avir.Magic
                 Scribe_Values.Look(ref endByMage, "endByMage");
                 Scribe_Values.Look(ref origin, "origin", IntVec3.Invalid);
                 Scribe_Values.Look(ref aim, "aim", IntVec3.Invalid);
+                Scribe_Values.Look(ref relay, "relay", IntVec3.Invalid);
                 Scribe_Values.Look(ref born, "born", -1);
                 if (Scribe.mode == LoadSaveMode.PostLoadInit && root != null) { links = Order(root); combos = Combos.Pairs(root); }
             }
@@ -138,10 +141,20 @@ namespace Avir.Magic
 
         public static void Start(Pawn caster, SpellCircle root, LocalTargetInfo target, float power)
         {
+            // LIGHT THROUGH REFLECTIONS (the author, Fix262): a point the mage does not see is struck out of a reflector that
+            // does; a mage of the Mirror strikes only out of shining water (or from itself, spending a flask)
+            IntVec3 relay = IntVec3.Invalid;
+            if (LightMagic.Any(root) && caster?.Map != null)
+            {
+                if (!LightMirror.Aim(caster, new RitualSchema { weave = root }, target.Cell, out relay, out string why))
+                { Messages.Message(why, caster, MessageTypeDefOf.RejectInput, false); return; }
+                if (!relay.IsValid && LightMagic.AnyMirror(root)) LightMirror.UseFlask(caster);
+                if (relay.IsValid) LightMirror.Relay(caster.Map, relay, target.Cell);
+            }
             var c = new Chain
             {
                 caster = caster, root = root, links = Order(root), power = power, target = target,
-                storm = false, wallTo = FireMagic.WallTo, combos = Combos.Pairs(root), origin = caster.Position, aim = target.Cell, born = Find.TickManager.TicksGame,
+                storm = false, wallTo = FireMagic.WallTo, combos = Combos.Pairs(root), origin = relay.IsValid ? relay : caster.Position, relay = relay, aim = target.Cell, born = Find.TickManager.TicksGame,
                 hops = SpellHops.Take(caster)
             };
             LifeMagic.BeginSpell(caster);
@@ -165,7 +178,7 @@ namespace Avir.Magic
             // a circle of Light: from the caster into the point (its echoes come once the spell is over)
             if (LightMagic.IsLink(c.root, circle))
             {
-                LightMagic.CastCircle(caster, circle, caster.Position, c.target.Cell, c.power, caster.Map, c.root);
+                LightMagic.CastCircle(caster, circle, c.relay.IsValid ? c.relay : caster.Position, c.target.Cell, c.power, caster.Map, c.root);
                 c.target = new LocalTargetInfo(c.target.Cell);
                 c.waitCaster = false; c.waitFor = null; c.endByMage = false;
                 int t1 = Find.TickManager.TicksGame; c.giveUp = t1 + Patience; c.at = t1 + Gap;
@@ -194,7 +207,9 @@ namespace Avir.Magic
             float pHere = shaped ? p * SpellSculpt.Keeps : p;
             RitualReading r = RitualEvaluator.Read(one);
             SpellDash.Last = null;
-            SpellDash.ReturnTo = c.origin;
+            SpellDash.ReturnTo = c.relay.IsValid ? caster.Position : c.origin;
+            IntVec3 keepFrom = SpellOrigin.From;
+            if (c.relay.IsValid) SpellOrigin.From = c.relay;   // the elements sealed in Light leave the reflector too
             AirMagic.Storm = c.storm;
             FireMagic.WallTo = c.wallTo;
             SpellDash.LastPulled = null;
@@ -235,7 +250,7 @@ namespace Avir.Magic
                 // the barriers in their turn; two elements that met work as what they made
                 else SpellWards.InOrder(caster, one, met, circle.element, c.target, pHere, part => SpellDash.CastPart(caster, part, met, circle.element, c.target, pHere));
             }
-            finally { AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; SpellAura.Spell = keepSpell; SpellTransmute.OnPath = keepPath; SecondOrder.Now = keepSecond; SecondOrder.Extra = keepExtra; }
+            finally { SpellOrigin.From = keepFrom; AirMagic.Storm = false; FireMagic.WallTo = IntVec3.Invalid; SpellDash.ReturnTo = IntVec3.Invalid; SpellAura.Spell = keepSpell; SpellTransmute.OnPath = keepPath; SecondOrder.Now = keepSecond; SecondOrder.Extra = keepExtra; }
             // in a Crystal the forms grow crystals (the mage's own cast only, Fix217)
             if (LightMagic.InCrystal(c.root, circle) && caster.Spawned) LightMagic.Grow(caster, circle, c.origin.IsValid ? c.origin : caster.Position, c.target.Cell, c.power, caster.Map);
             SpellDash.Hang(after, met, caster, c.target, p);
