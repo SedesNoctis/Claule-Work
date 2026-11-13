@@ -266,7 +266,7 @@ namespace Avir.Magic
             string what = Verbs(verbs, Verb);
             switch (form?.kind)
             {
-                case RuneKind.Restore: e.main = "Cauterizes: bleeding wounds of friends at the target are seared shut, as if tended."; break;
+                case RuneKind.Restore: e.main = "Cauterizes: bleeding wounds of friends at the target are seared shut, as if tended - and the body runs hot against sickness for hours (immunity +12%)."; break;
                 case RuneKind.Enchant: e.main = "Sets a friend's weapon burning (the caster's, if no friend stands there): blows add flame, shots may set foes alight."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Sense: e.main = "A sense of warmth on the caster for " + (4 * (1 + r.anchor)) + " h x strength: every warm body within " + (25 + 10 * r.reach) + " cells of them as they walk - through walls, the machines too, for they run hot; the unseen among them show."; break;
@@ -312,7 +312,7 @@ namespace Avir.Magic
             string what = Verbs(verbs, WaterVerb);
             switch (form?.kind)
             {
-                case RuneKind.Restore: e.main = "Washes the wounds of friends at the target and binds them - the bleeding stops."; break;
+                case RuneKind.Restore: e.main = "Washes the wounds of friends at the target and binds them - the bleeding stops, and the wounds stay cool for hours (pain x0.85)."; break;
                 case RuneKind.Enchant: e.main = "Wraps a friend's weapon in water (the caster's, if no friend stands there): blows soak the foe, and every blow on a soaked one weakens them further."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Sense: e.main = "A sense of blood on the caster for " + (4 * (1 + r.anchor)) + " h x strength: every living body within " + (25 + 10 * r.reach) + " cells of them as they walk (machines have none) - the unseen show, hidden sickness comes to light, a metalhorror in a body is found out."; break;
@@ -348,7 +348,7 @@ namespace Avir.Magic
             string what = Verbs(verbs, EarthVerb);
             switch (form?.kind)
             {
-                case RuneKind.Restore: e.main = "Binds the wounds of friends at the target in stone, like splints, and covers them in stone skin for an hour."; break;
+                case RuneKind.Restore: e.main = "Binds the wounds of friends at the target in stone, like splints, and covers them in stone skin for an hour - and things and buildings there are mended a share of their wear."; break;
                 case RuneKind.Enchant: e.main = "Makes a friend's weapon heavy with stone (the caster's, if no friend stands there): blows hit harder and now and then knock the foe senseless."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Sense: e.main = "Once, where it is cast: every step within " + (35 + 10 * r.reach) + " cells is felt - and the ore deep below becomes known to the caster for good (select them to see where it lies). A strong cast (strength " + SpellSense.DrawFrom.ToString("0.#") + " and more) draws new ore up from the depths: the stronger, the more and the dearer; that ground then rests a day."; break;
@@ -401,7 +401,7 @@ namespace Avir.Magic
             string what = Verbs(verbs, AirVerb);
             switch (form?.kind)
             {
-                case RuneKind.Restore: e.main = "A second wind for friends at the target: tiredness lifts, breath comes back, poison in the blood thins."; break;
+                case RuneKind.Restore: e.main = "A second wind for friends at the target: tiredness lifts, breath comes back, poison in the blood thins - and the chest stays open for hours (breathing +15%)."; break;
                 case RuneKind.Enchant: e.main = "Wraps a friend's weapon in wind (the caster's, if no friend stands there): every blow throws the foe back."; break;
                 case RuneKind.Summon: e.main = "Spirits are not made yet."; break;
                 case RuneKind.Sense: e.main = "A sense of the wind on the caster for " + (4 * (1 + r.anchor)) + " h x strength: the whole land in the open (not under a roof) - every unseen one out there is shown."; break;

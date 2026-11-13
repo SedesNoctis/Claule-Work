@@ -503,7 +503,8 @@ namespace Avir.Magic
                         took += 0.25f;
                         break;
                     default:
-                        p.TakeDamage(new DamageInfo(DamageDefOf.Burn, 3f * power, 0f, -1f, caster));
+                        // the heat drawn OUT of the body (Сверка, Fix264): it chills - frostbite, not a burn as before
+                        p.TakeDamage(new DamageInfo(DamageDefOf.Frostbite, 3f * power, 0f, -1f, caster));
                         took += 0.15f;
                         break;
                 }
@@ -1263,7 +1264,7 @@ namespace Avir.Magic
                 case RuneKind.Restore:
                     return "mends friends there in its own way";
                 case RuneKind.Drain:
-                    return k == ComboKind.Storm ? "draws the charge out of machines (EMP)" : k == ComboKind.Magma ? "draws the heat out: the magma sets at once" : k == ComboKind.Bog || k == ComboKind.Dust ? "drinks the water out of everyone there" : "draws the heat out of fires and everyone there";
+                    return k == ComboKind.Storm ? "draws the charge out of machines (EMP)" : k == ComboKind.Magma ? "draws the heat out: the magma sets at once" : k == ComboKind.Bog || k == ComboKind.Dust ? "drinks the water out of everyone there" : "draws the heat out of fires and everyone there - the cold bites them";
                 case RuneKind.Lift:
                     return "throws everyone there up" + (k == ComboKind.Magma ? " on a spout of lava" : k == ComboKind.Steam ? " on a geyser of steam" : k == ComboKind.Dust ? " in a spout of sand" : k == ComboKind.Storm ? " in a whirl of rain" : k == ComboKind.Bog ? " on a geyser of mud" : " on rising heat");
                 case RuneKind.Growth:
@@ -1271,7 +1272,7 @@ namespace Avir.Magic
                          : k == ComboKind.Bog ? "creeps outward, ring after ring - everything green grows" : k == ComboKind.Steam ? "rolls outward, scalding, ring after ring - everything green grows"
                          : "widens, raining and striking at its edge - everything green grows";
                 case RuneKind.Purge:
-                    return "cleans: fire and filth" + (k == ComboKind.Storm || k == ComboKind.Haze ? ", every gas blown off the ground and out of friends" : "")
+                    return (k == ComboKind.Magma ? "cleans filth (its own fire it keeps)" : "cleans: fire and filth") + (k == ComboKind.Storm || k == ComboKind.Haze ? ", every gas blown off the ground and out of friends" : "")
                         + (k == ComboKind.Steam || k == ComboKind.Storm || k == ComboKind.Bog ? ", anaesthetic and poisons washed out" : "") + (k == ComboKind.Haze || k == ComboKind.Dust ? ", and the wet dried" : "");
                 default: return "";
             }

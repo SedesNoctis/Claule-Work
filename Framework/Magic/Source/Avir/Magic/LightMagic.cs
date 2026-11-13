@@ -592,7 +592,8 @@ namespace Avir.Magic
                     case RuneKind.Barrier: if (!SpellSculpt.Of(g) || g.sections.Count == 0 || !g.sections[g.sections.Count - 1].runes.Contains(r)) bits.Add("a ward of light - on the caster as the circle's last rune (they carry light round them), a glowing dome anywhere else; what it stops goes back the way it came"); break;
                     case RuneKind.Growth: bits.Add("healing - the wounds of whom it reaches close, and the light gives strength back"); break;
                     case RuneKind.Drain: bits.Add("the light taken away - a blind patch; those who cannot see in the dark shoot almost blind in it"); break;
-                    default: if (r.role == RuneRole.Verb && !LifeMagic.Side(r.kind) && r.kind != RuneKind.Amplify && r.kind != RuneKind.Breadth) bits.Add(r.label + " - not made for Light yet"); break;
+                    // Restoration in a circle of Light does nothing yet - said, not kept silent (Сверка, Fix264; Growth is Light's healing)
+                    default: if (r.role == RuneRole.Verb && r.kind != RuneKind.Drain && r.kind != RuneKind.Amplify && r.kind != RuneKind.Breadth) bits.Add(r.label + (r.kind == RuneKind.Restore ? " - not made for Light yet (Growth is Light's healing)" : " - not made for Light yet")); break;
                 }
             return "Light: " + (bits.Count > 0 ? string.Join(", then ", bits) : "a glint only - write Release, Lift, Beam or Withering");
         }
