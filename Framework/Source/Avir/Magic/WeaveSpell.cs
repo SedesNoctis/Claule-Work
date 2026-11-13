@@ -216,6 +216,8 @@ namespace Avir.Magic
             foreach (var g in smalls.GroupBy(c => c.element).Where(g => g.Key != null && g.Count() > 1))
                 e.extras.Insert(0, new KeyValuePair<string, string>(g.Key.LabelCap + " ×" + g.Count() + ": resonance", "Circles of the same element strengthen each other: +" + (25 * (g.Count() - 1)) + "% to each."));
             foreach (ComboKind ck in pairs.Values.Distinct()) e.extras.Insert(0, new KeyValuePair<string, string>(Combos.Label(ck).CapitalizeFirst() + ": two elements met", ComboText.Short(ck)));
+            if (LightLife.Meets(root))
+                e.extras.Insert(0, new KeyValuePair<string, string>("Grove of Lights - Light and Life", "Held one in the other, Life is paid in light: Withering drinks light - reflectors, shining water, lamps, the open sky - not the living, and leaves a blind patch; Restoration grows shining flowers of this land round the healed (living reflectors, they do not age); the reflectors are spirit lights that drift to your people and mend them; the reflectors echo Life too - out of a flower the flower pays (it withers), out of the rest the store. A lost hold breaks it all into wild growth."));
             if (LightMagic.Any(root))
             {
                 e.extras.Insert(0, new KeyValuePair<string, string>("Price of Light: Defocus", LightMagic.DefocusText));

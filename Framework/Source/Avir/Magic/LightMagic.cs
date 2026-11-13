@@ -105,7 +105,12 @@ namespace Avir.Magic
         public static bool Echoing;
 
         /// <summary>Everything the reflectors send back, in the order it acts: the circles of Light and the elements sealed in it.</summary>
-        public static List<SpellCircle> EchoCircles(SpellCircle root) => root == null ? new List<SpellCircle>() : MapComponent_SpellChain.Order(root).Where(c => IsLink(root, c) || SealedIn(root, c)).ToList();
+        public static List<SpellCircle> EchoCircles(SpellCircle root)
+        {
+            if (root == null) return new List<SpellCircle>();
+            bool grove = LightLife.Meets(root);   // held with Life, the reflectors echo Life's acts too (Fix265)
+            return MapComponent_SpellChain.Order(root).Where(c => IsLink(root, c) || SealedIn(root, c) || grove && LifeMagic.IsLink(root, c)).ToList();
+        }
 
         /// <summary>One shot of an echo: a circle of Light, or an element sealed in Light (cast from the reflector).</summary>
         public static void EchoShot(Pawn caster, SpellCircle root, SpellCircle c, IntVec3 from, IntVec3 to, float power, Map map)
@@ -114,6 +119,7 @@ namespace Avir.Magic
             try
             {
                 if (IsLink(root, c)) CastCircle(caster, c, from, to, power, map, root);
+                else if (LifeMagic.IsLink(root, c)) LightLife.EchoLife(caster, root, c, from, to, power, map);
                 else MapComponent_SpellChain.CastEcho(caster, root, c, from, to, power);
             }
             finally { Echoing = keep; }
@@ -542,7 +548,7 @@ namespace Avir.Magic
             // a reflector that cannot see the point through a wall reflects nothing (the author, Fix217)
             // what this very cast grew (crystals of its forms) answers only the next one (the author, Fix223)
             var refl = Building_LightReflector.Node(caster, map).Where(x => (castBorn < 0 || x.born < castBorn) && x.Position.DistanceTo(aim) <= range && GenSight.LineOfSight(x.Position, aim, map, true)).InRandomOrder().ToList();
-            ThingDef kind = DefDatabase<ThingDef>.GetNamedSilentFail(crystal ? "Avir_LightCrystal" : "Avir_LightReflector");
+            ThingDef kind = DefDatabase<ThingDef>.GetNamedSilentFail(crystal ? "Avir_LightCrystal" : LightLife.Meets(root) ? "Avir_SpiritLight" : "Avir_LightReflector");
             for (int i = 0; i < n; i++) Building_LightReflector.Raise(caster, map, aim, dist, kind);
             if (AnyGlint(root) && !Echoing) LightGlint.Raise(caster, map, aim, dist);   // the Glint's mirages: one at the point, one as a reflector stands
             if (refl.Count == 0) return;
@@ -571,7 +577,9 @@ namespace Avir.Magic
             if (caster?.Map == null || !Any(root)) return;
             int n = Building_LightReflector.Held(caster.Map);
             // the hold lost (the author, Fix223): the node does not just fall - every reflector strikes wild first, as in defocus
-            var node = Building_LightReflector.Node(caster, caster.Map).Where(r => !r.Work).ToList();
+            var node = Building_LightReflector.Node(caster, caster.Map).Where(r => !r.Work && !r.IsPlantMark).ToList();
+            // held with Life, the lost hold breaks the lights and the shining flowers into wild growth (the author, Fix265)
+            if (LightLife.Meets(root)) LightLife.Overgrow(caster.Map, node.Select(r => r.Position).Concat(Building_LightReflector.All(caster.Map).Where(r => r.IsPlantMark && r.caster == caster).Select(r => r.Position)));
             var links = EchoCircles(root);
             if (links.Count > 0 && node.Count > 0 && aim.IsValid) MapComponent_LightEchoes.Wild(caster, root, links, node, aim, power, caster.Map);
             else Building_LightReflector.BreakAll(node, caster, true);
@@ -620,7 +628,7 @@ namespace Avir.Magic
         Thing IAttackTarget.Thing => this;
         public LocalTargetInfo TargetCurrentlyAimingAt => LocalTargetInfo.Invalid;
         public float TargetPriorityFactor => 0.6f;
-        public bool ThreatDisabled(IAttackTargetSearcher disabledFor) => !Spawned || IsWater || IsWalker;   // nobody shoots at a pool
+        public bool ThreatDisabled(IAttackTargetSearcher disabledFor) => !Spawned || IsWater || IsWalker || IsPlantMark;   // nobody shoots at a pool
 
         /// <summary>When it is free to send the next shot: the casts of a node go one after another (the author).</summary>
         public int busyUntil;
@@ -642,6 +650,11 @@ namespace Avir.Magic
         public bool IsMirage => def.defName == "Avir_GlintMirage";
         /// <summary>White flame on a body (Fix263): a walking reflector - it goes where the burning one goes.</summary>
         public bool IsWalker => def.defName == "Avir_WhiteFlameMark";
+        /// <summary>A shining flower's light (Light and Life, Fix265): a living reflector bound to its plant.</summary>
+        public bool IsPlantMark => def.defName == "Avir_LifeLightMark";
+        /// <summary>A spirit light (Light and Life, Fix265): the meeting's reflector, drifting to its own.</summary>
+        public bool IsSpirit => def.defName == "Avir_SpiritLight";
+        public Thing bound;
         public Pawn follows;
         /// <summary>How much weaker each echo is: a plain reflector halves it, a crystal keeps three quarters (the author).</summary>
         public float Decay => IsCrystal || IsMirage ? 0.75f : IsWater ? 0.4f : 0.5f;   // mirages: no great loss (the author)   // water weakens the echo (the author)
@@ -649,7 +662,7 @@ namespace Avir.Magic
         public bool Faceted => IsCrystal && !Work && !Unstable;
 
         /// <summary>The reflectors that weigh on the hold - all but the works' crystals.</summary>
-        public static int Held(Map map) => All(map).Count(r => !r.Work && !r.IsWater && !r.IsMirage);   // shining water lies there by itself: no weight on the hold
+        public static int Held(Map map) => All(map).Count(r => !r.Work && !r.IsWater && !r.IsMirage && !r.IsPlantMark);   // shining water lies there by itself: no weight on the hold
 
         public static IEnumerable<Building_LightReflector> All(Map map) =>
             map == null ? Enumerable.Empty<Building_LightReflector>() : map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial).OfType<Building_LightReflector>().Where(r => r.Spawned && !r.Destroyed);
@@ -729,6 +742,8 @@ namespace Avir.Magic
         {
             base.TickInterval(delta);
             if (IsWalker && this.IsHashIntervalTick(10, delta)) { if (!LightZenith.Follow(this)) return; }
+            if (IsSpirit && this.IsHashIntervalTick(90, delta)) LightLife.Drift(this);
+            if (IsPlantMark) { if (this.IsHashIntervalTick(250, delta)) LightLife.Keep(this); return; }   // it lives as long as its flower
             if (!this.IsHashIntervalTick(250, delta)) return;
             if (dies > 0 && Find.TickManager.TicksGame >= dies) { LightMagic.Glint(Map, DrawPos, 1f, false); Destroy(DestroyMode.Vanish); return; }
             if (IsWater && !LightMirror.Water(Position, Map)) { Destroy(DestroyMode.Vanish); return; }   // the water dried or was taken away
@@ -758,7 +773,8 @@ namespace Avir.Magic
         protected override void DrawAt(Vector3 drawLoc, bool flip = false)
         {
             if (IsWater) { LightMirror.DrawWater(this, drawLoc); return; }
-            if (IsWalker) return;   // the flame on the body is its look
+            if (IsWalker || IsPlantMark) return;   // the flame on the body, the flower itself - their own look
+            if (IsSpirit) { LightLife.DrawSpirit(this, drawLoc); return; }
             if (IsMirage) { LightGlint.DrawMirage(this, drawLoc); return; }
             if (IsCrystal || !LightMagic.Night(Map)) { base.DrawAt(drawLoc, flip); return; }
             if (nightMat == null) nightMat = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Light/Reflector_Night", ShaderDatabase.Transparent);
@@ -782,6 +798,7 @@ namespace Avir.Magic
             Scribe_Values.Look(ref dies, "dies", -1);
             Scribe_Values.Look(ref born, "born");
             Scribe_References.Look(ref follows, "follows");
+            Scribe_References.Look(ref bound, "bound");
         }
     }
 

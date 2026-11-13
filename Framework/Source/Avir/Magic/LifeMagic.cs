@@ -126,8 +126,9 @@ namespace Avir.Magic
             mix = MixOf(root, g.Great ? g : root?.ParentOf(g));
             flowKinds[caster.thingIDNumber] = pair;
             if (pair != None) GameComponent_Combos.First("life" + pair, caster);
+            lightMeet = LightLife.Meets(root);
             try { Cast(caster, g, at, power, map); }
-            finally { flows[caster.thingIDNumber] = flow; flow = 0f; pair = None; aspect = None; mix = LifeMix.None; }
+            finally { flows[caster.thingIDNumber] = flow; flow = 0f; pair = None; aspect = None; mix = LifeMix.None; lightMeet = false; }
         }
 
         // ------------------------------------------------------------------ the pairs: Life meeting a small element in its box
@@ -379,6 +380,8 @@ namespace Avir.Magic
         private static void Take(Pawn caster, Hediff_ArcaneCore core, SpellCircle g, Act act, IntVec3 at, float r, float power, Map map)
         {
             if (act.trans) { flow += TransmuteTake(caster, g, act, at, r, power, map); return; }
+            // held with Light, Withering drinks light - the living are not touched (the author, Fix265)
+            if (lightMeet) { flow += LightLife.DrinkLight(caster, at, act.verb == RuneKind.Beam ? 1.5f : r, power, map); return; }
             float got = 0f;
             curVerb = act.verb;
             mixBeamHit = false;
@@ -489,9 +492,14 @@ namespace Avir.Magic
 
         /// <summary>Takes what is there of `need` - from the energy just taken first, then from the store; the share paid.</summary>
         private static IntVec3 payAt = IntVec3.Invalid;
+        /// <summary>A giving already paid for elsewhere - by a shining flower that withers for it (Light and Life, Fix265).</summary>
+        public static bool FreeGift;
+        /// <summary>The circle being cast is held with Light (the Grove of Lights, Fix265).</summary>
+        private static bool lightMeet;
+
         private static float Pay(Hediff_ArcaneCore core, float need)
         {
-            if (need <= 0f) return 1f;
+            if (need <= 0f || FreeGift) return 1f;
             float fromFlow = Mathf.Min(flow, need); flow -= fromFlow;
             float rest = need - fromFlow;
             // Emerald: the stones near the spot and on the mage give first
@@ -542,6 +550,7 @@ namespace Avir.Magic
                 if (per > 0f) FleckMaker.ThrowMetaIcon(p.Position, map, FleckDefOf.HealingCross);
             }
             foreach (Plant pl in plants) pl.Growth = Mathf.Min(1f, pl.Growth + 0.15f * power * f);
+            if (lightMeet && per > 0f) LightLife.Bloom(caster, who, at, r, power * f, map);   // the Grove of Lights: shining flowers round the healed
             if (bad != null) foreach (var x in bad) { x.h.Severity -= 0.3f * power * f; if (x.h.Severity <= 0.01f && x.p.health.hediffSet.hediffs.Contains(x.h)) x.p.health.RemoveHediff(x.h); }
             if (cells != null) foreach (IntVec3 c in cells) if (Rand.Chance(0.4f)) Wisp(c.ToVector3Shifted(), map);
             return true;

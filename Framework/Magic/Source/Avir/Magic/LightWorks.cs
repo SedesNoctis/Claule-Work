@@ -58,13 +58,13 @@ namespace Avir.Magic
     /// <summary>Raising the crystals where marked, and renewing those running low.</summary>
     public class WorkGiver_LightCrystal : WorkGiver_Scanner
     {
-        private static readonly string[] Keys = { "Avir_LightCrystalStore", "Avir_LightCrystalSun", "Avir_GlowWaterStill", "Avir_GlowFlask" };
+        private static readonly string[] Keys = { "Avir_LightCrystalStore", "Avir_LightCrystalSun", "Avir_GlowWaterStill", "Avir_GlowFlask", "Avir_LifeLightGarden" };
         /// <summary>The Mirror's works (Fix262) go to a mage of Light and Water; the crystals to Light and Earth.</summary>
         public static bool OfMirror(string key) => key == "Avir_GlowWaterStill" || key == "Avir_GlowFlask";
-        public static Hediff_ArcaneCore AbleFor(Pawn p, string key) => key == null ? null : OfMirror(key) ? MirrorWorks.Able(p) : LightWorks.Able(p);
+        public static Hediff_ArcaneCore AbleFor(Pawn p, string key) => key == null ? null : key == "Avir_LifeLightGarden" ? LightLife.Able(p) : OfMirror(key) ? MirrorWorks.Able(p) : LightWorks.Able(p);
         public override PathEndMode PathEndMode => PathEndMode.Touch;
         public override ThingRequest PotentialWorkThingRequest => ThingRequest.ForGroup(ThingRequestGroup.Undefined);
-        public override bool ShouldSkip(Pawn pawn, bool forced = false) => LightWorks.Able(pawn) == null && MirrorWorks.Able(pawn) == null;
+        public override bool ShouldSkip(Pawn pawn, bool forced = false) => LightWorks.Able(pawn) == null && MirrorWorks.Able(pawn) == null && LightLife.Able(pawn) == null;
         public override IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn)
         {
             var cells = new List<IntVec3>();
@@ -93,14 +93,25 @@ namespace Avir.Magic
         protected override IEnumerable<Toil> MakeNewToils()
         {
             string key0 = WorkGiver_LightCrystal.KeyAt(pawn.Map, TargetA.Cell);
-            bool mirror = WorkGiver_LightCrystal.OfMirror(key0);
+            bool mirror = WorkGiver_LightCrystal.OfMirror(key0), grove = key0 == "Avir_LifeLightGarden";
             yield return WorkSpells.GoTo(this, false, 0f);
-            yield return ArcaneChannel.Channel(this, 360, WorkSpells.Charm("Avir_LightCrystal", mirror ? new[] { RuneKind.Light, RuneKind.Water } : new[] { RuneKind.Light, RuneKind.Earth }), false,
+            yield return ArcaneChannel.Channel(this, 360, WorkSpells.Charm("Avir_LightCrystal", mirror ? new[] { RuneKind.Light, RuneKind.Water } : grove ? new[] { RuneKind.Light, RuneKind.Life } : new[] { RuneKind.Light, RuneKind.Earth }), false,
                 mirror ? new Color(0.62f, 0.88f, 1f, 0.5f) : new Color(0.85f, 0.95f, 1f, 0.5f));
             Toil done = ToilMaker.MakeToil("LightCrystal");
             done.initAction = () =>
             {
                 Map map = pawn.Map; IntVec3 c = TargetA.Cell;
+                if (grove)
+                {
+                    // Light and Life (Fix265): a shining flower of this land's climate, a living reflector
+                    Hediff_ArcaneCore gc = LightLife.Able(pawn);
+                    if (gc == null) return;
+                    map.designationManager.TryRemoveDesignation(c, DefDatabase<DesignationDef>.GetNamedSilentFail(key0));
+                    if (LightLife.Plant(pawn, map, c) == null) return;
+                    MagicWork.Done(gc, RuneKind.Light, LightWorks.Arcana, LightWorks.Xp);
+                    MageClass.Gain(gc, RuneKind.Life, LightWorks.Xp * 0.5f);
+                    return;
+                }
                 if (mirror)
                 {
                     // the Mirror's works (Fix262): still shining water; flasks filled at it

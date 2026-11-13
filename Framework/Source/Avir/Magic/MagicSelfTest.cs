@@ -177,6 +177,16 @@ namespace Avir.Magic
                 Check("light + earth + water = Crystal (the first decides)", LightMagic.Crystal(b2) && !LightMagic.Mirror(b2), "form " + LightMagic.FormCircle(b2)?.element?.defName);
                 var b3 = LightBox("Fire"); Check("light + fire = Zenith", LightMagic.Zenith(b3), "form " + LightMagic.FormCircle(b3)?.element?.defName);
                 var b4 = LightBox("Air"); Check("light + air = Glint", LightMagic.Glint(b4), "form " + LightMagic.FormCircle(b4)?.element?.defName);
+                // the Grove of Lights (Fix265): Life in Light and Light in Life are the same one meeting
+                if (R("Life") != null)
+                {
+                    var lifeIn = new SpellCircle { element = R("Life") }; lifeIn.sections.Add(new RitualRing { runes = new List<RuneDef> { R("Drain") }.Where(x => x != null).ToList(), slots = 1 });
+                    var lb = LightBox(); lb.inner.Add(lifeIn); var r5 = new SpellCircle { binding = true }; r5.inner.Add(lb);
+                    var lightIn = LightBox(); var lifeBox = new SpellCircle { element = R("Life") }; lifeBox.sections.Add(new RitualRing { runes = new List<RuneDef> { R("Drain") }.Where(x => x != null).ToList(), slots = 1 }); lifeBox.inner.Add(lightIn);
+                    var r6 = new SpellCircle { binding = true }; r6.inner.Add(lifeBox);
+                    Check("Life in Light = Grove of Lights", LightLife.Meets(r5), "no");
+                    Check("Light in Life = the same Grove", LightLife.Meets(r6), "no");
+                }
             }
 
             var sb = new StringBuilder();

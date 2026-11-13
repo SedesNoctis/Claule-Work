@@ -691,4 +691,169 @@
       </li>
     </stages>
   </HediffDef>
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_SpiritLight</defName>
+    <label>spirit light</label>
+    <description>A small wandering light raised when Light and Life are held together - like the spirit lights that ran through the groves of Alleanor. It drifts to its caster's people and mends whoever stands close. A reflector of Light; it can be broken.</description>
+    <thingClass>Avir.Magic.Building_LightReflector</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Light/Reflector_Night</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>MoteGlow</shaderType>
+      <drawSize>(0.9,0.9)</drawSize>
+    </graphicData>
+    <altitudeLayer>MoteOverhead</altitudeLayer>
+    <passability>Standable</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <selectable>true</selectable>
+    <useHitPoints>true</useHitPoints>
+    <drawerType>RealtimeOnly</drawerType>
+    <blockLight>false</blockLight>
+    <statBases>
+      <MaxHitPoints>25</MaxHitPoints>
+      <Flammability>0</Flammability>
+    </statBases>
+    <size>(1,1)</size>
+    <building>
+      <isEdifice>false</isEdifice>
+      <isInert>true</isInert>
+      <claimable>false</claimable>
+      <deconstructible>false</deconstructible>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+    </building>
+  </ThingDef>
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_LifeLightMark</defName>
+    <label>light of a shining flower</label>
+    <description>The light of a flower grown by Light and Life: a living reflector. An echo of Life out of it is paid by the flower.</description>
+    <thingClass>Avir.Magic.Building_LightReflector</thingClass>
+    <graphicData>
+      <texPath>Things/Mote/Avir/Magic/Light/Reflector</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <shaderType>Transparent</shaderType>
+      <drawSize>(1,1)</drawSize>
+    </graphicData>
+    <altitudeLayer>Filth</altitudeLayer>
+    <passability>Standable</passability>
+    <rotatable>false</rotatable>
+    <tickerType>Normal</tickerType>
+    <selectable>false</selectable>
+    <useHitPoints>false</useHitPoints>
+    <drawerType>RealtimeOnly</drawerType>
+    <blockLight>false</blockLight>
+    <statBases><Flammability>0</Flammability></statBases>
+    <size>(1,1)</size>
+    <building>
+      <isEdifice>false</isEdifice>
+      <isInert>true</isInert>
+      <claimable>false</claimable>
+      <deconstructible>false</deconstructible>
+      <expandHomeArea>false</expandHomeArea>
+      <ai_chillDestination>false</ai_chillDestination>
+    </building>
+  </ThingDef>
+  <DesignationDef>
+    <defName>Avir_LifeLightGarden</defName>
+    <texturePath>Designations/HarvestPlant</texturePath>
+    <targetType>Cell</targetType>
+    <designateCancelable>true</designateCancelable>
+  </DesignationDef>
+
+  <!-- Fix265: shining flowers of the hot lands, grown by Light and Life (art pending: list 43; for now the duskbloom's look) -->
+  <ThingDef ParentName="PlantBase">
+    <defName>Avir_PlantEmberlace</defName>
+    <label>emberlace</label>
+    <thingClass>Avir.North.Plant_NightWaking</thingClass>
+    <description>A low flower of the hot lands grown out of light: by day its ember-red lace lies folded; after dusk it opens and glows like coals under ash.</description>
+    <statBases>
+      <MaxHitPoints>50</MaxHitPoints>
+      <Beauty>9</Beauty>
+      <BeautyOutdoors>9</BeautyOutdoors>
+      <Nutrition>0.05</Nutrition>
+    </statBases>
+    <graphicData>
+      <texPath>Things/Plant/Avir_PlantDuskbloom</texPath>
+      <graphicClass>Graphic_Random</graphicClass>
+    </graphicData>
+    <selectable>true</selectable>
+    <ingestible>
+      <preferability>NeverForNutrition</preferability>
+    </ingestible>
+    <comps>
+      <li Class="Avir.North.CompProperties_NightGlower">
+        <glowRadius>2.9</glowRadius>
+        <glowColor>(255, 140, 60, 0)</glowColor>
+        <seasonalShare>0.7</seasonalShare>
+      </li>
+    </comps>
+    <plant>
+      <growDays>5</growDays>
+      <visualSizeRange>1.0~1.45</visualSizeRange>
+      <fertilitySensitivity>0.2</fertilitySensitivity>
+      <topWindExposure>0.15</topWindExposure>
+      <wildClusterRadius>4</wildClusterRadius>
+      <wildClusterWeight>0</wildClusterWeight>
+      <sowTags><li>Decorative</li></sowTags>
+      <purpose>Beauty</purpose>
+      <growMinGlow>0</growMinGlow>
+      <growOptimalGlow>0.3</growOptimalGlow>
+    </plant>
+    <modExtensions>
+      <li Class="Avir.North.NightWaking">
+        <nightTexPath>Things/Plant/Avir_PlantDuskbloom_Night</nightTexPath>
+      </li>
+      <li Class="Avir.North.NorthPlant">
+        <shadeTolerant>true</shadeTolerant>
+      </li>
+    </modExtensions>
+  </ThingDef>
+  <ThingDef ParentName="PlantBase">
+    <defName>Avir_PlantSandlantern</defName>
+    <label>sand lantern</label>
+    <thingClass>Avir.North.Plant_NightWaking</thingClass>
+    <description>A round-headed desert flower grown out of light: by night its pale golden bulb shines like a small lantern standing in the sand.</description>
+    <statBases>
+      <MaxHitPoints>50</MaxHitPoints>
+      <Beauty>9</Beauty>
+      <BeautyOutdoors>9</BeautyOutdoors>
+      <Nutrition>0.05</Nutrition>
+    </statBases>
+    <graphicData>
+      <texPath>Things/Plant/Avir_PlantDuskbloom</texPath>
+      <graphicClass>Graphic_Random</graphicClass>
+    </graphicData>
+    <selectable>true</selectable>
+    <ingestible>
+      <preferability>NeverForNutrition</preferability>
+    </ingestible>
+    <comps>
+      <li Class="Avir.North.CompProperties_NightGlower">
+        <glowRadius>2.9</glowRadius>
+        <glowColor>(255, 215, 120, 0)</glowColor>
+        <seasonalShare>0.7</seasonalShare>
+      </li>
+    </comps>
+    <plant>
+      <growDays>5</growDays>
+      <visualSizeRange>1.0~1.45</visualSizeRange>
+      <fertilitySensitivity>0.2</fertilitySensitivity>
+      <topWindExposure>0.15</topWindExposure>
+      <wildClusterRadius>4</wildClusterRadius>
+      <wildClusterWeight>0</wildClusterWeight>
+      <sowTags><li>Decorative</li></sowTags>
+      <purpose>Beauty</purpose>
+      <growMinGlow>0</growMinGlow>
+      <growOptimalGlow>0.3</growOptimalGlow>
+    </plant>
+    <modExtensions>
+      <li Class="Avir.North.NightWaking">
+        <nightTexPath>Things/Plant/Avir_PlantDuskbloom_Night</nightTexPath>
+      </li>
+      <li Class="Avir.North.NorthPlant">
+        <shadeTolerant>true</shadeTolerant>
+      </li>
+    </modExtensions>
+  </ThingDef>
 </Defs>
