@@ -281,7 +281,7 @@ namespace Avir.Magic
             ["Avir_2Purify"] = "takes the food poisoning out of meals and food - no sickness from a careless cook",
             ["Avir_ArcaneRaiseRock"] = "raises natural rock where marked - walls of real stone of the kind chosen, no materials",
             ["Avir_2Basalt"] = "draws chunks of basalt up out of the ground - stone for building where there is none",
-            ["Avir_2LavaCore"] = "seals a core of lava in basalt where lava or magma lies - a long fuel for any wood-fed fire",
+            ["Avir_2LavaCore"] = "seals three cores of lava in basalt where lava or magma lies - each burns as long as three logs in any wood-fed fire",
             ["Avir_2MarshGas"] = "draws marsh gas out of a bog into a vessel - a fuel twice as strong as chemfuel",
             ["Avir_2Moat"] = "floods the marked ground into shallow water for thirty days - a moat",
             ["Avir_2Rainbow"] = "raises a rainbow over the colony - a glad sight for a day",

@@ -120,6 +120,10 @@ namespace FlightGene
                 // would drop it out of the carrier's arms mid-corridor.
                 if (pawn.ParentHolder is Pawn_CarryTracker) return;
 
+                // PHASING OF ITS OWN (Fix259, the author): a wings carrier that walks through stone by a living
+                // shadow, an amulet or another power is not stuck - that power answers for where it ends up.
+                if (!pawn.Dead && Patch_AvirPhasingGate.PhasesOtherwise(pawn)) { stationarySince.Remove(pawn.thingIDNumber); return; }
+
                 // MOVING MEANS PASSING THROUGH, AND THAT IS THE WHOLE POINT OF FLIGHT.
                 //
                 // This guard existed in the code I replaced and I failed to carry it over, which

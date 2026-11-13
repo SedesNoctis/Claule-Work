@@ -127,6 +127,15 @@ namespace FlightGene
         /// VEF's set, by reflection. The mod is a soft dependency, so this must degrade to null
         /// rather than fail to load when VEF is absent.
         /// </summary>
+        /// <summary>Phasing by something that is not our flight - a living shadow, an amulet, another mod's power
+        /// (Fix259, the author). Such a pawn standing in a wall is that power's business: flight rescue leaves it.</summary>
+        internal static bool PhasesOtherwise(Pawn pawn)
+        {
+            if (pawn == null || AvirFlightRegistry.Contains(pawn)) return false;
+            HashSet<Pawn> set = Set();
+            return set != null && set.Contains(pawn);
+        }
+
         private static HashSet<Pawn> Set()
         {
             if (resolved) return phasingPawns;

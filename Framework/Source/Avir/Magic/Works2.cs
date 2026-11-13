@@ -195,7 +195,7 @@ namespace Avir.Magic
                 } },
             ["Avir_2LavaCore"] = new Work2 { y = SecondKind.Lava, cost = 12f, ticks = 400, desName = "Avir_2LavaCore",
                 cellOk = (p, x) => NearLava(p.Map, x),
-                effect = (p, t, c) => { Spawn(Def("Avir_LavaCore"), 1, t.Cell, p.Map); Unmark(p.Map, t.Cell, "Avir_2LavaCore"); FleckMaker.ThrowFireGlow(t.CenterVector3, p.Map, 1.5f); return true; } },
+                effect = (p, t, c) => { Spawn(Def("Avir_LavaCore"), 3, t.Cell, p.Map); Unmark(p.Map, t.Cell, "Avir_2LavaCore"); FleckMaker.ThrowFireGlow(t.CenterVector3, p.Map, 1.5f); return true; } },
             // a pool of lava (the author, Fix190): Odyssey's shallow lava for seven and a half days; the order renews itself
             // before it runs out (with a word to the player) - a forge's heat, a trap at the gate, a hearth that needs no wood
             ["Avir_2LavaPool"] = new Work2 { y = SecondKind.Lava, cost = 10f, ticks = 320, desName = "Avir_2LavaPool",
@@ -456,36 +456,55 @@ namespace Avir.Magic
         }
     }
 
-    /// <summary>Marsh gas is a fuel too, and a stronger one: wherever chemfuel feeds a thing, a canister of it gives two.</summary>
+    /// <summary>Marsh gas and the lava core are fuels, and stronger ones: wherever chemfuel feeds a thing a canister of
+    /// gas gives two; wherever wood feeds a fire a lava core gives three (Fix259: any wood - Medieval Overhaul's own
+    /// woods, coal and peat fires included, found by what the fire burns, not by name).</summary>
     [StaticConstructorOnStartup]
     public static class Works2Fuel
     {
+        public static ThingDef Gas, Core;
+        public static int Weight(ThingDef d) => d == null ? 1 : d == Core ? 3 : d == Gas ? 2 : 1;
+        public static bool Strong(ThingDef d) => d != null && (d == Core || d == Gas);
+
+        private static bool Woody(ThingDef d) => d == ThingDefOf.WoodLog
+            || d.stuffProps?.categories != null && d.stuffProps.categories.Contains(StuffCategoryDefOf.Woody) && d.IsStuff && !d.MadeFromStuff && d.thingCategories != null && d.thingCategories.Any(c => c.defName.IndexOf("Wood", StringComparison.OrdinalIgnoreCase) >= 0 || c == ThingCategoryDefOf.ResourcesRaw)
+            || d.defName.IndexOf("Coal", StringComparison.OrdinalIgnoreCase) >= 0 || d.defName.IndexOf("Peat", StringComparison.OrdinalIgnoreCase) >= 0;
+
         static Works2Fuel()
         {
-            ThingDef gas = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_MarshGas"), core = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_LavaCore");
+            Gas = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_MarshGas"); Core = DefDatabase<ThingDef>.GetNamedSilentFail("Avir_LavaCore");
+            int fires = 0;
             foreach (ThingDef d in DefDatabase<ThingDef>.AllDefsListForReading)
             {
                 CompProperties_Refuelable r = d.GetCompProperties<CompProperties_Refuelable>();
                 if (r?.fuelFilter == null) continue;
-                if (gas != null && r.fuelFilter.Allows(ThingDefOf.Chemfuel)) r.fuelFilter.SetAllow(gas, true);
-                if (core != null && r.fuelFilter.Allows(ThingDefOf.WoodLog)) r.fuelFilter.SetAllow(core, true);
+                if (Gas != null && r.fuelFilter.Allows(ThingDefOf.Chemfuel)) r.fuelFilter.SetAllow(Gas, true);
+                if (Core != null && r.fuelFilter.AllowedThingDefs.Any(Woody)) { r.fuelFilter.SetAllow(Core, true); fires++; }
             }
+            if (Prefs.DevMode) Log.Message("[Avir] lava core burns in " + fires + " kinds of fire");
         }
     }
 
+    /// <summary>A strong fuel counts as its weight in units, and no more is taken than the tank wants (Fix259: before,
+    /// a core gave four logs' worth instead of three, and a pawn fed in as many cores as logs and wasted the rest).</summary>
     [HarmonyPatch(typeof(CompRefuelable), nameof(CompRefuelable.Refuel), new[] { typeof(List<Thing>) })]
     public static class Patch_StrongFuel
     {
-        public static void Prefix(List<Thing> fuelThings, out int __state)
+        public static bool Prefix(CompRefuelable __instance, List<Thing> fuelThings)
         {
-            __state = fuelThings?.Where(t => t.def.defName == "Avir_MarshGas" || t.def.defName == "Avir_LavaCore").Sum(t => t.Destroyed ? 0 : t.stackCount * (t.def.defName == "Avir_LavaCore" ? 3 : 1)) ?? 0;
-        }
-        public static void Postfix(CompRefuelable __instance, List<Thing> fuelThings, int __state)
-        {
-            if (__state <= 0) return;
-            int left = fuelThings.Where(t => t.def.defName == "Avir_MarshGas" || t.def.defName == "Avir_LavaCore").Sum(t => t.Destroyed ? 0 : t.stackCount * (t.def.defName == "Avir_LavaCore" ? 3 : 1));
-            int used = __state - left;
-            if (used > 0) __instance.Refuel((float)used);   // one more unit for each canister (a lava core: three more)
+            if (fuelThings == null || __instance.Props.atomicFueling || !fuelThings.Any(t => Works2Fuel.Strong(t.def))) return true;
+            int need = __instance.GetFuelCountToFullyRefuel();
+            while (need > 0 && fuelThings.Count > 0)
+            {
+                Thing t = fuelThings.Pop();
+                if (t == null || t.Destroyed) continue;
+                int w = Works2Fuel.Weight(t.def);
+                int take = Mathf.Min(t.stackCount, Mathf.CeilToInt(need / (float)w));
+                __instance.Refuel((float)(take * w));
+                t.SplitOff(take).Destroy();
+                need -= take * w;
+            }
+            return false;
         }
     }
 
@@ -578,7 +597,7 @@ namespace Avir.Magic
     public class Designator_2RaiseGeyser : Designator_Arcane2 { protected override string Key => "Avir_2RaiseGeyser"; protected override string Label2 => "Raise a geyser (geyser)"; protected override string Desc2 => "A caster of fire, water and earth calls a steam geyser up here - for a geothermal generator. Costly, slow."; protected override AcceptanceReport Ok(IntVec3 c) => c.Standable(Map) && c.GetEdifice(Map) == null; }
     public class Designator_2SealGeyser : Designator_Arcane2 { protected override string Key => "Avir_2SealGeyser"; protected override string Label2 => "Seal a geyser (geyser)"; protected override string Desc2 => "A caster of fire, water and earth seals the steam geyser here for good."; protected override AcceptanceReport Ok(IntVec3 c) => Map.listerThings.ThingsOfDef(ThingDefOf.SteamGeyser).Any(g => g.OccupiedRect().Contains(c)); }
     public class Designator_2SmeltItems : Designator_Arcane2 { protected override string Key => "Avir_2SmeltItems"; protected override string Label2 => "Smelt here (lava)"; protected override string Desc2 => "Weapons and apparel left on these cells are smelted down to their metal by a caster of lava (fire, earth; an adept of fire). The mark stays until the cell is empty."; protected override AcceptanceReport Ok(IntVec3 c) => Works2.HasSmeltable(Map, c); }
-    public class Designator_2LavaCore : Designator_Arcane2 { protected override string Key => "Avir_2LavaCore"; protected override string Label2 => "Seal a lava core (lava)"; protected override string Desc2 => "A caster of lava seals a core of lava in basalt here - on lava or magma itself, or right beside it (a lava pool, a magma spring, the land's own lava): a long fuel for any wood-fed forge, smelter or stove (three units of wood each)."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetEdifice(Map) == null && (Works2.NearLava(Map, c) ? AcceptanceReport.WasAccepted : new AcceptanceReport("A lava core is sealed out of lava: mark lava or magma, or the ground right beside it.")); }
+    public class Designator_2LavaCore : Designator_Arcane2 { protected override string Key => "Avir_2LavaCore"; protected override string Label2 => "Seal a lava core (lava)"; protected override string Desc2 => "A caster of lava seals three cores of lava in basalt here - on lava or magma itself, or right beside it (a lava pool, a magma spring, the land's own lava): a long fuel for any wood-fed forge, smelter or stove (three units of wood each)."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetEdifice(Map) == null && (Works2.NearLava(Map, c) ? AcceptanceReport.WasAccepted : new AcceptanceReport("A lava core is sealed out of lava: mark lava or magma, or the ground right beside it.")); }
     public class Designator_2LavaPool : Designator_Arcane2 { protected override string Key => "Avir_2LavaPool"; protected override string Label2 => "Lava pool (lava)"; protected override string Desc2 => "A caster of lava turns this ground into shallow lava for seven and a half days - heat for a forge, a trap at the gate. Before it cools the order renews itself (you are told), and a caster keeps it. To end it, mark it with \"Let the lava set\"."; public override bool Visible => base.Visible && LavaPools.Lava != null; protected override AcceptanceReport Ok(IntVec3 c) => LavaPools.CanPour(Map, c) || LavaPools.Held(Map, c); }
     public class Designator_2LavaSet : Designator_Arcane2 { protected override string Key => "Avir_2LavaSet"; protected override string Label2 => "Let the lava set (lava)"; protected override string Desc2 => "A caster of lava lets a held pool go: it sinks into magma, which sets into stone in its own time (now and then basalt). The pool's order stops renewing."; public override bool Visible => base.Visible && LavaPools.Lava != null; protected override AcceptanceReport Ok(IntVec3 c) => LavaPools.Held(Map, c); }
     public class Designator_2Basalt : Designator_Arcane2 { protected override string Key => "Avir_2Basalt"; protected override string Label2 => "Draw basalt (volcano)"; protected override string Desc2 => "A caster of the volcano (fire, earth; an adept of earth) draws two chunks of basalt up here - out of bare stone ground (rough or hewn rock), or beside lava."; protected override AcceptanceReport Ok(IntVec3 c) => c.GetEdifice(Map) == null && (Works2.StoneGround(Map, c) || Works2.NearLava(Map, c) ? AcceptanceReport.WasAccepted : new AcceptanceReport("Basalt is drawn out of stone: mark bare rock ground, or the ground beside lava.")); }
