@@ -150,6 +150,8 @@ namespace Avir.Magic
         private static void Dust(Map map, IntVec3 at, float r)
         {
             Color c = new Color(TimeColor.r, TimeColor.g, TimeColor.b, 0.5f);
+            // the painted crumbling, when the sheet comes (Time/Crumble); until then the dust alone
+            if (ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Time/Crumble", false) != null) MapComponent_SpellSprites.PutTintedGrowing(map, "Time/Crumble", TimeColor, at.ToVector3Shifted(), r * 2f, 50, 1.3f);
             foreach (IntVec3 x in GenRadial.RadialCellsAround(at, r, true))
                 if (x.InBounds(map) && Rand.Chance(0.35f)) FleckMaker.ThrowDustPuffThick(x.ToVector3Shifted(), map, Rand.Range(0.6f, 1.1f), c);
         }
@@ -224,17 +226,48 @@ namespace Avir.Magic
                 Pawn foe = GenRadial.RadialDistinctThingsAround(t.at, map, t.radius, true).OfType<Pawn>().FirstOrDefault(p => !p.Dead && p.HostileTo(t.caster));
                 if (foe == null) continue;
                 traps.RemoveAt(i);
-                FleckMaker.ThrowDustPuffThick(t.at.ToVector3Shifted(), map, 2f, new Color(TimeMagic.TimeColor.r, TimeMagic.TimeColor.g, TimeMagic.TimeColor.b, 0.7f));
+                SpringFx(map, t.at, t.radius);
                 MapComponent_SpellChain.Spring(t.caster, t.root, t.from, t.to, new LocalTargetInfo(foe), t.power, 0);
             }
         }
 
+        // the look of a trap (Fix271, the author: "these traps need a look"): the mark of Time lying on the ground, slowly
+        // turning; over it the circles it holds, drawn as in the editor, breathing faintly; a little sand rising. The
+        // player sees their own; the foe sees nothing. Painted sheets replace the mark when they come (Time/Trap_Mark).
+        private static readonly Dictionary<TimeTrap, RitualSchema> shown = new Dictionary<TimeTrap, RitualSchema>();
+        public static Texture2D MarkTex => ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Time/Trap_Mark", false) ?? ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Aura_Time", false);
+
         public override void MapComponentUpdate()
         {
             if (traps.Count == 0 || Find.CurrentMap != map) return;
-            // the player sees their own traps faintly; the foe does not
+            float now = Time.realtimeSinceStartup;
+            Texture2D mark = MarkTex;
             foreach (TimeTrap t in traps)
-                if (t.caster?.Faction == Faction.OfPlayer) GenDraw.DrawRadiusRing(t.at, t.radius, new Color(TimeMagic.TimeColor.r, TimeMagic.TimeColor.g, TimeMagic.TimeColor.b, 0.35f));
+            {
+                if (t.caster?.Faction != Faction.OfPlayer) continue;
+                Vector3 at = t.at.ToVector3Shifted(); at.y = AltitudeLayer.MoteLow.AltitudeFor();
+                float breathe = 0.5f + 0.5f * Mathf.Sin(now * 1.3f + t.at.x * 0.7f);
+                Color tc = TimeMagic.TimeColor;
+                if (mark != null)
+                {
+                    Material m = MaterialPool.MatFrom(mark, ShaderDatabase.MoteGlow, new Color(tc.r, tc.g, tc.b, 0.25f + 0.15f * breathe));
+                    float d = t.radius * 2f + 0.6f;
+                    Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(at, Quaternion.AngleAxis(-now * 8f % 360f, Vector3.up), new Vector3(d, 1f, d)), m, 0);
+                }
+                if (!shown.TryGetValue(t, out RitualSchema sch)) { sch = new RitualSchema { name = "trap", size = RitualCircleSize.Small, weave = t.root }; shown[t] = sch; }
+                SpellSigil.Draw(at, sch, 0.18f + 0.12f * breathe, Mathf.Max(0.8f, t.radius * 0.8f));
+                if (Rand.Chance(0.02f)) FleckMaker.ThrowDustPuffThick(at + new Vector3(Rand.Range(-t.radius, t.radius), 0f, Rand.Range(-t.radius, t.radius)) * 0.7f, map, 0.5f, new Color(tc.r, tc.g, tc.b, 0.35f));
+            }
+            if (shown.Count > 64) shown.Clear();
+        }
+
+        /// <summary>A trap springing: the mark flares and spreads out, and sand bursts up.</summary>
+        public static void SpringFx(Map map, IntVec3 c, float radius)
+        {
+            Color tc = TimeMagic.TimeColor;
+            string spring = ContentFinder<Texture2D>.Get("Things/Mote/Avir/Magic/Time/Trap_Spring", false) != null ? "Time/Trap_Spring" : "Aura_Time";   // relative to the motes of magic
+            MapComponent_SpellSprites.PutTintedGrowing(map, spring, tc, c.ToVector3Shifted(), radius * 2f, 45, 1.8f);
+            for (int i = 0; i < 6; i++) FleckMaker.ThrowDustPuffThick(c.ToVector3Shifted() + new Vector3(Rand.Range(-radius, radius), 0f, Rand.Range(-radius, radius)) * 0.6f, map, Rand.Range(0.8f, 1.5f), new Color(tc.r, tc.g, tc.b, 0.7f));
         }
     }
 
