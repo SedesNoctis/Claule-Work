@@ -211,13 +211,20 @@ namespace Avir.Magic
             SpellCircle circle = c.links[c.next++];
             Pawn caster = c.caster;
             if (caster == null || caster.Dead || !caster.Spawned) return;
-            // TIME (Fix269): the circles in a box of Time act later, lie in wait as a trap, or act at once and last longer
-            SpellCircle tbox = c.timeFree ? null : TimeMagic.BoxOf(c.root, circle);
+            // TIME (Fix269-270, the author): the target decides. Aimed at a place - the circles of the box lie there as a
+            // trap, and act when a foe comes near. Aimed at a foe - they act at once, and the foe takes Time's crumbling.
+            // Growth in the circle of Time: what they lay on bodies lasts longer.
+            SpellCircle tbox = TimeMagic.BoxOf(c.root, circle);
             if (tbox != null)
             {
-                TimeMagic.Mode mode = TimeMagic.ModeOf(tbox);
-                if (mode == TimeMagic.Mode.Longer) TimeMagic.Longer = TimeMagic.LongerOf(tbox);
-                else
+                TimeMagic.Longer = TimeMagic.LongerOf(tbox);
+                bool firstOfBox = c.next - 2 < 0 || TimeMagic.BoxOf(c.root, c.links[c.next - 2]) != tbox;
+                Pawn foe = TimeMagic.FoeAt(caster, c.target);
+                if (foe != null)
+                {
+                    if (firstOfBox) TimeMagic.AgeBody(foe, c.power, caster);
+                }
+                else if (!c.timeFree && firstOfBox)
                 {
                     int first = c.next - 1, last = first;
                     while (last + 1 < c.links.Count && TimeMagic.BoxOf(c.root, c.links[last + 1]) == tbox) last++;
@@ -226,12 +233,8 @@ namespace Avir.Magic
                     int t2 = Find.TickManager.TicksGame;
                     c.target = new LocalTargetInfo(c.target.Cell);
                     c.waitCaster = false; c.waitFor = null; c.endByMage = false; c.giveUp = t2 + Patience; c.at = t2 + Gap;
-                    if (mode == TimeMagic.Mode.Later) Spring(caster, c.root, baseIdx + first, baseIdx + last, c.target, c.power, TimeMagic.LaterTicks);
-                    else
-                    {
-                        float rad = 1.5f + 1.5f * tbox.OwnRunes.Count(x => x.kind == RuneKind.Breadth);
-                        MapComponent_TimeTraps.Of(caster.Map)?.Lay(new TimeTrap { caster = caster, root = c.root, from = baseIdx + first, to = baseIdx + last, at = c.target.Cell, radius = rad, power = c.power, until = t2 + Mathf.RoundToInt(GenDate.TicksPerHour * 4f * Mathf.Max(0.5f, c.power)) });
-                    }
+                    float rad = 1.5f + 1.5f * tbox.OwnRunes.Count(x => x.kind == RuneKind.Breadth);
+                    MapComponent_TimeTraps.Of(caster.Map)?.Lay(new TimeTrap { caster = caster, root = c.root, from = baseIdx + first, to = baseIdx + last, at = c.target.Cell, radius = rad, power = c.power, until = t2 + Mathf.RoundToInt(GenDate.TicksPerHour * 4f * Mathf.Max(0.5f, c.power)) });
                     FleckMaker.ThrowDustPuffThick(c.target.Cell.ToVector3Shifted(), caster.Map, 1.4f, new Color(TimeMagic.TimeColor.r, TimeMagic.TimeColor.g, TimeMagic.TimeColor.b, 0.5f));
                     return;
                 }

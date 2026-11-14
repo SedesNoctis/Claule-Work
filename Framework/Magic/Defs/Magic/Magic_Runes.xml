@@ -79,7 +79,7 @@
   <Avir.Ritualistics.RuneDef>
     <defName>Avir_Rune_Time</defName>
     <label>time</label>
-    <description>Time: a great element - its circle holds others and bends when they act. As it is, they act a few seconds later; with its own Hold they lie in wait as a trap, unseen by the foe, and act on the first one who steps there; with its own Growth they act at once and what they lay on bodies lasts longer. Its own Release crumbles - sudden age on a body and its parts, wear on things; its own Restoration rewinds the last moments for friends. Price: not decided yet.</description>
+    <description>Time: a great element - its circle holds others, and the target decides how they act. Aimed at a place, they lie there as a trap, unseen by the foe, and act when one comes near; aimed at a foe, they act at once and the foe crumbles with sudden age - the body and its parts. With its own Growth, what they lay on bodies lasts longer. Its own Release crumbles at the point; its own Restoration rewinds the last moments for friends. Price: not decided yet.</description>
     <role>Element</role>
     <kind>Time</kind>
     <glyph>Time</glyph>

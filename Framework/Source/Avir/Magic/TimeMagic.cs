@@ -9,20 +9,18 @@ using Verse;
 namespace Avir.Magic
 {
     /// <summary>
-    /// TIME - a great element (the author, Fix269). Its circle holds others and bends when they act:
-    ///  - LATER (as it is): the circles inside it act a few seconds after they were let go, where they were aimed;
-    ///  - A TRAP (its own Hold): they do not act at all until someone hostile steps where they were aimed - then they do,
-    ///    on that one. The trap is unseen by the foe; the player sees it faintly. It lasts hours, by the cast's power;
-    ///  - LONGER (its own Growth): they act at once, but all they leave on bodies lasts longer (x1.5 for each Growth).
-    /// Its own verbs: Release - CRUMBLING: a blow of sudden age. A body is aged in its parts - each part struck works the
-    /// worse for it (it mends slowly over days) - and the whole body grows older; things lose their wear, growing plants
-    /// leap ahead, ripe crops rot. Restoration - REWIND: what was struck in the last moments is undone - fresh wounds close,
-    /// the crumbling leaves friends, things get back what they lost. Foresight comes later (the author).
+    /// TIME - a great element (the author, Fix269-270). Its circle holds others; the target decides how they act:
+    ///  - aimed at a PLACE: they lie there as a TRAP, unseen by the foe (the player sees it faintly), and act when a foe
+    ///    comes near - on that foe, who crumbles too. It lasts hours, by the cast's power;
+    ///  - aimed at a FOE: they act at once, and the foe takes Time's CRUMBLING (sudden age on the body and its parts);
+    ///  - its own Growth: what they lay on bodies lasts longer (x1.5 for each Growth).
+    /// Its own verbs: Release - crumbling at the point (bodies and parts aged, things worn, growing plants ahead, ripe
+    /// crops rotten); Restoration - REWIND: fresh wounds close, the crumbling leaves friends, things get back their wear.
+    /// Foresight comes later (the author).
     /// </summary>
     public static class TimeMagic
     {
         public static readonly Color TimeColor = new Color(0.88f, 0.74f, 0.48f);
-        public const int LaterTicks = 240;   // four seconds
         public const float LongerPer = 0.5f;
 
         public static bool Is(RuneDef e) => e != null && e.kind == RuneKind.Time;
@@ -48,28 +46,23 @@ namespace Avir.Magic
             return null;
         }
 
-        public enum Mode { Later, Trap, Longer }
-        public static Mode ModeOf(SpellCircle box)
-        {
-            var own = box.OwnRunes.ToList();
-            if (own.Any(r => r.kind == RuneKind.Hold)) return Mode.Trap;
-            if (own.Any(r => r.kind == RuneKind.Growth)) return Mode.Longer;
-            return Mode.Later;
-        }
-
         public static float LongerOf(SpellCircle box) => 1f + LongerPer * box.OwnRunes.Count(r => r.kind == RuneKind.Growth);
+
+        /// <summary>The foe a spell is aimed at: the pawn targeted, or a hostile one standing on the cell.</summary>
+        public static Pawn FoeAt(Pawn caster, LocalTargetInfo t)
+        {
+            if (caster?.Map == null || !t.IsValid) return null;
+            if (t.Pawn is Pawn p && !p.Dead && p.HostileTo(caster)) return p;
+            return t.Cell.InBounds(caster.Map) ? t.Cell.GetThingList(caster.Map).OfType<Pawn>().FirstOrDefault(x => !x.Dead && x.HostileTo(caster)) : null;
+        }
 
         /// <summary>While a circle in a box of Time "longer" acts: what it lays on bodies lasts this much longer.</summary>
         public static float Longer = 1f;
 
         public static string Text(SpellCircle box)
         {
-            switch (ModeOf(box))
-            {
-                case Mode.Trap: return "Time - a trap: the circles inside wait unseen where they were aimed, and act on the first foe who steps there";
-                case Mode.Longer: return "Time - longer: the circles inside act at once, and what they lay on bodies lasts x" + LongerOf(box).ToString("0.#");
-            }
-            return "Time - later: the circles inside act " + (LaterTicks / 60) + " seconds after they are let go";
+            float l = LongerOf(box);
+            return "Time round its circles: aimed at a place, they lie there as a trap, unseen by the foe, and act when one comes near; aimed at a foe, they act at once and the foe crumbles with sudden age" + (l > 1.001f ? "; what they lay on bodies lasts x" + l.ToString("0.#") : "");
         }
 
         // ------------------------------------------------------------------ its own verbs
@@ -232,7 +225,7 @@ namespace Avir.Magic
                 if (foe == null) continue;
                 traps.RemoveAt(i);
                 FleckMaker.ThrowDustPuffThick(t.at.ToVector3Shifted(), map, 2f, new Color(TimeMagic.TimeColor.r, TimeMagic.TimeColor.g, TimeMagic.TimeColor.b, 0.7f));
-                MapComponent_SpellChain.Spring(t.caster, t.root, t.from, t.to, new LocalTargetInfo(foe.Position), t.power, 0);
+                MapComponent_SpellChain.Spring(t.caster, t.root, t.from, t.to, new LocalTargetInfo(foe), t.power, 0);
             }
         }
 
