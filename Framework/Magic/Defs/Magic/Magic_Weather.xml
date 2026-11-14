@@ -6,7 +6,7 @@
     <defName>Avir_WeatherAltar</defName>
     <thingClass>Avir.Magic.Building_WeatherAltar</thingClass>
     <label>weather altar</label>
-    <description>A sphere of carved stone on a low round plinth, its grooves turned to the four winds. A caster who stands before it and talks long enough to the sky can bring rain or fog, raise the wind or still it, drive the clouds off. It takes about an hour; the sky holds about eight. What is to be called is chosen at the altar.</description>
+    <description>A sphere of carved stone on a low round plinth, its grooves turned to the four winds. A caster who stands before it and talks long enough to the sky can bring rain or fog, raise the wind or still it, drive the clouds off; a circle of storm casters can call the thunderstorm itself. It takes about an hour; the sky holds about eight. What is to be called is chosen at the altar.</description>
     <graphicData>
       <texPath>Things/Building/Magic/WeatherAltar</texPath>
       <graphicClass>Graphic_Single</graphicClass>
@@ -32,7 +32,7 @@
     <costStuffCount>120</costStuffCount>
     <stuffCategories><li>Stony</li></stuffCategories>
     <designationCategory>Avir_Arcana</designationCategory>
-    <researchPrerequisites><li>Avir_Ritualism_Standard</li></researchPrerequisites>
+    <researchPrerequisites><li>Avir_WeatherKeepers</li></researchPrerequisites>
     <placeWorkers><li>Avir.Magic.PlaceWorker_MagicOn</li></placeWorkers>
     <building><ai_chillDestination>false</ai_chillDestination></building>
     <canOverlapZones>false</canOverlapZones>

@@ -4,6 +4,7 @@ using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 
 namespace Avir.Magic
 {
@@ -191,14 +192,34 @@ namespace Avir.Magic
     public static class Patch_LightningStrike
     {
         public const float WildGlobeChance = 0.025f;
-        public static void Prefix(ref IntVec3 strikeLoc, Map map)
+        private static bool grounded;
+
+        public static bool Prefix(ref IntVec3 strikeLoc, Map map, ref Mesh boltMesh)
         {
-            if (!AvirMagic.On || map == null || !strikeLoc.IsValid || AvirMod.Settings != null && !AvirMod.Settings.electricity) return;
+            grounded = false;
+            if (!AvirMagic.On || map == null || !strikeLoc.IsValid || LightningRods.Aimed) return true;
+            // the eye of a called storm is quiet; a storm front strikes where it stands (Fix267)
+            MapComponent_WeatherCall wc = MapComponent_WeatherCall.Of(map);
+            if (wc != null) strikeLoc = wc.Steer(strikeLoc);
+            // a lightning rod near takes it and sends it into the ground (or the grid) - nothing runs on (Fix267)
+            Building_LightningRod rod = LightningRods.Nearest(map, strikeLoc);
+            if (rod != null)
+            {
+                strikeLoc = rod.Position;
+                boltMesh = LightningBoltMeshPool.RandomBoltMesh;
+                SoundDefOf.Thunder_OnMap.PlayOneShot(new TargetInfo(strikeLoc, map));
+                rod.Take();
+                grounded = true;
+                return false;
+            }
+            if (AvirMod.Settings != null && !AvirMod.Settings.electricity) return true;
             strikeLoc = Electricity.Draw(strikeLoc, map);
+            return true;
         }
 
         public static void Postfix(IntVec3 strikeLoc, Map map)
         {
+            if (grounded) { grounded = false; return; }
             if (!AvirMagic.On || map == null || !strikeLoc.IsValid) return;
             // a wild ball lightning (Fix228, the author: very rarely a thunderstorm's strike leaves one) - no one's, it
             // strikes anyone; a little charged already

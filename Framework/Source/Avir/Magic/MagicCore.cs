@@ -387,6 +387,7 @@ namespace Avir.Magic
                     icon = ContentFinder<Texture2D>.Get("UI/Designators/Cancel", false) ?? BaseContent.BadTex,
                     action = () => pawn.MapHeld.GetComponent<MapComponent_Auras>().all.RemoveAll(a => a.beam && a.caster == pawn)
                 };
+            if (Stormcaller.Gizmo(pawn, this) is Command storm) yield return storm;   // Fix267: a Master of the Storm in a storm
             if (SpellCasting.Busy(pawn))
                 yield return new Command_Action
                 {

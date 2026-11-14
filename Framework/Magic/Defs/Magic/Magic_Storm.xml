@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- weather lore: a cheap study of the Middle Ages - the lightning rod; developed, the weather altar (the author, Fix267) -->
+  <ResearchProjectDef>
+    <defName>Avir_WeatherLore</defName>
+    <label>weather lore</label>
+    <description>Where lightning falls and why: the tall, the metal, the wet. A pole of any metal, set in the ground, takes the sky's strikes near it and sends them down into the earth.</description>
+    <baseCost>300</baseCost>
+    <techLevel>Medieval</techLevel>
+    <tab>Avir_Arts</tab>
+    <researchViewX>0</researchViewX>
+    <researchViewY>3.5</researchViewY>
+  </ResearchProjectDef>
+
+  <ResearchProjectDef>
+    <defName>Avir_WeatherKeepers</defName>
+    <label>keepers of the weather</label>
+    <description>The weather lore carried into the stream: an altar where casters talk the sky round - rain and fog, the wind raised or stilled, clouds driven off, and, for a circle of mages, the storm itself.</description>
+    <baseCost>1500</baseCost>
+    <techLevel>Medieval</techLevel>
+    <tab>Avir_Arts</tab>
+    <prerequisites><li>Avir_WeatherLore</li><li>Avir_Ritualism_Standard</li></prerequisites>
+    <researchViewX>4.5</researchViewX>
+    <researchViewY>3.5</researchViewY>
+  </ResearchProjectDef>
+
+  <ThingDef ParentName="BuildingBase">
+    <defName>Avir_LightningRod</defName>
+    <thingClass>Avir.Magic.Building_LightningRod</thingClass>
+    <label>lightning rod</label>
+    <description>A pole of metal set deep in the ground. Every lightning strike of the sky within nine cells goes into it and down into the earth - nothing runs on to the wires, the batteries or the people near. Switched "into the grid" and touching a power line, it sends the strikes to the batteries instead; what they cannot take goes into the ground. It must stand under the open sky.</description>
+    <graphicData>
+      <texPath>Things/Building/Magic/LightningRod</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>(1,2)</drawSize>
+      <drawOffset>(0,0,0.5)</drawOffset>
+    </graphicData>
+    <size>(1,1)</size>
+    <altitudeLayer>Building</altitudeLayer>
+    <passability>PassThroughOnly</passability>
+    <fillPercent>0.15</fillPercent>
+    <pathCost>30</pathCost>
+    <rotatable>false</rotatable>
+    <useHitPoints>true</useHitPoints>
+    <statBases>
+      <MaxHitPoints>200</MaxHitPoints>
+      <WorkToBuild>400</WorkToBuild>
+      <Flammability>0</Flammability>
+      <Beauty>-1</Beauty>
+    </statBases>
+    <costStuffCount>20</costStuffCount>
+    <stuffCategories><li>Metallic</li></stuffCategories>
+    <designationCategory>Furniture</designationCategory>
+    <researchPrerequisites><li>Avir_WeatherLore</li></researchPrerequisites>
+    <building><ai_chillDestination>false</ai_chillDestination></building>
+    <comps>
+      <li Class="CompProperties_Power">
+        <compClass>CompPowerTransmitter</compClass>
+        <transmitsPower>true</transmitsPower>
+      </li>
+    </comps>
+  </ThingDef>
+
+</Defs>

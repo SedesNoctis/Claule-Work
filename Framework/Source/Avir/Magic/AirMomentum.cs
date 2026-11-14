@@ -19,7 +19,10 @@ namespace Avir.Magic
         public static int Stage(Pawn p)
         {
             Hediff h = Def != null ? p?.health?.hediffSet?.GetFirstHediffOfDef(Def) : null;
-            return h == null ? 0 : Mathf.Clamp(Mathf.RoundToInt(h.Severity), 0, MaxStage);
+            int st = h == null ? 0 : Mathf.Clamp(Mathf.RoundToInt(h.Severity), 0, MaxStage);
+            // charged air (the author, Fix267): in a storm a caster of the Storm is a stage ahead from the first cast
+            if (p?.Map != null && WeatherCalls.StormOn(p.Map)) { Hediff_ArcaneCore c = Mages.Core(p); if (MagicWork.Knows(c, RuneKind.Water) && MagicWork.Knows(c, RuneKind.Air)) st = Mathf.Min(MaxStage, st + 1); }
+            return st;
         }
 
         /// <summary>What a spell of the air costs and takes now: 1 - 15% a stage.</summary>
