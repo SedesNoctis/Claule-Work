@@ -35,7 +35,7 @@ public static class StreamNetwork
 		{
 			if (!d.HasComp(typeof(CompEnergyKeeper)) && !d.HasComp(typeof(CompRitualCircle)) && !d.HasComp(typeof(CompArtifactHost)) && !d.HasComp(typeof(CompPsychicPylon)) && !d.HasComp(typeof(CompSpirePylon)) && !d.HasComp(typeof(CompSpireCradle)))
 			{
-				return d.HasComp(typeof(CompCoreHearth));
+				return d.HasComp(typeof(CompCoreHearth)) || typeof(Avir.Magic.Building_WeatherAltar).IsAssignableFrom(d.thingClass);   // Fix268: the weather altar is a seat of the circle of mages
 			}
 			return true;
 		}
@@ -48,7 +48,7 @@ public static class StreamNetwork
 		{
 			if (t.TryGetComp<CompEnergyKeeper>() == null && t.TryGetComp<CompRitualCircle>() == null && t.TryGetComp<CompArtifactHost>() == null && t.TryGetComp<CompPsychicPylon>() == null && t.TryGetComp<CompSpirePylon>() == null && t.TryGetComp<CompSpireCradle>() == null)
 			{
-				return t.TryGetComp<CompCoreHearth>() != null;
+				return t.TryGetComp<CompCoreHearth>() != null || t is Avir.Magic.Building_WeatherAltar;   // Fix268
 			}
 			return true;
 		}

@@ -50,6 +50,14 @@
   </WorkGiverDef>
 
   <JobDef>
+    <defName>Avir_CircleStand</defName>
+    <driverClass>Avir.Magic.JobDriver_CircleStand</driverClass>
+    <reportString>standing in the circle at TargetA.</reportString>
+    <casualInterruptible>false</casualInterruptible>
+    <playerInterruptible>true</playerInterruptible>
+  </JobDef>
+
+  <JobDef>
     <defName>Avir_WeatherCall</defName>
     <driverClass>Avir.Magic.JobDriver_WeatherCall</driverClass>
     <reportString>talking the sky round at TargetA.</reportString>

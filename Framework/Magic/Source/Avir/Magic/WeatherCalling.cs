@@ -112,7 +112,6 @@ namespace Avir.Magic
         public IntVec3 eyeAt = IntVec3.Invalid; public float eyeR;
         public Vector3 front; public IntVec3 frontTo = IntVec3.Invalid;
         public bool wet;
-        private readonly Dictionary<int, int> marks = new Dictionary<int, int>();   // the circle: who channels now (pawn id - tick)
         public const float FrontRadius = 6f;
         public MapComponent_WeatherCall(Map map) : base(map) { }
         public static MapComponent_WeatherCall Of(Map m) => m?.GetComponent<MapComponent_WeatherCall>();
@@ -156,9 +155,6 @@ namespace Avir.Magic
 
         public bool InEye(IntVec3 c) => Active && call == WeatherCall.Storm && eyeAt.IsValid && c.DistanceTo(eyeAt) <= eyeR;
 
-        // ---- the circle of mages: each caster at the altar marks itself while channelling; it is done when enough stand together
-        public void Mark(Pawn p) => marks[p.thingIDNumber] = Find.TickManager.TicksGame;
-        public int Together() { int now = Find.TickManager.TicksGame; return marks.Count(kv => now - kv.Value < 120); }
 
         /// <summary>A wet storm leaves the open fields richer for a while (lightning feeds the ground).</summary>
         private void AfterStorm()
@@ -244,17 +240,6 @@ namespace Avir.Magic
             Scribe_Values.Look(ref lead, "lead", IntVec3.Invalid);
         }
 
-        /// <summary>Where the casters stand round the altar: the circle of mages takes the four sides.</summary>
-        public IEnumerable<IntVec3> Places()
-        {
-            yield return InteractionCell;
-            foreach (IntVec3 o in new[] { new IntVec3(2, 0, 0), new IntVec3(-2, 0, 0), new IntVec3(0, 0, 2), new IntVec3(0, 0, -2) })
-            {
-                IntVec3 c = Position + o;
-                if (c != InteractionCell && c.InBounds(Map) && c.Standable(Map)) yield return c;
-            }
-        }
-
         public override IEnumerable<Gizmo> GetGizmos()
         {
             foreach (Gizmo g in base.GetGizmos()) yield return g;
@@ -266,6 +251,37 @@ namespace Avir.Magic
                 icon = ArcaneIcons.For("Avir_WeatherAltar", "UI/Commands/DesirePower"),
                 action = () => Find.WindowStack.Add(new Dialog_WeatherAltar(this))
             };
+            if (WeatherCalls.Need(wanted) > 1)
+            {
+                // the storm is a great work: a circle of mages on the sanctuaries joined to this altar by the silver wire (Fix268)
+                CircleWork cw = MageCircle.Work("Weather_" + wanted);
+                MageCircleGathering g = MapComponent_MageCircle.Of(Map)?.At(this);
+                if (g == null)
+                {
+                    var gather = new Command_Action
+                    {
+                        defaultLabel = "Gather the circle",
+                        defaultDesc = WeatherCalls.Label(wanted) + " is the work of " + WeatherCalls.Need(wanted) + " casters of the storm at once. Each goes to a seat - this altar and the sanctuaries (ritual circles) joined to it by the silver stream wire - they wait for one another and channel together for an hour. One who drops out weakens the circle: the storm comes for less time, with a smaller eye; it fails only if no one is left.\n\nSeats joined now: " + MageCircle.Seats(this).Count + ".",
+                        icon = ArcaneIcons.For("Avir_GatherCircle", "UI/Commands/DesirePower"),
+                        action = () => MageCircle.Gather(this, "Weather_" + wanted)
+                    };
+                    string why = MageCircle.Blocked(this, cw);
+                    if (why != null) gather.Disable(why);
+                    yield return gather;
+                }
+                else
+                    yield return new Command_Action
+                    {
+                        defaultLabel = "Disband the circle",
+                        defaultDesc = "Let the mages go. If they are channelling already, half of each one's Arcana for it is lost.",
+                        icon = ContentFinder<Texture2D>.Get("UI/Designators/Cancel", false) ?? BaseContent.BadTex,
+                        action = () =>
+                        {
+                            if (g.channelling) foreach (Pawn p in g.members) Mages.Core(p)?.Add(-WeatherCalls.Cost * 0.5f);
+                            MapComponent_MageCircle.Of(Map).End(g, null);
+                        }
+                    };
+            }
             if (wanted == WeatherCall.StormFront)
                 yield return new Command_Action
                 {
@@ -286,6 +302,18 @@ namespace Avir.Magic
                     defaultLabel = "DEV: call it now",
                     action = () => { if (wanted != WeatherCall.None) MapComponent_WeatherCall.Of(Map)?.Set(wanted, WeatherCalls.Holds, Position, 8f, lead); }
                 };
+                MageCircleGathering dg = MapComponent_MageCircle.Of(Map)?.At(this);
+                if (dg != null)
+                    yield return new Command_Action
+                    {
+                        defaultLabel = "DEV: the circle - stand all and finish",
+                        action = () => { dg.channelling = true; dg.startCount = Mathf.Max(dg.startCount, dg.members.Count); CircleWork cw0 = MageCircle.Work(dg.work); if (cw0 != null) dg.progress = cw0.ticks - 1; }
+                    };
+                yield return new Command_Action
+                {
+                    defaultLabel = "DEV: seats on the wire (log)",
+                    action = () => Messages.Message("Seats joined to the altar by the silver wire: " + string.Join(", ", MageCircle.Seats(this).Select(kv => kv.Key.LabelShort + " " + kv.Value)), MessageTypeDefOf.NeutralEvent, false)
+                };
                 yield return new Command_Action
                 {
                     defaultLabel = "DEV: let the sky go",
@@ -300,6 +328,9 @@ namespace Avir.Magic
             var c = MapComponent_WeatherCall.Of(Map);
             string add = "Wanted: " + WeatherCalls.Label(wanted);
             if (c != null && c.Active) add += "\nThe sky holds: " + WeatherCalls.Label(c.call) + ", " + c.Left.ToStringTicksToPeriod() + " more";
+            MageCircleGathering g = MapComponent_MageCircle.Of(Map)?.At(this);
+            if (g != null) add += "\nThe circle: " + (g.channelling ? "channelling, " + g.members.Count + " standing" : "gathering, " + g.StandingCount + " of " + g.members.Count + " in place");
+            else if (WeatherCalls.Need(wanted) > 1) add += "\nSeats joined by the silver wire: " + MageCircle.Seats(this).Count + " of " + WeatherCalls.Need(wanted) + " needed";
             return s.NullOrEmpty() ? add : s + "\n" + add;
         }
     }
@@ -340,43 +371,30 @@ namespace Avir.Magic
         }
     }
 
+    /// <summary>The small weathers - one caster's work, taken by priority like any other. The storm and the front are
+    /// not here: they are the work of a circle of mages gathered at sanctuaries joined by the silver wire (MageCircle).</summary>
     public class WorkGiver_WeatherAltar : WorkGiver_Scanner
     {
         public override PathEndMode PathEndMode => PathEndMode.InteractionCell;
         public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn) => pawn.Map.listerBuildings.AllBuildingsColonistOfClass<Building_WeatherAltar>();
-        public override bool ShouldSkip(Pawn pawn, bool forced = false) => !AvirMagic.On || !pawn.Map.listerBuildings.AllBuildingsColonistOfClass<Building_WeatherAltar>().Any(a => a.wanted != WeatherCall.None);
+        public override bool ShouldSkip(Pawn pawn, bool forced = false) => !AvirMagic.On || !pawn.Map.listerBuildings.AllBuildingsColonistOfClass<Building_WeatherAltar>().Any(a => a.wanted != WeatherCall.None && WeatherCalls.Need(a.wanted) == 1);
 
         public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
         {
-            if (!(t is Building_WeatherAltar a) || a.wanted == WeatherCall.None || t.IsForbidden(pawn)) return false;
+            if (!(t is Building_WeatherAltar a) || a.wanted == WeatherCall.None || WeatherCalls.Need(a.wanted) > 1 || t.IsForbidden(pawn)) return false;
             var c = MapComponent_WeatherCall.Of(t.Map);
             // called already and holding for more than an hour - nothing to do yet
             if (c != null && c.Active && c.call == a.wanted && c.Left > WeatherCalls.Channel) return false;
             if (WeatherCalls.Able(pawn, a.wanted, WeatherCalls.Cost) == null) return false;
-            // the circle of mages: as many as the call needs, each at a place of its own round the altar
-            int need = WeatherCalls.Need(a.wanted);
-            if (Callers(a).Count() >= need) return false;
-            return Place(a, pawn).IsValid && pawn.CanReach(t, PathEndMode.Touch, Danger.Some);
+            return pawn.CanReserveAndReach(t, PathEndMode.InteractionCell, Danger.Some, 1, -1, null, forced);
         }
 
-        public static IEnumerable<Pawn> Callers(Building_WeatherAltar a) => a.Map.mapPawns.FreeColonistsSpawned.Where(p => p.CurJob?.def?.defName == "Avir_WeatherCall" && p.CurJob.targetA.Thing == a);
-
-        public static IntVec3 Place(Building_WeatherAltar a, Pawn pawn)
-        {
-            var taken = new HashSet<IntVec3>(Callers(a).Where(p => p != pawn).Select(p => p.CurJob.targetB.Cell));
-            return a.Places().FirstOrDefault(c => !taken.Contains(c) && pawn.CanReach(c, PathEndMode.OnCell, Danger.Some) && pawn.CanReserve(c));
-        }
-
-        public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
-        {
-            Building_WeatherAltar a = (Building_WeatherAltar)t;
-            return JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("Avir_WeatherCall"), t, Place(a, pawn));
-        }
+        public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false) => JobMaker.MakeJob(DefDatabase<JobDef>.GetNamed("Avir_WeatherCall"), t);
     }
 
     public class JobDriver_WeatherCall : JobDriver
     {
-        public override bool TryMakePreToilReservations(bool errorOnFailed) => !job.targetB.IsValid || pawn.Reserve(job.targetB, job, 1, -1, null, errorOnFailed);
+        public override bool TryMakePreToilReservations(bool errorOnFailed) => pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
 
         protected override IEnumerable<Toil> MakeNewToils()
         {
@@ -385,42 +403,16 @@ namespace Avir.Magic
             WeatherCall w = a?.wanted ?? WeatherCall.None;
             this.FailOn(() => a == null || a.wanted != w);
             RuneKind[] kinds = WeatherCalls.Kinds(w);
-            int need = WeatherCalls.Need(w);
-            MapComponent_WeatherCall comp = MapComponent_WeatherCall.Of(pawn.Map);
-            yield return job.targetB.IsValid ? Toils_Goto.GotoCell(TargetIndex.B, PathEndMode.OnCell) : Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
-            Toil ch = ArcaneChannel.Channel(this, WeatherCalls.Channel, WorkSpells.Charm("Avir_WeatherAltar", kinds), false, WeatherCalls.Tint(w));
-            if (need > 1) ch.AddPreTickAction(() => comp?.Mark(pawn));
-            yield return ch;
-            if (need > 1)
-            {
-                // the circle: an hour more at most for the others to stand in; the call holds once enough channel together
-                Toil wait = ToilMaker.MakeToil("WeatherCircle");
-                wait.defaultCompleteMode = ToilCompleteMode.Delay;
-                wait.defaultDuration = WeatherCalls.Channel;
-                wait.tickAction = () =>
-                {
-                    comp?.Mark(pawn);
-                    if (comp == null || comp.Together() >= need || (comp.Active && comp.call == w)) ReadyForNextToil();
-                };
-                wait.WithProgressBarToilDelay(TargetIndex.A);
-                yield return wait;
-            }
+            yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
+            yield return ArcaneChannel.Channel(this, WeatherCalls.Channel, WorkSpells.Charm("Avir_WeatherAltar", kinds), false, WeatherCalls.Tint(w));
             Toil done = ToilMaker.MakeToil("WeatherCall");
             done.initAction = () =>
             {
                 Hediff_ArcaneCore c = WeatherCalls.Able(pawn, w, WeatherCalls.Cost);
-                if (c == null || comp == null) return;
-                bool already = comp.Active && comp.call == w && comp.Left > WeatherCalls.Holds - WeatherCalls.Channel * 2;
-                if (!already && need > 1 && comp.Together() < need)
-                {
-                    Messages.Message(WeatherCalls.Label(w) + " needs a circle of " + need + " casters of the storm channelling together at the altar - " + pawn.LabelShort + " stood alone too long.", a, MessageTypeDefOf.RejectInput, false);
-                    return;
-                }
+                if (c == null) return;
+                MapComponent_WeatherCall.Of(pawn.Map)?.Set(w, WeatherCalls.Holds);
                 Arcane.Done(c, WeatherCalls.Cost, WeatherCalls.Xp, kinds);
-                if (already) return;   // one of the circle: the sky is already turned
-                int stage = Mathf.Min(MageClass.Stage(MageClass.XpIn(c, RuneKind.Water)), MageClass.Stage(MageClass.XpIn(c, RuneKind.Air)));
-                comp.Set(w, WeatherCalls.Holds, a.Position, 8f + 2f * stage, a.lead);
-                Messages.Message((need > 1 ? "The circle of " + pawn.LabelShort + " has" : pawn.LabelShort + " has") + " talked the sky round: " + WeatherCalls.Label(w).ToLower() + ", for about eight hours.", a, MessageTypeDefOf.NeutralEvent, false);
+                Messages.Message(pawn.LabelShort + " has talked the sky round: " + WeatherCalls.Label(w).ToLower() + ", for about eight hours.", a, MessageTypeDefOf.NeutralEvent, false);
             };
             done.defaultCompleteMode = ToilCompleteMode.Instant;
             yield return done;
