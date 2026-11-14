@@ -168,6 +168,13 @@ namespace Avir.Magic
                     parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + (k > 0 ? "then: " : "") + (c.Great ? "" : "a small circle of ") + LightMagic.Text(c));
                     continue;
                 }
+                if (TimeMagic.IsLink(root, c))
+                {
+                    var tv = c.OwnRunes.Select(x => x.kind).ToList();
+                    string tt = tv.Contains(RuneKind.Release) && tv.Contains(RuneKind.Restore) ? "crumbling on foes and rewinding for friends" : tv.Contains(RuneKind.Release) ? "crumbling: sudden age on bodies and their parts, wear on things, rot on ripe crops" : tv.Contains(RuneKind.Restore) ? "rewind: fresh wounds close and the crumbling leaves friends, things get back their wear" : "Time's own runes (only Release and Restoration act yet)";
+                    parts.Add((order.Count > 1 ? (k + 1) + ". " : "") + (k > 0 ? "then: " : "") + (c.Great ? "" : "a small circle of ") + "Time - " + tt);
+                    continue;
+                }
                 if (LifeMagic.IsLink(root, c))
                 {
                     LifeMagic.PairOfText = LifeMagic.PairOf(root, c.Great ? c : root.ParentOf(c));
@@ -199,6 +206,7 @@ namespace Avir.Magic
             {
                 if (g.element == null) { parts.Add("a great circle with no element yet"); continue; }
                 if (g.element.kind == RuneKind.Life) { if (g.inner.Count > 0) parts.Add("Life round its circles: every friend they touch is mended from the store as each strikes"); }
+                else if (g.element.kind == RuneKind.Time) { if (g.inner.Count > 0) parts.Add(TimeMagic.Text(g)); }
                 else if (g.element.kind == RuneKind.Light)
                 {
                     if (g.inner.Any(x => x.element != null))

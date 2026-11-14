@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+
+  <!-- crumbling: a part aged in a moment by Time (Fix269) - it works the worse, and mends slowly over days -->
+  <HediffDef>
+    <defName>Avir_TimeWither</defName>
+    <label>time-worn</label>
+    <labelNoun>time-worn part</labelNoun>
+    <description>Years fell on this part in a moment: the flesh is thin and dry, the joint stiff, the metal dull and brittle. It works the worse for it. It mends slowly over the days; Time's rewind undoes it at once.</description>
+    <hediffClass>HediffWithComps</hediffClass>
+    <defaultLabelColor>(0.88, 0.74, 0.48)</defaultLabelColor>
+    <isBad>true</isBad>
+    <makesSickThought>false</makesSickThought>
+    <initialSeverity>0.25</initialSeverity>
+    <maxSeverity>1</maxSeverity>
+    <comps>
+      <li Class="HediffCompProperties_SeverityPerDay">
+        <severityPerDay>-0.05</severityPerDay>
+      </li>
+    </comps>
+    <stages>
+      <li><minSeverity>0</minSeverity><label>a little</label><partEfficiencyOffset>-0.15</partEfficiencyOffset></li>
+      <li><minSeverity>0.3</minSeverity><label>worn</label><partEfficiencyOffset>-0.3</partEfficiencyOffset></li>
+      <li><minSeverity>0.6</minSeverity><label>crumbling</label><partEfficiencyOffset>-0.5</partEfficiencyOffset></li>
+      <li><minSeverity>0.9</minSeverity><label>dust</label><partEfficiencyOffset>-0.7</partEfficiencyOffset></li>
+    </stages>
+  </HediffDef>
+
+</Defs>

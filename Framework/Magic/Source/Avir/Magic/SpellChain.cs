@@ -52,6 +52,10 @@ namespace Avir.Magic
             /// <summary>The further places named for Reach and Thread, in order, and how many are used.</summary>
             public List<IntVec3> hops = new List<IntVec3>();
             public int hopNext;
+            /// <summary>A part of a spell let loose later by Time (Fix269): which links of its order it holds; it is not
+            /// bent by Time again.</summary>
+            public int linkFrom = -1, linkTo = -1;
+            public bool timeFree;
 
             public void ExposeData()
             {
@@ -74,7 +78,14 @@ namespace Avir.Magic
                 Scribe_Values.Look(ref aim, "aim", IntVec3.Invalid);
                 Scribe_Values.Look(ref relay, "relay", IntVec3.Invalid);
                 Scribe_Values.Look(ref born, "born", -1);
-                if (Scribe.mode == LoadSaveMode.PostLoadInit && root != null) { links = Order(root); combos = Combos.Pairs(root); }
+                Scribe_Values.Look(ref linkFrom, "linkFrom", -1);
+                Scribe_Values.Look(ref linkTo, "linkTo", -1);
+                Scribe_Values.Look(ref timeFree, "timeFree");
+                if (Scribe.mode == LoadSaveMode.PostLoadInit && root != null)
+                {
+                    links = Order(root); combos = Combos.Pairs(root);
+                    if (linkFrom >= 0 && linkFrom < links.Count) links = links.GetRange(linkFrom, Mathf.Min(linkTo, links.Count - 1) - linkFrom + 1);
+                }
             }
         }
 
@@ -121,13 +132,13 @@ namespace Avir.Magic
                 if (c.Great)
                 {
                     Walk(c.inner, back, c, list);
-                    if ((LifeMagic.Is(c.element) || LightMagic.Is(c.element)) && c.OwnRunes.Any()) list.Add(c);
+                    if ((LifeMagic.Is(c.element) || LightMagic.Is(c.element) || TimeMagic.Is(c.element)) && c.OwnRunes.Any()) list.Add(c);
                     continue;
                 }
                 // the Earth that went into a Crystal is the Crystal now - not a circle of its own (Fix217)
                 if (box != null && LightMagic.Absorbed(box) == c) continue;   // (Fix223: it used to slip through as a circle anyway)
                 if (c.element != null) list.Add(c);
-                else if (box != null && (LifeMagic.Is(box.element) || LightMagic.Is(box.element)) && c.OwnRunes.Any()) list.Add(c);
+                else if (box != null && (LifeMagic.Is(box.element) || LightMagic.Is(box.element) || TimeMagic.Is(box.element)) && c.OwnRunes.Any()) list.Add(c);
             }
         }
 
@@ -169,12 +180,71 @@ namespace Avir.Magic
         private static bool Waiting(Chain c) => c.waitCaster || c.waitFor != null || c.waitStream;
         private static bool Streaming(Pawn p) => p?.MapHeld?.GetComponent<MapComponent_Auras>()?.all.Any(a => a.route != null && a.caster == p) == true;
 
+        /// <summary>A part of a spell let loose by Time (Fix269): later, or when a trap is sprung - from link `from` to
+        /// `to` of the spell's order, at the target, after `delay` ticks.</summary>
+        public static void Spring(Pawn caster, SpellCircle root, int from, int to, LocalTargetInfo target, float power, int delay)
+        {
+            if (caster?.Map == null || root == null) return;
+            var all = Order(root);
+            if (from < 0 || from >= all.Count) return;
+            to = Mathf.Min(to, all.Count - 1);
+            int now = Find.TickManager.TicksGame;
+            var c = new Chain
+            {
+                caster = caster, root = root, links = all.GetRange(from, to - from + 1), linkFrom = from, linkTo = to, timeFree = true,
+                power = power, target = target, combos = Combos.Pairs(root), origin = caster.Position, aim = target.Cell, born = now,
+                at = now + delay, hops = new List<IntVec3>()
+            };
+            caster.Map.GetComponent<MapComponent_SpellChain>()?.chains.Add(c);
+        }
+
         private static void Run(Chain c)
+        {
+            float keepLonger = TimeMagic.Longer;
+            try { RunLink(c); }
+            finally { TimeMagic.Longer = keepLonger; }
+        }
+
+        private static void RunLink(Chain c)
         {
             if (c.next >= c.links.Count) return;
             SpellCircle circle = c.links[c.next++];
             Pawn caster = c.caster;
             if (caster == null || caster.Dead || !caster.Spawned) return;
+            // TIME (Fix269): the circles in a box of Time act later, lie in wait as a trap, or act at once and last longer
+            SpellCircle tbox = c.timeFree ? null : TimeMagic.BoxOf(c.root, circle);
+            if (tbox != null)
+            {
+                TimeMagic.Mode mode = TimeMagic.ModeOf(tbox);
+                if (mode == TimeMagic.Mode.Longer) TimeMagic.Longer = TimeMagic.LongerOf(tbox);
+                else
+                {
+                    int first = c.next - 1, last = first;
+                    while (last + 1 < c.links.Count && TimeMagic.BoxOf(c.root, c.links[last + 1]) == tbox) last++;
+                    int baseIdx = c.linkFrom < 0 ? 0 : c.linkFrom;
+                    c.next = last + 1;
+                    int t2 = Find.TickManager.TicksGame;
+                    c.target = new LocalTargetInfo(c.target.Cell);
+                    c.waitCaster = false; c.waitFor = null; c.endByMage = false; c.giveUp = t2 + Patience; c.at = t2 + Gap;
+                    if (mode == TimeMagic.Mode.Later) Spring(caster, c.root, baseIdx + first, baseIdx + last, c.target, c.power, TimeMagic.LaterTicks);
+                    else
+                    {
+                        float rad = 1.5f + 1.5f * tbox.OwnRunes.Count(x => x.kind == RuneKind.Breadth);
+                        MapComponent_TimeTraps.Of(caster.Map)?.Lay(new TimeTrap { caster = caster, root = c.root, from = baseIdx + first, to = baseIdx + last, at = c.target.Cell, radius = rad, power = c.power, until = t2 + Mathf.RoundToInt(GenDate.TicksPerHour * 4f * Mathf.Max(0.5f, c.power)) });
+                    }
+                    FleckMaker.ThrowDustPuffThick(c.target.Cell.ToVector3Shifted(), caster.Map, 1.4f, new Color(TimeMagic.TimeColor.r, TimeMagic.TimeColor.g, TimeMagic.TimeColor.b, 0.5f));
+                    return;
+                }
+            }
+            // a circle of Time by its own runes: crumbling, rewinding
+            if (TimeMagic.IsLink(c.root, circle))
+            {
+                TimeMagic.CastCircle(caster, circle, c.target.Cell, c.power, caster.Map);
+                c.target = new LocalTargetInfo(c.target.Cell);
+                c.waitCaster = false; c.waitFor = null; c.endByMage = false;
+                int t3 = Find.TickManager.TicksGame; c.giveUp = t3 + Patience; c.at = t3 + Gap;
+                return;
+            }
             // a circle of Light: from the caster into the point (its echoes come once the spell is over)
             if (LightMagic.IsLink(c.root, circle))
             {
@@ -369,6 +439,7 @@ namespace Avir.Magic
 
         private static void Finish(Chain c)
         {
+            if (c.timeFree) return;   // a part let loose by Time: the spell itself was finished when it was cast
             LifeMagic.EndSpell(c.caster);
             if (c.caster == null || c.caster.Dead || !c.caster.Spawned) return;
             // Light: new reflectors stand up round the point, and the living ones send their echoes into it
