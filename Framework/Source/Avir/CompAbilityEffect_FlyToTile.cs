@@ -115,11 +115,19 @@ namespace FlightGene
                 return false;
             }
 
-            LaunchTo(group.Count > 0 && group.Contains(caster) ? group : new List<Pawn> { caster }, sourceTile, destTile);
+            // the author (after Fix271): two ways to come down - as a caravan, or at a place (the map is made); and straight
+            // onto a hostile settlement. Chosen on a panel of our own.
+            List<Pawn> flight = group.Count > 0 && group.Contains(caster) ? group : new List<Pawn> { caster };
+            group = new List<Pawn>();
+            Find.WindowStack.Add(new Avir.Dialog_SoarMode(target.Tile, action =>
+            {
+                if (!flight.Any(f => f != null && f.Spawned)) return;
+                LaunchTo(flight, sourceTile, destTile, action);
+            }));
             return true;
         }
 
-        private void LaunchTo(List<Pawn> flyers, int sourceTile, int destTile)
+        private void LaunchTo(List<Pawn> flyers, int sourceTile, int destTile, TransportersArrivalAction action)
         {
             // Pull the flight off the map into one transporter payload (1.6 transporter system): every
             // flyer, and the chicks on their backs - they arrive as one caravan.
@@ -138,11 +146,12 @@ namespace FlightGene
                 if (Props.exhaustionHediff != null && flyer.health != null) flyer.health.AddHediff(Props.exhaustionHediff);
             }
 
-            TravellingTransporters pods = (TravellingTransporters)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.TravellingTransporters);
+            // a flight of Avir on the world map - not a drop pod (Fix272)
+            TravellingTransporters pods = (TravellingTransporters)WorldObjectMaker.MakeWorldObject(DefDatabase<WorldObjectDef>.GetNamedSilentFail("Avir_Flight") ?? WorldObjectDefOf.TravellingTransporters);
             pods.Tile = sourceTile;
             pods.SetFaction(Faction.OfPlayer);
             pods.destinationTile = destTile;
-            pods.arrivalAction = new TransportersArrivalAction_FormCaravan();
+            pods.arrivalAction = action ?? new TransportersArrivalAction_FormCaravan();
             Find.WorldObjects.Add(pods);
             pods.AddTransporter(podInfo, true);
 

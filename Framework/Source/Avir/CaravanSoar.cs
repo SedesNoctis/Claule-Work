@@ -171,7 +171,7 @@ namespace FlightGene
             }
             if (!caravan.Destroyed && caravan.PawnsListForReading.Count == 0) caravan.Destroy();
 
-            var pods = (TravellingTransporters)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.TravellingTransporters);
+            var pods = (TravellingTransporters)WorldObjectMaker.MakeWorldObject(DefDatabase<WorldObjectDef>.GetNamedSilentFail("Avir_Flight") ?? WorldObjectDefOf.TravellingTransporters);   // Fix272: a flight, not a pod
             pods.Tile = from;
             pods.SetFaction(Faction.OfPlayer);
             pods.destinationTile = dest;
