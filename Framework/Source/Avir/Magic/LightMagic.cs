@@ -669,7 +669,9 @@ namespace Avir.Magic
 
         /// <summary>The node a caster casts into: every reflector on the map - their own, their fellows', the foes' too
         /// (the author: reflectors are a game of mirrors - one node for all).</summary>
-        public static IEnumerable<Building_LightReflector> Node(Pawn caster, Map map) => All(map);
+        /// <summary>The reflectors a caster's Light answers in. A mirage of the Glint belongs to its mage alone (the author,
+        /// Fix275): no other caster of Light uses it.</summary>
+        public static IEnumerable<Building_LightReflector> Node(Pawn caster, Map map) => All(map).Where(r => !r.IsMirage || r.caster == caster);
 
         /// <summary>A new reflector `dist` from the point, on any side.</summary>
         public static Building_LightReflector Raise(Pawn caster, Map map, IntVec3 at, float dist, ThingDef def = null)

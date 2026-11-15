@@ -132,6 +132,7 @@ namespace Avir.Magic
             foreach (Building_LightReflector r in Building_LightReflector.All(map))
             {
                 // the Mirror: only water, anywhere; the Glint: its own mirages anywhere too (the author: they are reflectors)
+                if (r.IsMirage && r.caster != mage) continue;   // a mirage is its own mage's alone (Fix275)
                 if (mirror ? !r.IsWater : r.Position.DistanceTo(me) > range && !(glint && r.IsMirage && r.caster == mage)) continue;
                 float d = r.Position.DistanceTo(at);
                 if (d > range || d >= bd || !GenSight.LineOfSight(r.Position, at, map, true)) continue;

@@ -291,8 +291,16 @@ namespace Avir.Magic
         }
 
         private static Material mat;
+        /// <summary>A mirage is the mage itself, seen again, lit (the author, Fix275: "only a highlight of the caster" -
+        /// no painted figures): the mage drawn where the mirage stands, a soft glow of the Glint round it.</summary>
         public static void DrawMirage(Building_LightReflector r, Vector3 at)
         {
+            Pawn m = r.caster;
+            if (m != null && m.Spawned && m.Map == r.Map)
+            {
+                try { m.Drawer.renderer.RenderPawnAt(new Vector3(at.x, AltitudeLayer.Pawn.AltitudeFor(), at.z)); }
+                catch (System.Exception e) { Log.WarningOnce("[Avir] glint mirage draw: " + e.Message, 0x4A5265); }
+            }
             if (mat == null) mat = MaterialPool.MatFrom("Things/Mote/Avir/Magic/Light/Reflector_Night", ShaderDatabase.MoteGlow, new Color(0.85f, 0.9f, 1f, 0.7f));
             float t = Time.realtimeSinceStartup * 2.1f + r.thingIDNumber * 0.53f;
             float s = 1.3f + 0.1f * Mathf.Sin(t);
