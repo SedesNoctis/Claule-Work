@@ -50,9 +50,9 @@ namespace Avir
         public static bool AShai(Faction f) => f?.def?.defName == "Avir_HighNesting";
 
         /// <summary>A landing cell under the open sky near `near` (never through a roof).</summary>
-        public static IntVec3 Spot(IntVec3 near, Map map, int radius = 8)
+        public static IntVec3 Spot(IntVec3 near, Map map, int radius = 8, HashSet<IntVec3> taken = null)
         {
-            if (CellFinder.TryFindRandomCellNear(near, map, radius, c => c.Standable(map) && !c.Roofed(map) && !c.Fogged(map) && c.GetFirstPawn(map) == null, out IntVec3 r)) return r;
+            if (CellFinder.TryFindRandomCellNear(near, map, radius, c => c.Standable(map) && !c.Roofed(map) && !c.Fogged(map) && c.GetFirstPawn(map) == null && (taken == null || !taken.Contains(c)), out IntVec3 r)) return r;
             if (CellFinder.TryFindRandomCellNear(near, map, radius * 3, c => c.Standable(map) && !c.Roofed(map), out r)) return r;
             return DropCellFinder.RandomDropSpot(map);
         }
@@ -66,17 +66,25 @@ namespace Avir
             var cargo = list.Where(t => !(t is Pawn)).ToList();
             var pawns = list.OfType<Pawn>().ToList();
             int k = 0;
+            // a flight does not come down on one point: each flyer takes a cell of its own, the wider the more of them
+            // (a loose flock round the centre), and they touch down one after another, not all at once
+            var taken = new HashSet<IntVec3>();
+            int wide = spread + Mathf.RoundToInt(1.5f * Mathf.Sqrt(pawns.Count));
             foreach (Pawn p in pawns)
             {
                 var load = new List<Thing> { p };
                 // the cargo is shared among the flyers
                 for (int i = k; i < cargo.Count; i += Mathf.Max(1, pawns.Count)) load.Add(cargo[i]);
                 k++;
-                IntVec3 c = Spot(center, map, spread);
+                IntVec3 c = Spot(center, map, wide, taken);
+                taken.Add(c);
                 if (def == null) { foreach (Thing t in load) GenPlace.TryPlaceThing(t, c, map, ThingPlaceMode.Near); Landed(p, raid); continue; }
                 var sky = (AvirFlightIncoming)SkyfallerMaker.MakeSkyfaller(def, load);
                 sky.raid = raid;
                 GenSpawn.Spawn(sky, c, map);
+                // one after another: a longer fall for some, its start moved with it so the descent stays smooth
+                int extra = Rand.Range(0, 25 + 8 * pawns.Count);
+                if (extra > 0) { sky.ticksToImpact += extra; HarmonyLib.Traverse.Create(sky).Field("ticksToImpactMax").SetValue(sky.ticksToImpact); }
             }
             if (pawns.Count == 0) foreach (Thing t in cargo) GenPlace.TryPlaceThing(t, Spot(center, map, spread), map, ThingPlaceMode.Near);
         }
