@@ -16,14 +16,15 @@ ROLE_COL = {
     'workshop': (200, 120, 70), 'artificer': (230, 120, 60), 'library': (150, 110, 80), 'ritual': (190, 120, 220),
     'temple': (230, 210, 120), 'class': (170, 200, 120), 'store': (140, 140, 110), 'guest': (130, 200, 140),
     'gallery': (175, 165, 150), 'street': (175, 165, 150), 'herbalist': (110, 190, 90), 'barracks': (180, 90, 90),
-    'freezer': (170, 210, 230), 'market': (220, 200, 90),
+    'freezer': (170, 210, 230), 'market': (220, 200, 90), 'shop': (235, 190, 70), 'slaves': (120, 95, 80), 'shed': (150, 120, 90),
 }
 ROLE_RU = {
     'dining': 'столовая', 'hall': 'зал', 'kitchen': 'кухня', 'bedroom': 'спальня', 'couple': 'спальня пары',
     'nursery': 'птенческая', 'staff': 'комнаты персонала', 'cell': 'камеры', 'workshop': 'мастерская',
     'artificer': 'мастерская артефактора', 'library': 'библиотека', 'ritual': 'ритуалист', 'temple': 'храм',
     'class': 'класс', 'store': 'склад', 'guest': 'гостевые', 'gallery': 'галерея', 'street': 'улица',
-    'herbalist': 'алхимик и садик', 'barracks': 'казарма', 'freezer': 'морозильник', 'market': 'рынок',
+    'herbalist': 'алхимик и садик', 'barracks': 'казарма', 'freezer': 'морозильник', 'market': 'рынок', 'shop': 'лавки',
+    'slaves': 'барак рабов', 'shed': 'склад двора',
 }
 
 
@@ -97,6 +98,19 @@ class Plan:
                 if self.inpoly(dx, dz, r + 0.5) and self.ok(cx + dx, cz + dz) and self.g[cx + dx][cz + dz] == GROUND:
                     self.g[cx + dx][cz + dz] = FIELD
         self.totems.append((cx, cz))
+
+    def wide_field(self, x0, z0, w, h):
+        for x in range(x0, x0 + w):
+            for z in range(z0, z0 + h):
+                if self.ok(x, z) and self.g[x][z] == GROUND: self.g[x][z] = FIELD
+
+    def slave_yard(self, x0, z0, fields_w=36, fields_h=12):
+        """The slave yard just outside the city (the author): a barrack, a shed for what they gather (a carrier takes it
+        into the city), wide fields beside them."""
+        self.rect(x0, z0, 12, 8, 'slaves')
+        self.rect(x0 + 11, z0, 6, 8, 'shed')
+        self.wide_field(x0 - 2, z0 - fields_h - 3, fields_w, fields_h)
+        self.posts.append((x0 + 14, z0 + 8, 'overseer'))
 
     def river(self, x0, width, wobble):
         for z in range(N):
@@ -204,6 +218,15 @@ class Plan:
                     o = b if a in seen else a
                     if self.rooms[o]['role'] in flight_only: continue
                     self.cut(cells[len(cells) // 2]); seen.add(o); changed = True
+        # the slave yard stands outside the city: its own plain doors to the open ground, none into the city
+        for i, r in enumerate(self.rooms):
+            if r['role'] not in ('slaves', 'shed'): continue
+            cands = [c for c in adj.get((i, -1), []) if self.open_out(c)]
+            if cands: self.cut(cands[len(cands) // 2])
+            for (a, b), cells in adj.items():
+                if b != -1 and {a, b} == {i, next((k for k, q in enumerate(self.rooms) if q['role'] == ('shed' if r['role'] == 'slaves' else 'slaves')), -2)}:
+                    self.cut(cells[len(cells) // 2])
+            seen.add(i)
         self.unreached = [i for i in range(nr) if i not in seen and self.rooms[i]['role'] not in flight_only]
 
 
@@ -227,11 +250,9 @@ def t_ring(seed):
     sx = c + 23
     p.rect(sx, c - 2, 34, 5, 'street')
     for i in range(5):
-        p.rect(sx + 2 + i * 6, c + 2, 7, 7, 'staff'); p.rect(sx + 2 + i * 6, c - 8, 7, 7, 'staff' if i < 3 else 'cell')
+        p.rect(sx + 2 + i * 6, c + 2, 7, 7, 'staff'); p.rect(sx + 2 + i * 6, c - 8, 7, 7, 'shop' if i < 4 else 'cell')
     cd = p.disc(sx + 39, c, 6, 'dining'); p.well(cd, 1)
-    # fields
-    for k, ang in enumerate((235, 270, 305)):
-        p.field(c + int(36 * math.cos(math.radians(ang))), c + int(36 * math.sin(math.radians(ang))), 7)
+    p.slave_yard(c - 18, c - 42, 40, 14)
     p.doors(); return p, 'Кольцевое гнездовье'
 
 
@@ -255,9 +276,8 @@ def t_river(seed):
     hb = p.disc(e + 10, c + 6, 7, 'herbalist'); p.well(hb, 2)
     gd = p.disc(e + 10, c - 14, 7, 'guest'); p.well(gd, 1)
     p.bridge(c - 40, c - 6, c + 14); p.bridge(c + 38, c - 6, c + 14)
-    for z in (c - 46, c + 46):
-        p.field(w + 4, z, 6)
-    p.field(e + 24, c + 32, 6)
+    p.slave_yard(w - 14, c - 48, 34, 12)
+    for i in range(3): p.rect(e - 21, c + 2 + i * 6, 8, 7, 'shop')
     p.doors(); return p, 'Речное гнездовье'
 
 
@@ -279,8 +299,9 @@ def t_dome(seed):
         n = p.disc(hx + int(8 * math.cos(math.radians(ang))), hz + int(8 * math.sin(math.radians(ang))), 5, 'nursery'); p.well(n, 1)
     a = p.disc(c + 38, c + 6, 9, 'artificer'); p.well(a, 2)
     p.rect(c + 21, c + 4, 9, 5, 'gallery')
-    for ang in (60, 120):
-        p.field(c + int(48 * math.cos(math.radians(ang))), c + 6 + int(40 * math.sin(math.radians(ang))), 6)
+    p.slave_yard(c - 16, c - 58, 44, 10)
+    for i in range(3): p.rect(c + 30, c - 30 + i * 6, 8, 7, 'shop')
+    p.rect(c + 25, c - 30, 6, 5, 'street')
     p.doors(); return p, 'Купольное гнездовье'
 
 
@@ -301,8 +322,8 @@ def t_mountain(seed):
     for i in range(3):
         p.rect(c + 3, c - 36 + i * 7, 8, 8, 'cell' if i < 2 else 'staff')
         p.rect(c - 10, c - 36 + i * 7, 8, 8, 'staff')
-    for z in (c - 50, c - 40):
-        p.field(c + 14, z, 5) if p.g[c + 14][z] == GROUND else None
+    p.slave_yard(c - 8, c - 66, 24, 8)
+    for i in range(2): p.rect(c - 10, c - 15 + i * 7, 8, 8, 'shop')
     p.doors(flight_only=('library', 'artificer', 'temple')); return p, 'Горное гнездовье'
 
 
@@ -340,7 +361,7 @@ def render(p, title, out, scale=6):
         f = fb = None
     top = N * S + 8
     d.text((10, top), title, fill=(240, 230, 210), font=fb)
-    items = [(ROLE_RU[r], ROLE_COL[r]) for r in sorted(used) if r in ROLE_RU] + [('тяжёлая дверь (наружу)', (255, 70, 40)), ('дверь', (230, 230, 230)), ('лётный колодец', (130, 220, 255)), ('поле с тотемом', (96, 132, 60))]
+    items = [(ROLE_RU[r], ROLE_COL[r]) for r in sorted(used) if r in ROLE_RU] + [('тяжёлая дверь (наружу)', (255, 70, 40)), ('дверь', (230, 230, 230)), ('лётный колодец', (130, 220, 255)), ('поле (работают рабы)', (96, 132, 60)), ('пост (треугольник)', (255, 255, 255))]
     x0, y0 = 10, top + 34
     for i, (name, col) in enumerate(items):
         cx = x0 + (i % 4) * (N * S // 4); cy = y0 + (i // 4) * 22
