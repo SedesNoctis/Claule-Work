@@ -45,7 +45,8 @@ namespace Avir
         public static ThingDef Incoming => DefDatabase<ThingDef>.GetNamedSilentFail("Avir_FlightIncoming");
         public static HediffDef Tired => DefDatabase<HediffDef>.GetNamedSilentFail("Avir_FlightExhaustion");
         public static ThingDef Rage => DefDatabase<ThingDef>.GetNamedSilentFail("Avir_CrimsonRage");
-        public static bool AvirFaction(Faction f) => f?.def != null && (f.def.defName == "Avir_HighNesting" || f.def.defName == "Avir_FreeNesting" || f.def.defName == "Avir_Primal");
+        /// <summary>The Avir factions: the A'Shaign Order, the A'Schialis Legion (Avir_AShialis), Free Nesting, the Primal Hunt.</summary>
+        public static bool AvirFaction(Faction f) => f?.def != null && (f.def.defName == "Avir_HighNesting" || f.def.defName == "Avir_AShialis" || f.def.defName == "Avir_FreeNesting" || f.def.defName == "Avir_Primal");
         public static bool AShai(Faction f) => f?.def?.defName == "Avir_HighNesting";
 
         /// <summary>A landing cell under the open sky near `near` (never through a roof).</summary>
@@ -106,6 +107,9 @@ namespace Avir
 
         [LudeonTK.DebugAction("Avir", "Flight: A'Shai raid out of the sky (into the colony)", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void RaidAShai() => Raid("Avir_HighNesting", "Avir_FlyInCenter");
+
+        [LudeonTK.DebugAction("Avir", "Flight: A'Schialis Legion raid out of the sky (at the edge)", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
+        private static void RaidLegion() => Raid("Avir_AShialis", "Avir_FlyIn");
 
         [LudeonTK.DebugAction("Avir", "Flight: Free Nesting raid out of the sky (at the edge)", allowedGameStates = LudeonTK.AllowedGameStates.PlayingOnMap)]
         private static void RaidFree() => Raid("Avir_FreeNesting", "Avir_FlyIn");
